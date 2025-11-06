@@ -245,7 +245,6 @@ namespace DuckovCustomModel.MonoBehaviours
             {
                 if (material == null) continue;
                 material.shader = shader;
-                material.DisableKeyword("_EMISSION");
                 if (material.HasProperty(EmissionColor))
                     material.SetColor(EmissionColor, Color.black);
             }
