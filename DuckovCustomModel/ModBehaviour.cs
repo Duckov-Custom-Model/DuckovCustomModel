@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using DuckovCustomModel.Configs;
+using DuckovCustomModel.Managers;
 using HarmonyLib;
 
 namespace DuckovCustomModel

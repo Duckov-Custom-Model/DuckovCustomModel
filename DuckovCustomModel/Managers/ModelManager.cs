@@ -6,7 +6,7 @@ using DuckovCustomModel.Configs;
 using DuckovCustomModel.Data;
 using DuckovCustomModel.MonoBehaviours;
 
-namespace DuckovCustomModel
+namespace DuckovCustomModel.Managers
 {
     public static class ModelManager
     {
@@ -16,6 +16,7 @@ namespace DuckovCustomModel
 
         public static void UpdateModelBundles()
         {
+            AssetBundleManager.UnloadAllAssetBundles(true);
             ModelBundles.Clear();
 
             if (!Directory.Exists(ModelsDirectory))
