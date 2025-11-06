@@ -27,9 +27,6 @@ namespace DuckovCustomModel.MonoBehaviours
         public Animator? CustomAnimator { get; private set; }
         public CustomAnimatorControl? CustomAnimatorControl { get; private set; }
 
-        // ReSharper disable once ShaderLabShaderReferenceNotResolved
-        private static Shader GameDefaultShader => Shader.Find("SodaCraft/SodaCharacter");
-
         public void Initialize(CharacterMainControl characterMainControl)
         {
             CharacterMainControl = characterMainControl;
@@ -249,8 +246,19 @@ namespace DuckovCustomModel.MonoBehaviours
                 if (material == null) continue;
                 material.shader = shader;
                 material.DisableKeyword("_EMISSION");
+                if (material.HasProperty(EmissionColor))
+                    material.SetColor(EmissionColor, Color.black);
             }
         }
+
+        #region Shader Constants
+
+        // ReSharper disable once ShaderLabShaderReferenceNotResolved
+        private static Shader GameDefaultShader => Shader.Find("SodaCraft/SodaCharacter");
+
+        private static readonly int EmissionColor = Shader.PropertyToID("_EmissionColor");
+
+        #endregion
 
         #region Custom Sockets
 
