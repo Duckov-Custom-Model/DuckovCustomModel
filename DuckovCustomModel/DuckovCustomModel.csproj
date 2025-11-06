@@ -17,6 +17,9 @@
         <Reference Include="$(DuckovPath)\Duckov_Data\Managed\ItemStatsSystem.dll">
             <Private>False</Private>
         </Reference>
+        <Reference Include="$(DuckovPath)\Duckov_Data\Managed\SodaLocalization.dll">
+            <Private>False</Private>
+        </Reference>
         <Reference Include="$(DuckovPath)\Duckov_Data\Managed\Unity*">
             <Private>False</Private>
         </Reference>
@@ -37,6 +40,10 @@
     <ItemGroup>
         <None Update="info.ini">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="Localizations\*.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <TargetPath>Localizations\%(Filename)%(Extension)</TargetPath>
         </None>
     </ItemGroup>
 

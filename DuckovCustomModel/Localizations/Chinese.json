@@ -1,0 +1,15 @@
+{
+  "Title": "模型选择",
+  "SearchPlaceholder": "搜索模型...",
+  "Refresh": "刷新",
+  "Loading": "加载中...",
+  "LoadingModelList": "正在加载模型列表...",
+  "HideOriginalEquipment": "隐藏原有装备",
+  "Hotkey": "快捷键:",
+  "PressAnyKey": "按任意键...",
+  "NoPreview": "无预览",
+  "Author": "作者",
+  "Version": "版本",
+  "NoModel": "不使用模型（恢复原始模型）"
+}
+

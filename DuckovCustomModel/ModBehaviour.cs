@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using DuckovCustomModel.Configs;
+using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.MonoBehaviours;
 using HarmonyLib;
@@ -59,6 +60,8 @@ namespace DuckovCustomModel
             LevelManager.OnAfterLevelInitialized -= LevelManager_OnAfterLevelInitialized;
 
             ModelListManager.CancelRefresh();
+
+            ModelSelectorUILocalization.Cleanup();
 
             if (_modelSelectorUI == null) return;
             Destroy(_modelSelectorUI);

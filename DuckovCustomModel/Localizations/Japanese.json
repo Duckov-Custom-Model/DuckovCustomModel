@@ -1,0 +1,15 @@
+{
+  "Title": "モデル選択",
+  "SearchPlaceholder": "モデルを検索...",
+  "Refresh": "更新",
+  "Loading": "読み込み中...",
+  "LoadingModelList": "モデルリストを読み込み中...",
+  "HideOriginalEquipment": "元の装備を非表示",
+  "Hotkey": "ショートカット:",
+  "PressAnyKey": "任意のキーを押してください...",
+  "NoPreview": "プレビューなし",
+  "Author": "作者",
+  "Version": "バージョン",
+  "NoModel": "モデルを使用しない（元のモデルに復元）"
+}
+

@@ -6,7 +6,9 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Data;
+using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
+using SodaCraft.Localizations;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -53,6 +55,8 @@ namespace DuckovCustomModel.MonoBehaviours
             ModelListManager.OnRefreshStarted += OnModelListRefreshStarted;
             ModelListManager.OnRefreshCompleted += OnModelListRefreshCompleted;
             ModelListManager.OnRefreshProgress += OnModelListRefreshProgress;
+
+            LocalizationManager.OnSetLanguage += OnLanguageChanged;
         }
 
         private void Update()
@@ -107,6 +111,57 @@ namespace DuckovCustomModel.MonoBehaviours
             ModelListManager.OnRefreshStarted -= OnModelListRefreshStarted;
             ModelListManager.OnRefreshCompleted -= OnModelListRefreshCompleted;
             ModelListManager.OnRefreshProgress -= OnModelListRefreshProgress;
+
+            LocalizationManager.OnSetLanguage -= OnLanguageChanged;
+        }
+
+        private void OnLanguageChanged(SystemLanguage language)
+        {
+            if (!_isInitialized) return;
+
+            RebuildUIAsync().Forget();
+        }
+
+        private async UniTaskVoid RebuildUIAsync()
+        {
+            await UniTask.Yield(PlayerLoopTiming.Update);
+
+            RebuildUI();
+        }
+
+        private void RebuildUI()
+        {
+            var wasActive = _uiActive && _panelRoot != null && _panelRoot.activeSelf;
+
+            if (_panelRoot != null)
+            {
+                Destroy(_panelRoot);
+                _panelRoot = null;
+            }
+
+            if (_overlay != null)
+            {
+                Destroy(_overlay);
+                _overlay = null;
+            }
+
+            _keyButtonText = null;
+            _refreshButtonText = null;
+            _searchField = null;
+            _refreshButton = null;
+            _modelListContent = null;
+            _modelScrollRect = null;
+            _loadingStatusText = null;
+
+            BuildPanel();
+            RefreshModelList();
+
+            if (!wasActive)
+            {
+                if (_panelRoot != null) _panelRoot.SetActive(false);
+                if (_overlay != null) _overlay.SetActive(false);
+                _uiActive = false;
+            }
         }
 
         private void OnModelListRefreshStarted()
@@ -119,7 +174,7 @@ namespace DuckovCustomModel.MonoBehaviours
             {
                 _loadingStatusText.SetActive(true);
                 var statusText = _loadingStatusText.GetComponent<Text>();
-                if (statusText != null) statusText.text = "正在加载模型列表...";
+                if (statusText != null) statusText.text = ModelSelectorUILocalization.LoadingModelList;
             }
         }
 
@@ -224,7 +279,7 @@ namespace DuckovCustomModel.MonoBehaviours
             var title = new GameObject("Title", typeof(Text));
             title.transform.SetParent(_panelRoot.transform, false);
             var titleText = title.GetComponent<Text>();
-            titleText.text = "模型选择";
+            titleText.text = ModelSelectorUILocalization.Title;
             titleText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             titleText.fontSize = 24;
             titleText.fontStyle = FontStyle.Bold;
@@ -242,7 +297,7 @@ namespace DuckovCustomModel.MonoBehaviours
         {
             if (_panelRoot == null) return;
 
-            _searchField = BuildInput("搜索模型...");
+            _searchField = BuildInput(ModelSelectorUILocalization.SearchPlaceholder);
             _searchField.transform.SetParent(_panelRoot.transform, false);
             var searchRect = _searchField.GetComponent<RectTransform>();
             searchRect.anchorMin = new(0, 1);
@@ -370,7 +425,7 @@ namespace DuckovCustomModel.MonoBehaviours
             var refreshText = new GameObject("Text", typeof(Text));
             refreshText.transform.SetParent(refreshButton.transform, false);
             var textComponent = refreshText.GetComponent<Text>();
-            textComponent.text = "刷新";
+            textComponent.text = ModelSelectorUILocalization.Refresh;
             textComponent.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             textComponent.fontSize = 14;
             textComponent.color = Color.white;
@@ -438,7 +493,7 @@ namespace DuckovCustomModel.MonoBehaviours
             var labelObj = new GameObject("Label", typeof(Text));
             labelObj.transform.SetParent(settingsPanel.transform, false);
             var labelText = labelObj.GetComponent<Text>();
-            labelText.text = "隐藏原有装备";
+            labelText.text = ModelSelectorUILocalization.HideOriginalEquipment;
             labelText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             labelText.fontSize = 14;
             labelText.color = Color.white;
@@ -456,7 +511,7 @@ namespace DuckovCustomModel.MonoBehaviours
             var keyLabelObj = new GameObject("KeyLabel", typeof(Text));
             keyLabelObj.transform.SetParent(settingsPanel.transform, false);
             var keyLabelText = keyLabelObj.GetComponent<Text>();
-            keyLabelText.text = "快捷键:";
+            keyLabelText.text = ModelSelectorUILocalization.Hotkey;
             keyLabelText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             keyLabelText.fontSize = 14;
             keyLabelText.color = Color.white;
@@ -493,7 +548,7 @@ namespace DuckovCustomModel.MonoBehaviours
             if (_uiConfig == null) return;
             _isWaitingForKeyInput = true;
             if (_keyButtonText != null)
-                _keyButtonText.text = "按任意键...";
+                _keyButtonText.text = ModelSelectorUILocalization.PressAnyKey;
         }
 
         private void HandleKeyInputCapture()
@@ -645,7 +700,7 @@ namespace DuckovCustomModel.MonoBehaviours
                     count++;
 
                     if (count % 5 != 0) continue;
-                    UpdateRefreshButtonText($"加载中... ({count}/{totalCount})");
+                    UpdateRefreshButtonText(ModelSelectorUILocalization.GetLoadingProgress(count, totalCount));
                     await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
                 }
 
@@ -718,7 +773,9 @@ namespace DuckovCustomModel.MonoBehaviours
         {
             if (_refreshButton != null) _refreshButton.interactable = !isLoading;
 
-            UpdateRefreshButtonText(isLoading ? "加载中..." : "刷新");
+            UpdateRefreshButtonText(isLoading
+                ? ModelSelectorUILocalization.Loading
+                : ModelSelectorUILocalization.Refresh);
         }
 
         private void UpdateRefreshButtonText(string text)
@@ -794,7 +851,7 @@ namespace DuckovCustomModel.MonoBehaviours
                 var placeholderText = new GameObject("PlaceholderText", typeof(Text));
                 placeholderText.transform.SetParent(thumbnailImage.transform, false);
                 var placeholderTextComponent = placeholderText.GetComponent<Text>();
-                placeholderTextComponent.text = "无预览";
+                placeholderTextComponent.text = ModelSelectorUILocalization.NoPreview;
                 placeholderTextComponent.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
                 placeholderTextComponent.fontSize = 11;
                 placeholderTextComponent.color = new(0.6f, 0.6f, 0.6f, 1);
@@ -839,12 +896,8 @@ namespace DuckovCustomModel.MonoBehaviours
             var infoText = new GameObject("Info", typeof(Text));
             infoText.transform.SetParent(contentArea.transform, false);
             var infoTextComponent = infoText.GetComponent<Text>();
-            var infoTextStr = $"ID: {model.ModelID}";
-            if (!string.IsNullOrEmpty(model.Author))
-                infoTextStr += $" | 作者: {model.Author}";
-            if (!string.IsNullOrEmpty(model.Version))
-                infoTextStr += $" | 版本: {model.Version}";
-            infoTextComponent.text = infoTextStr;
+            infoTextComponent.text =
+                ModelSelectorUILocalization.GetModelInfo(model.ModelID, model.Author, model.Version);
             infoTextComponent.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             infoTextComponent.fontSize = 12;
             infoTextComponent.color = hasError ? new(1f, 0.7f, 0.7f, 1) : new(0.8f, 0.8f, 0.8f, 1);
@@ -932,7 +985,7 @@ namespace DuckovCustomModel.MonoBehaviours
             var nameText = new GameObject("Name", typeof(Text));
             nameText.transform.SetParent(buttonObj.transform, false);
             var nameTextComponent = nameText.GetComponent<Text>();
-            nameTextComponent.text = "不使用模型（恢复原始模型）";
+            nameTextComponent.text = ModelSelectorUILocalization.NoModel;
             nameTextComponent.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             nameTextComponent.fontSize = 16;
             nameTextComponent.fontStyle = FontStyle.Bold;
