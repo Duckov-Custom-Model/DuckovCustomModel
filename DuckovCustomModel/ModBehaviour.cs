@@ -27,7 +27,7 @@ namespace DuckovCustomModel
             }
 
             Instance = this;
-            ModLogger.Log($"{Constant.ModName} loaded");
+            ModLogger.Log($"{Constant.ModName} loaded (Version {Constant.ModVersion})");
         }
 
         private void OnEnable()
