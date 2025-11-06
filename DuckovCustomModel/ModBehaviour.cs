@@ -102,10 +102,10 @@ namespace DuckovCustomModel
         private void LoadConfig()
         {
             UIConfig = ConfigManager.LoadConfigFromFile<UIConfig>("UIConfig.json");
-            if (UIConfig.Validate()) UIConfig.SaveToFile("UIConfig.json");
+            if (UIConfig.Validate()) ConfigManager.SaveConfigToFile(UIConfig, "UIConfig.json");
 
             UsingModel = ConfigManager.LoadConfigFromFile<UsingModel>("UsingModel.json");
-            if (UsingModel.Validate()) UsingModel.SaveToFile("UsingModel.json");
+            if (UsingModel.Validate()) ConfigManager.SaveConfigToFile(UsingModel, "UsingModel.json");
 
             ModLogger.Log("Configuration files loaded successfully");
         }

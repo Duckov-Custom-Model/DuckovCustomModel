@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +20,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private CharacterInputControl? _charInput;
         private bool _isInitialized;
+        private bool _isWaitingForKeyInput;
+        private Text? _keyButtonText;
         private ModelHandler? _modelHandler;
         private GameObject? _modelListContent;
         private ScrollRect? _modelScrollRect;
@@ -53,15 +56,22 @@ namespace DuckovCustomModel.MonoBehaviours
 
             if (IsTypingInInputField() || _panelRoot == null) return;
 
-            if (Input.GetKeyDown(_uiConfig.ToggleKey))
+            switch (_isWaitingForKeyInput)
             {
-                if (_panelRoot.activeSelf)
-                    HidePanel();
-                else
-                    ShowPanel();
+                case true:
+                    HandleKeyInputCapture();
+                    return;
+                case false when Input.GetKeyDown(_uiConfig.ToggleKey):
+                {
+                    if (_panelRoot.activeSelf)
+                        HidePanel();
+                    else
+                        ShowPanel();
+                    break;
+                }
             }
 
-            if (_uiActive && Input.GetKeyDown(KeyCode.Escape)) HidePanel();
+            if (_uiActive && !_isWaitingForKeyInput && Input.GetKeyDown(KeyCode.Escape)) HidePanel();
 
             if (!_uiActive) return;
             if (_charInput != null && _charInput.enabled) _charInput.enabled = false;
@@ -321,6 +331,123 @@ namespace DuckovCustomModel.MonoBehaviours
             labelText.alignment = TextAnchor.MiddleLeft;
             var labelRect = labelObj.GetComponent<RectTransform>();
             labelRect.sizeDelta = new(150, 20);
+
+            BuildKeySetting(settingsPanel);
+        }
+
+        private void BuildKeySetting(GameObject settingsPanel)
+        {
+            if (_panelRoot == null) return;
+
+            var keyLabelObj = new GameObject("KeyLabel", typeof(Text));
+            keyLabelObj.transform.SetParent(settingsPanel.transform, false);
+            var keyLabelText = keyLabelObj.GetComponent<Text>();
+            keyLabelText.text = "快捷键:";
+            keyLabelText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            keyLabelText.fontSize = 14;
+            keyLabelText.color = Color.white;
+            keyLabelText.alignment = TextAnchor.MiddleLeft;
+            var keyLabelRect = keyLabelObj.GetComponent<RectTransform>();
+            keyLabelRect.sizeDelta = new(80, 20);
+
+            var keyButtonObj = new GameObject("KeyButton", typeof(Image), typeof(Button));
+            keyButtonObj.transform.SetParent(settingsPanel.transform, false);
+            var keyButtonImage = keyButtonObj.GetComponent<Image>();
+            keyButtonImage.color = new(0.2f, 0.2f, 0.2f, 1);
+            var keyButtonRect = keyButtonObj.GetComponent<RectTransform>();
+            keyButtonRect.sizeDelta = new(120, 30);
+
+            var keyButtonTextObj = new GameObject("Text", typeof(Text));
+            keyButtonTextObj.transform.SetParent(keyButtonObj.transform, false);
+            _keyButtonText = keyButtonTextObj.GetComponent<Text>();
+            _keyButtonText.text = GetKeyCodeDisplayName(_uiConfig?.ToggleKey ?? KeyCode.Backslash);
+            _keyButtonText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            _keyButtonText.fontSize = 14;
+            _keyButtonText.color = Color.white;
+            _keyButtonText.alignment = TextAnchor.MiddleCenter;
+            var keyButtonTextRect = keyButtonTextObj.GetComponent<RectTransform>();
+            keyButtonTextRect.anchorMin = Vector2.zero;
+            keyButtonTextRect.anchorMax = Vector2.one;
+            keyButtonTextRect.sizeDelta = Vector2.zero;
+
+            var keyButton = keyButtonObj.GetComponent<Button>();
+            keyButton.onClick.AddListener(OnKeyButtonClicked);
+        }
+
+        private void OnKeyButtonClicked()
+        {
+            if (_uiConfig == null) return;
+            _isWaitingForKeyInput = true;
+            if (_keyButtonText != null)
+                _keyButtonText.text = "按任意键...";
+        }
+
+        private void HandleKeyInputCapture()
+        {
+            if (!_isWaitingForKeyInput || _uiConfig == null) return;
+
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                _isWaitingForKeyInput = false;
+                if (_keyButtonText != null)
+                    _keyButtonText.text = GetKeyCodeDisplayName(_uiConfig.ToggleKey);
+                return;
+            }
+
+            foreach (KeyCode keyCode in Enum.GetValues(typeof(KeyCode)))
+                if (Input.GetKeyDown(keyCode))
+                {
+                    if (keyCode == KeyCode.Mouse0 || keyCode == KeyCode.Mouse1 || keyCode == KeyCode.Mouse2 ||
+                        keyCode == KeyCode.Mouse3 || keyCode == KeyCode.Mouse4 || keyCode == KeyCode.Mouse5 ||
+                        keyCode == KeyCode.Mouse6)
+                        continue;
+
+                    _uiConfig.ToggleKey = keyCode;
+                    ConfigManager.SaveConfigToFile(_uiConfig, "UIConfig.json");
+                    _isWaitingForKeyInput = false;
+                    if (_keyButtonText != null)
+                        _keyButtonText.text = GetKeyCodeDisplayName(keyCode);
+                    return;
+                }
+        }
+
+        private static string GetKeyCodeDisplayName(KeyCode keyCode)
+        {
+            return keyCode switch
+            {
+                KeyCode.Alpha0 => "0",
+                KeyCode.Alpha1 => "1",
+                KeyCode.Alpha2 => "2",
+                KeyCode.Alpha3 => "3",
+                KeyCode.Alpha4 => "4",
+                KeyCode.Alpha5 => "5",
+                KeyCode.Alpha6 => "6",
+                KeyCode.Alpha7 => "7",
+                KeyCode.Alpha8 => "8",
+                KeyCode.Alpha9 => "9",
+                KeyCode.Backslash => "\\",
+                KeyCode.Slash => "/",
+                KeyCode.LeftBracket => "[",
+                KeyCode.RightBracket => "]",
+                KeyCode.Semicolon => ";",
+                KeyCode.Quote => "'",
+                KeyCode.Comma => ",",
+                KeyCode.Period => ".",
+                KeyCode.Equals => "=",
+                KeyCode.Minus => "-",
+                KeyCode.Plus => "+",
+                KeyCode.LeftShift => "Left Shift",
+                KeyCode.RightShift => "Right Shift",
+                KeyCode.LeftControl => "Left Ctrl",
+                KeyCode.RightControl => "Right Ctrl",
+                KeyCode.LeftAlt => "Left Alt",
+                KeyCode.RightAlt => "Right Alt",
+                KeyCode.LeftCommand => "Left Cmd",
+                KeyCode.RightCommand => "Right Cmd",
+                KeyCode.LeftWindows => "Left Win",
+                KeyCode.RightWindows => "Right Win",
+                _ => keyCode.ToString(),
+            };
         }
 
         private void OnHideEquipmentToggleChanged(bool value)
@@ -328,7 +455,7 @@ namespace DuckovCustomModel.MonoBehaviours
             if (_uiConfig == null) return;
 
             _uiConfig.HideOriginalEquipment = value;
-            _uiConfig.SaveToFile("UIConfig.json");
+            ConfigManager.SaveConfigToFile(_uiConfig, "UIConfig.json");
             ModLogger.Log($"HideOriginalEquipment setting changed to: {value}");
         }
 
@@ -567,7 +694,7 @@ namespace DuckovCustomModel.MonoBehaviours
             }
 
             _usingModel.ModelID = model.ModelID;
-            _usingModel.SaveToFile("UsingModel.json");
+            ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
 
             _modelHandler.InitializeCustomModel(bundle, model);
             _modelHandler.ChangeToCustomModel();
@@ -585,7 +712,7 @@ namespace DuckovCustomModel.MonoBehaviours
             }
 
             _usingModel.ModelID = string.Empty;
-            _usingModel.SaveToFile("UsingModel.json");
+            ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
 
             _modelHandler.RestoreOriginalModel();
 
