@@ -13,7 +13,7 @@ namespace DuckovCustomModel.MonoBehaviours
 {
     public class ModelSelectorUI : MonoBehaviour
     {
-        private readonly List<ModelBundleInfo> _filteredModelBundles = new();
+        private readonly List<ModelBundleInfo> _filteredModelBundles = [];
         private MonoBehaviour? _cameraController;
         private bool _cameraLockDisabled;
 
