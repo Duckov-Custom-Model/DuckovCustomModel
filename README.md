@@ -20,12 +20,16 @@ UI 界面相关配置。
 
 ```json
 {
-  "ToggleKey": "Backslash"
+  "ToggleKey": "Backslash",
+  "HideOriginalEquipment": false
 }
 ```
 
 - `ToggleKey`：打开/关闭模型选择界面的按键（默认：`Backslash`，即反斜杠键 `\`）
   - 支持的按键值可参考 Unity KeyCode 枚举
+- `HideOriginalEquipment`：是否隐藏原有装备（默认：`false`）
+  - 设置为 `true` 时，Animator 的 `HideOriginalEquipment` 参数会被设置为 `true`
+  - 可在模型选择界面的设置区域中切换此选项
 
 ### UsingModel.json
 
@@ -40,6 +44,23 @@ UI 界面相关配置。
 - `ModelID`：当前使用的模型 ID（字符串，为空时使用原始模型）
   - 设置后，游戏会在关卡加载时自动应用该模型
   - 可通过模型选择界面修改，修改后会自动保存到此文件
+
+## 模型选择界面
+
+模型选择界面提供了以下功能：
+
+- **模型浏览**：滚动查看所有可用的模型
+- **模型搜索**：通过模型名称、ID 等关键词快速搜索模型
+- **模型选择**：点击模型按钮即可应用该模型
+- **设置选项**：在界面底部可以切换"隐藏原有装备"选项
+  - 此选项会立即保存到配置文件
+  - 影响 Animator 的 `HideOriginalEquipment` 参数值
+
+### 打开模型选择界面
+
+- 默认按键：`\`（反斜杠键）
+- 可通过修改 `UIConfig.json` 中的 `ToggleKey` 来更改按键
+- 按 `ESC` 键可关闭界面
 
 ## 模型安装
 
@@ -116,6 +137,15 @@ Animator Controller 可以使用以下参数：
 - `GunReady`：枪械是否准备就绪
 - `Reloading`：是否正在装弹
 - `RightHandOut`：右手是否伸出
+- `HideOriginalEquipment`：是否隐藏原有装备（由配置项 `HideOriginalEquipment` 控制）
+- `LeftHandEquip`：左手槽位是否有装备（检测左手槽位是否有子对象）
+- `RightHandEquip`：右手槽位是否有装备（检测右手槽位是否有子对象）
+- `ArmorEquip`：护甲槽位是否有装备（检测护甲槽位是否有子对象）
+- `HelmetEquip`：头盔槽位是否有装备（检测头盔槽位是否有子对象）
+- `FaceEquip`：面部槽位是否有装备（检测面部槽位是否有子对象）
+- `BackpackEquip`：背包槽位是否有装备（检测背包槽位是否有子对象）
+- `MeleeWeaponEquip`：近战武器槽位是否有装备（检测近战武器槽位是否有子对象）
+- `HavePopText`：是否有弹出文本（检测弹出文本槽位是否有子对象）
 
 #### Float 类型参数
 
