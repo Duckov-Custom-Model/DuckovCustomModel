@@ -70,6 +70,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
             UpdateDeadState();
             UpdateMovement();
+            UpdateState();
             UpdateHandState();
             UpdateGunState();
             UpdateAttackLayerWeight();
@@ -125,10 +126,65 @@ namespace DuckovCustomModel.MonoBehaviours
 
             _customAnimator.SetBool(AnimatorGroundedHash, _characterMainControl.IsOnGround);
 
+            var movementControl = _characterMainControl.movementControl;
+            _customAnimator.SetBool(AnimatorIsMovingHash, movementControl.Moving);
+            _customAnimator.SetBool(AnimatorIsRunningHash, movementControl.Running);
+
             var dashing = _characterMainControl.Dashing;
             if (dashing && !HasAnimationIfDashCanControl && _characterMainControl.DashCanControl)
                 dashing = false;
             _customAnimator.SetBool(AnimatorDashingHash, dashing);
+        }
+
+        private void UpdateState()
+        {
+            if (!_initialized) return;
+            if (_customAnimator == null || _characterMainControl == null)
+                return;
+
+            if (_characterMainControl.Health != null)
+            {
+                var currentHealth = _characterMainControl.Health.CurrentHealth;
+                var maxHealth = _characterMainControl.Health.MaxHealth;
+                var healthRate = maxHealth > 0 ? currentHealth / maxHealth : 0.0f;
+                _customAnimator.SetFloat(AnimatorHealthRateHash, healthRate);
+            }
+            else
+            {
+                _customAnimator.SetFloat(AnimatorHealthRateHash, 1.0f);
+            }
+
+            var currentWater = _characterMainControl.CurrentWater;
+            var maxWater = _characterMainControl.MaxWater;
+            if (maxWater > 0)
+            {
+                var waterRate = currentWater / maxWater;
+                _customAnimator.SetFloat(AnimatorWaterRateHash, waterRate);
+            }
+            else
+            {
+                _customAnimator.SetFloat(AnimatorWaterRateHash, 1.0f);
+            }
+
+            var totalWeight = _characterMainControl.CharacterItem.TotalWeight;
+            if (_characterMainControl.carryAction.Running)
+                totalWeight += _characterMainControl.carryAction.GetWeight();
+
+            var weightRate = totalWeight / _characterMainControl.MaxWeight;
+            _customAnimator.SetFloat(AnimatorWeightRateHash, weightRate);
+
+            int weightState;
+            if (!LevelManager.Instance.IsRaidMap)
+                weightState = (int)CharacterMainControl.WeightStates.normal;
+            else
+                weightState = totalWeight switch
+                {
+                    > 1 => (int)CharacterMainControl.WeightStates.overWeight,
+                    > 0.75f => (int)CharacterMainControl.WeightStates.superHeavy,
+                    > 0.25f => (int)CharacterMainControl.WeightStates.normal,
+                    _ => (int)CharacterMainControl.WeightStates.light,
+                };
+            _customAnimator.SetInteger(AnimatorWeightStateHash, weightState);
         }
 
         private void UpdateHandState()
@@ -229,12 +285,19 @@ namespace DuckovCustomModel.MonoBehaviours
         private static readonly int AnimatorMoveSpeedHash = Animator.StringToHash("MoveSpeed");
         private static readonly int AnimatorMoveDirXHash = Animator.StringToHash("MoveDirX");
         private static readonly int AnimatorMoveDirYHash = Animator.StringToHash("MoveDirY");
+        private static readonly int AnimatorIsMovingHash = Animator.StringToHash("Moving");
+        private static readonly int AnimatorIsRunningHash = Animator.StringToHash("Running");
         private static readonly int AnimatorDashingHash = Animator.StringToHash("Dashing");
         private static readonly int AnimatorAttackHash = Animator.StringToHash("Attack");
         private static readonly int AnimatorHandStateHash = Animator.StringToHash("HandState");
         private static readonly int AnimatorGunReadyHash = Animator.StringToHash("GunReady");
         private static readonly int AnimatorReloadingHash = Animator.StringToHash("Reloading");
         private static readonly int AnimatorRightHandOutHash = Animator.StringToHash("RightHandOut");
+
+        private static readonly int AnimatorHealthRateHash = Animator.StringToHash("HealthRate");
+        private static readonly int AnimatorWaterRateHash = Animator.StringToHash("WaterRate");
+        private static readonly int AnimatorWeightStateHash = Animator.StringToHash("WeightState");
+        private static readonly int AnimatorWeightRateHash = Animator.StringToHash("WeightRate");
 
         #endregion
     }
