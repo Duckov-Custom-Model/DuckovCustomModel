@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using DuckovCustomModel.Data;
+using DuckovCustomModel.Managers;
 using HarmonyLib;
 using UnityEngine;
 
@@ -67,6 +69,18 @@ namespace DuckovCustomModel.MonoBehaviours
 
             IsHiddenOriginalModel = true;
             ModLogger.Log("Changed to custom model.");
+        }
+
+        public void InitializeCustomModel(ModelBundleInfo modelBundleInfo, ModelInfo modelInfo)
+        {
+            var prefab = AssetBundleManager.LoadModelPrefab(modelBundleInfo, modelInfo);
+            if (prefab == null)
+            {
+                ModLogger.LogError("Failed to load custom model prefab.");
+                return;
+            }
+
+            InitializeCustomModel(prefab);
         }
 
         public void InitializeCustomModel(GameObject customModelPrefab)

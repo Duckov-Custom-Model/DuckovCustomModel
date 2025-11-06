@@ -4,11 +4,11 @@ namespace DuckovCustomModel.Configs
 {
     public class UIConfig : ConfigBase
     {
-        public KeyCode ToggleKey { get; set; } = KeyCode.Equals;
+        public KeyCode ToggleKey { get; set; } = KeyCode.Backslash;
 
         public override void LoadDefault()
         {
-            ToggleKey = KeyCode.Equals;
+            ToggleKey = KeyCode.Backslash;
         }
 
         public override bool Validate()

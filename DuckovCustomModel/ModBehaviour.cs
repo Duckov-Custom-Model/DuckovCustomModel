@@ -8,12 +8,21 @@ namespace DuckovCustomModel
 {
     public class ModBehaviour : Duckov.Modding.ModBehaviour
     {
+        public static ModBehaviour? Instance;
         private Harmony? _harmony;
-
         public UIConfig? UIConfig;
+        public UsingModel? UsingModel;
 
         private void Awake()
         {
+            if (Instance != null)
+            {
+                ModLogger.LogError("Multiple instances of ModBehaviour detected! There should only be one instance.");
+                Destroy(this);
+                return;
+            }
+
+            Instance = this;
             ModLogger.Log($"{Constant.ModName} 已加载");
         }
 
@@ -22,7 +31,7 @@ namespace DuckovCustomModel
             LoadConfig();
 
             var patched = PatchAll();
-            if (!patched) ModLogger.LogError("未能应用Harmony补丁，模组功能可能受到影响。");
+            if (!patched) ModLogger.LogError("Unable to apply Harmony patches, the mod may not function correctly.");
 
             LevelManager.OnAfterLevelInitialized += LevelManager_OnAfterLevelInitialized;
 
@@ -34,7 +43,7 @@ namespace DuckovCustomModel
             UnloadConfig();
 
             var unpatched = UnpatchAll();
-            if (!unpatched) ModLogger.LogError("未能删除Harmony补丁，模块卸载可能会受损。");
+            if (!unpatched) ModLogger.LogError("Unable to remove Harmony patches, the mod may not unload correctly.");
 
             LevelManager.OnAfterLevelInitialized -= LevelManager_OnAfterLevelInitialized;
         }
@@ -45,7 +54,7 @@ namespace DuckovCustomModel
 
             var unpatched = UnpatchAll();
             if (!unpatched)
-                ModLogger.LogError("销毁时删除Harmony补丁失败，模块卸载可能会受损。");
+                ModLogger.LogError("Unable to remove Harmony patches, the mod may not unload correctly.");
         }
 
         private bool PatchAll()
@@ -54,12 +63,12 @@ namespace DuckovCustomModel
             {
                 _harmony = new(Constant.HarmonyId);
                 _harmony.PatchAll(Assembly.GetExecutingAssembly());
-                ModLogger.Log("成功应用Harmony补丁");
+                ModLogger.Log("Successfully applied Harmony patches");
                 return true;
             }
             catch (Exception ex)
             {
-                ModLogger.LogError($"无法应用Harmony补丁: {ex}");
+                ModLogger.LogError($"Unable to apply Harmony patches: {ex}");
                 return false;
             }
         }
@@ -71,12 +80,12 @@ namespace DuckovCustomModel
                 if (_harmony == null) return true;
                 _harmony.UnpatchAll(_harmony.Id);
                 _harmony = null;
-                ModLogger.Log("Harmony补丁已成功删除");
+                ModLogger.Log("Harmony patches removed successfully");
                 return true;
             }
             catch (Exception ex)
             {
-                ModLogger.LogError($"删除Harmony补丁时出错: {ex}");
+                ModLogger.LogError($"Unable to remove Harmony patches: {ex}");
                 return false;
             }
         }
@@ -85,23 +94,41 @@ namespace DuckovCustomModel
         {
             UIConfig = ConfigManager.LoadConfigFromFile<UIConfig>("UIConfig.json");
             if (UIConfig.Validate()) UIConfig.SaveToFile("UIConfig.json");
+
+            UsingModel = ConfigManager.LoadConfigFromFile<UsingModel>("UsingModel.json");
+            if (UsingModel.Validate()) UsingModel.SaveToFile("UsingModel.json");
+
+            ModLogger.Log("Configuration files loaded successfully");
         }
 
         private void UnloadConfig()
         {
             UIConfig = null;
+            UsingModel = null;
         }
 
-        private static void LevelManager_OnAfterLevelInitialized()
+        private void LevelManager_OnAfterLevelInitialized()
         {
             var mainCharacterControl = LevelManager.Instance.MainCharacter;
             if (mainCharacterControl == null)
             {
-                ModLogger.LogError("无法初始化模型管理器: MainCharacter 为 null");
+                ModLogger.LogError("Unable to initialize ModelManager: MainCharacterControl is null");
                 return;
             }
 
-            ModelManager.InitializeModelHandler(mainCharacterControl);
+            var modelHandler = ModelManager.InitializeModelHandler(mainCharacterControl);
+            if (modelHandler == null)
+            {
+                ModLogger.LogError("Unable to initialize ModelManager: ModelHandler is null");
+                return;
+            }
+
+            if (UsingModel == null) return;
+
+            if (!ModelManager.FindModelByID(UsingModel.ModelID, out var bundleInfo, out var modelInfo))
+                return;
+
+            modelHandler.InitializeCustomModel(bundleInfo, modelInfo);
         }
     }
 }

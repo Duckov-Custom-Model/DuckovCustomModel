@@ -67,17 +67,19 @@ namespace DuckovCustomModel.Managers
             return false;
         }
 
-        public static void InitializeModelHandler(CharacterMainControl characterMainControl)
+        public static ModelHandler? InitializeModelHandler(CharacterMainControl characterMainControl)
         {
             if (characterMainControl == null)
             {
                 ModLogger.LogError("CharacterMainControl is null.");
-                return;
+                return null;
             }
 
-            var originalModelHandler = characterMainControl.GetComponent<ModelHandler>();
-            if (originalModelHandler == null)
-                characterMainControl.gameObject.AddComponent<ModelHandler>();
+            var modelHandler = characterMainControl.GetComponent<ModelHandler>();
+            if (modelHandler == null)
+                modelHandler = characterMainControl.gameObject.AddComponent<ModelHandler>();
+
+            return modelHandler;
         }
 
         private static void CheckDuplicateModelIDs()
