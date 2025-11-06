@@ -160,8 +160,11 @@ Animator Controller 可以使用以下参数：
 
 - `HandState`：手部状态
   - `0`：默认状态
+  - `1`：正常（normal）
+  - `2`：枪械（gun）
+  - `3`：近战武器（meleeWeapon）
+  - `4`：弓（bow）
   - `-1`：搬运状态
-  - 其他值：根据手持物品类型而定
 - `WeightState`：重量状态（仅在Raid地图中生效）
   - `0`：轻量（WeightRate ≤ 0.25）
   - `1`：正常（0.25 < WeightRate ≤ 0.75）
