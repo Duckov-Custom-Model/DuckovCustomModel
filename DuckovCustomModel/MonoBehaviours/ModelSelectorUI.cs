@@ -156,12 +156,10 @@ namespace DuckovCustomModel.MonoBehaviours
             BuildPanel();
             RefreshModelList();
 
-            if (!wasActive)
-            {
-                if (_panelRoot != null) _panelRoot.SetActive(false);
-                if (_overlay != null) _overlay.SetActive(false);
-                _uiActive = false;
-            }
+            if (wasActive) return;
+            if (_panelRoot != null) _panelRoot.SetActive(false);
+            if (_overlay != null) _overlay.SetActive(false);
+            _uiActive = false;
         }
 
         private void OnModelListRefreshStarted()

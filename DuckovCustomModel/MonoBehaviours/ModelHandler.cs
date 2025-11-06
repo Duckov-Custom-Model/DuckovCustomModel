@@ -23,12 +23,58 @@ namespace DuckovCustomModel.MonoBehaviours
         public Movement? OriginalMovement { get; private set; }
         public bool IsHiddenOriginalModel { get; private set; }
 
+        public bool IsHiddenOriginalEquipment
+        {
+            get
+            {
+                if (OriginalCharacterModel == null) return false;
+                if (ModBehaviour.Instance == null) return false;
+                if (ModBehaviour.Instance.UIConfig == null) return false;
+                return ModBehaviour.Instance.UIConfig.HideOriginalEquipment
+                       && IsHiddenOriginalModel && CustomModelInstance != null;
+            }
+        }
+
+        public bool IsInitialized { get; private set; }
+
         public GameObject? CustomModelInstance { get; private set; }
         public Animator? CustomAnimator { get; private set; }
         public CustomAnimatorControl? CustomAnimatorControl { get; private set; }
 
+        private void LateUpdate()
+        {
+            if (OriginalCharacterModel == null) return;
+
+            var equipmentSockets = new[]
+            {
+                CharacterModelSocketUtils.GetHelmetSocket(OriginalCharacterModel),
+                CharacterModelSocketUtils.GetFaceSocket(OriginalCharacterModel),
+                CharacterModelSocketUtils.GetArmorSocket(OriginalCharacterModel),
+                CharacterModelSocketUtils.GetBackpackSocket(OriginalCharacterModel),
+            };
+
+
+            if (IsHiddenOriginalEquipment)
+                foreach (var socket in equipmentSockets)
+                {
+                    if (socket == null) continue;
+                    foreach (Transform child in socket)
+                        if (child.gameObject.activeSelf)
+                            child.gameObject.SetActive(false);
+                }
+            else
+                foreach (var socket in equipmentSockets)
+                {
+                    if (socket == null) continue;
+                    foreach (Transform child in socket)
+                        if (!child.gameObject.activeSelf)
+                            child.gameObject.SetActive(true);
+                }
+        }
+
         public void Initialize(CharacterMainControl characterMainControl)
         {
+            if (IsInitialized) return;
             CharacterMainControl = characterMainControl;
             if (CharacterMainControl == null)
             {
@@ -58,6 +104,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
             RecordOriginalModelSockets();
             ModLogger.Log("ModelHandler initialized successfully.");
+            IsInitialized = true;
         }
 
         public void RestoreOriginalModel()
@@ -77,8 +124,9 @@ namespace DuckovCustomModel.MonoBehaviours
 
             if (CustomModelInstance != null) CustomModelInstance.SetActive(false);
 
+            if (IsHiddenOriginalModel)
+                ModLogger.Log("Restored to original model.");
             IsHiddenOriginalModel = false;
-            ModLogger.Log("Restored to original model.");
         }
 
         public void ChangeToCustomModel()
@@ -101,8 +149,9 @@ namespace DuckovCustomModel.MonoBehaviours
             CustomModelInstance.SetActive(true);
             ChangeToCustomModelSockets();
 
+            if (!IsHiddenOriginalModel)
+                ModLogger.Log("Changed to custom model.");
             IsHiddenOriginalModel = true;
-            ModLogger.Log("Changed to custom model.");
         }
 
         public void InitializeCustomModel(ModelBundleInfo modelBundleInfo, ModelInfo modelInfo)
@@ -133,6 +182,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
             if (CustomModelInstance != null)
             {
+                RestoreOriginalModel();
                 Destroy(CustomModelInstance);
                 _customModelSockets.Clear();
             }
@@ -158,7 +208,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
             RecordCustomModelSockets();
 
-            ModLogger.Log("Custom model initialized successfully.");
+            ModLogger.Log($"Custom model initialized: {customModelPrefab.name}");
 
             if (IsHiddenOriginalModel)
                 ChangeToCustomModel();
@@ -214,7 +264,11 @@ namespace DuckovCustomModel.MonoBehaviours
             var originalSocket = socketField.GetValue(OriginalCharacterModel) as Transform;
             if (originalSocket == newSocket) return;
             var originalChildren = new List<Transform>();
-            if (originalSocket != null) originalChildren.AddRange(originalSocket.Cast<Transform>());
+            if (originalSocket != null)
+                // ReSharper disable once LoopCanBeConvertedToQuery
+                foreach (Transform child in originalSocket)
+                    if (child != null)
+                        originalChildren.Add(child);
             socketField.SetValue(OriginalCharacterModel, newSocket);
             foreach (var child in originalChildren)
             {

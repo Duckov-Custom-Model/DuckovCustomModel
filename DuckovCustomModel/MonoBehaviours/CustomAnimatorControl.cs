@@ -78,15 +78,9 @@ namespace DuckovCustomModel.MonoBehaviours
             UpdateAttackLayerWeight();
         }
 
-        private void OnDisable()
-        {
-            RestoreEquipmentVisibility();
-        }
-
         private void OnDestroy()
         {
             if (_characterModel != null) _characterModel.OnAttackOrShootEvent -= OnAttack;
-            RestoreEquipmentVisibility();
         }
 
         public void Initialize(ModelHandler modelHandler)
@@ -207,20 +201,6 @@ namespace DuckovCustomModel.MonoBehaviours
             var popTextSocket = CharacterModelSocketUtils.GetPopTextSocket(_characterModel);
             var havePopText = popTextSocket != null && popTextSocket.childCount > 0;
             _customAnimator.SetBool(AnimatorHavePopTextHash, havePopText);
-
-            var equipmentSockets = new[]
-            {
-                CharacterModelSocketUtils.GetHelmetSocket(_characterModel),
-                CharacterModelSocketUtils.GetFaceSocket(_characterModel),
-                CharacterModelSocketUtils.GetArmorSocket(_characterModel),
-                CharacterModelSocketUtils.GetBackpackSocket(_characterModel),
-            };
-            var visible = !hideOriginalEquipment;
-            foreach (var socket in equipmentSockets)
-            {
-                if (socket == null) continue;
-                foreach (Transform child in socket) child.gameObject.SetActive(visible);
-            }
         }
 
         private void UpdateEquipmentTypeID()
@@ -383,24 +363,6 @@ namespace DuckovCustomModel.MonoBehaviours
             FindMeleeAttackLayerIndex();
             if (_customAnimator != null)
                 _customAnimator.SetTrigger(AnimatorAttackHash);
-        }
-
-        private void RestoreEquipmentVisibility()
-        {
-            if (_characterModel == null) return;
-            var equipmentSockets = new[]
-            {
-                CharacterModelSocketUtils.GetHelmetSocket(_characterModel),
-                CharacterModelSocketUtils.GetFaceSocket(_characterModel),
-                CharacterModelSocketUtils.GetArmorSocket(_characterModel),
-                CharacterModelSocketUtils.GetBackpackSocket(_characterModel),
-            };
-
-            foreach (var socket in equipmentSockets)
-            {
-                if (socket == null) continue;
-                foreach (Transform child in socket) child.gameObject.SetActive(true);
-            }
         }
 
         #region Animator Parameter Hashes

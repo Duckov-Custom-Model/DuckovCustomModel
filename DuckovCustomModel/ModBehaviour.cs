@@ -38,6 +38,7 @@ namespace DuckovCustomModel
             if (!patched) ModLogger.LogError("Unable to apply Harmony patches, the mod may not function correctly.");
 
             LevelManager.OnLevelBeginInitializing += LevelManager_OnLevelBeginInitializing;
+            LevelManager.OnLevelInitialized += LevelManager_OnLevelInitialized;
             LevelManager.OnAfterLevelInitialized += LevelManager_OnAfterLevelInitialized;
 
             ModelManager.UpdateModelBundles();
@@ -57,6 +58,7 @@ namespace DuckovCustomModel
             if (!unpatched) ModLogger.LogError("Unable to remove Harmony patches, the mod may not unload correctly.");
 
             LevelManager.OnLevelBeginInitializing -= LevelManager_OnLevelBeginInitializing;
+            LevelManager.OnLevelInitialized -= LevelManager_OnLevelInitialized;
             LevelManager.OnAfterLevelInitialized -= LevelManager_OnAfterLevelInitialized;
 
             ModelListManager.CancelRefresh();
@@ -135,7 +137,7 @@ namespace DuckovCustomModel
             ModelListManager.RefreshModelList(priorityModelID);
         }
 
-        private void LevelManager_OnAfterLevelInitialized()
+        private void LevelManager_OnLevelInitialized()
         {
             var mainCharacterControl = LevelManager.Instance.MainCharacter;
             if (mainCharacterControl == null)
@@ -145,9 +147,16 @@ namespace DuckovCustomModel
             }
 
             var modelHandler = ModelManager.InitializeModelHandler(mainCharacterControl);
-            if (modelHandler == null)
+            if (modelHandler != null) return;
+            ModLogger.LogError("Unable to initialize ModelManager: ModelHandler is null");
+        }
+
+        private void LevelManager_OnAfterLevelInitialized()
+        {
+            var mainCharacterControl = LevelManager.Instance.MainCharacter;
+            if (mainCharacterControl == null)
             {
-                ModLogger.LogError("Unable to initialize ModelManager: ModelHandler is null");
+                ModLogger.LogError("Unable to change to custom model: MainCharacterControl is null");
                 return;
             }
 
@@ -157,6 +166,13 @@ namespace DuckovCustomModel
             if (!ModelManager.FindModelByID(UsingModel.ModelID, out var bundleInfo, out var modelInfo))
             {
                 ModLogger.LogError($"Unable to find model with ID: {UsingModel.ModelID}");
+                return;
+            }
+
+            var modelHandler = ModelManager.InitializeModelHandler(mainCharacterControl);
+            if (modelHandler == null)
+            {
+                ModLogger.LogError("Unable to change to custom model: ModelHandler is null");
                 return;
             }
 
