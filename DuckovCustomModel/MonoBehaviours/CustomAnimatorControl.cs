@@ -1,0 +1,241 @@
+﻿using System.Reflection;
+using HarmonyLib;
+using UnityEngine;
+
+namespace DuckovCustomModel.MonoBehaviours
+{
+    public class CustomAnimatorControl : MonoBehaviour
+    {
+        private static readonly FieldInfo HasAnimationIfDashCanControlField =
+            AccessTools.Field(typeof(CharacterAnimationControl), "hasAnimationIfDashCanControl");
+
+        private bool _attacking;
+        private int _attackLayerIndex = -1;
+        private float _attackTimer;
+        private float _attackWeight;
+        private CharacterMainControl? _characterMainControl;
+        private CharacterModel? _characterModel;
+        private Animator? _customAnimator;
+        private ItemAgent_Gun? _gunAgent;
+        private DuckovItemAgent? _holdAgent;
+        private bool _initialized;
+        private ModelHandler? _modelHandler;
+
+        private bool HasAnimationIfDashCanControl
+        {
+            get
+            {
+                if (_modelHandler == null)
+                    return false;
+                if (_modelHandler.OriginalAnimationControl != null)
+                    return (bool)HasAnimationIfDashCanControlField.GetValue(_modelHandler.OriginalAnimationControl)!;
+                return false;
+            }
+        }
+
+        private AnimationCurve? AttackLayerWeightCurve
+        {
+            get
+            {
+                if (_modelHandler == null)
+                    return null;
+                if (_modelHandler.OriginalAnimationControl != null)
+                    return _modelHandler.OriginalAnimationControl.attackLayerWeightCurve;
+                return _modelHandler.OriginalMagicBlendAnimationControl != null
+                    ? _modelHandler.OriginalMagicBlendAnimationControl.attackLayerWeightCurve
+                    : null;
+            }
+        }
+
+        private float AttackTime
+        {
+            get
+            {
+                if (_modelHandler == null)
+                    return 0.3f;
+                if (_modelHandler.OriginalAnimationControl != null)
+                    return _modelHandler.OriginalAnimationControl.attackTime;
+                return _modelHandler.OriginalMagicBlendAnimationControl != null
+                    ? _modelHandler.OriginalMagicBlendAnimationControl.attackTime
+                    : 0.3f;
+            }
+        }
+
+
+        private void Update()
+        {
+            if (!_initialized) return;
+            if (_customAnimator == null || _characterMainControl == null)
+                return;
+
+            UpdateDeadState();
+            UpdateMovement();
+            UpdateHandState();
+            UpdateGunState();
+            UpdateAttackLayerWeight();
+        }
+
+        private void OnDestroy()
+        {
+            if (_characterModel != null) _characterModel.OnAttackOrShootEvent -= OnAttack;
+        }
+
+        public void Initialize(ModelHandler modelHandler)
+        {
+            _modelHandler = modelHandler;
+            if (_modelHandler == null) return;
+
+            _characterMainControl = modelHandler.CharacterMainControl;
+            _characterModel = modelHandler.OriginalCharacterModel;
+            if (_characterMainControl == null || _characterModel == null)
+                return;
+
+            _characterModel.OnAttackOrShootEvent += OnAttack;
+
+            _customAnimator = modelHandler.CustomAnimator;
+            FindMeleeAttackLayerIndex();
+
+            _initialized = true;
+        }
+
+        public void UpdateDeadState()
+        {
+            if (!_initialized) return;
+            if (_customAnimator == null || _characterMainControl == null)
+                return;
+
+            if (_characterMainControl.Health == null)
+                return;
+
+            var isDead = _characterMainControl.Health.IsDead;
+            _customAnimator.SetBool(AnimatorDieHash, isDead);
+        }
+
+        private void UpdateMovement()
+        {
+            if (!_initialized) return;
+            if (_customAnimator == null || _characterMainControl == null)
+                return;
+
+            _customAnimator.SetFloat(AnimatorMoveSpeedHash, _characterMainControl.AnimationMoveSpeedValue);
+
+            var moveDirectionValue = _characterMainControl.AnimationLocalMoveDirectionValue;
+            _customAnimator.SetFloat(AnimatorMoveDirXHash, moveDirectionValue.x);
+            _customAnimator.SetFloat(AnimatorMoveDirYHash, moveDirectionValue.y);
+
+            _customAnimator.SetBool(AnimatorGroundedHash, _characterMainControl.IsOnGround);
+
+            var dashing = _characterMainControl.Dashing;
+            if (dashing && !HasAnimationIfDashCanControl && _characterMainControl.DashCanControl)
+                dashing = false;
+            _customAnimator.SetBool(AnimatorDashingHash, dashing);
+        }
+
+        private void UpdateHandState()
+        {
+            if (!_initialized) return;
+            if (_customAnimator == null || _characterMainControl == null)
+                return;
+
+            var handState = 0;
+            var rightHandOut = true;
+
+            if (_holdAgent == null || !_holdAgent.isActiveAndEnabled)
+                _holdAgent = _characterMainControl.CurrentHoldItemAgent;
+            else
+                handState = (int)_holdAgent.handAnimationType;
+            if (_characterMainControl.carryAction.Running)
+                handState = -1;
+
+            if (_holdAgent == null || !_holdAgent.gameObject.activeSelf || _characterMainControl.reloadAction.Running)
+                rightHandOut = false;
+
+            _customAnimator.SetInteger(AnimatorHandStateHash, handState);
+            _customAnimator.SetBool(AnimatorRightHandOutHash, rightHandOut);
+        }
+
+        private void UpdateGunState()
+        {
+            if (!_initialized) return;
+            if (_customAnimator == null || _characterMainControl == null)
+                return;
+
+            if (_holdAgent != null && _gunAgent == null)
+                _gunAgent = _holdAgent as ItemAgent_Gun;
+
+            var isGunReady = false;
+            var isReloading = false;
+            if (_gunAgent != null)
+            {
+                isReloading = _gunAgent.IsReloading();
+                isGunReady = _gunAgent.BulletCount > 0 && !isReloading;
+            }
+
+            _customAnimator.SetBool(AnimatorReloadingHash, isReloading);
+            _customAnimator.SetBool(AnimatorGunReadyHash, isGunReady);
+        }
+
+        private void UpdateAttackLayerWeight()
+        {
+            if (!_attacking)
+            {
+                if (_attackWeight <= 0) return;
+                _attackWeight = 0;
+                SetMeleeAttackLayerWeight(_attackWeight);
+                return;
+            }
+
+            _attackTimer += Time.deltaTime;
+            var attackTime = AttackTime;
+            _attackWeight = AttackLayerWeightCurve?.Evaluate(_attackTimer / attackTime) ?? 0.0f;
+            if (_attackTimer >= attackTime)
+            {
+                _attacking = false;
+                _attackWeight = 0.0f;
+            }
+
+            SetMeleeAttackLayerWeight(_attackWeight);
+        }
+
+        private void FindMeleeAttackLayerIndex()
+        {
+            if (_customAnimator == null) return;
+            if (_attackLayerIndex < 0)
+                _attackLayerIndex = _customAnimator.GetLayerIndex("MeleeAttack");
+            if (_attackLayerIndex >= 0)
+                _customAnimator.SetLayerWeight(_attackLayerIndex, 0);
+        }
+
+        private void SetMeleeAttackLayerWeight(float weight)
+        {
+            if (_attackLayerIndex < 0 || _customAnimator == null)
+                return;
+            _customAnimator.SetLayerWeight(_attackLayerIndex, weight);
+        }
+
+        private void OnAttack()
+        {
+            _attacking = true;
+            _attackTimer = 0.0f;
+            FindMeleeAttackLayerIndex();
+            if (_customAnimator != null)
+                _customAnimator.SetTrigger(AnimatorAttackHash);
+        }
+
+        #region Animator Parameter Hashes
+
+        private static readonly int AnimatorGroundedHash = Animator.StringToHash("Grounded");
+        private static readonly int AnimatorDieHash = Animator.StringToHash("Die");
+        private static readonly int AnimatorMoveSpeedHash = Animator.StringToHash("MoveSpeed");
+        private static readonly int AnimatorMoveDirXHash = Animator.StringToHash("MoveDirX");
+        private static readonly int AnimatorMoveDirYHash = Animator.StringToHash("MoveDirY");
+        private static readonly int AnimatorDashingHash = Animator.StringToHash("Dashing");
+        private static readonly int AnimatorAttackHash = Animator.StringToHash("Attack");
+        private static readonly int AnimatorHandStateHash = Animator.StringToHash("HandState");
+        private static readonly int AnimatorGunReadyHash = Animator.StringToHash("GunReady");
+        private static readonly int AnimatorReloadingHash = Animator.StringToHash("Reloading");
+        private static readonly int AnimatorRightHandOutHash = Animator.StringToHash("RightHandOut");
+
+        #endregion
+    }
+}

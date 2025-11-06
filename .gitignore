@@ -1,0 +1,17 @@
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
+/.idea/.idea.DuckovCustomModel/.idea/.gitignore
+/.idea/.idea.DuckovCustomModel/.idea/copilot.data.migration.agent.xml
+/.idea/.idea.DuckovCustomModel/.idea/copilot.data.migration.ask.xml
+/.idea/.idea.DuckovCustomModel/.idea/copilot.data.migration.ask2agent.xml
+/.idea/.idea.DuckovCustomModel/.idea/copilot.data.migration.edit.xml
+/.idea/.idea.DuckovCustomModel/.idea/encodings.xml
+/.idea/.idea.DuckovCustomModel/.idea/indexLayout.xml
+/.idea/.idea.DuckovCustomModel/.idea/vcs.xml
+/.idea/.idea.DuckovModelReplaceManager/.idea/workspace.xml
+/.idea/.idea.DuckovModelReplaceTemplate/.idea/workspace.xml
+/DuckovCustomModel.sln.DotSettings.user
+/.idea/.idea.DuckovCustomModel/.idea/git_toolbox_prj.xml
