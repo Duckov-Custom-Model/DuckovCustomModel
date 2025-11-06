@@ -100,12 +100,7 @@ UI 界面相关配置。
 
 ## 动画器配置
 
-自定义模型 Prefab 必须包含 `Animator` 组件，并配置相应的 Animator Controller。
-
-### 必需组件
-
-模型 Prefab 需要包含：
-- **Animator 组件**：用于控制动画播放
+自定义模型 Prefab 需要包含 `Animator` 组件，并配置相应的 Animator Controller。
 
 ### Animator Controller 参数
 
