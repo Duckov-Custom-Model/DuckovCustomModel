@@ -10,6 +10,9 @@
   "NoPreview": "无预览",
   "Author": "作者",
   "Version": "版本",
-  "NoModel": "不使用模型（恢复原始模型）"
+  "NoModel": "不使用模型（恢复原始模型）",
+  "TargetType": "目标类型:",
+  "TargetCharacter": "角色",
+  "TargetPet": "宠物"
 }
 

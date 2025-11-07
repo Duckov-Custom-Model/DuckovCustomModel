@@ -23,6 +23,7 @@ namespace DuckovCustomModel.MonoBehaviours
         private bool _cameraLockDisabled;
 
         private CharacterInputControl? _charInput;
+        private ModelTarget _currentTargetType = ModelTarget.Character;
         private bool _isInitialized;
         private bool _isRefreshing;
         private bool _isWaitingForKeyInput;
@@ -33,6 +34,7 @@ namespace DuckovCustomModel.MonoBehaviours
         private ScrollRect? _modelScrollRect;
         private GameObject? _overlay;
         private GameObject? _panelRoot;
+        private ModelHandler? _petModelHandler;
         private PlayerInput? _playerInput;
         private Button? _refreshButton;
         private Text? _refreshButtonText;
@@ -41,6 +43,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private InputField? _searchField;
         private string _searchText = string.Empty;
+        private Dropdown? _targetTypeDropdown;
         private bool _uiActive;
 
         private UIConfig? _uiConfig;
@@ -264,6 +267,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
             BuildVersionLabel();
             BuildTitle();
+            BuildTargetTypeSelector();
             BuildSearchField();
             BuildModelList();
             BuildSettings();
@@ -312,6 +316,134 @@ namespace DuckovCustomModel.MonoBehaviours
             titleRect.sizeDelta = new(0, 40);
         }
 
+        private void BuildTargetTypeSelector()
+        {
+            if (_panelRoot == null) return;
+
+            var targetTypeLabel = new GameObject("TargetTypeLabel", typeof(Text));
+            targetTypeLabel.transform.SetParent(_panelRoot.transform, false);
+            var labelText = targetTypeLabel.GetComponent<Text>();
+            labelText.text = ModelSelectorUILocalization.TargetType;
+            labelText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            labelText.fontSize = 14;
+            labelText.color = Color.white;
+            labelText.alignment = TextAnchor.MiddleLeft;
+            var labelRect = targetTypeLabel.GetComponent<RectTransform>();
+            labelRect.anchorMin = new(0, 1);
+            labelRect.anchorMax = new(0, 1);
+            labelRect.pivot = new(0, 1);
+            labelRect.anchoredPosition = new(20, -70);
+            labelRect.sizeDelta = new(100, 30);
+
+            var dropdownObj = new GameObject("TargetTypeDropdown", typeof(Image), typeof(Dropdown));
+            dropdownObj.transform.SetParent(_panelRoot.transform, false);
+            var dropdownImage = dropdownObj.GetComponent<Image>();
+            dropdownImage.color = new(0.1f, 0.12f, 0.15f, 0.9f);
+            var dropdownRect = dropdownObj.GetComponent<RectTransform>();
+            dropdownRect.anchorMin = new(0, 1);
+            dropdownRect.anchorMax = new(0, 1);
+            dropdownRect.pivot = new(0, 1);
+            dropdownRect.anchoredPosition = new(130, -70);
+            dropdownRect.sizeDelta = new(150, 30);
+
+            _targetTypeDropdown = dropdownObj.GetComponent<Dropdown>();
+            _targetTypeDropdown.options.Clear();
+            _targetTypeDropdown.options.Add(new(ModelSelectorUILocalization.TargetCharacter));
+            _targetTypeDropdown.options.Add(new(ModelSelectorUILocalization.TargetPet));
+            _targetTypeDropdown.value = _currentTargetType == ModelTarget.Character ? 0 : 1;
+            _targetTypeDropdown.onValueChanged.AddListener(OnTargetTypeChanged);
+
+            var labelObj = new GameObject("Label", typeof(Text));
+            labelObj.transform.SetParent(dropdownObj.transform, false);
+            var labelTextComponent = labelObj.GetComponent<Text>();
+            labelTextComponent.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            labelTextComponent.fontSize = 14;
+            labelTextComponent.color = Color.white;
+            labelTextComponent.alignment = TextAnchor.MiddleLeft;
+            var labelTextRect = labelObj.GetComponent<RectTransform>();
+            labelTextRect.anchorMin = new(0, 0);
+            labelTextRect.anchorMax = new(1, 1);
+            labelTextRect.offsetMin = new(10, 0);
+            labelTextRect.offsetMax = new(-25, 0);
+            _targetTypeDropdown.captionText = labelTextComponent;
+
+            var arrowObj = new GameObject("Arrow", typeof(Image));
+            arrowObj.transform.SetParent(dropdownObj.transform, false);
+            var arrowImage = arrowObj.GetComponent<Image>();
+            arrowImage.color = Color.white;
+            var arrowRect = arrowObj.GetComponent<RectTransform>();
+            arrowRect.anchorMin = new(1, 0.5f);
+            arrowRect.anchorMax = new(1, 0.5f);
+            arrowRect.pivot = new(1, 0.5f);
+            arrowRect.anchoredPosition = new(-10, 0);
+            arrowRect.sizeDelta = new(20, 20);
+            _targetTypeDropdown.targetGraphic = arrowImage;
+
+            var templateObj = new GameObject("Template", typeof(RectTransform), typeof(Image), typeof(ScrollRect));
+            templateObj.transform.SetParent(dropdownObj.transform, false);
+            var templateImage = templateObj.GetComponent<Image>();
+            templateImage.color = new(0.1f, 0.12f, 0.15f, 0.95f);
+            var templateRect = templateObj.GetComponent<RectTransform>();
+            templateRect.anchorMin = new(0, 0);
+            templateRect.anchorMax = new(1, 0);
+            templateRect.pivot = new(0.5f, 1);
+            templateRect.anchoredPosition = new(0, 2);
+            templateRect.sizeDelta = new(0, 60);
+            templateObj.SetActive(false);
+            _targetTypeDropdown.template = templateRect;
+
+            var viewportObj = new GameObject("Viewport", typeof(RectTransform), typeof(Mask), typeof(Image));
+            viewportObj.transform.SetParent(templateObj.transform, false);
+            var viewportRect = viewportObj.GetComponent<RectTransform>();
+            viewportRect.anchorMin = Vector2.zero;
+            viewportRect.anchorMax = Vector2.one;
+            viewportRect.sizeDelta = Vector2.zero;
+            var viewportMask = viewportObj.GetComponent<Mask>();
+            viewportMask.showMaskGraphic = false;
+
+            var contentObj = new GameObject("Content", typeof(RectTransform), typeof(ToggleGroup));
+            contentObj.transform.SetParent(viewportObj.transform, false);
+            var contentRect = contentObj.GetComponent<RectTransform>();
+            contentRect.anchorMin = new(0, 1);
+            contentRect.anchorMax = new(1, 1);
+            contentRect.pivot = new(0.5f, 1);
+            contentRect.anchoredPosition = Vector2.zero;
+            contentRect.sizeDelta = new(0, 30);
+
+            var itemObj = new GameObject("Item", typeof(RectTransform), typeof(Toggle), typeof(Image));
+            itemObj.transform.SetParent(contentObj.transform, false);
+            var itemRect = itemObj.GetComponent<RectTransform>();
+            itemRect.anchorMin = new(0, 0.5f);
+            itemRect.anchorMax = new(1, 0.5f);
+            itemRect.sizeDelta = new(0, 30);
+
+            var itemLabelObj = new GameObject("Item Label", typeof(Text));
+            itemLabelObj.transform.SetParent(itemObj.transform, false);
+            var itemLabelText = itemLabelObj.GetComponent<Text>();
+            itemLabelText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            itemLabelText.fontSize = 14;
+            itemLabelText.color = Color.white;
+            itemLabelText.alignment = TextAnchor.MiddleLeft;
+            var itemLabelRect = itemLabelObj.GetComponent<RectTransform>();
+            itemLabelRect.anchorMin = Vector2.zero;
+            itemLabelRect.anchorMax = Vector2.one;
+            itemLabelRect.offsetMin = new(10, 0);
+            itemLabelRect.offsetMax = new(-10, 0);
+
+            var toggle = itemObj.GetComponent<Toggle>();
+            toggle.targetGraphic = itemObj.GetComponent<Image>();
+            toggle.graphic = itemLabelText;
+
+            _targetTypeDropdown.itemText = itemLabelText;
+        }
+
+        private void OnTargetTypeChanged(int value)
+        {
+            _currentTargetType = value == 0 ? ModelTarget.Character : ModelTarget.Pet;
+            UpdateModelHandler();
+            RefreshModelList();
+        }
+
         private void BuildSearchField()
         {
             if (_panelRoot == null) return;
@@ -322,7 +454,7 @@ namespace DuckovCustomModel.MonoBehaviours
             searchRect.anchorMin = new(0, 1);
             searchRect.anchorMax = new(1, 1);
             searchRect.pivot = new(0.5f, 1);
-            searchRect.anchoredPosition = new(0, -70);
+            searchRect.anchoredPosition = new(0, -110);
             searchRect.sizeDelta = new(-40, 32);
 
             _searchField.onValueChanged.AddListener(OnSearchChanged);
@@ -339,7 +471,7 @@ namespace DuckovCustomModel.MonoBehaviours
             scrollRect.anchorMin = new(0, 0);
             scrollRect.anchorMax = new(1, 1);
             scrollRect.offsetMin = new(20, 100);
-            scrollRect.offsetMax = new(-20, -120);
+            scrollRect.offsetMax = new(-20, -140);
 
             var scrollImage = scrollView.GetComponent<Image>();
             scrollImage.color = new(0.05f, 0.08f, 0.12f, 0.8f);
@@ -651,11 +783,14 @@ namespace DuckovCustomModel.MonoBehaviours
         {
             if (_isRefreshing) return;
 
-            string? priorityModelID = null;
-            if (_usingModel != null && !string.IsNullOrEmpty(_usingModel.ModelID))
-                priorityModelID = _usingModel.ModelID;
+            var priorityModelIDs = new List<string>();
+            if (_usingModel != null)
+            {
+                if (!string.IsNullOrEmpty(_usingModel.ModelID)) priorityModelIDs.Add(_usingModel.ModelID);
+                if (!string.IsNullOrEmpty(_usingModel.PetModelID)) priorityModelIDs.Add(_usingModel.PetModelID);
+            }
 
-            ModelListManager.RefreshModelList(priorityModelID);
+            ModelListManager.RefreshModelList(priorityModelIDs);
         }
 
         public void RefreshModelList()
@@ -687,10 +822,6 @@ namespace DuckovCustomModel.MonoBehaviours
             _isRefreshing = true;
             UpdateRefreshButtonState(true);
 
-            string? previousModelID = null;
-            if (_usingModel != null && !string.IsNullOrEmpty(_usingModel.ModelID))
-                previousModelID = _usingModel.ModelID;
-
             try
             {
                 foreach (Transform child in _modelListContent.transform) Destroy(child.gameObject);
@@ -705,7 +836,14 @@ namespace DuckovCustomModel.MonoBehaviours
                                                                             .Contains(searchLower)
                                                                         || m.ModelID.ToLowerInvariant()
                                                                             .Contains(searchLower))))
-                    _filteredModelBundles.Add(bundle);
+                {
+                    var compatibleModels = bundle.Models.Where(m => m.CompatibleWithType(_currentTargetType)).ToArray();
+                    if (compatibleModels.Length > 0)
+                    {
+                        var filteredBundle = bundle.CreateFilteredCopy(compatibleModels);
+                        _filteredModelBundles.Add(filteredBundle);
+                    }
+                }
 
                 BuildNoneModelButton();
 
@@ -725,7 +863,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
                 await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
 
-                await ApplyModelAfterRefresh(previousModelID, cancellationToken);
+                await ApplyModelAfterRefresh(cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -742,31 +880,74 @@ namespace DuckovCustomModel.MonoBehaviours
         }
 
 
-        private async UniTask ApplyModelAfterRefresh(string? previousModelID, CancellationToken cancellationToken)
+        private async UniTask ApplyModelAfterRefresh(CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(previousModelID) || _modelHandler == null) return;
+            if (_usingModel == null) return;
 
             try
             {
                 await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
 
-                if (ModelManager.FindModelByID(previousModelID, out var bundleInfo, out var modelInfo))
+                UpdateModelHandler();
+
+                if (!string.IsNullOrEmpty(_usingModel.ModelID) && _modelHandler != null)
                 {
-                    _modelHandler.InitializeCustomModel(bundleInfo, modelInfo);
-                    _modelHandler.ChangeToCustomModel();
-                    ModLogger.Log($"Auto-reapplied model after refresh: {modelInfo.Name} ({previousModelID})");
-                }
-                else
-                {
-                    ModLogger.LogWarning(
-                        $"Previously used model '{previousModelID}' not found after refresh. Restoring to original model.");
-                    if (_usingModel != null)
+                    if (ModelManager.FindModelByID(_usingModel.ModelID, out var bundleInfo, out var modelInfo))
                     {
+                        if (modelInfo.CompatibleWithType(ModelTarget.Character))
+                        {
+                            _modelHandler.InitializeCustomModel(bundleInfo, modelInfo);
+                            _modelHandler.ChangeToCustomModel();
+                            ModLogger.Log(
+                                $"Auto-reapplied Character model after refresh: {modelInfo.Name} ({_usingModel.ModelID})");
+                        }
+                        else
+                        {
+                            ModLogger.LogWarning(
+                                $"Character model '{_usingModel.ModelID}' is not compatible with Character. Restoring to original model.");
+                            _usingModel.ModelID = string.Empty;
+                            ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
+                            _modelHandler.RestoreOriginalModel();
+                        }
+                    }
+                    else
+                    {
+                        ModLogger.LogWarning(
+                            $"Previously used Character model '{_usingModel.ModelID}' not found after refresh. Restoring to original model.");
                         _usingModel.ModelID = string.Empty;
                         ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
+                        _modelHandler.RestoreOriginalModel();
                     }
+                }
 
-                    _modelHandler.RestoreOriginalModel();
+                if (!string.IsNullOrEmpty(_usingModel.PetModelID) && _petModelHandler != null)
+                {
+                    if (ModelManager.FindModelByID(_usingModel.PetModelID, out var bundleInfo, out var modelInfo))
+                    {
+                        if (modelInfo.CompatibleWithType(ModelTarget.Pet))
+                        {
+                            _petModelHandler.InitializeCustomModel(bundleInfo, modelInfo);
+                            _petModelHandler.ChangeToCustomModel();
+                            ModLogger.Log(
+                                $"Auto-reapplied Pet model after refresh: {modelInfo.Name} ({_usingModel.PetModelID})");
+                        }
+                        else
+                        {
+                            ModLogger.LogWarning(
+                                $"Pet model '{_usingModel.PetModelID}' is not compatible with Pet. Restoring to original model.");
+                            _usingModel.PetModelID = string.Empty;
+                            ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
+                            _petModelHandler.RestoreOriginalModel();
+                        }
+                    }
+                    else
+                    {
+                        ModLogger.LogWarning(
+                            $"Previously used Pet model '{_usingModel.PetModelID}' not found after refresh. Restoring to original model.");
+                        _usingModel.PetModelID = string.Empty;
+                        ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
+                        _petModelHandler.RestoreOriginalModel();
+                    }
                 }
             }
             catch (OperationCanceledException)
@@ -780,6 +961,16 @@ namespace DuckovCustomModel.MonoBehaviours
                     try
                     {
                         _modelHandler.RestoreOriginalModel();
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
+
+                if (_petModelHandler != null)
+                    try
+                    {
+                        _petModelHandler.RestoreOriginalModel();
                     }
                     catch
                     {
@@ -1032,36 +1223,82 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void OnModelSelected(ModelBundleInfo bundle, ModelInfo model)
         {
-            if (_usingModel == null || _modelHandler == null)
+            if (_usingModel == null)
             {
-                ModLogger.LogError("UsingModel or ModelHandler is null.");
+                ModLogger.LogError("UsingModel is null.");
                 return;
             }
 
-            _usingModel.ModelID = model.ModelID;
+            ModelHandler? targetHandler = null;
+            if (_currentTargetType == ModelTarget.Character)
+            {
+                if (_modelHandler == null)
+                {
+                    ModLogger.LogError("ModelHandler for Character is null.");
+                    return;
+                }
+
+                targetHandler = _modelHandler;
+                _usingModel.ModelID = model.ModelID;
+            }
+            else
+            {
+                if (_petModelHandler == null)
+                {
+                    ModLogger.LogError("ModelHandler for Pet is null.");
+                    return;
+                }
+
+                targetHandler = _petModelHandler;
+                _usingModel.PetModelID = model.ModelID;
+            }
+
             ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
 
-            _modelHandler.InitializeCustomModel(bundle, model);
-            _modelHandler.ChangeToCustomModel();
+            targetHandler.InitializeCustomModel(bundle, model);
+            targetHandler.ChangeToCustomModel();
 
-            ModLogger.Log($"Selected model: {model.Name} ({model.ModelID})");
+            ModLogger.Log($"Selected model for {_currentTargetType}: {model.Name} ({model.ModelID})");
             HidePanel();
         }
 
         private void OnNoneModelSelected()
         {
-            if (_usingModel == null || _modelHandler == null)
+            if (_usingModel == null)
             {
-                ModLogger.LogError("UsingModel or ModelHandler is null.");
+                ModLogger.LogError("UsingModel is null.");
                 return;
             }
 
-            _usingModel.ModelID = string.Empty;
+            ModelHandler? targetHandler = null;
+            if (_currentTargetType == ModelTarget.Character)
+            {
+                if (_modelHandler == null)
+                {
+                    ModLogger.LogError("ModelHandler for Character is null.");
+                    return;
+                }
+
+                targetHandler = _modelHandler;
+                _usingModel.ModelID = string.Empty;
+            }
+            else
+            {
+                if (_petModelHandler == null)
+                {
+                    ModLogger.LogError("ModelHandler for Pet is null.");
+                    return;
+                }
+
+                targetHandler = _petModelHandler;
+                _usingModel.PetModelID = string.Empty;
+            }
+
             ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
 
-            _modelHandler.RestoreOriginalModel();
+            targetHandler.RestoreOriginalModel();
 
-            ModLogger.Log("Restored to original model.");
+            ModLogger.Log($"Restored to original model for {_currentTargetType}.");
             HidePanel();
         }
 
@@ -1226,29 +1463,82 @@ namespace DuckovCustomModel.MonoBehaviours
 
                 UpdateModelHandler();
 
-                if (_usingModel != null && !string.IsNullOrEmpty(_usingModel.ModelID) && _modelHandler != null)
+                if (_usingModel == null) return;
+
+                if (!string.IsNullOrEmpty(_usingModel.ModelID) && _modelHandler != null)
                 {
                     if (ModelManager.FindModelByID(_usingModel.ModelID, out var bundleInfo, out var modelInfo))
                     {
-                        try
+                        if (modelInfo.CompatibleWithType(ModelTarget.Character))
                         {
-                            _modelHandler.InitializeCustomModel(bundleInfo, modelInfo);
-                            _modelHandler.ChangeToCustomModel();
-                            ModLogger.Log(
-                                $"Model reapplied after window close: {modelInfo.Name} ({_usingModel.ModelID})");
+                            try
+                            {
+                                _modelHandler.InitializeCustomModel(bundleInfo, modelInfo);
+                                _modelHandler.ChangeToCustomModel();
+                                ModLogger.Log(
+                                    $"Character model reapplied after window close: {modelInfo.Name} ({_usingModel.ModelID})");
+                            }
+                            catch (Exception ex)
+                            {
+                                ModLogger.LogError(
+                                    $"Failed to reapply Character model after window close: {ex.Message}");
+                                _modelHandler.RestoreOriginalModel();
+                            }
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            ModLogger.LogError($"Failed to reapply model after window close: {ex.Message}");
+                            ModLogger.LogWarning(
+                                $"Character model '{_usingModel.ModelID}' is not compatible with Character. Restoring to original model.");
+                            _usingModel.ModelID = string.Empty;
+                            ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
                             _modelHandler.RestoreOriginalModel();
                         }
                     }
                     else
                     {
-                        ModLogger.LogWarning($"Model '{_usingModel.ModelID}' not found. Restoring to original model.");
+                        ModLogger.LogWarning(
+                            $"Character model '{_usingModel.ModelID}' not found. Restoring to original model.");
                         _usingModel.ModelID = string.Empty;
                         ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
                         _modelHandler.RestoreOriginalModel();
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(_usingModel.PetModelID) && _petModelHandler != null)
+                {
+                    if (ModelManager.FindModelByID(_usingModel.PetModelID, out var bundleInfo, out var modelInfo))
+                    {
+                        if (modelInfo.CompatibleWithType(ModelTarget.Pet))
+                        {
+                            try
+                            {
+                                _petModelHandler.InitializeCustomModel(bundleInfo, modelInfo);
+                                _petModelHandler.ChangeToCustomModel();
+                                ModLogger.Log(
+                                    $"Pet model reapplied after window close: {modelInfo.Name} ({_usingModel.PetModelID})");
+                            }
+                            catch (Exception ex)
+                            {
+                                ModLogger.LogError($"Failed to reapply Pet model after window close: {ex.Message}");
+                                _petModelHandler.RestoreOriginalModel();
+                            }
+                        }
+                        else
+                        {
+                            ModLogger.LogWarning(
+                                $"Pet model '{_usingModel.PetModelID}' is not compatible with Pet. Restoring to original model.");
+                            _usingModel.PetModelID = string.Empty;
+                            ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
+                            _petModelHandler.RestoreOriginalModel();
+                        }
+                    }
+                    else
+                    {
+                        ModLogger.LogWarning(
+                            $"Pet model '{_usingModel.PetModelID}' not found. Restoring to original model.");
+                        _usingModel.PetModelID = string.Empty;
+                        ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
+                        _petModelHandler.RestoreOriginalModel();
                     }
                 }
             }
@@ -1270,10 +1560,22 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void UpdateModelHandler()
         {
-            if (CharacterMainControl.Main == null) return;
+            if (LevelManager.Instance == null) return;
 
-            _modelHandler = CharacterMainControl.Main.GetComponent<ModelHandler>();
-            if (_modelHandler == null) _modelHandler = ModelManager.InitializeModelHandler(CharacterMainControl.Main);
+            var mainCharacterControl = LevelManager.Instance.MainCharacter;
+            if (mainCharacterControl != null)
+            {
+                _modelHandler = mainCharacterControl.GetComponent<ModelHandler>();
+                if (_modelHandler == null) _modelHandler = ModelManager.InitializeModelHandler(mainCharacterControl);
+            }
+
+            var petCharacterControl = LevelManager.Instance.PetCharacter;
+            if (petCharacterControl != null)
+            {
+                _petModelHandler = petCharacterControl.GetComponent<ModelHandler>();
+                if (_petModelHandler == null)
+                    _petModelHandler = ModelManager.InitializeModelHandler(petCharacterControl);
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Data;
@@ -45,9 +46,14 @@ namespace DuckovCustomModel
 
             ModelManager.UpdateModelBundles();
 
-            string? priorityModelID = null;
-            if (UsingModel != null && !string.IsNullOrEmpty(UsingModel.ModelID)) priorityModelID = UsingModel.ModelID;
-            ModelListManager.RefreshModelList(priorityModelID);
+            var priorityModelIDs = new List<string>();
+            if (UsingModel != null)
+            {
+                if (!string.IsNullOrEmpty(UsingModel.ModelID)) priorityModelIDs.Add(UsingModel.ModelID);
+                if (!string.IsNullOrEmpty(UsingModel.PetModelID)) priorityModelIDs.Add(UsingModel.PetModelID);
+            }
+
+            ModelListManager.RefreshModelList(priorityModelIDs);
 
             InitializeModelSelectorUI();
         }
@@ -133,10 +139,14 @@ namespace DuckovCustomModel
 
         private void LevelManager_OnLevelBeginInitializing()
         {
-            string? priorityModelID = null;
-            if (UsingModel != null && !string.IsNullOrEmpty(UsingModel.ModelID)) priorityModelID = UsingModel.ModelID;
+            var priorityModelIDs = new List<string>();
+            if (UsingModel != null)
+            {
+                if (!string.IsNullOrEmpty(UsingModel.ModelID)) priorityModelIDs.Add(UsingModel.ModelID);
+                if (!string.IsNullOrEmpty(UsingModel.PetModelID)) priorityModelIDs.Add(UsingModel.PetModelID);
+            }
 
-            ModelListManager.RefreshModelList(priorityModelID);
+            ModelListManager.RefreshModelList(priorityModelIDs);
         }
 
         private void LevelManager_OnLevelInitialized()
@@ -154,7 +164,7 @@ namespace DuckovCustomModel
             InitializeModelToCharacter(mainCharacterControl, "MainCharacter",
                 UsingModel?.ModelID ?? string.Empty, ModelTarget.Character);
             InitializeModelToCharacter(petCharacterControl, "PetCharacter",
-                UsingModel?.ModelID ?? string.Empty, ModelTarget.Pet);
+                UsingModel?.PetModelID ?? string.Empty, ModelTarget.Pet);
         }
 
         private void InitializeModelSelectorUI()

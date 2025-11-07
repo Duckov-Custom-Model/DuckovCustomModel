@@ -10,6 +10,9 @@
   "NoPreview": "No Preview",
   "Author": "Author",
   "Version": "Version",
-  "NoModel": "No Model (Restore Original)"
+  "NoModel": "No Model (Restore Original)",
+  "TargetType": "Target Type:",
+  "TargetCharacter": "Character",
+  "TargetPet": "Pet"
 }
 

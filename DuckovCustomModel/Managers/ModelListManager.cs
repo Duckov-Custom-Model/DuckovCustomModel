@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -17,7 +18,7 @@ namespace DuckovCustomModel.Managers
         public static event Action? OnRefreshCompleted;
         public static event Action<string>? OnRefreshProgress;
 
-        public static void RefreshModelList(string? priorityModelID = null)
+        public static void RefreshModelList(IEnumerable<string>? priorityModelIDs = null)
         {
             if (IsRefreshing)
             {
@@ -32,7 +33,7 @@ namespace DuckovCustomModel.Managers
             );
 
             _refreshCompletionSource = new();
-            RefreshModelListAsync(linkedCts.Token, linkedCts, _refreshCompletionSource, priorityModelID).Forget();
+            RefreshModelListAsync(linkedCts.Token, linkedCts, _refreshCompletionSource, priorityModelIDs).Forget();
         }
 
         public static async UniTask WaitForRefreshCompletion()
@@ -41,56 +42,57 @@ namespace DuckovCustomModel.Managers
         }
 
         private static async UniTaskVoid RefreshModelListAsync(CancellationToken cancellationToken,
-            CancellationTokenSource? linkedCts, UniTaskCompletionSource? completionSource, string? priorityModelID)
+            CancellationTokenSource? linkedCts, UniTaskCompletionSource? completionSource,
+            IEnumerable<string>? priorityModelIDs)
         {
             IsRefreshing = true;
             OnRefreshStarted?.Invoke();
 
-            ModelBundleInfo? priorityBundle = null;
-            ModelInfo? priorityModel = null;
+            var priorityModels = new List<(ModelBundleInfo bundle, ModelInfo model)>();
 
-            if (!string.IsNullOrEmpty(priorityModelID))
-                if (ModelManager.FindModelByID(priorityModelID, out var bundleInfo, out var modelInfo))
+            if (priorityModelIDs != null)
+                foreach (var priorityModelID in priorityModelIDs)
                 {
-                    priorityBundle = bundleInfo;
-                    priorityModel = modelInfo;
+                    if (string.IsNullOrEmpty(priorityModelID)) continue;
+                    if (ModelManager.FindModelByID(priorityModelID, out var bundleInfo, out var modelInfo))
+                        priorityModels.Add((bundleInfo, modelInfo));
                 }
 
             try
             {
                 ModelManager.UpdateModelBundles();
 
-                if (priorityBundle != null && priorityModel != null)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    OnRefreshProgress?.Invoke($"Loading priority model: {priorityModel.Name}");
-                    await AssetBundleManager.GetOrLoadAssetBundleAsync(priorityBundle, false, cancellationToken);
-                    await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
-                }
+                if (priorityModels.Count > 0)
+                    foreach (var (priorityBundle, priorityModel) in priorityModels)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        OnRefreshProgress?.Invoke($"Loading priority model: {priorityModel.Name}");
+                        await AssetBundleManager.GetOrLoadAssetBundleAsync(priorityBundle, false, cancellationToken);
+                        await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
+                    }
 
                 var totalCount = ModelManager.ModelBundles.Sum(b => b.Models.Length);
                 var count = 0;
 
-                if (priorityBundle != null && priorityModel != null)
-                {
-                    var priorityBundleInList = ModelManager.ModelBundles.FirstOrDefault(b => b == priorityBundle);
-                    var priorityModelInList = priorityBundleInList?.Models.FirstOrDefault(m => m == priorityModel);
-                    if (priorityModelInList != null)
+                if (priorityModels.Count > 0)
+                    foreach (var (priorityBundle, priorityModel) in priorityModels)
                     {
+                        var priorityBundleInList = ModelManager.ModelBundles.FirstOrDefault(b => b == priorityBundle);
+                        var priorityModelInList = priorityBundleInList?.Models.FirstOrDefault(m => m == priorityModel);
+                        if (priorityModelInList == null) continue;
                         cancellationToken.ThrowIfCancellationRequested();
                         if (priorityBundleInList != null)
-                            await AssetBundleManager.CheckBundleStatusAsync(priorityBundleInList, priorityModelInList,
+                            await AssetBundleManager.CheckBundleStatusAsync(priorityBundleInList,
+                                priorityModelInList,
                                 cancellationToken);
                         count++;
                         await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
                     }
-                }
 
                 foreach (var bundle in ModelManager.ModelBundles)
                 foreach (var model in bundle.Models)
                 {
-                    if (priorityBundle != null && priorityModel != null && bundle == priorityBundle &&
-                        model == priorityModel)
+                    if (priorityModels.Any(pm => pm.bundle == bundle && pm.model == model))
                         continue;
 
                     cancellationToken.ThrowIfCancellationRequested();

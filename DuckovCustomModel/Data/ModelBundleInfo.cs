@@ -10,7 +10,7 @@ namespace DuckovCustomModel.Data
 
         public ModelInfo[] Models { get; set; } = [];
 
-        [JsonIgnore] public string DirectoryPath { get; private set; } = string.Empty;
+        [JsonIgnore] public string DirectoryPath { get; internal set; } = string.Empty;
 
         public static ModelBundleInfo? LoadFromDirectory(string directoryPath)
         {
@@ -20,6 +20,18 @@ namespace DuckovCustomModel.Data
             var info = JsonConvert.DeserializeObject<ModelBundleInfo>(json);
             if (info != null) info.DirectoryPath = directoryPath;
             return info;
+        }
+
+        public ModelBundleInfo CreateFilteredCopy(ModelInfo[] filteredModels)
+        {
+            var copy = new ModelBundleInfo
+            {
+                BundleName = BundleName,
+                BundlePath = BundlePath,
+                Models = filteredModels,
+                DirectoryPath = DirectoryPath,
+            };
+            return copy;
         }
     }
 }

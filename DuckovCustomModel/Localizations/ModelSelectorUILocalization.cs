@@ -37,6 +37,9 @@ namespace DuckovCustomModel.Localizations
             { "Author", "Author" },
             { "Version", "Version" },
             { "NoModel", "No Model (Restore Original)" },
+            { "TargetType", "Target Type:" },
+            { "TargetCharacter", "Character" },
+            { "TargetPet", "Pet" },
         };
 
         public static string Title => GetText("Title");
@@ -51,6 +54,9 @@ namespace DuckovCustomModel.Localizations
         public static string Author => GetText("Author");
         public static string Version => GetText("Version");
         public static string NoModel => GetText("NoModel");
+        public static string TargetType => GetText("TargetType");
+        public static string TargetCharacter => GetText("TargetCharacter");
+        public static string TargetPet => GetText("TargetPet");
 
         private static void Initialize()
         {

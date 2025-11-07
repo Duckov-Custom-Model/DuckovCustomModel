@@ -10,6 +10,9 @@
   "NoPreview": "プレビューなし",
   "Author": "作者",
   "Version": "バージョン",
-  "NoModel": "モデルを使用しない（元のモデルに復元）"
+  "NoModel": "モデルを使用しない（元のモデルに復元）",
+  "TargetType": "対象タイプ:",
+  "TargetCharacter": "キャラクター",
+  "TargetPet": "ペット"
 }
 
