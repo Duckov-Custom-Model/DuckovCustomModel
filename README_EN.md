@@ -23,14 +23,18 @@ UI interface related configuration.
 ```json
 {
   "ToggleKey": "Backslash",
-  "HideOriginalEquipment": false
+  "HideCharacterEquipment": false,
+  "HidePetEquipment": false
 }
 ```
 
 - `ToggleKey`: Key to open/close the model selection interface (default: `Backslash`, i.e., backslash key `\`)
   - Supported key values can refer to Unity KeyCode enum
-- `HideOriginalEquipment`: Whether to hide original equipment (default: `false`)
-  - When set to `true`, the Animator's `HideOriginalEquipment` parameter will be set to `true`
+- `HideCharacterEquipment`: Whether to hide character's original equipment (default: `false`)
+  - When set to `true`, the character model's Animator's `HideOriginalEquipment` parameter will be set to `true`
+  - Can be toggled in the settings area of the model selection interface
+- `HidePetEquipment`: Whether to hide pet's original equipment (default: `false`)
+  - When set to `true`, the pet model's Animator's `HideOriginalEquipment` parameter will be set to `true`
   - Can be toggled in the settings area of the model selection interface
 
 ### UsingModel.json
@@ -39,11 +43,15 @@ Current model configuration in use.
 
 ```json
 {
-  "ModelID": ""
+  "ModelID": "",
+  "PetModelID": ""
 }
 ```
 
-- `ModelID`: Currently used model ID (string, uses original model when empty)
+- `ModelID`: Currently used character model ID (string, uses original model when empty)
+  - After setting, the game will automatically apply this model when loading levels
+  - Can be modified through the model selection interface, changes will be automatically saved to this file
+- `PetModelID`: Currently used pet model ID (string, uses original model when empty)
   - After setting, the game will automatically apply this model when loading levels
   - Can be modified through the model selection interface, changes will be automatically saved to this file
 
@@ -51,12 +59,14 @@ Current model configuration in use.
 
 The model selection interface provides the following features:
 
-- **Model Browsing**: Scroll to view all available models
+- **Target Type Switching**: Switch between "Character" and "Pet" to manage character models and pet models separately
+- **Model Browsing**: Scroll to view all available models (filtered based on the currently selected target type)
 - **Model Search**: Quickly search models by name, ID, and other keywords
 - **Model Selection**: Click the model button to apply the model
-- **Settings Options**: Toggle "Hide Original Equipment" option at the bottom of the interface
-  - This option is immediately saved to the configuration file
-  - Affects the Animator's `HideOriginalEquipment` parameter value
+- **Settings Options**: Toggle "Hide Original Equipment" options at the bottom of the interface
+  - Separate options for "Hide Character Equipment" and "Hide Pet Equipment"
+  - These options are immediately saved to the configuration file
+  - Affect the Animator's `HideOriginalEquipment` parameter value
 
 ### Opening the Model Selection Interface
 
@@ -95,7 +105,8 @@ Model Bundle Folder/
       "Description": "Model Description",
       "Version": "1.0.0",
       "ThumbnailPath": "thumbnail.png",
-      "PrefabPath": "Assets/Model.prefab"
+      "PrefabPath": "Assets/Model.prefab",
+      "Target": ["Character"]
     }
   ]
 }
@@ -120,6 +131,10 @@ Model Bundle Folder/
   - Can be a resource path inside the AssetBundle (e.g., `"Assets/Thumbnail.png"`)
   - Can also be an external file path relative to the model bundle folder (e.g., `"thumbnail.png"`)
 - `PrefabPath` (required): Model Prefab resource path inside the AssetBundle (e.g., `"Assets/Model.prefab"`)
+- `Target` (optional): Array of target types the model applies to (default: `["Character"]`)
+  - Valid values: `"Character"`, `"Pet"`
+  - Can contain multiple values, indicating the model is compatible with both characters and pets
+  - The model selection interface will filter and display compatible models based on the currently selected target type
 
 ## Locator Points
 

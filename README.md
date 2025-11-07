@@ -23,14 +23,18 @@ UI 界面相关配置。
 ```json
 {
   "ToggleKey": "Backslash",
-  "HideOriginalEquipment": false
+  "HideCharacterEquipment": false,
+  "HidePetEquipment": false
 }
 ```
 
 - `ToggleKey`：打开/关闭模型选择界面的按键（默认：`Backslash`，即反斜杠键 `\`）
   - 支持的按键值可参考 Unity KeyCode 枚举
-- `HideOriginalEquipment`：是否隐藏原有装备（默认：`false`）
-  - 设置为 `true` 时，Animator 的 `HideOriginalEquipment` 参数会被设置为 `true`
+- `HideCharacterEquipment`：是否隐藏角色原有装备（默认：`false`）
+  - 设置为 `true` 时，角色模型的 Animator 的 `HideOriginalEquipment` 参数会被设置为 `true`
+  - 可在模型选择界面的设置区域中切换此选项
+- `HidePetEquipment`：是否隐藏宠物原有装备（默认：`false`）
+  - 设置为 `true` 时，宠物模型的 Animator 的 `HideOriginalEquipment` 参数会被设置为 `true`
   - 可在模型选择界面的设置区域中切换此选项
 
 ### UsingModel.json
@@ -39,11 +43,15 @@ UI 界面相关配置。
 
 ```json
 {
-  "ModelID": ""
+  "ModelID": "",
+  "PetModelID": ""
 }
 ```
 
-- `ModelID`：当前使用的模型 ID（字符串，为空时使用原始模型）
+- `ModelID`：当前使用的角色模型 ID（字符串，为空时使用原始模型）
+  - 设置后，游戏会在关卡加载时自动应用该模型
+  - 可通过模型选择界面修改，修改后会自动保存到此文件
+- `PetModelID`：当前使用的宠物模型 ID（字符串，为空时使用原始模型）
   - 设置后，游戏会在关卡加载时自动应用该模型
   - 可通过模型选择界面修改，修改后会自动保存到此文件
 
@@ -51,10 +59,12 @@ UI 界面相关配置。
 
 模型选择界面提供了以下功能：
 
-- **模型浏览**：滚动查看所有可用的模型
+- **目标类型切换**：可以在"角色"和"宠物"之间切换，分别管理角色模型和宠物模型
+- **模型浏览**：滚动查看所有可用的模型（会根据当前选择的目标类型过滤显示）
 - **模型搜索**：通过模型名称、ID 等关键词快速搜索模型
 - **模型选择**：点击模型按钮即可应用该模型
 - **设置选项**：在界面底部可以切换"隐藏原有装备"选项
+  - 分别有"隐藏角色装备"和"隐藏宠物装备"两个选项
   - 此选项会立即保存到配置文件
   - 影响 Animator 的 `HideOriginalEquipment` 参数值
 
@@ -95,7 +105,8 @@ UI 界面相关配置。
       "Description": "模型描述",
       "Version": "1.0.0",
       "ThumbnailPath": "thumbnail.png",
-      "PrefabPath": "Assets/Model.prefab"
+      "PrefabPath": "Assets/Model.prefab",
+      "Target": ["Character"]
     }
   ]
 }
@@ -120,6 +131,10 @@ UI 界面相关配置。
   - 可以是 AssetBundle 内的资源路径（如 `"Assets/Thumbnail.png"`）
   - 也可以是模型包文件夹下的外部文件路径（如 `"thumbnail.png"`）
 - `PrefabPath`（必需）：模型 Prefab 在 AssetBundle 内的资源路径（如 `"Assets/Model.prefab"`）
+- `Target`（可选）：模型适用的目标类型数组（默认：`["Character"]`）
+  - 可选值：`"Character"`（角色）、`"Pet"`（宠物）
+  - 可以同时包含多个值，表示该模型同时适用于角色和宠物
+  - 模型选择界面会根据当前选择的目标类型过滤显示兼容的模型
 
 ## 定位锚点
 
