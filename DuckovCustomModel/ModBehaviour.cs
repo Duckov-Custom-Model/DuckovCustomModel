@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using DuckovCustomModel.Configs;
+using DuckovCustomModel.Data;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.MonoBehaviours;
@@ -9,6 +10,7 @@ using UnityEngine;
 
 namespace DuckovCustomModel
 {
+    // ReSharper disable MemberCanBeMadeStatic.Local
     public class ModBehaviour : Duckov.Modding.ModBehaviour
     {
         public static ModBehaviour? Instance;
@@ -140,44 +142,19 @@ namespace DuckovCustomModel
         private void LevelManager_OnLevelInitialized()
         {
             var mainCharacterControl = LevelManager.Instance.MainCharacter;
-            if (mainCharacterControl == null)
-            {
-                ModLogger.LogError("Unable to initialize ModelManager: MainCharacterControl is null");
-                return;
-            }
-
-            var modelHandler = ModelManager.InitializeModelHandler(mainCharacterControl);
-            if (modelHandler != null) return;
-            ModLogger.LogError("Unable to initialize ModelManager: ModelHandler is null");
+            var petCharacterControl = LevelManager.Instance.PetCharacter;
+            InitializeModelHandlerToCharacter(mainCharacterControl, "MainCharacter");
+            InitializeModelHandlerToCharacter(petCharacterControl, "PetCharacter");
         }
 
         private void LevelManager_OnAfterLevelInitialized()
         {
             var mainCharacterControl = LevelManager.Instance.MainCharacter;
-            if (mainCharacterControl == null)
-            {
-                ModLogger.LogError("Unable to change to custom model: MainCharacterControl is null");
-                return;
-            }
-
-            if (UsingModel == null) return;
-            if (string.IsNullOrEmpty(UsingModel.ModelID)) return;
-
-            if (!ModelManager.FindModelByID(UsingModel.ModelID, out var bundleInfo, out var modelInfo))
-            {
-                ModLogger.LogError($"Unable to find model with ID: {UsingModel.ModelID}");
-                return;
-            }
-
-            var modelHandler = ModelManager.InitializeModelHandler(mainCharacterControl);
-            if (modelHandler == null)
-            {
-                ModLogger.LogError("Unable to change to custom model: ModelHandler is null");
-                return;
-            }
-
-            modelHandler.InitializeCustomModel(bundleInfo, modelInfo);
-            modelHandler.ChangeToCustomModel();
+            var petCharacterControl = LevelManager.Instance.PetCharacter;
+            InitializeModelToCharacter(mainCharacterControl, "MainCharacter",
+                UsingModel?.ModelID ?? string.Empty, ModelTarget.Character);
+            InitializeModelToCharacter(petCharacterControl, "PetCharacter",
+                UsingModel?.ModelID ?? string.Empty, ModelTarget.Pet);
         }
 
         private void InitializeModelSelectorUI()
@@ -189,5 +166,56 @@ namespace DuckovCustomModel
             DontDestroyOnLoad(uiObject);
             ModLogger.Log("ModelSelectorUI initialized.");
         }
+
+        private void InitializeModelHandlerToCharacter(CharacterMainControl characterMainControl, string characterName)
+        {
+            if (characterMainControl == null)
+            {
+                ModLogger.LogError($"Initialize ModelHandler to {characterName} failed: CharacterMainControl is null");
+                return;
+            }
+
+            var modelHandler = ModelManager.InitializeModelHandler(characterMainControl);
+            if (modelHandler != null) return;
+            ModLogger.LogError($"Initialize ModelHandler to {characterName} failed: ModelHandler is null");
+        }
+
+        private void InitializeModelToCharacter(CharacterMainControl characterMainControl, string characterName,
+            string modelID, ModelTarget modelTarget)
+        {
+            if (characterMainControl == null)
+            {
+                ModLogger.LogError($"Initialize model to {characterName} failed: CharacterMainControl is null");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(modelID)) return;
+
+            if (!ModelManager.FindModelByID(modelID, out var bundleInfo, out var modelInfo))
+            {
+                ModLogger.LogError(
+                    $"Unable to change to custom model '{modelID}': Model not found for {characterName}");
+                return;
+            }
+
+            if (!modelInfo.CompatibleWithType(modelTarget))
+            {
+                ModLogger.LogError(
+                    $"Unable to change to custom model '{modelID}': Model is not compatible with {modelTarget} for {characterName}");
+                return;
+            }
+
+            var modelHandler = ModelManager.InitializeModelHandler(characterMainControl);
+            if (modelHandler == null)
+            {
+                ModLogger.LogError(
+                    $"Initialize model to {characterName} failed: ModelHandler is null");
+                return;
+            }
+
+            modelHandler.InitializeCustomModel(bundleInfo, modelInfo);
+            modelHandler.ChangeToCustomModel();
+        }
     }
+    // ReSharper restore MemberCanBeMadeStatic.Local
 }

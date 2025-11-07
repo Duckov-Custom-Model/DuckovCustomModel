@@ -1,10 +1,11 @@
 ﻿using System;
 using System.IO;
+using DuckovCustomModel.Configs;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using UnityEngine;
 
-namespace DuckovCustomModel.Configs
+namespace DuckovCustomModel.Managers
 {
     public static class ConfigManager
     {

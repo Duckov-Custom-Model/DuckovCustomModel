@@ -1,12 +1,13 @@
-﻿namespace DuckovCustomModel.Configs
+﻿using System;
+using DuckovCustomModel.Data;
+
+namespace DuckovCustomModel.Configs
 {
-    public interface IConfigBase
+    public interface IConfigBase : IValidatable, ICloneable
     {
         void LoadDefault();
         void LoadFromFile(string filePath, bool autoSaveOnLoad = true);
         void SaveToFile(string filePath, bool withBackup = true);
-        bool Validate();
-        IConfigBase Clone();
         void CopyFrom(IConfigBase other);
     }
 }

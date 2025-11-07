@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using DuckovCustomModel.Managers;
 using Newtonsoft.Json;
 
 namespace DuckovCustomModel.Configs
@@ -56,7 +57,7 @@ namespace DuckovCustomModel.Configs
             }
         }
 
-        public virtual IConfigBase Clone()
+        public virtual object Clone()
         {
             var clone = (ConfigBase)Activator.CreateInstance(GetType());
             clone.CopyFrom(this);
