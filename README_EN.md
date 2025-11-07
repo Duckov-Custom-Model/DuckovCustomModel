@@ -206,6 +206,9 @@ The Animator Controller can use the following parameters:
 
 #### Int Type Parameters
 
+- `CurrentCharacterType`: Current character type
+  - `0`: Character
+  - `1`: Pet
 - `HandState`: Hand state
   - `0`: Default state
   - `1`: Normal

@@ -209,11 +209,9 @@ namespace DuckovCustomModel.MonoBehaviours
 
             var hideOriginalEquipment = false;
             if (ModBehaviour.Instance?.UIConfig != null && _modelHandler != null)
-            {
                 hideOriginalEquipment = _modelHandler.Target == ModelTarget.Pet
                     ? ModBehaviour.Instance.UIConfig.HidePetEquipment
                     : ModBehaviour.Instance.UIConfig.HideCharacterEquipment;
-            }
 
             _customAnimator.SetBool(CustomAnimatorHash.HideOriginalEquipment, hideOriginalEquipment);
 

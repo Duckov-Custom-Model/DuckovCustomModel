@@ -206,6 +206,9 @@ Animator Controller 可以使用以下参数：
 
 #### Int 类型参数
 
+- `CurrentCharacterType`：当前角色类型
+  - `0`：角色（Character）
+  - `1`：宠物（Pet）
 - `HandState`：手部状态
   - `0`：默认状态
   - `1`：正常（normal）
