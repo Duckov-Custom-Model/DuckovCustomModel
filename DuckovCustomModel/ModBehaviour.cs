@@ -17,6 +17,7 @@ namespace DuckovCustomModel
         public static ModBehaviour? Instance;
         private Harmony? _harmony;
         private ModelSelectorUI? _modelSelectorUI;
+        public HideEquipmentConfig? HideEquipmentConfig;
         public UIConfig? UIConfig;
         public UsingModel? UsingModel;
 
@@ -80,6 +81,7 @@ namespace DuckovCustomModel
 
         private void OnDestroy()
         {
+            Instance = null;
             UnloadConfig();
 
             var unpatched = UnpatchAll();
@@ -128,6 +130,10 @@ namespace DuckovCustomModel
             UsingModel = ConfigManager.LoadConfigFromFile<UsingModel>("UsingModel.json");
             if (UsingModel.Validate()) ConfigManager.SaveConfigToFile(UsingModel, "UsingModel.json");
 
+            HideEquipmentConfig = ConfigManager.LoadConfigFromFile<HideEquipmentConfig>("HideEquipmentConfig.json");
+            if (HideEquipmentConfig.Validate())
+                ConfigManager.SaveConfigToFile(HideEquipmentConfig, "HideEquipmentConfig.json");
+
             ModLogger.Log("Configuration files loaded successfully");
         }
 
@@ -135,6 +141,7 @@ namespace DuckovCustomModel
         {
             UIConfig = null;
             UsingModel = null;
+            HideEquipmentConfig = null;
         }
 
         private void LevelManager_OnLevelBeginInitializing()

@@ -29,12 +29,10 @@ namespace DuckovCustomModel.MonoBehaviours
             {
                 if (OriginalCharacterModel == null) return false;
                 if (ModBehaviour.Instance == null) return false;
-                if (ModBehaviour.Instance.UIConfig == null) return false;
+                if (ModBehaviour.Instance.HideEquipmentConfig == null) return false;
                 if (!IsHiddenOriginalModel || CustomModelInstance == null) return false;
 
-                return Target == ModelTarget.Pet
-                    ? ModBehaviour.Instance.UIConfig.HidePetEquipment
-                    : ModBehaviour.Instance.UIConfig.HideCharacterEquipment;
+                return ModBehaviour.Instance.HideEquipmentConfig.GetHideEquipment(Target);
             }
         }
 

@@ -22,20 +22,36 @@ UI interface related configuration.
 
 ```json
 {
-  "ToggleKey": "Backslash",
-  "HideCharacterEquipment": false,
-  "HidePetEquipment": false
+  "ToggleKey": "Backslash"
 }
 ```
 
 - `ToggleKey`: Key to open/close the model selection interface (default: `Backslash`, i.e., backslash key `\`)
   - Supported key values can refer to Unity KeyCode enum
-- `HideCharacterEquipment`: Whether to hide character's original equipment (default: `false`)
-  - When set to `true`, the character model's Animator's `HideOriginalEquipment` parameter will be set to `true`
-  - Can be toggled in the settings area of the model selection interface
-- `HidePetEquipment`: Whether to hide pet's original equipment (default: `false`)
-  - When set to `true`, the pet model's Animator's `HideOriginalEquipment` parameter will be set to `true`
-  - Can be toggled in the settings area of the model selection interface
+
+### HideEquipmentConfig.json
+
+Hide equipment configuration. Uses `ModelTarget` as the key, making it easy to extend with new model target types in the future.
+
+```json
+{
+  "HideEquipment": {
+    "Character": false,
+    "Pet": false
+  }
+}
+```
+
+- `HideEquipment`: Dictionary type, where keys are `ModelTarget` enum values (e.g., `"Character"`, `"Pet"`), and values are boolean
+  - `Character`: Whether to hide character's original equipment (default: `false`)
+    - When set to `true`, the character model's Animator's `HideOriginalEquipment` parameter will be set to `true`
+    - Can be toggled in the settings area of the model selection interface
+  - `Pet`: Whether to hide pet's original equipment (default: `false`)
+    - When set to `true`, the pet model's Animator's `HideOriginalEquipment` parameter will be set to `true`
+    - Can be toggled in the settings area of the model selection interface
+  - When new `ModelTarget` types are added, the configuration will automatically include that type (default value: `false`)
+
+**Compatibility Note**: If old `HideCharacterEquipment` or `HidePetEquipment` configurations exist in `UIConfig.json`, the system will automatically migrate them to the new `HideEquipmentConfig.json` file.
 
 ### UsingModel.json
 
@@ -184,7 +200,7 @@ The Animator Controller can use the following parameters:
 - `GunReady`: Whether the gun is ready
 - `Reloading`: Whether reloading
 - `RightHandOut`: Whether the right hand is extended
-- `HideOriginalEquipment`: Whether to hide original equipment (controlled by the `HideOriginalEquipment` config option)
+- `HideOriginalEquipment`: Whether to hide original equipment (controlled by the corresponding `ModelTarget` configuration in `HideEquipmentConfig.json`)
 - `LeftHandEquip`: Whether there is equipment in the left hand slot (determined by equipment TypeID, `true` when TypeID > 0)
 - `RightHandEquip`: Whether there is equipment in the right hand slot (determined by equipment TypeID, `true` when TypeID > 0)
 - `ArmorEquip`: Whether there is equipment in the armor slot (determined by equipment TypeID, `true` when TypeID > 0)

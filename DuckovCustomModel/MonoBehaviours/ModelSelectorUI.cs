@@ -25,6 +25,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private CharacterInputControl? _charInput;
         private ModelTarget _currentTargetType = ModelTarget.Character;
+        private HideEquipmentConfig? _hideEquipmentConfig;
         private bool _isInitialized;
         private bool _isRefreshing;
         private bool _isWaitingForKeyInput;
@@ -54,6 +55,7 @@ namespace DuckovCustomModel.MonoBehaviours
         private void Start()
         {
             _uiConfig = ModBehaviour.Instance?.UIConfig;
+            _hideEquipmentConfig = ModBehaviour.Instance?.HideEquipmentConfig;
             _usingModel = ModBehaviour.Instance?.UsingModel;
 
             ModelListManager.OnRefreshStarted += OnModelListRefreshStarted;
@@ -529,10 +531,12 @@ namespace DuckovCustomModel.MonoBehaviours
             layoutGroup.childForceExpandHeight = false;
 
             BuildHideEquipmentToggle(settingsPanel, ModelSelectorUILocalization.HideCharacterEquipment,
-                _uiConfig?.HideCharacterEquipment ?? false, OnHideCharacterEquipmentToggleChanged);
+                _hideEquipmentConfig?.GetHideEquipment(ModelTarget.Character) ?? false,
+                OnHideCharacterEquipmentToggleChanged);
 
             BuildHideEquipmentToggle(settingsPanel, ModelSelectorUILocalization.HidePetEquipment,
-                _uiConfig?.HidePetEquipment ?? false, OnHidePetEquipmentToggleChanged);
+                _hideEquipmentConfig?.GetHideEquipment(ModelTarget.Pet) ?? false,
+                OnHidePetEquipmentToggleChanged);
 
             BuildKeySetting(settingsPanel);
         }
@@ -664,20 +668,20 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void OnHideCharacterEquipmentToggleChanged(bool value)
         {
-            if (_uiConfig == null) return;
+            if (_hideEquipmentConfig == null) return;
 
-            _uiConfig.HideCharacterEquipment = value;
-            ConfigManager.SaveConfigToFile(_uiConfig, "UIConfig.json");
-            ModLogger.Log($"HideCharacterEquipment setting changed to: {value}");
+            _hideEquipmentConfig.SetHideEquipment(ModelTarget.Character, value);
+            ConfigManager.SaveConfigToFile(_hideEquipmentConfig, "HideEquipmentConfig.json");
+            ModLogger.Log($"HideEquipment setting for {ModelTarget.Character} changed to: {value}");
         }
 
         private void OnHidePetEquipmentToggleChanged(bool value)
         {
-            if (_uiConfig == null) return;
+            if (_hideEquipmentConfig == null) return;
 
-            _uiConfig.HidePetEquipment = value;
-            ConfigManager.SaveConfigToFile(_uiConfig, "UIConfig.json");
-            ModLogger.Log($"HidePetEquipment setting changed to: {value}");
+            _hideEquipmentConfig.SetHideEquipment(ModelTarget.Pet, value);
+            ConfigManager.SaveConfigToFile(_hideEquipmentConfig, "HideEquipmentConfig.json");
+            ModLogger.Log($"HideEquipment setting for {ModelTarget.Pet} changed to: {value}");
         }
 
         private void OnRefreshButtonClicked()
