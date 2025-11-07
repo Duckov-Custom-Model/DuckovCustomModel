@@ -10,11 +10,11 @@ namespace DuckovCustomModel.Configs
 {
     public class HideEquipmentConfig : ConfigBase
     {
-        public Dictionary<ModelTarget, bool> HideEquipment { get; set; } = new();
+        public Dictionary<ModelTarget, bool> HideEquipment { get; set; } = [];
 
         public override void LoadDefault()
         {
-            HideEquipment = new();
+            HideEquipment = [];
             foreach (ModelTarget target in Enum.GetValues(typeof(ModelTarget))) HideEquipment[target] = false;
         }
 

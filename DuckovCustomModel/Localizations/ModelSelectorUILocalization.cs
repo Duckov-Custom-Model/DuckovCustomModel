@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Newtonsoft.Json;
 using SodaCraft.Localizations;
 using UnityEngine;
@@ -177,14 +178,17 @@ namespace DuckovCustomModel.Localizations
             return $"{Loading} ({count}/{total})";
         }
 
-        public static string GetModelInfo(string modelId, string? author, string? version)
+        public static string GetModelInfo(string modelId, string? author, string? version, string? bundleName = null)
         {
-            var info = $"ID: {modelId}";
+            var stringBuilder = new StringBuilder();
+            stringBuilder.Append($"ID: {modelId}");
             if (!string.IsNullOrEmpty(author))
-                info += $" | {Author}: {author}";
+                stringBuilder.Append($" | {Author}: {author}");
             if (!string.IsNullOrEmpty(version))
-                info += $" | {Version}: {version}";
-            return info;
+                stringBuilder.Append($" | {Version}: {version}");
+            if (!string.IsNullOrEmpty(bundleName))
+                stringBuilder.Append($" | Bundle: {bundleName}");
+            return stringBuilder.ToString();
         }
 
         public static void Cleanup()

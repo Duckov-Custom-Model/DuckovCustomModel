@@ -138,6 +138,45 @@ namespace DuckovCustomModel.MonoBehaviours
             IsHiddenOriginalModel = false;
         }
 
+        public void CleanupCustomModel()
+        {
+            if (OriginalCharacterModel == null)
+            {
+                ModLogger.LogError("OriginalCharacterModel is not set.");
+                return;
+            }
+
+            var wasHidden = IsHiddenOriginalModel;
+
+            if (wasHidden)
+            {
+                var customFaceInstance = GetOriginalCustomFaceInstance();
+                if (customFaceInstance != null) customFaceInstance.gameObject.SetActive(true);
+
+                RestoreToOriginalModelSockets();
+            }
+
+            if (CustomModelInstance != null)
+            {
+                if (CustomAnimatorControl != null)
+                {
+                    DestroyImmediate(CustomAnimatorControl);
+                    CustomAnimatorControl = null;
+                }
+
+                CustomAnimator = null;
+
+                DestroyImmediate(CustomModelInstance);
+                CustomModelInstance = null;
+            }
+
+            _customModelSockets.Clear();
+
+            if (wasHidden)
+                ModLogger.Log("Cleaned up custom model.");
+            IsHiddenOriginalModel = false;
+        }
+
         public void ChangeToCustomModel()
         {
             if (OriginalCharacterModel == null)
@@ -189,12 +228,7 @@ namespace DuckovCustomModel.MonoBehaviours
                 return;
             }
 
-            if (CustomModelInstance != null)
-            {
-                RestoreOriginalModel();
-                Destroy(CustomModelInstance);
-                _customModelSockets.Clear();
-            }
+            if (CustomModelInstance != null) CleanupCustomModel();
 
             // Instantiate the custom model prefab
             CustomModelInstance = Instantiate(customModelPrefab, OriginalCharacterModel.transform);

@@ -45,14 +45,16 @@ namespace DuckovCustomModel
             LevelManager.OnLevelInitialized += LevelManager_OnLevelInitialized;
             LevelManager.OnAfterLevelInitialized += LevelManager_OnAfterLevelInitialized;
 
-            ModelManager.UpdateModelBundles();
+            _ = ModelManager.UpdateModelBundles();
 
             var priorityModelIDs = new List<string>();
             if (UsingModel != null)
-            {
-                if (!string.IsNullOrEmpty(UsingModel.ModelID)) priorityModelIDs.Add(UsingModel.ModelID);
-                if (!string.IsNullOrEmpty(UsingModel.PetModelID)) priorityModelIDs.Add(UsingModel.PetModelID);
-            }
+                foreach (ModelTarget target in Enum.GetValues(typeof(ModelTarget)))
+                {
+                    var modelID = UsingModel.GetModelID(target);
+                    if (!string.IsNullOrEmpty(modelID))
+                        priorityModelIDs.Add(modelID);
+                }
 
             ModelListManager.RefreshModelList(priorityModelIDs);
 
@@ -148,10 +150,12 @@ namespace DuckovCustomModel
         {
             var priorityModelIDs = new List<string>();
             if (UsingModel != null)
-            {
-                if (!string.IsNullOrEmpty(UsingModel.ModelID)) priorityModelIDs.Add(UsingModel.ModelID);
-                if (!string.IsNullOrEmpty(UsingModel.PetModelID)) priorityModelIDs.Add(UsingModel.PetModelID);
-            }
+                foreach (ModelTarget target in Enum.GetValues(typeof(ModelTarget)))
+                {
+                    var modelID = UsingModel.GetModelID(target);
+                    if (!string.IsNullOrEmpty(modelID))
+                        priorityModelIDs.Add(modelID);
+                }
 
             ModelListManager.RefreshModelList(priorityModelIDs);
         }
@@ -166,12 +170,32 @@ namespace DuckovCustomModel
 
         private void LevelManager_OnAfterLevelInitialized()
         {
-            var mainCharacterControl = LevelManager.Instance.MainCharacter;
-            var petCharacterControl = LevelManager.Instance.PetCharacter;
-            InitializeModelToCharacter(mainCharacterControl, "MainCharacter",
-                UsingModel?.ModelID ?? string.Empty, ModelTarget.Character);
-            InitializeModelToCharacter(petCharacterControl, "PetCharacter",
-                UsingModel?.PetModelID ?? string.Empty, ModelTarget.Pet);
+            foreach (ModelTarget target in Enum.GetValues(typeof(ModelTarget)))
+            {
+                var modelID = UsingModel?.GetModelID(target) ?? string.Empty;
+                if (string.IsNullOrEmpty(modelID)) continue;
+
+                if (!ModelManager.FindModelByID(modelID, out var bundleInfo, out var modelInfo))
+                {
+                    ModLogger.LogError($"Unable to find model '{modelID}' for {target}");
+                    continue;
+                }
+
+                if (!modelInfo.CompatibleWithType(target))
+                {
+                    ModLogger.LogError($"Model '{modelID}' is not compatible with {target}");
+                    continue;
+                }
+
+                var handlers = ModelManager.GetAllModelHandlers(target);
+                foreach (var handler in handlers)
+                {
+                    handler.InitializeCustomModel(bundleInfo, modelInfo);
+                    handler.ChangeToCustomModel();
+                }
+
+                ModLogger.Log($"Applied model '{modelInfo.Name}' ({modelID}) to {handlers.Count} {target} object(s)");
+            }
         }
 
         private void InitializeModelSelectorUI()
@@ -196,43 +220,6 @@ namespace DuckovCustomModel
             var modelHandler = ModelManager.InitializeModelHandler(characterMainControl, target);
             if (modelHandler != null) return;
             ModLogger.LogError($"Initialize ModelHandler to {characterName} failed: ModelHandler is null");
-        }
-
-        private void InitializeModelToCharacter(CharacterMainControl characterMainControl, string characterName,
-            string modelID, ModelTarget modelTarget)
-        {
-            if (characterMainControl == null)
-            {
-                ModLogger.LogError($"Initialize model to {characterName} failed: CharacterMainControl is null");
-                return;
-            }
-
-            if (string.IsNullOrEmpty(modelID)) return;
-
-            if (!ModelManager.FindModelByID(modelID, out var bundleInfo, out var modelInfo))
-            {
-                ModLogger.LogError(
-                    $"Unable to change to custom model '{modelID}': Model not found for {characterName}");
-                return;
-            }
-
-            if (!modelInfo.CompatibleWithType(modelTarget))
-            {
-                ModLogger.LogError(
-                    $"Unable to change to custom model '{modelID}': Model is not compatible with {modelTarget} for {characterName}");
-                return;
-            }
-
-            var modelHandler = ModelManager.InitializeModelHandler(characterMainControl, modelTarget);
-            if (modelHandler == null)
-            {
-                ModLogger.LogError(
-                    $"Initialize model to {characterName} failed: ModelHandler is null");
-                return;
-            }
-
-            modelHandler.InitializeCustomModel(bundleInfo, modelInfo);
-            modelHandler.ChangeToCustomModel();
         }
     }
     // ReSharper restore MemberCanBeMadeStatic.Local

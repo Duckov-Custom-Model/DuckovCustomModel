@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace DuckovCustomModel.Data
 {
@@ -12,6 +13,8 @@ namespace DuckovCustomModel.Data
         public string Version { get; set; } = string.Empty;
         public string ThumbnailPath { get; set; } = string.Empty;
         public string PrefabPath { get; set; } = string.Empty;
+
+        [JsonIgnore] public string BundleName { get; internal set; } = string.Empty;
 
         public ModelTarget[] Target { get; set; } = [ModelTarget.Character];
 

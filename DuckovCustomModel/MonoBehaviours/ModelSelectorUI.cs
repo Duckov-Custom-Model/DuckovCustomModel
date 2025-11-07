@@ -690,10 +690,11 @@ namespace DuckovCustomModel.MonoBehaviours
 
             var priorityModelIDs = new List<string>();
             if (_usingModel != null)
-            {
-                if (!string.IsNullOrEmpty(_usingModel.ModelID)) priorityModelIDs.Add(_usingModel.ModelID);
-                if (!string.IsNullOrEmpty(_usingModel.PetModelID)) priorityModelIDs.Add(_usingModel.PetModelID);
-            }
+                priorityModelIDs.AddRange(from ModelTarget target in Enum.GetValues(typeof(ModelTarget))
+                    select _usingModel.GetModelID(target)
+                    into modelID
+                    where !string.IsNullOrEmpty(modelID)
+                    select modelID);
 
             ModelListManager.RefreshModelList(priorityModelIDs);
         }
@@ -793,63 +794,45 @@ namespace DuckovCustomModel.MonoBehaviours
 
                 UpdateModelHandler();
 
-                if (!string.IsNullOrEmpty(_usingModel.ModelID) && _modelHandler != null)
+                foreach (ModelTarget target in Enum.GetValues(typeof(ModelTarget)))
                 {
-                    if (ModelManager.FindModelByID(_usingModel.ModelID, out var bundleInfo, out var modelInfo))
-                    {
-                        if (modelInfo.CompatibleWithType(ModelTarget.Character))
-                        {
-                            _modelHandler.InitializeCustomModel(bundleInfo, modelInfo);
-                            _modelHandler.ChangeToCustomModel();
-                            ModLogger.Log(
-                                $"Auto-reapplied Character model after refresh: {modelInfo.Name} ({_usingModel.ModelID})");
-                        }
-                        else
-                        {
-                            ModLogger.LogWarning(
-                                $"Character model '{_usingModel.ModelID}' is not compatible with Character. Restoring to original model.");
-                            _usingModel.ModelID = string.Empty;
-                            ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
-                            _modelHandler.RestoreOriginalModel();
-                        }
-                    }
-                    else
-                    {
-                        ModLogger.LogWarning(
-                            $"Previously used Character model '{_usingModel.ModelID}' not found after refresh. Restoring to original model.");
-                        _usingModel.ModelID = string.Empty;
-                        ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
-                        _modelHandler.RestoreOriginalModel();
-                    }
-                }
+                    var modelID = _usingModel.GetModelID(target);
+                    if (string.IsNullOrEmpty(modelID)) continue;
 
-                if (!string.IsNullOrEmpty(_usingModel.PetModelID) && _petModelHandler != null)
-                {
-                    if (ModelManager.FindModelByID(_usingModel.PetModelID, out var bundleInfo, out var modelInfo))
+                    var handlers = ModelManager.GetAllModelHandlers(target);
+                    if (handlers.Count == 0) continue;
+
+                    if (ModelManager.FindModelByID(modelID, out var bundleInfo, out var modelInfo))
                     {
-                        if (modelInfo.CompatibleWithType(ModelTarget.Pet))
+                        if (modelInfo.CompatibleWithType(target))
                         {
-                            _petModelHandler.InitializeCustomModel(bundleInfo, modelInfo);
-                            _petModelHandler.ChangeToCustomModel();
+                            foreach (var handler in handlers)
+                            {
+                                handler.InitializeCustomModel(bundleInfo, modelInfo);
+                                handler.ChangeToCustomModel();
+                            }
+
                             ModLogger.Log(
-                                $"Auto-reapplied Pet model after refresh: {modelInfo.Name} ({_usingModel.PetModelID})");
+                                $"Auto-reapplied {target} model after refresh: {modelInfo.Name} ({modelID}) - Applied to {handlers.Count} object(s)");
                         }
                         else
                         {
                             ModLogger.LogWarning(
-                                $"Pet model '{_usingModel.PetModelID}' is not compatible with Pet. Restoring to original model.");
-                            _usingModel.PetModelID = string.Empty;
+                                $"{target} model '{modelID}' is not compatible with {target}. Restoring to original model.");
+                            _usingModel.SetModelID(target, string.Empty);
                             ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
-                            _petModelHandler.RestoreOriginalModel();
+                            foreach (var handler in handlers)
+                                handler.RestoreOriginalModel();
                         }
                     }
                     else
                     {
                         ModLogger.LogWarning(
-                            $"Previously used Pet model '{_usingModel.PetModelID}' not found after refresh. Restoring to original model.");
-                        _usingModel.PetModelID = string.Empty;
+                            $"Previously used {target} model '{modelID}' not found after refresh. Restoring to original model.");
+                        _usingModel.SetModelID(target, string.Empty);
                         ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
-                        _petModelHandler.RestoreOriginalModel();
+                        foreach (var handler in handlers)
+                            handler.RestoreOriginalModel();
                     }
                 }
             }
@@ -860,25 +843,19 @@ namespace DuckovCustomModel.MonoBehaviours
             catch (Exception ex)
             {
                 ModLogger.LogError($"Failed to auto-reapply model after refresh: {ex.Message}");
-                if (_modelHandler != null)
-                    try
-                    {
-                        _modelHandler.RestoreOriginalModel();
-                    }
-                    catch
-                    {
-                        // ignored
-                    }
-
-                if (_petModelHandler != null)
-                    try
-                    {
-                        _petModelHandler.RestoreOriginalModel();
-                    }
-                    catch
-                    {
-                        // ignored
-                    }
+                foreach (ModelTarget target in Enum.GetValues(typeof(ModelTarget)))
+                {
+                    var handlers = ModelManager.GetAllModelHandlers(target);
+                    foreach (var handler in handlers)
+                        try
+                        {
+                            handler.RestoreOriginalModel();
+                        }
+                        catch
+                        {
+                            // ignored
+                        }
+                }
             }
         }
 
@@ -905,10 +882,7 @@ namespace DuckovCustomModel.MonoBehaviours
                 await AssetBundleManager.CheckBundleStatusAsync(bundle, model, cancellationToken);
             var hasError = !isValid;
 
-            var isInUse = _usingModel != null && (
-                (_currentTargetType == ModelTarget.Character && _usingModel.ModelID == model.ModelID) ||
-                (_currentTargetType == ModelTarget.Pet && _usingModel.PetModelID == model.ModelID)
-            );
+            var isInUse = _usingModel != null && _usingModel.GetModelID(_currentTargetType) == model.ModelID;
 
             var buttonObj = new GameObject($"ModelButton_{model.ModelID}", typeof(Image), typeof(Button),
                 typeof(LayoutElement));
@@ -1013,7 +987,8 @@ namespace DuckovCustomModel.MonoBehaviours
             nameRect.sizeDelta = new(0, 20);
 
             var infoText = CreateText("Info", contentArea.transform,
-                ModelSelectorUILocalization.GetModelInfo(model.ModelID, model.Author, model.Version), 12,
+                ModelSelectorUILocalization.GetModelInfo(model.ModelID, model.Author, model.Version, model.BundleName),
+                12,
                 hasError ? new(1f, 0.7f, 0.7f, 1) : new(0.8f, 0.8f, 0.8f, 1), TextAnchor.UpperLeft);
             var infoTextComponent = infoText.GetComponent<Text>();
             infoTextComponent.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -1120,37 +1095,56 @@ namespace DuckovCustomModel.MonoBehaviours
                 return;
             }
 
-            ModelHandler? targetHandler;
-            if (_currentTargetType == ModelTarget.Character)
-            {
-                if (_modelHandler == null)
-                {
-                    ModLogger.LogError("ModelHandler for Character is null.");
-                    return;
-                }
-
-                targetHandler = _modelHandler;
-                _usingModel.ModelID = model.ModelID;
-            }
-            else
-            {
-                if (_petModelHandler == null)
-                {
-                    ModLogger.LogError("ModelHandler for Pet is null.");
-                    return;
-                }
-
-                targetHandler = _petModelHandler;
-                _usingModel.PetModelID = model.ModelID;
-            }
-
+            _usingModel.SetModelID(_currentTargetType, model.ModelID);
             ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
 
-            targetHandler.InitializeCustomModel(bundle, model);
-            targetHandler.ChangeToCustomModel();
+            ApplyModelWithRefreshCheck(_currentTargetType, bundle, model).Forget();
+        }
 
-            ModLogger.Log($"Selected model for {_currentTargetType}: {model.Name} ({model.ModelID})");
-            HidePanel();
+        private async UniTaskVoid ApplyModelWithRefreshCheck(ModelTarget target, ModelBundleInfo bundle,
+            ModelInfo model)
+        {
+            try
+            {
+                if (ModelListManager.IsRefreshing && ModelListManager.CurrentRefreshingBundles != null)
+                    if (ModelListManager.CurrentRefreshingBundles.Contains(bundle.BundleName))
+                    {
+                        var handlers = ModelManager.GetAllModelHandlers(target);
+                        foreach (var handler in handlers.Where(handler => handler.IsHiddenOriginalModel))
+                            handler.CleanupCustomModel();
+
+                        ModLogger.Log(
+                            $"Temporarily cleaned up {target} custom model while waiting for bundle update: {bundle.BundleName}");
+
+                        await ModelListManager.WaitForRefreshCompletion();
+                        await UniTask.Yield(PlayerLoopTiming.Update);
+
+                        if (!ModelManager.FindModelByID(model.ModelID, out var updatedBundleInfo,
+                                out var updatedModelInfo))
+                        {
+                            ModLogger.LogError($"Model '{model.ModelID}' not found after bundle update");
+                            return;
+                        }
+
+                        bundle = updatedBundleInfo;
+                        model = updatedModelInfo;
+                    }
+
+                var allHandlers = ModelManager.GetAllModelHandlers(target);
+                foreach (var handler in allHandlers)
+                {
+                    handler.InitializeCustomModel(bundle, model);
+                    handler.ChangeToCustomModel();
+                }
+
+                ModLogger.Log(
+                    $"Selected model for {target}: {model.Name} ({model.ModelID}) - Applied to {allHandlers.Count} object(s)");
+                HidePanel();
+            }
+            catch (Exception ex)
+            {
+                ModLogger.LogError($"Failed to apply model '{model.ModelID}' to {target}: {ex.Message}");
+            }
         }
 
         private void OnNoneModelSelected()
@@ -1161,35 +1155,14 @@ namespace DuckovCustomModel.MonoBehaviours
                 return;
             }
 
-            ModelHandler? targetHandler;
-            if (_currentTargetType == ModelTarget.Character)
-            {
-                if (_modelHandler == null)
-                {
-                    ModLogger.LogError("ModelHandler for Character is null.");
-                    return;
-                }
-
-                targetHandler = _modelHandler;
-                _usingModel.ModelID = string.Empty;
-            }
-            else
-            {
-                if (_petModelHandler == null)
-                {
-                    ModLogger.LogError("ModelHandler for Pet is null.");
-                    return;
-                }
-
-                targetHandler = _petModelHandler;
-                _usingModel.PetModelID = string.Empty;
-            }
-
+            _usingModel.SetModelID(_currentTargetType, string.Empty);
             ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
 
-            targetHandler.RestoreOriginalModel();
+            var allHandlers = ModelManager.GetAllModelHandlers(_currentTargetType);
+            foreach (var handler in allHandlers) handler.RestoreOriginalModel();
 
-            ModLogger.Log($"Restored to original model for {_currentTargetType}.");
+            ModLogger.Log(
+                $"Restored to original model for {_currentTargetType} - Applied to {allHandlers.Count} object(s).");
             HidePanel();
         }
 
@@ -1357,80 +1330,62 @@ namespace DuckovCustomModel.MonoBehaviours
 
                 if (_usingModel == null) return;
 
-                if (!string.IsNullOrEmpty(_usingModel.ModelID) && _modelHandler != null)
+                foreach (ModelTarget target in Enum.GetValues(typeof(ModelTarget)))
                 {
-                    if (ModelManager.FindModelByID(_usingModel.ModelID, out var bundleInfo, out var modelInfo))
+                    var modelID = _usingModel.GetModelID(target);
+                    if (string.IsNullOrEmpty(modelID)) continue;
+
+                    var handlers = ModelManager.GetAllModelHandlers(target);
+                    if (handlers.Count == 0) continue;
+
+                    if (ModelManager.FindModelByID(modelID, out var bundleInfo, out var modelInfo))
                     {
-                        if (modelInfo.CompatibleWithType(ModelTarget.Character))
+                        if (modelInfo.CompatibleWithType(target))
                         {
                             try
                             {
-                                _modelHandler.InitializeCustomModel(bundleInfo, modelInfo);
-                                _modelHandler.ChangeToCustomModel();
+                                foreach (var handler in handlers)
+                                {
+                                    handler.InitializeCustomModel(bundleInfo, modelInfo);
+                                    handler.ChangeToCustomModel();
+                                }
+
                                 ModLogger.Log(
-                                    $"Character model reapplied after window close: {modelInfo.Name} ({_usingModel.ModelID})");
+                                    $"{target} model reapplied after window close: {modelInfo.Name} ({modelID}) - Applied to {handlers.Count} object(s)");
                             }
                             catch (Exception ex)
                             {
                                 ModLogger.LogError(
-                                    $"Failed to reapply Character model after window close: {ex.Message}");
-                                _modelHandler.RestoreOriginalModel();
+                                    $"Failed to reapply {target} model after window close: {ex.Message}");
+                                foreach (var handler in handlers)
+                                    try
+                                    {
+                                        handler.RestoreOriginalModel();
+                                    }
+                                    catch
+                                    {
+                                        // ignored
+                                    }
                             }
                         }
                         else
                         {
                             ModLogger.LogWarning(
-                                $"Character model '{_usingModel.ModelID}' is not compatible with Character. Restoring to original model.");
-                            _usingModel.ModelID = string.Empty;
+                                $"{target} model '{modelID}' is not compatible with {target}. Restoring to original model.");
+                            _usingModel.SetModelID(target, string.Empty);
                             ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
-                            _modelHandler.RestoreOriginalModel();
+                            foreach (var handler in handlers)
+                                handler.RestoreOriginalModel();
                         }
                     }
                     else
                     {
                         ModLogger.LogWarning(
-                            $"Character model '{_usingModel.ModelID}' not found. Restoring to original model.");
-                        _usingModel.ModelID = string.Empty;
+                            $"{target} model '{modelID}' not found. Restoring to original model.");
+                        _usingModel.SetModelID(target, string.Empty);
                         ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
-                        _modelHandler.RestoreOriginalModel();
-                    }
-                }
-
-                if (!string.IsNullOrEmpty(_usingModel.PetModelID) && _petModelHandler != null)
-                {
-                    if (ModelManager.FindModelByID(_usingModel.PetModelID, out var bundleInfo, out var modelInfo))
-                    {
-                        if (modelInfo.CompatibleWithType(ModelTarget.Pet))
-                        {
-                            try
-                            {
-                                _petModelHandler.InitializeCustomModel(bundleInfo, modelInfo);
-                                _petModelHandler.ChangeToCustomModel();
-                                ModLogger.Log(
-                                    $"Pet model reapplied after window close: {modelInfo.Name} ({_usingModel.PetModelID})");
-                            }
-                            catch (Exception ex)
-                            {
-                                ModLogger.LogError($"Failed to reapply Pet model after window close: {ex.Message}");
-                                _petModelHandler.RestoreOriginalModel();
-                            }
-                        }
-                        else
-                        {
-                            ModLogger.LogWarning(
-                                $"Pet model '{_usingModel.PetModelID}' is not compatible with Pet. Restoring to original model.");
-                            _usingModel.PetModelID = string.Empty;
-                            ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
-                            _petModelHandler.RestoreOriginalModel();
-                        }
-                    }
-                    else
-                    {
-                        ModLogger.LogWarning(
-                            $"Pet model '{_usingModel.PetModelID}' not found. Restoring to original model.");
-                        _usingModel.PetModelID = string.Empty;
-                        ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
-                        _petModelHandler.RestoreOriginalModel();
+                        foreach (var handler in handlers)
+                            handler.RestoreOriginalModel();
                     }
                 }
             }

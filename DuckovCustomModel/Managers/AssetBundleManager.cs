@@ -147,6 +147,19 @@ namespace DuckovCustomModel.Managers
             }
         }
 
+        public static void UnloadAssetBundle(string bundlePath)
+        {
+            if (string.IsNullOrEmpty(bundlePath)) return;
+
+            if (LoadedBundles.TryGetValue(bundlePath, out var bundle))
+            {
+                bundle.Unload(true);
+                LoadedBundles.Remove(bundlePath);
+            }
+
+            LoadingTasks.Remove(bundlePath, out _);
+        }
+
         public static void UnloadAllAssetBundles(bool unloadAllLoadedObjects = false)
         {
             foreach (var bundle in LoadedBundles.Values) bundle.Unload(unloadAllLoadedObjects);
