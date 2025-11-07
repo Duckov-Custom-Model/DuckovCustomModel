@@ -9,13 +9,6 @@ namespace DuckovCustomModel.Managers
 {
     public static class ConfigManager
     {
-        public static readonly JsonSerializerSettings JsonSettings = new()
-        {
-            TypeNameHandling = TypeNameHandling.Auto,
-            Formatting = Formatting.Indented,
-            Converters = [new StringEnumConverter()],
-        };
-
         public static string ConfigBaseDirectory => $"{Application.dataPath}/../ModConfigs/{Constant.ModID}";
 
         public static void CreateDirectoryIfNotExists()

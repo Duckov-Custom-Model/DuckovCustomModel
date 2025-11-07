@@ -29,7 +29,7 @@ namespace DuckovCustomModel.Configs
                 }
 
                 var json = File.ReadAllText(filePath);
-                JsonConvert.PopulateObject(json, this, ConfigManager.JsonSettings);
+                JsonConvert.PopulateObject(json, this, Constant.JsonSettings);
                 if (Validate() && autoSaveOnLoad) SaveToFile(filePath);
             }
             catch (Exception ex)
@@ -48,7 +48,7 @@ namespace DuckovCustomModel.Configs
 
                 if (withBackup && File.Exists(filePath)) ConfigManager.CreateBackupFile(filePath);
 
-                var json = JsonConvert.SerializeObject(this, ConfigManager.JsonSettings);
+                var json = JsonConvert.SerializeObject(this, Constant.JsonSettings);
                 File.WriteAllText(filePath, json);
             }
             catch (Exception ex)

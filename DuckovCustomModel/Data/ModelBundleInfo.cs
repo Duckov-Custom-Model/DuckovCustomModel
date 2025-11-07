@@ -17,7 +17,7 @@ namespace DuckovCustomModel.Data
             var infoFilePath = Path.Combine(directoryPath, "bundleinfo.json");
             if (!File.Exists(infoFilePath)) return null;
             var json = File.ReadAllText(infoFilePath);
-            var info = JsonConvert.DeserializeObject<ModelBundleInfo>(json);
+            var info = JsonConvert.DeserializeObject<ModelBundleInfo>(json, Constant.JsonSettings);
             if (info != null) info.DirectoryPath = directoryPath;
             return info;
         }
