@@ -10,6 +10,8 @@ A custom player model mod for Duckov game.
 - **Model Selection Interface**: Provides a graphical interface for browsing and selecting available models
 - **Model Search**: Supports searching models by name, ID, and other keywords
 - **Model Management**: Automatically scans and loads model bundles, supports multiple model bundles simultaneously
+- **Incremental Updates**: Uses hash caching mechanism to only update changed model bundles, improving refresh efficiency
+- **Multi-Object Support**: Each model target type (ModelTarget) can correspond to multiple game objects, applying changes uniformly to all objects when switching
 - **Quick Switch**: Supports quick model switching in-game without restarting
 
 ## Configuration Files
@@ -55,21 +57,27 @@ Hide equipment configuration. Uses `ModelTarget` as the key, making it easy to e
 
 ### UsingModel.json
 
-Current model configuration in use.
+Current model configuration in use. Uses `ModelTarget` as the key, making it easy to extend with new model target types in the future.
 
 ```json
 {
-  "ModelID": "",
-  "PetModelID": ""
+  "ModelIDs": {
+    "Character": "",
+    "Pet": ""
+  }
 }
 ```
 
-- `ModelID`: Currently used character model ID (string, uses original model when empty)
-  - After setting, the game will automatically apply this model when loading levels
-  - Can be modified through the model selection interface, changes will be automatically saved to this file
-- `PetModelID`: Currently used pet model ID (string, uses original model when empty)
-  - After setting, the game will automatically apply this model when loading levels
-  - Can be modified through the model selection interface, changes will be automatically saved to this file
+- `ModelIDs`: Dictionary type, where keys are `ModelTarget` enum values (e.g., `"Character"`, `"Pet"`), and values are model IDs (string, uses original model when empty)
+  - `Character`: Currently used character model ID
+    - After setting, the game will automatically apply this model to all character objects when loading levels
+    - Can be modified through the model selection interface, changes will be automatically saved to this file
+  - `Pet`: Currently used pet model ID
+    - After setting, the game will automatically apply this model to all pet objects when loading levels
+    - Can be modified through the model selection interface, changes will be automatically saved to this file
+  - When new `ModelTarget` types are added, the configuration will automatically support that type
+
+**Compatibility Note**: If old `ModelID` or `PetModelID` fields exist in the configuration file, the system will automatically migrate them to the new `ModelIDs` dictionary format. After migration, the configuration file will only contain the `ModelIDs` dictionary.
 
 ## Model Selection Interface
 
@@ -78,7 +86,8 @@ The model selection interface provides the following features:
 - **Target Type Switching**: Switch between "Character" and "Pet" to manage character models and pet models separately
 - **Model Browsing**: Scroll to view all available models (filtered based on the currently selected target type)
 - **Model Search**: Quickly search models by name, ID, and other keywords
-- **Model Selection**: Click the model button to apply the model
+- **Model Selection**: Click the model button to apply the model to all objects of that target type
+- **Model Information**: Each model card displays the model name, ID, author, version, and the Bundle name it belongs to
 - **Settings Options**: Toggle "Hide Original Equipment" options at the bottom of the interface
   - Separate options for "Hide Character Equipment" and "Hide Pet Equipment"
   - These options are immediately saved to the configuration file
