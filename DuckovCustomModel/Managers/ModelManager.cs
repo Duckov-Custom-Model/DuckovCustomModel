@@ -67,7 +67,7 @@ namespace DuckovCustomModel.Managers
             return false;
         }
 
-        public static ModelHandler? InitializeModelHandler(CharacterMainControl characterMainControl)
+        public static ModelHandler? InitializeModelHandler(CharacterMainControl characterMainControl, bool isPet = false)
         {
             if (characterMainControl == null)
             {
@@ -79,7 +79,7 @@ namespace DuckovCustomModel.Managers
             if (modelHandler == null)
                 modelHandler = characterMainControl.gameObject.AddComponent<ModelHandler>();
 
-            modelHandler.Initialize(characterMainControl);
+            modelHandler.Initialize(characterMainControl, isPet);
 
             return modelHandler;
         }

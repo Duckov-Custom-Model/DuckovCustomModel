@@ -30,7 +30,8 @@ namespace DuckovCustomModel.Localizations
             { "Refresh", "Refresh" },
             { "Loading", "Loading..." },
             { "LoadingModelList", "Loading model list..." },
-            { "HideOriginalEquipment", "Hide Original Equipment" },
+            { "HideCharacterEquipment", "Hide Character Equipment" },
+            { "HidePetEquipment", "Hide Pet Equipment" },
             { "Hotkey", "Hotkey:" },
             { "PressAnyKey", "Press any key..." },
             { "NoPreview", "No Preview" },
@@ -47,7 +48,8 @@ namespace DuckovCustomModel.Localizations
         public static string Refresh => GetText("Refresh");
         public static string Loading => GetText("Loading");
         public static string LoadingModelList => GetText("LoadingModelList");
-        public static string HideOriginalEquipment => GetText("HideOriginalEquipment");
+        public static string HideCharacterEquipment => GetText("HideCharacterEquipment");
+        public static string HidePetEquipment => GetText("HidePetEquipment");
         public static string Hotkey => GetText("Hotkey");
         public static string PressAnyKey => GetText("PressAnyKey");
         public static string NoPreview => GetText("NoPreview");

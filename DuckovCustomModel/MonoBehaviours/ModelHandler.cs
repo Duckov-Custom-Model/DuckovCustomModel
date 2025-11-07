@@ -30,10 +30,15 @@ namespace DuckovCustomModel.MonoBehaviours
                 if (OriginalCharacterModel == null) return false;
                 if (ModBehaviour.Instance == null) return false;
                 if (ModBehaviour.Instance.UIConfig == null) return false;
-                return ModBehaviour.Instance.UIConfig.HideOriginalEquipment
-                       && IsHiddenOriginalModel && CustomModelInstance != null;
+                if (!IsHiddenOriginalModel || CustomModelInstance == null) return false;
+
+                return IsPet
+                    ? ModBehaviour.Instance.UIConfig.HidePetEquipment
+                    : ModBehaviour.Instance.UIConfig.HideCharacterEquipment;
             }
         }
+
+        public bool IsPet { get; private set; }
 
         public bool IsInitialized { get; private set; }
 
@@ -72,10 +77,11 @@ namespace DuckovCustomModel.MonoBehaviours
                 }
         }
 
-        public void Initialize(CharacterMainControl characterMainControl)
+        public void Initialize(CharacterMainControl characterMainControl, bool isPet = false)
         {
             if (IsInitialized) return;
             CharacterMainControl = characterMainControl;
+            SetIsPet(isPet);
             if (CharacterMainControl == null)
             {
                 ModLogger.LogError("CharacterMainControl component not found.");
@@ -105,6 +111,11 @@ namespace DuckovCustomModel.MonoBehaviours
             RecordOriginalModelSockets();
             ModLogger.Log("ModelHandler initialized successfully.");
             IsInitialized = true;
+        }
+
+        public void SetIsPet(bool isPet)
+        {
+            IsPet = isPet;
         }
 
         public void RestoreOriginalModel()
@@ -255,7 +266,9 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private Transform? GetOriginalCustomFaceInstance()
         {
-            return OriginalCharacterModel == null ? null : OriginalCharacterModel.transform.Find("CustomFaceInstance");
+            if (OriginalCharacterModel == null) return null;
+            var targetTransformName = IsPet ? "Dog" : "CustomFaceInstance";
+            return OriginalCharacterModel.transform.Find(targetTransformName);
         }
 
         private void ReplaceModelSocket(FieldInfo socketField, Transform? newSocket)

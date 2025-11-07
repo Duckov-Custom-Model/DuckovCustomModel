@@ -620,37 +620,11 @@ namespace DuckovCustomModel.MonoBehaviours
             layoutGroup.childForceExpandWidth = false;
             layoutGroup.childForceExpandHeight = false;
 
-            var toggleObj = new GameObject("HideEquipmentToggle", typeof(Toggle));
-            toggleObj.transform.SetParent(settingsPanel.transform, false);
-            var toggle = toggleObj.GetComponent<Toggle>();
-            toggle.isOn = _uiConfig?.HideOriginalEquipment ?? false;
-            toggle.onValueChanged.AddListener(OnHideEquipmentToggleChanged);
+            BuildHideEquipmentToggle(settingsPanel, ModelSelectorUILocalization.HideCharacterEquipment,
+                _uiConfig?.HideCharacterEquipment ?? false, OnHideCharacterEquipmentToggleChanged);
 
-            var toggleImage = toggleObj.AddComponent<Image>();
-            toggleImage.color = new(0.2f, 0.2f, 0.2f, 1);
-            var toggleRect = toggleObj.GetComponent<RectTransform>();
-            toggleRect.sizeDelta = new(20, 20);
-
-            var checkmark = new GameObject("Checkmark", typeof(Image));
-            checkmark.transform.SetParent(toggleObj.transform, false);
-            var checkmarkImage = checkmark.GetComponent<Image>();
-            checkmarkImage.color = new(0.2f, 0.8f, 0.2f, 1);
-            var checkmarkRect = checkmark.GetComponent<RectTransform>();
-            checkmarkRect.anchorMin = new(0.2f, 0.2f);
-            checkmarkRect.anchorMax = new(0.8f, 0.8f);
-            checkmarkRect.sizeDelta = Vector2.zero;
-            toggle.graphic = checkmarkImage;
-
-            var labelObj = new GameObject("Label", typeof(Text));
-            labelObj.transform.SetParent(settingsPanel.transform, false);
-            var labelText = labelObj.GetComponent<Text>();
-            labelText.text = ModelSelectorUILocalization.HideOriginalEquipment;
-            labelText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            labelText.fontSize = 14;
-            labelText.color = Color.white;
-            labelText.alignment = TextAnchor.MiddleLeft;
-            var labelRect = labelObj.GetComponent<RectTransform>();
-            labelRect.sizeDelta = new(150, 20);
+            BuildHideEquipmentToggle(settingsPanel, ModelSelectorUILocalization.HidePetEquipment,
+                _uiConfig?.HidePetEquipment ?? false, OnHidePetEquipmentToggleChanged);
 
             BuildKeySetting(settingsPanel);
         }
@@ -770,13 +744,57 @@ namespace DuckovCustomModel.MonoBehaviours
             };
         }
 
-        private void OnHideEquipmentToggleChanged(bool value)
+        private void BuildHideEquipmentToggle(GameObject settingsPanel, string labelText, bool isOn, UnityEngine.Events.UnityAction<bool> onValueChanged)
+        {
+            var toggleObj = new GameObject("HideEquipmentToggle", typeof(Toggle));
+            toggleObj.transform.SetParent(settingsPanel.transform, false);
+            var toggle = toggleObj.GetComponent<Toggle>();
+            toggle.isOn = isOn;
+            toggle.onValueChanged.AddListener(onValueChanged);
+
+            var toggleImage = toggleObj.AddComponent<Image>();
+            toggleImage.color = new(0.2f, 0.2f, 0.2f, 1);
+            var toggleRect = toggleObj.GetComponent<RectTransform>();
+            toggleRect.sizeDelta = new(20, 20);
+
+            var checkmark = new GameObject("Checkmark", typeof(Image));
+            checkmark.transform.SetParent(toggleObj.transform, false);
+            var checkmarkImage = checkmark.GetComponent<Image>();
+            checkmarkImage.color = new(0.2f, 0.8f, 0.2f, 1);
+            var checkmarkRect = checkmark.GetComponent<RectTransform>();
+            checkmarkRect.anchorMin = new(0.2f, 0.2f);
+            checkmarkRect.anchorMax = new(0.8f, 0.8f);
+            checkmarkRect.sizeDelta = Vector2.zero;
+            toggle.graphic = checkmarkImage;
+
+            var labelObj = new GameObject("Label", typeof(Text));
+            labelObj.transform.SetParent(settingsPanel.transform, false);
+            var labelTextComponent = labelObj.GetComponent<Text>();
+            labelTextComponent.text = labelText;
+            labelTextComponent.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            labelTextComponent.fontSize = 14;
+            labelTextComponent.color = Color.white;
+            labelTextComponent.alignment = TextAnchor.MiddleLeft;
+            var labelRect = labelObj.GetComponent<RectTransform>();
+            labelRect.sizeDelta = new(150, 20);
+        }
+
+        private void OnHideCharacterEquipmentToggleChanged(bool value)
         {
             if (_uiConfig == null) return;
 
-            _uiConfig.HideOriginalEquipment = value;
+            _uiConfig.HideCharacterEquipment = value;
             ConfigManager.SaveConfigToFile(_uiConfig, "UIConfig.json");
-            ModLogger.Log($"HideOriginalEquipment setting changed to: {value}");
+            ModLogger.Log($"HideCharacterEquipment setting changed to: {value}");
+        }
+
+        private void OnHidePetEquipmentToggleChanged(bool value)
+        {
+            if (_uiConfig == null) return;
+
+            _uiConfig.HidePetEquipment = value;
+            ConfigManager.SaveConfigToFile(_uiConfig, "UIConfig.json");
+            ModLogger.Log($"HidePetEquipment setting changed to: {value}");
         }
 
         private void OnRefreshButtonClicked()
