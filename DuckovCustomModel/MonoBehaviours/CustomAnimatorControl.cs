@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using DuckovCustomModel.Data;
 using DuckovCustomModel.Utils;
 using HarmonyLib;
 using UnityEngine;
@@ -70,7 +71,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
             UpdateDeadState();
             UpdateMovement();
-            UpdateState();
+            UpdateCharacterStatus();
+            UpdateCharacterType();
             UpdateHandState();
             UpdateGunState();
             UpdateEquipmentState();
@@ -111,7 +113,7 @@ namespace DuckovCustomModel.MonoBehaviours
                 return;
 
             var isDead = _characterMainControl.Health.IsDead;
-            _customAnimator.SetBool(AnimatorDieHash, isDead);
+            _customAnimator.SetBool(CustomAnimatorHash.Die, isDead);
         }
 
         private void UpdateMovement()
@@ -120,25 +122,35 @@ namespace DuckovCustomModel.MonoBehaviours
             if (_customAnimator == null || _characterMainControl == null)
                 return;
 
-            _customAnimator.SetFloat(AnimatorMoveSpeedHash, _characterMainControl.AnimationMoveSpeedValue);
+            _customAnimator.SetFloat(CustomAnimatorHash.MoveSpeed, _characterMainControl.AnimationMoveSpeedValue);
 
             var moveDirectionValue = _characterMainControl.AnimationLocalMoveDirectionValue;
-            _customAnimator.SetFloat(AnimatorMoveDirXHash, moveDirectionValue.x);
-            _customAnimator.SetFloat(AnimatorMoveDirYHash, moveDirectionValue.y);
+            _customAnimator.SetFloat(CustomAnimatorHash.MoveDirX, moveDirectionValue.x);
+            _customAnimator.SetFloat(CustomAnimatorHash.MoveDirY, moveDirectionValue.y);
 
-            _customAnimator.SetBool(AnimatorGroundedHash, _characterMainControl.IsOnGround);
+            _customAnimator.SetBool(CustomAnimatorHash.Grounded, _characterMainControl.IsOnGround);
 
             var movementControl = _characterMainControl.movementControl;
-            _customAnimator.SetBool(AnimatorIsMovingHash, movementControl.Moving);
-            _customAnimator.SetBool(AnimatorIsRunningHash, movementControl.Running);
+            _customAnimator.SetBool(CustomAnimatorHash.IsMoving, movementControl.Moving);
+            _customAnimator.SetBool(CustomAnimatorHash.IsRunning, movementControl.Running);
 
             var dashing = _characterMainControl.Dashing;
             if (dashing && !HasAnimationIfDashCanControl && _characterMainControl.DashCanControl)
                 dashing = false;
-            _customAnimator.SetBool(AnimatorDashingHash, dashing);
+            _customAnimator.SetBool(CustomAnimatorHash.Dashing, dashing);
         }
 
-        private void UpdateState()
+        private void UpdateCharacterType()
+        {
+            if (!_initialized) return;
+            if (_customAnimator == null || _modelHandler == null)
+                return;
+
+            var characterType = (int)_modelHandler.Target;
+            _customAnimator.SetInteger(CustomAnimatorHash.CurrentCharacterType, characterType);
+        }
+
+        private void UpdateCharacterStatus()
         {
             if (!_initialized) return;
             if (_customAnimator == null || _characterMainControl == null)
@@ -149,11 +161,11 @@ namespace DuckovCustomModel.MonoBehaviours
                 var currentHealth = _characterMainControl.Health.CurrentHealth;
                 var maxHealth = _characterMainControl.Health.MaxHealth;
                 var healthRate = maxHealth > 0 ? currentHealth / maxHealth : 0.0f;
-                _customAnimator.SetFloat(AnimatorHealthRateHash, healthRate);
+                _customAnimator.SetFloat(CustomAnimatorHash.HealthRate, healthRate);
             }
             else
             {
-                _customAnimator.SetFloat(AnimatorHealthRateHash, 1.0f);
+                _customAnimator.SetFloat(CustomAnimatorHash.HealthRate, 1.0f);
             }
 
             var currentWater = _characterMainControl.CurrentWater;
@@ -161,11 +173,11 @@ namespace DuckovCustomModel.MonoBehaviours
             if (maxWater > 0)
             {
                 var waterRate = currentWater / maxWater;
-                _customAnimator.SetFloat(AnimatorWaterRateHash, waterRate);
+                _customAnimator.SetFloat(CustomAnimatorHash.WaterRate, waterRate);
             }
             else
             {
-                _customAnimator.SetFloat(AnimatorWaterRateHash, 1.0f);
+                _customAnimator.SetFloat(CustomAnimatorHash.WaterRate, 1.0f);
             }
 
             var totalWeight = _characterMainControl.CharacterItem.TotalWeight;
@@ -173,7 +185,7 @@ namespace DuckovCustomModel.MonoBehaviours
                 totalWeight += _characterMainControl.carryAction.GetWeight();
 
             var weightRate = totalWeight / _characterMainControl.MaxWeight;
-            _customAnimator.SetFloat(AnimatorWeightRateHash, weightRate);
+            _customAnimator.SetFloat(CustomAnimatorHash.WeightRate, weightRate);
 
             int weightState;
             if (!LevelManager.Instance.IsRaidMap)
@@ -186,7 +198,7 @@ namespace DuckovCustomModel.MonoBehaviours
                     > 0.25f => (int)CharacterMainControl.WeightStates.normal,
                     _ => (int)CharacterMainControl.WeightStates.light,
                 };
-            _customAnimator.SetInteger(AnimatorWeightStateHash, weightState);
+            _customAnimator.SetInteger(CustomAnimatorHash.WeightState, weightState);
         }
 
         private void UpdateEquipmentState()
@@ -198,17 +210,16 @@ namespace DuckovCustomModel.MonoBehaviours
             var hideOriginalEquipment = false;
             if (ModBehaviour.Instance?.UIConfig != null && _modelHandler != null)
             {
-                var isPet = _modelHandler.IsPet;
-                hideOriginalEquipment = isPet
+                hideOriginalEquipment = _modelHandler.Target == ModelTarget.Pet
                     ? ModBehaviour.Instance.UIConfig.HidePetEquipment
                     : ModBehaviour.Instance.UIConfig.HideCharacterEquipment;
             }
 
-            _customAnimator.SetBool(AnimatorHideOriginalEquipmentHash, hideOriginalEquipment);
+            _customAnimator.SetBool(CustomAnimatorHash.HideOriginalEquipment, hideOriginalEquipment);
 
             var popTextSocket = CharacterModelSocketUtils.GetPopTextSocket(_characterModel);
             var havePopText = popTextSocket != null && popTextSocket.childCount > 0;
-            _customAnimator.SetBool(AnimatorHavePopTextHash, havePopText);
+            _customAnimator.SetBool(CustomAnimatorHash.HavePopText, havePopText);
         }
 
         private void UpdateEquipmentTypeID()
@@ -238,14 +249,14 @@ namespace DuckovCustomModel.MonoBehaviours
                         break;
                 }
 
-            _customAnimator.SetInteger(AnimatorLeftHandTypeIDHash, leftHandTypeID);
-            _customAnimator.SetBool(AnimatorLeftHandEquipHash, leftHandTypeID > 0);
+            _customAnimator.SetInteger(CustomAnimatorHash.LeftHandTypeID, leftHandTypeID);
+            _customAnimator.SetBool(CustomAnimatorHash.LeftHandEquip, leftHandTypeID > 0);
 
-            _customAnimator.SetInteger(AnimatorRightHandTypeIDHash, rightHandTypeID);
-            _customAnimator.SetBool(AnimatorRightHandEquipHash, rightHandTypeID > 0);
+            _customAnimator.SetInteger(CustomAnimatorHash.RightHandTypeID, rightHandTypeID);
+            _customAnimator.SetBool(CustomAnimatorHash.RightHandEquip, rightHandTypeID > 0);
 
-            _customAnimator.SetInteger(AnimatorMeleeWeaponTypeIDHash, meleeWeaponTypeID);
-            _customAnimator.SetBool(AnimatorMeleeWeaponEquipHash, meleeWeaponTypeID > 0);
+            _customAnimator.SetInteger(CustomAnimatorHash.MeleeWeaponTypeID, meleeWeaponTypeID);
+            _customAnimator.SetBool(CustomAnimatorHash.MeleeWeaponEquip, meleeWeaponTypeID > 0);
 
             #endregion
 
@@ -264,20 +275,20 @@ namespace DuckovCustomModel.MonoBehaviours
             var backpackTypeID = backpackSlot?.Content != null ? backpackSlot.Content.TypeID : 0;
             var headsetTypeID = headsetSlot?.Content != null ? headsetSlot.Content.TypeID : 0;
 
-            _customAnimator.SetInteger(AnimatorArmorTypeIDHash, armorTypeID);
-            _customAnimator.SetBool(AnimatorArmorEquipHash, armorTypeID > 0);
+            _customAnimator.SetInteger(CustomAnimatorHash.ArmorTypeID, armorTypeID);
+            _customAnimator.SetBool(CustomAnimatorHash.ArmorEquip, armorTypeID > 0);
 
-            _customAnimator.SetInteger(AnimatorHelmetTypeIDHash, helmetTypeID);
-            _customAnimator.SetBool(AnimatorHelmetEquipHash, helmetTypeID > 0);
+            _customAnimator.SetInteger(CustomAnimatorHash.HelmetTypeID, helmetTypeID);
+            _customAnimator.SetBool(CustomAnimatorHash.HelmetEquip, helmetTypeID > 0);
 
-            _customAnimator.SetInteger(AnimatorFaceTypeIDHash, faceTypeID);
-            _customAnimator.SetBool(AnimatorFaceEquipHash, faceTypeID > 0);
+            _customAnimator.SetInteger(CustomAnimatorHash.FaceTypeID, faceTypeID);
+            _customAnimator.SetBool(CustomAnimatorHash.FaceEquip, faceTypeID > 0);
 
-            _customAnimator.SetInteger(AnimatorBackpackTypeIDHash, backpackTypeID);
-            _customAnimator.SetBool(AnimatorBackpackEquipHash, backpackTypeID > 0);
+            _customAnimator.SetInteger(CustomAnimatorHash.BackpackTypeID, backpackTypeID);
+            _customAnimator.SetBool(CustomAnimatorHash.BackpackEquip, backpackTypeID > 0);
 
-            _customAnimator.SetInteger(AnimatorHeadsetTypeIDHash, headsetTypeID);
-            _customAnimator.SetBool(AnimatorHeadsetEquipHash, headsetTypeID > 0);
+            _customAnimator.SetInteger(CustomAnimatorHash.HeadsetTypeID, headsetTypeID);
+            _customAnimator.SetBool(CustomAnimatorHash.HeadsetEquip, headsetTypeID > 0);
 
             #endregion
         }
@@ -301,8 +312,8 @@ namespace DuckovCustomModel.MonoBehaviours
             if (_holdAgent == null || !_holdAgent.gameObject.activeSelf || _characterMainControl.reloadAction.Running)
                 rightHandOut = false;
 
-            _customAnimator.SetInteger(AnimatorHandStateHash, handState);
-            _customAnimator.SetBool(AnimatorRightHandOutHash, rightHandOut);
+            _customAnimator.SetInteger(CustomAnimatorHash.HandState, handState);
+            _customAnimator.SetBool(CustomAnimatorHash.RightHandOut, rightHandOut);
         }
 
         private void UpdateGunState()
@@ -322,8 +333,8 @@ namespace DuckovCustomModel.MonoBehaviours
                 isGunReady = _gunAgent.BulletCount > 0 && !isReloading;
             }
 
-            _customAnimator.SetBool(AnimatorReloadingHash, isReloading);
-            _customAnimator.SetBool(AnimatorGunReadyHash, isGunReady);
+            _customAnimator.SetBool(CustomAnimatorHash.Reloading, isReloading);
+            _customAnimator.SetBool(CustomAnimatorHash.GunReady, isGunReady);
         }
 
         private void UpdateAttackLayerWeight()
@@ -370,50 +381,7 @@ namespace DuckovCustomModel.MonoBehaviours
             _attackTimer = 0.0f;
             FindMeleeAttackLayerIndex();
             if (_customAnimator != null)
-                _customAnimator.SetTrigger(AnimatorAttackHash);
+                _customAnimator.SetTrigger(CustomAnimatorHash.Attack);
         }
-
-        #region Animator Parameter Hashes
-
-        private static readonly int AnimatorGroundedHash = Animator.StringToHash("Grounded");
-        private static readonly int AnimatorDieHash = Animator.StringToHash("Die");
-        private static readonly int AnimatorMoveSpeedHash = Animator.StringToHash("MoveSpeed");
-        private static readonly int AnimatorMoveDirXHash = Animator.StringToHash("MoveDirX");
-        private static readonly int AnimatorMoveDirYHash = Animator.StringToHash("MoveDirY");
-        private static readonly int AnimatorIsMovingHash = Animator.StringToHash("Moving");
-        private static readonly int AnimatorIsRunningHash = Animator.StringToHash("Running");
-        private static readonly int AnimatorDashingHash = Animator.StringToHash("Dashing");
-        private static readonly int AnimatorAttackHash = Animator.StringToHash("Attack");
-        private static readonly int AnimatorHandStateHash = Animator.StringToHash("HandState");
-        private static readonly int AnimatorGunReadyHash = Animator.StringToHash("GunReady");
-        private static readonly int AnimatorReloadingHash = Animator.StringToHash("Reloading");
-        private static readonly int AnimatorRightHandOutHash = Animator.StringToHash("RightHandOut");
-
-        private static readonly int AnimatorHealthRateHash = Animator.StringToHash("HealthRate");
-        private static readonly int AnimatorWaterRateHash = Animator.StringToHash("WaterRate");
-        private static readonly int AnimatorWeightStateHash = Animator.StringToHash("WeightState");
-        private static readonly int AnimatorWeightRateHash = Animator.StringToHash("WeightRate");
-
-        private static readonly int AnimatorHideOriginalEquipmentHash = Animator.StringToHash("HideOriginalEquipment");
-        private static readonly int AnimatorLeftHandEquipHash = Animator.StringToHash("LeftHandEquip");
-        private static readonly int AnimatorRightHandEquipHash = Animator.StringToHash("RightHandEquip");
-        private static readonly int AnimatorArmorEquipHash = Animator.StringToHash("ArmorEquip");
-        private static readonly int AnimatorHelmetEquipHash = Animator.StringToHash("HelmetEquip");
-        private static readonly int AnimatorHeadsetEquipHash = Animator.StringToHash("HeadsetEquip");
-        private static readonly int AnimatorFaceEquipHash = Animator.StringToHash("FaceEquip");
-        private static readonly int AnimatorBackpackEquipHash = Animator.StringToHash("BackpackEquip");
-        private static readonly int AnimatorMeleeWeaponEquipHash = Animator.StringToHash("MeleeWeaponEquip");
-        private static readonly int AnimatorHavePopTextHash = Animator.StringToHash("HavePopText");
-
-        private static readonly int AnimatorLeftHandTypeIDHash = Animator.StringToHash("LeftHandTypeID");
-        private static readonly int AnimatorRightHandTypeIDHash = Animator.StringToHash("RightHandTypeID");
-        private static readonly int AnimatorArmorTypeIDHash = Animator.StringToHash("ArmorTypeID");
-        private static readonly int AnimatorHelmetTypeIDHash = Animator.StringToHash("HelmetTypeID");
-        private static readonly int AnimatorHeadsetTypeIDHash = Animator.StringToHash("HeadsetTypeID");
-        private static readonly int AnimatorFaceTypeIDHash = Animator.StringToHash("FaceTypeID");
-        private static readonly int AnimatorBackpackTypeIDHash = Animator.StringToHash("BackpackTypeID");
-        private static readonly int AnimatorMeleeWeaponTypeIDHash = Animator.StringToHash("MeleeWeaponTypeID");
-
-        #endregion
     }
 }

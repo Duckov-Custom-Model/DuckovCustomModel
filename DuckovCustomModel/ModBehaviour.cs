@@ -154,7 +154,7 @@ namespace DuckovCustomModel
             var mainCharacterControl = LevelManager.Instance.MainCharacter;
             var petCharacterControl = LevelManager.Instance.PetCharacter;
             InitializeModelHandlerToCharacter(mainCharacterControl, "MainCharacter");
-            InitializeModelHandlerToCharacter(petCharacterControl, "PetCharacter", true);
+            InitializeModelHandlerToCharacter(petCharacterControl, "PetCharacter", ModelTarget.Pet);
         }
 
         private void LevelManager_OnAfterLevelInitialized()
@@ -164,7 +164,7 @@ namespace DuckovCustomModel
             InitializeModelToCharacter(mainCharacterControl, "MainCharacter",
                 UsingModel?.ModelID ?? string.Empty, ModelTarget.Character);
             InitializeModelToCharacter(petCharacterControl, "PetCharacter",
-                UsingModel?.PetModelID ?? string.Empty, ModelTarget.Pet, true);
+                UsingModel?.PetModelID ?? string.Empty, ModelTarget.Pet);
         }
 
         private void InitializeModelSelectorUI()
@@ -178,7 +178,7 @@ namespace DuckovCustomModel
         }
 
         private void InitializeModelHandlerToCharacter(CharacterMainControl characterMainControl,
-            string characterName, bool isPet = false)
+            string characterName, ModelTarget target = ModelTarget.Character)
         {
             if (characterMainControl == null)
             {
@@ -186,13 +186,13 @@ namespace DuckovCustomModel
                 return;
             }
 
-            var modelHandler = ModelManager.InitializeModelHandler(characterMainControl, isPet);
+            var modelHandler = ModelManager.InitializeModelHandler(characterMainControl, target);
             if (modelHandler != null) return;
             ModLogger.LogError($"Initialize ModelHandler to {characterName} failed: ModelHandler is null");
         }
 
         private void InitializeModelToCharacter(CharacterMainControl characterMainControl, string characterName,
-            string modelID, ModelTarget modelTarget, bool isPet = false)
+            string modelID, ModelTarget modelTarget)
         {
             if (characterMainControl == null)
             {
@@ -216,7 +216,7 @@ namespace DuckovCustomModel
                 return;
             }
 
-            var modelHandler = ModelManager.InitializeModelHandler(characterMainControl, isPet);
+            var modelHandler = ModelManager.InitializeModelHandler(characterMainControl, modelTarget);
             if (modelHandler == null)
             {
                 ModLogger.LogError(

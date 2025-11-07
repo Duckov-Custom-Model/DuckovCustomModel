@@ -32,13 +32,13 @@ namespace DuckovCustomModel.MonoBehaviours
                 if (ModBehaviour.Instance.UIConfig == null) return false;
                 if (!IsHiddenOriginalModel || CustomModelInstance == null) return false;
 
-                return IsPet
+                return Target == ModelTarget.Pet
                     ? ModBehaviour.Instance.UIConfig.HidePetEquipment
                     : ModBehaviour.Instance.UIConfig.HideCharacterEquipment;
             }
         }
 
-        public bool IsPet { get; private set; }
+        public ModelTarget Target { get; private set; }
 
         public bool IsInitialized { get; private set; }
 
@@ -77,11 +77,11 @@ namespace DuckovCustomModel.MonoBehaviours
                 }
         }
 
-        public void Initialize(CharacterMainControl characterMainControl, bool isPet = false)
+        public void Initialize(CharacterMainControl characterMainControl, ModelTarget target = ModelTarget.Character)
         {
             if (IsInitialized) return;
             CharacterMainControl = characterMainControl;
-            SetIsPet(isPet);
+            Target = target;
             if (CharacterMainControl == null)
             {
                 ModLogger.LogError("CharacterMainControl component not found.");
@@ -113,9 +113,9 @@ namespace DuckovCustomModel.MonoBehaviours
             IsInitialized = true;
         }
 
-        public void SetIsPet(bool isPet)
+        public void SetTarget(ModelTarget target)
         {
-            IsPet = isPet;
+            Target = target;
         }
 
         public void RestoreOriginalModel()
@@ -267,7 +267,7 @@ namespace DuckovCustomModel.MonoBehaviours
         private Transform? GetOriginalCustomFaceInstance()
         {
             if (OriginalCharacterModel == null) return null;
-            var targetTransformName = IsPet ? "Dog" : "CustomFaceInstance";
+            var targetTransformName = Target == ModelTarget.Pet ? "Dog" : "CustomFaceInstance";
             return OriginalCharacterModel.transform.Find(targetTransformName);
         }
 

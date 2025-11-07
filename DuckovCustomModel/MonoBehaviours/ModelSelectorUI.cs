@@ -1461,7 +1461,7 @@ namespace DuckovCustomModel.MonoBehaviours
             if (petCharacterControl == null) return;
             _petModelHandler = petCharacterControl.GetComponent<ModelHandler>();
             if (_petModelHandler == null)
-                _petModelHandler = ModelManager.InitializeModelHandler(petCharacterControl, true);
+                _petModelHandler = ModelManager.InitializeModelHandler(petCharacterControl, ModelTarget.Pet);
         }
 
         private static GameObject CreateImage(string name, Transform parent)
