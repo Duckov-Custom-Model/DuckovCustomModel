@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Duckov;
+using DuckovCustomModel.Configs;
 using DuckovCustomModel.Data;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.Utils;
@@ -23,6 +25,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private readonly Dictionary<string, List<string>> _soundsByTag = [];
         private readonly HashSet<GameObject> _usingCustomSocketObjects = [];
+
+        private float _nextIdleAudioTime;
 
         public CharacterMainControl? CharacterMainControl { get; private set; }
         public CharacterModel? OriginalCharacterModel { get; private set; }
@@ -56,6 +60,18 @@ namespace DuckovCustomModel.MonoBehaviours
         public GameObject? CustomModelInstance { get; private set; }
         public Animator? CustomAnimator { get; private set; }
         public CustomAnimatorControl? CustomAnimatorControl { get; private set; }
+
+        private void Update()
+        {
+            if (!IsInitialized || CharacterMainControl == null) return;
+            if (Target == ModelTarget.Character) return;
+            if (!HasIdleSounds()) return;
+            if (CharacterMainControl.Health != null && CharacterMainControl.Health.IsDead) return;
+
+            if (!(Time.time >= _nextIdleAudioTime)) return;
+            PlayIdleAudio();
+            ScheduleNextIdleAudio();
+        }
 
         private void LateUpdate()
         {
@@ -248,6 +264,8 @@ namespace DuckovCustomModel.MonoBehaviours
             if (CustomModelInstance != null) CleanupCustomModel();
             InitSoundFilePath(modelBundleInfo, modelInfo);
             InitializeCustomModelInternal(prefab, modelInfo);
+
+            if (Target == ModelTarget.AICharacter && HasIdleSounds()) ScheduleNextIdleAudio();
         }
 
         private void InitializeCustomModelInternal(GameObject customModelPrefab, ModelInfo modelInfo)
@@ -470,7 +488,7 @@ namespace DuckovCustomModel.MonoBehaviours
                 if (!File.Exists(fullPath)) continue;
 
                 if (soundInfo.Tags is not { Length: > 0 })
-                    soundInfo.Tags = [Constant.SoundTagNormal];
+                    soundInfo.Tags = [SoundTags.Normal];
 
                 foreach (var soundTag in soundInfo.Tags)
                 {
@@ -494,13 +512,52 @@ namespace DuckovCustomModel.MonoBehaviours
 
         public string? GetRandomSoundByTag(string soundTag)
         {
-            if (string.IsNullOrWhiteSpace(soundTag)) soundTag = Constant.SoundTagNormal;
+            if (string.IsNullOrWhiteSpace(soundTag)) soundTag = SoundTags.Normal;
             soundTag = soundTag.ToLowerInvariant().Trim();
 
             if (!_soundsByTag.TryGetValue(soundTag, out var sounds) || sounds.Count == 0) return null;
 
             var index = Random.Range(0, sounds.Count);
             return sounds[index];
+        }
+
+        private bool HasIdleSounds()
+        {
+            return _soundsByTag.ContainsKey(SoundTags.Idle) &&
+                   _soundsByTag[SoundTags.Idle].Count > 0;
+        }
+
+        private void PlayIdleAudio()
+        {
+            var soundPath = GetRandomSoundByTag(SoundTags.Idle);
+            if (string.IsNullOrEmpty(soundPath)) return;
+
+            AudioManager.PostCustomSFX(soundPath);
+        }
+
+        private void ScheduleNextIdleAudio()
+        {
+            if (ModBehaviour.Instance?.IdleAudioConfig == null)
+            {
+                _nextIdleAudioTime = Time.time + Random.Range(30f, 45f);
+                return;
+            }
+
+            IdleAudioInterval interval;
+            if (Target == ModelTarget.AICharacter)
+            {
+                var nameKey = CharacterMainControl?.characterPreset?.nameKey;
+                interval = !string.IsNullOrEmpty(nameKey)
+                    ? ModBehaviour.Instance.IdleAudioConfig.GetAICharacterIdleAudioInterval(nameKey)
+                    : ModBehaviour.Instance.IdleAudioConfig.GetIdleAudioInterval(Target);
+            }
+            else
+            {
+                interval = ModBehaviour.Instance.IdleAudioConfig.GetIdleAudioInterval(Target);
+            }
+
+            var randomInterval = Random.Range(interval.Min, interval.Max);
+            _nextIdleAudioTime = Time.time + randomInterval;
         }
 
         #endregion

@@ -25,13 +25,20 @@ namespace DuckovCustomModel.Configs
 
         public override bool Validate()
         {
+            var modified = false;
             foreach (ModelTarget target in Enum.GetValues(typeof(ModelTarget)))
             {
                 if (target == ModelTarget.AICharacter) continue;
-                HideEquipment.TryAdd(target, false);
+                if (!HideEquipment.TryAdd(target, false)) continue;
+                modified = true;
             }
 
-            return true;
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            if (HideAICharacterEquipment != null) return modified;
+            HideAICharacterEquipment = [];
+            modified = true;
+
+            return modified;
         }
 
         public override void CopyFrom(IConfigBase other)

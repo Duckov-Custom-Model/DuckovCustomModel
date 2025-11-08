@@ -48,9 +48,20 @@ namespace DuckovCustomModel.Configs
 
         public override bool Validate()
         {
-            ModelIDs ??= [];
-            AICharacterModelIDs ??= [];
-            return false;
+            var modified = false;
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            if (ModelIDs == null)
+            {
+                ModelIDs = [];
+                modified = true;
+            }
+
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            if (AICharacterModelIDs != null) return modified;
+            AICharacterModelIDs = [];
+            modified = true;
+
+            return modified;
         }
 
         public override void CopyFrom(IConfigBase other)

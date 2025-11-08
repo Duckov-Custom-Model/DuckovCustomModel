@@ -91,6 +91,53 @@ Current model configuration in use. Uses `ModelTarget` as the key, making it eas
 
 **Compatibility Note**: If old `ModelID` or `PetModelID` fields exist in the configuration file, the system will automatically migrate them to the new `ModelIDs` dictionary format. After migration, the configuration file will only contain the `ModelIDs` dictionary.
 
+### IdleAudioConfig.json
+
+Idle audio automatic playback interval configuration. Used to configure automatic playback intervals (minimum and maximum values) for different characters.
+
+```json
+{
+  "IdleAudioIntervals": {
+    "Pet": {
+      "Min": 30.0,
+      "Max": 45.0
+    }
+  },
+  "AICharacterIdleAudioIntervals": {
+    "Cname_Wolf": {
+      "Min": 20.0,
+      "Max": 30.0
+    },
+    "*": {
+      "Min": 30.0,
+      "Max": 45.0
+    }
+  }
+}
+```
+
+- `IdleAudioIntervals`: Dictionary type, where keys are `ModelTarget` enum values (e.g., `"Character"`, `"Pet"`), and values are objects containing `Min` and `Max`
+  - `Pet`: Idle audio playback interval for pet characters (in seconds)
+    - `Min`: Minimum interval time (default: `30.0`)
+    - `Max`: Maximum interval time (default: `45.0`)
+    - The system will randomly select an interval time between the minimum and maximum values
+  - When new `ModelTarget` types are added, the configuration will automatically include that type (default values: `Min: 30.0, Max: 45.0`)
+
+- `AICharacterIdleAudioIntervals`: Dictionary type, where keys are AI character name keys (e.g., `"Cname_Wolf"`, `"Cname_Scav"`), and values are objects containing `Min` and `Max`
+  - Can configure idle audio playback interval for each AI character individually
+  - Special key `"*"`: Sets default interval for all AI characters
+    - When an AI character doesn't have an individual interval configured, the interval corresponding to `"*"` will be used
+    - If `"*"` is also not configured, default values will be used (`Min: 30.0, Max: 45.0`)
+  - `Min`: Minimum interval time (default: `30.0`)
+  - `Max`: Maximum interval time (default: `45.0`)
+  - The system will randomly select an interval time between the minimum and maximum values
+
+**Notes**:
+- Minimum interval time cannot be less than 0.1 seconds
+- Maximum interval time cannot be less than minimum interval time
+- Only models with `"idle"` tagged sounds will automatically play idle sounds
+- Only non-player characters (AI characters and pets) will automatically play idle sounds, player characters will not
+
 ## Model Selection Interface
 
 The model selection interface provides the following features:
@@ -162,6 +209,10 @@ Model Bundle Folder/
         {
           "Path": "sounds/death.wav",
           "Tags": ["death"]
+        },
+        {
+          "Path": "sounds/idle1.wav",
+          "Tags": ["idle"]
         }
       ]
     }
@@ -405,6 +456,7 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
   - `"normal"`: Normal sound, used for player key press triggers and AI normal state
   - `"surprise"`: Surprise sound, used for AI surprise state
   - `"death"`: Death sound, used for AI death state
+  - `"idle"`: Idle sound, used for automatic playback by non-player characters (AI characters and pets)
   - Can contain multiple tags, indicating the sound can be used in multiple scenarios
   - Defaults to `["normal"]` when no tags are specified
 
@@ -425,6 +477,10 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
 - `"normal"`: Triggered during AI normal state
 - `"surprise"`: Triggered during AI surprise state
 - `"death"`: Triggered during AI death state
+- `"idle"`: Non-player characters (AI characters and pets) will automatically play idle sounds at random intervals
+  - Play interval can be configured in `IdleAudioConfig.json`
+  - Default interval is 30-45 seconds (random)
+  - Will not play when the character is dead
 - If a sound with the specified tag doesn't exist, the original game event will be used (no fallback to other tags)
 
 ### Sound File Requirements

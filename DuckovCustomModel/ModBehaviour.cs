@@ -19,6 +19,7 @@ namespace DuckovCustomModel
         private Harmony? _harmony;
         private ModelSelectorUI? _modelSelectorUI;
         public HideEquipmentConfig? HideEquipmentConfig;
+        public IdleAudioConfig? IdleAudioConfig;
         public UIConfig? UIConfig;
         public UsingModel? UsingModel;
 
@@ -136,6 +137,10 @@ namespace DuckovCustomModel
             if (HideEquipmentConfig.Validate())
                 ConfigManager.SaveConfigToFile(HideEquipmentConfig, "HideEquipmentConfig.json");
 
+            IdleAudioConfig = ConfigManager.LoadConfigFromFile<IdleAudioConfig>("IdleAudioConfig.json");
+            if (IdleAudioConfig.Validate())
+                ConfigManager.SaveConfigToFile(IdleAudioConfig, "IdleAudioConfig.json");
+
             ModLogger.Log("Configuration files loaded successfully");
         }
 
@@ -144,6 +149,7 @@ namespace DuckovCustomModel
             UIConfig = null;
             UsingModel = null;
             HideEquipmentConfig = null;
+            IdleAudioConfig = null;
         }
 
         private void LevelManager_OnLevelBeginInitializing()

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using System.Linq;
 
 namespace DuckovCustomModel.Data
 {
@@ -11,20 +11,19 @@ namespace DuckovCustomModel.Data
         {
             if (Tags is not { Length: > 0 })
             {
-                Tags = [Constant.SoundTagNormal];
+                Tags = [SoundTags.Normal];
                 return;
             }
 
-            var tagSet = new List<string>();
-            foreach (var tag in Tags)
-            {
-                if (string.IsNullOrWhiteSpace(tag)) continue;
-                var normalizedTag = tag.ToLowerInvariant().Trim();
-                if (normalizedTag is Constant.SoundTagNormal or Constant.SoundTagSurprise or Constant.SoundTagDeath)
-                    tagSet.Add(normalizedTag);
-            }
+            var validTags = SoundTags.ValidTags;
+            var tagSet = (from tag in Tags
+                where !string.IsNullOrWhiteSpace(tag)
+                select tag.ToLowerInvariant().Trim()
+                into normalizedTag
+                where validTags.Contains(normalizedTag)
+                select normalizedTag).ToList();
 
-            if (tagSet.Count == 0) tagSet.Add(Constant.SoundTagNormal);
+            if (tagSet.Count == 0) tagSet.Add(SoundTags.Normal);
             Tags = tagSet.ToArray();
         }
     }

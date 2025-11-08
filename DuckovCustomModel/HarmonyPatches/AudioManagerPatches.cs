@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using Duckov;
+using DuckovCustomModel.Data;
 using DuckovCustomModel.MonoBehaviours;
 using FMOD.Studio;
 using HarmonyLib;
@@ -36,7 +37,7 @@ namespace DuckovCustomModel.HarmonyPatches
                 if (!modelHandler.HasAnySounds()) return true;
 
                 var normalizedSoundKey = string.IsNullOrWhiteSpace(soundKey)
-                    ? Constant.SoundTagNormal
+                    ? SoundTags.Normal
                     : soundKey.ToLowerInvariant().Trim();
 
                 var soundPath = modelHandler.GetRandomSoundByTag(normalizedSoundKey);
@@ -64,7 +65,7 @@ namespace DuckovCustomModel.HarmonyPatches
 
                 if (!modelHandler.HasAnySounds()) return true;
 
-                var soundPath = modelHandler.GetRandomSoundByTag(Constant.SoundTagNormal);
+                var soundPath = modelHandler.GetRandomSoundByTag(SoundTags.Normal);
                 if (string.IsNullOrEmpty(soundPath)) return true;
 
                 AudioManager.PostCustomSFX(soundPath);
