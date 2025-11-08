@@ -225,6 +225,11 @@ In addition to the required locator points, models can also include the followin
   - When a custom model includes this locator point, paper boxes spawned in the game will automatically attach to this point
   - Paper boxes will follow the custom model's position and rotation
   - If the model does not include this locator point, paper boxes will use the original model's locator point
+- `CarriableLocator`: Carriable item locator point for binding carriable items
+  - When a custom model includes this locator point, carriable items will automatically attach to this point when the character carries them
+  - Carriable items will follow the custom model's position and rotation
+  - When carrying an item, the original position, rotation, and scale information are saved and will be restored when the item is dropped
+  - If the model does not include this locator point, carriable items will use the original model's locator point
 
 ### Function of Locator Points
 
