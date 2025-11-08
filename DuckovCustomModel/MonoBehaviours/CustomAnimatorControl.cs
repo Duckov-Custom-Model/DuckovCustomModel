@@ -71,6 +71,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
             UpdateDeadState();
             UpdateMovement();
+            UpdateVelocityAndAim();
             UpdateCharacterStatus();
             UpdateCharacterType();
             UpdateHandState();
@@ -83,6 +84,8 @@ namespace DuckovCustomModel.MonoBehaviours
         private void OnDestroy()
         {
             if (_characterModel != null) _characterModel.OnAttackOrShootEvent -= OnAttack;
+            if (_characterMainControl != null) _characterMainControl.OnHoldAgentChanged -= OnHoldAgentChanged;
+            UnsubscribeGunEvents();
         }
 
         public void Initialize(ModelHandler modelHandler)
@@ -96,11 +99,14 @@ namespace DuckovCustomModel.MonoBehaviours
                 return;
 
             _characterModel.OnAttackOrShootEvent += OnAttack;
+            _characterMainControl.OnHoldAgentChanged += OnHoldAgentChanged;
 
             _customAnimator = modelHandler.CustomAnimator;
             FindMeleeAttackLayerIndex();
 
             _initialized = true;
+
+            OnHoldAgentChanged(_characterMainControl.CurrentHoldItemAgent);
         }
 
         public void UpdateDeadState()
@@ -150,11 +156,40 @@ namespace DuckovCustomModel.MonoBehaviours
             _customAnimator.SetInteger(CustomAnimatorHash.CurrentCharacterType, characterType);
         }
 
+        private void UpdateVelocityAndAim()
+        {
+            if (!_initialized) return;
+            if (_customAnimator == null || _characterMainControl == null)
+                return;
+
+            var velocity = _characterMainControl.Velocity;
+            _customAnimator.SetFloat(CustomAnimatorHash.VelocityX, velocity.x);
+            _customAnimator.SetFloat(CustomAnimatorHash.VelocityY, velocity.y);
+            _customAnimator.SetFloat(CustomAnimatorHash.VelocityZ, velocity.z);
+
+            var aimDir = _characterMainControl.CurrentAimDirection;
+            _customAnimator.SetFloat(CustomAnimatorHash.AimDirX, aimDir.x);
+            _customAnimator.SetFloat(CustomAnimatorHash.AimDirY, aimDir.y);
+            _customAnimator.SetFloat(CustomAnimatorHash.AimDirZ, aimDir.z);
+
+            var inAds = _characterMainControl.IsInAdsInput;
+            _customAnimator.SetBool(CustomAnimatorHash.InAds, inAds);
+
+            var adsValue = _characterMainControl.AdsValue;
+            _customAnimator.SetFloat(CustomAnimatorHash.AdsValue, adsValue);
+
+            var aimType = (int)_characterMainControl.AimType;
+            _customAnimator.SetInteger(CustomAnimatorHash.AimType, aimType);
+        }
+
         private void UpdateCharacterStatus()
         {
             if (!_initialized) return;
             if (_customAnimator == null || _characterMainControl == null)
                 return;
+
+            var hidden = _characterMainControl.Hidden;
+            _customAnimator.SetBool(CustomAnimatorHash.Hidden, hidden);
 
             if (_characterMainControl.Health != null)
             {
@@ -206,6 +241,9 @@ namespace DuckovCustomModel.MonoBehaviours
             if (!_initialized) return;
             if (_customAnimator == null || _characterMainControl == null || _characterModel == null)
                 return;
+
+            var thermalOn = _characterMainControl.ThermalOn;
+            _customAnimator.SetBool(CustomAnimatorHash.ThermalOn, thermalOn);
 
             var hideOriginalEquipment = false;
             if (ModBehaviour.Instance?.HideEquipmentConfig != null && _modelHandler != null)
@@ -324,12 +362,20 @@ namespace DuckovCustomModel.MonoBehaviours
 
             var isGunReady = false;
             var isReloading = false;
+            var ammoRate = 0.0f;
+            var shootMode = 0;
             if (_gunAgent != null)
             {
                 isReloading = _gunAgent.IsReloading();
                 isGunReady = _gunAgent.BulletCount > 0 && !isReloading;
+                shootMode = (int)_gunAgent.GunItemSetting.triggerMode;
+                var maxAmmo = _gunAgent.Capacity;
+                if (maxAmmo > 0)
+                    ammoRate = (float)_gunAgent.BulletCount / maxAmmo;
             }
 
+            _customAnimator.SetInteger(CustomAnimatorHash.ShootMode, shootMode);
+            _customAnimator.SetFloat(CustomAnimatorHash.AmmoRate, ammoRate);
             _customAnimator.SetBool(CustomAnimatorHash.Reloading, isReloading);
             _customAnimator.SetBool(CustomAnimatorHash.GunReady, isGunReady);
         }
@@ -379,6 +425,40 @@ namespace DuckovCustomModel.MonoBehaviours
             FindMeleeAttackLayerIndex();
             if (_customAnimator != null)
                 _customAnimator.SetTrigger(CustomAnimatorHash.Attack);
+        }
+
+        private void OnHoldAgentChanged(DuckovItemAgent? agent)
+        {
+            UnsubscribeGunEvents();
+
+            _holdAgent = agent;
+            _gunAgent = agent as ItemAgent_Gun;
+
+            if (_gunAgent == null) return;
+            _gunAgent.OnShootEvent += OnShoot;
+            _gunAgent.OnLoadedEvent += OnLoaded;
+        }
+
+        private void UnsubscribeGunEvents()
+        {
+            if (_gunAgent == null) return;
+            _gunAgent.OnShootEvent -= OnShoot;
+            _gunAgent.OnLoadedEvent -= OnLoaded;
+        }
+
+        private void OnShoot()
+        {
+            if (_customAnimator == null) return;
+            _customAnimator.SetTrigger(CustomAnimatorHash.Shoot);
+            if (_gunAgent != null && _gunAgent.BulletCount > 0)
+                return;
+            _customAnimator.SetBool(CustomAnimatorHash.Loaded, false);
+        }
+
+        private void OnLoaded()
+        {
+            if (_customAnimator != null)
+                _customAnimator.SetBool(CustomAnimatorHash.Loaded, true);
         }
     }
 }
