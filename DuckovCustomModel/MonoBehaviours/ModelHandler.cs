@@ -415,6 +415,9 @@ namespace DuckovCustomModel.MonoBehaviours
             var bundleDirectory = modelBundleInfo.DirectoryPath;
 
             if (modelInfo.SoundInfos is not { Length: > 0 }) return;
+
+            var validSoundCount = 0;
+
             foreach (var soundInfo in modelInfo.SoundInfos)
             {
                 if (string.IsNullOrWhiteSpace(soundInfo.Path)) continue;
@@ -427,7 +430,12 @@ namespace DuckovCustomModel.MonoBehaviours
                         _soundsByTag[soundTag] = [];
                     _soundsByTag[soundTag].Add(fullPath);
                 }
+
+                validSoundCount++;
             }
+
+            if (validSoundCount == 0) return;
+            ModLogger.Log($"Initialized {validSoundCount} custom sounds for model '{modelInfo.ModelID}'.");
         }
 
         public string? GetRandomSoundByTag(string soundTag)
