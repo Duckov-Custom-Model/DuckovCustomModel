@@ -113,7 +113,7 @@ UI 界面相关配置。
 模型包文件夹/
 ├── bundleinfo.json          # 模型包配置文件（必需）
 ├── modelbundle.assetbundle  # Unity AssetBundle 文件（必需）
-└── thumbnail.png            # 缩略图文件（可选，也可放在 AssetBundle 内）
+└── thumbnail.png            # 缩略图文件（可选）
 ```
 
 ### bundleinfo.json 格式
@@ -152,9 +152,7 @@ UI 界面相关配置。
 - `Author`（可选）：模型作者
 - `Description`（可选）：模型描述信息
 - `Version`（可选）：模型版本号
-- `ThumbnailPath`（可选）：缩略图路径
-  - 可以是 AssetBundle 内的资源路径（如 `"Assets/Thumbnail.png"`）
-  - 也可以是模型包文件夹下的外部文件路径（如 `"thumbnail.png"`）
+- `ThumbnailPath`（可选）：缩略图路径，相对于模型包文件夹的外部文件路径（如 `"thumbnail.png"`）
 - `PrefabPath`（必需）：模型 Prefab 在 AssetBundle 内的资源路径（如 `"Assets/Model.prefab"`）
 - `Target`（可选）：模型适用的目标类型数组（默认：`["Character"]`）
   - 可选值：`"Character"`（角色）、`"Pet"`（宠物）

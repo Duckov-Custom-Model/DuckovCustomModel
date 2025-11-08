@@ -113,7 +113,7 @@ Each model bundle folder should contain the following files:
 Model Bundle Folder/
 ├── bundleinfo.json          # Model bundle configuration file (required)
 ├── modelbundle.assetbundle  # Unity AssetBundle file (required)
-└── thumbnail.png            # Thumbnail file (optional, can also be placed inside AssetBundle)
+└── thumbnail.png            # Thumbnail file (optional)
 ```
 
 ### bundleinfo.json Format
@@ -152,9 +152,7 @@ Model Bundle Folder/
 - `Author` (optional): Model author
 - `Description` (optional): Model description information
 - `Version` (optional): Model version number
-- `ThumbnailPath` (optional): Thumbnail path
-  - Can be a resource path inside the AssetBundle (e.g., `"Assets/Thumbnail.png"`)
-  - Can also be an external file path relative to the model bundle folder (e.g., `"thumbnail.png"`)
+- `ThumbnailPath` (optional): Thumbnail path, external file path relative to the model bundle folder (e.g., `"thumbnail.png"`)
 - `PrefabPath` (required): Model Prefab resource path inside the AssetBundle (e.g., `"Assets/Model.prefab"`)
 - `Target` (optional): Array of target types the model applies to (default: `["Character"]`)
   - Valid values: `"Character"`, `"Pet"`

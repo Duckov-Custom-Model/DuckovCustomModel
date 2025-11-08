@@ -201,14 +201,6 @@ namespace DuckovCustomModel.Managers
             {
                 if (Path.IsPathRooted(modelInfo.ThumbnailPath)) return LoadTextureFromFile(modelInfo.ThumbnailPath);
 
-                var bundle = GetOrLoadAssetBundle(bundleInfo);
-                if (bundle != null && CheckAssetExistsInBundle(bundle, modelInfo.ThumbnailPath))
-                {
-                    var thumbnailFromBundle = LoadAssetFromBundle<Texture2D>(bundleInfo, modelInfo.ThumbnailPath);
-                    if (thumbnailFromBundle != null)
-                        return thumbnailFromBundle;
-                }
-
                 var externalPath = Path.Combine(bundleInfo.DirectoryPath, modelInfo.ThumbnailPath);
                 return File.Exists(externalPath) ? LoadTextureFromFile(externalPath) : null;
             }
@@ -229,14 +221,6 @@ namespace DuckovCustomModel.Managers
             {
                 if (Path.IsPathRooted(modelInfo.ThumbnailPath))
                     return await LoadTextureFromFileAsync(modelInfo.ThumbnailPath, cancellationToken);
-
-                var bundle = await GetOrLoadAssetBundleAsync(bundleInfo, false, cancellationToken);
-                if (bundle != null && CheckAssetExistsInBundle(bundle, modelInfo.ThumbnailPath))
-                {
-                    var thumbnailFromBundle = LoadAssetFromBundle<Texture2D>(bundleInfo, modelInfo.ThumbnailPath);
-                    if (thumbnailFromBundle != null)
-                        return thumbnailFromBundle;
-                }
 
                 var externalPath = Path.Combine(bundleInfo.DirectoryPath, modelInfo.ThumbnailPath);
                 return File.Exists(externalPath)
