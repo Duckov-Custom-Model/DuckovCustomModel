@@ -148,7 +148,22 @@ Model Bundle Folder/
       "Version": "1.0.0",
       "ThumbnailPath": "thumbnail.png",
       "PrefabPath": "Assets/Model.prefab",
-      "Target": ["Character"]
+      "Target": ["Character", "AICharacter"],
+      "SupportedAICharacters": ["Cname_Wolf", "Cname_Scav", "*"],
+      "CustomSounds": [
+        {
+          "Path": "sounds/normal1.wav",
+          "Tags": ["normal"]
+        },
+        {
+          "Path": "sounds/surprise.wav",
+          "Tags": ["surprise", "normal"]
+        },
+        {
+          "Path": "sounds/death.wav",
+          "Tags": ["death"]
+        }
+      ]
     }
   ]
 }
@@ -183,6 +198,7 @@ Model Bundle Folder/
   - Each sound can be configured with multiple tags (`normal`, `surprise`, `death`)
   - Defaults to `["normal"]` when no tags are specified
   - The same sound file can be used for multiple scenarios
+  - Sound file paths are specified in `Path`, relative to the model bundle folder
 
 ## Locator Points
 
@@ -454,6 +470,14 @@ Configuration priority:
 1. First check if the AI character has an individually configured model
 2. If not, check the default model corresponding to `"*"`
 3. If neither exists, use the original model
+
+#### Finding AI Character Name Keys
+
+The keys for AI unit targets (such as `"Cname_Wolf"`, `"Cname_Scav"`) can be found in the game's localization files:
+
+- File location: CSV files in the `<Game Installation Directory>/Duckov_Data/StreamingAssets/Localization` directory
+- How to find: Open any language CSV file (e.g., `ChineseSimplified.csv`), find the `Characters` sheet (worksheet), and the key column contains the AI character name keys
+- These keys can be used in the `SupportedAICharacters` array and `AICharacterModelIDs` dictionary
 
 ### Using the Model Selection Interface
 

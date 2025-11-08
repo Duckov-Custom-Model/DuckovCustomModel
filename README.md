@@ -148,7 +148,22 @@ UI 界面相关配置。
       "Version": "1.0.0",
       "ThumbnailPath": "thumbnail.png",
       "PrefabPath": "Assets/Model.prefab",
-      "Target": ["Character"]
+      "Target": ["Character", "AICharacter"],
+      "SupportedAICharacters": ["Cname_Wolf", "Cname_Scav", "*"],
+      "CustomSounds": [
+        {
+          "Path": "sounds/normal1.wav",
+          "Tags": ["normal"]
+        },
+        {
+          "Path": "sounds/surprise.wav",
+          "Tags": ["surprise", "normal"]
+        },
+        {
+          "Path": "sounds/death.wav",
+          "Tags": ["death"]
+        }
+      ]
     }
   ]
 }
@@ -183,6 +198,7 @@ UI 界面相关配置。
   - 每个音效可以配置多个标签（`normal`、`surprise`、`death`）
   - 未指定标签时，默认为 `["normal"]`
   - 同一音效文件可以同时用于多个场景
+  - 音效文件路径在 `Path` 中指定，相对于模型包文件夹
 
 ## 定位锚点
 
@@ -454,6 +470,14 @@ Animator Controller 可以使用以下参数：
 1. 首先检查该 AI 角色是否有单独配置的模型
 2. 如果没有，则检查 `"*"` 对应的默认模型
 3. 如果都没有，则使用原始模型
+
+#### 查找 AI 角色名称键
+
+AI 单位目标的 key（如 `"Cname_Wolf"`、`"Cname_Scav"`）可以从游戏本地化文件中查找：
+
+- 文件位置：`游戏安装目录/Duckov_Data/StreamingAssets/Localization` 目录下的 CSV 文件
+- 查找方法：打开任意语言的 CSV 文件（如 `ChineseSimplified.csv`），找到 `Characters` 这个 sheet（工作表），其中的 key 列就是 AI 角色名称键
+- 这些 key 可以用于 `SupportedAICharacters` 数组和 `AICharacterModelIDs` 字典中
 
 ### 使用模型选择界面
 
