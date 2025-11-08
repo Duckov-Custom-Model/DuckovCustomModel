@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using Duckov;
 using DuckovCustomModel.Data;
 using DuckovCustomModel.Utils;
 using HarmonyLib;
@@ -79,6 +80,7 @@ namespace DuckovCustomModel.MonoBehaviours
             UpdateEquipmentState();
             UpdateEquipmentTypeID();
             UpdateAttackLayerWeight();
+            UpdateActionState();
         }
 
         private void OnDestroy()
@@ -392,7 +394,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
             _attackTimer += Time.deltaTime;
             var attackTime = AttackTime;
-            _attackWeight = AttackLayerWeightCurve?.Evaluate(_attackTimer / attackTime) ?? 0.0f;
+            var attackProgress = attackTime > 0 ? Mathf.Clamp01(_attackTimer / attackTime) : 0.0f;
+            _attackWeight = AttackLayerWeightCurve?.Evaluate(attackProgress) ?? 0.0f;
             if (_attackTimer >= attackTime)
             {
                 _attacking = false;
@@ -400,6 +403,29 @@ namespace DuckovCustomModel.MonoBehaviours
             }
 
             SetMeleeAttackLayerWeight(_attackWeight);
+        }
+
+        private void UpdateActionState()
+        {
+            if (!_initialized) return;
+            if (_customAnimator == null || _characterMainControl == null)
+                return;
+
+            var currentAction = _characterMainControl.CurrentAction;
+            var isActionRunning = false;
+            var actionProgress = 0.0f;
+            var actionPriority = 0;
+            if (currentAction != null)
+            {
+                isActionRunning = currentAction.Running;
+                if (currentAction is IProgress progressAction)
+                    actionProgress = progressAction.GetProgress().progress;
+                actionPriority = (int)currentAction.ActionPriority();
+            }
+
+            _customAnimator.SetBool(CustomAnimatorHash.ActionRunning, isActionRunning);
+            _customAnimator.SetFloat(CustomAnimatorHash.ActionProgress, actionProgress);
+            _customAnimator.SetInteger(CustomAnimatorHash.ActionPriority, actionPriority);
         }
 
         private void FindMeleeAttackLayerIndex()

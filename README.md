@@ -212,6 +212,7 @@ Animator Controller 可以使用以下参数：
 - `Loaded`：枪械是否已装弹（当持有 `ItemAgent_Gun` 时，由 `OnLoadedEvent` 事件更新）
 - `Reloading`：是否正在装弹
 - `RightHandOut`：右手是否伸出
+- `ActionRunning`：是否正在执行动作（由 `CharacterMainControl.CurrentAction` 决定）
 - `Hidden`：角色是否处于隐藏状态
 - `ThermalOn`：热成像是否开启
 - `InAds`：是否正在瞄准（ADS - Aim Down Sights）
@@ -242,6 +243,7 @@ Animator Controller 可以使用以下参数：
 - `HealthRate`：生命值比率（0.0 - 1.0，当前生命值 / 最大生命值）
 - `WaterRate`：水分比率（0.0 - 1.0，当前水分 / 最大水分）
 - `WeightRate`：重量比率（当前总重量 / 最大负重，可能大于 1.0）
+- `ActionProgress`：动作进度百分比（0.0 - 1.0，当前动作的进度，由 `IProgress.GetProgress().progress` 获取）
 
 #### Int 类型参数
 
@@ -276,6 +278,16 @@ Animator Controller 可以使用以下参数：
 - `FaceTypeID`：面部装备的 TypeID（无装备时为 `0`）
 - `BackpackTypeID`：背包装备的 TypeID（无装备时为 `0`）
 - `MeleeWeaponTypeID`：近战武器装备的 TypeID（无装备时为 `0`）
+- `ActionPriority`：动作优先级（由 `CharacterMainControl.CurrentAction.ActionPriority()` 决定）
+  - `0`：Whatever（任意）
+  - `1`：Reload（装弹）
+  - `2`：Attack（攻击）
+  - `3`：usingItem（使用物品）
+  - `4`：Dash（冲刺）
+  - `5`：Skills（技能）
+  - `6`：Fishing（钓鱼）
+  - `7`：Interact（交互）
+  - 当 `ActionRunning` 为 `true` 时，动作优先级可以近似用于判断角色正在执行什么动作
 
 #### Trigger 类型参数
 

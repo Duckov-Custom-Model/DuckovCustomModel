@@ -212,6 +212,7 @@ The Animator Controller can use the following parameters:
 - `Loaded`: Whether the gun is loaded (updated by `OnLoadedEvent` when holding `ItemAgent_Gun`)
 - `Reloading`: Whether reloading
 - `RightHandOut`: Whether the right hand is extended
+- `ActionRunning`: Whether an action is currently running (determined by `CharacterMainControl.CurrentAction`)
 - `Hidden`: Whether the character is in hidden state
 - `ThermalOn`: Whether thermal imaging is enabled
 - `InAds`: Whether aiming down sights (ADS)
@@ -242,6 +243,7 @@ The Animator Controller can use the following parameters:
 - `HealthRate`: Health ratio (0.0 - 1.0, current health / max health)
 - `WaterRate`: Water ratio (0.0 - 1.0, current water / max water)
 - `WeightRate`: Weight ratio (current total weight / max carrying capacity, may exceed 1.0)
+- `ActionProgress`: Action progress percentage (0.0 - 1.0, current action progress, obtained from `IProgress.GetProgress().progress`)
 
 #### Int Type Parameters
 
@@ -276,6 +278,16 @@ The Animator Controller can use the following parameters:
 - `FaceTypeID`: TypeID of face equipment (0 when no equipment)
 - `BackpackTypeID`: TypeID of backpack equipment (0 when no equipment)
 - `MeleeWeaponTypeID`: TypeID of melee weapon equipment (0 when no equipment)
+- `ActionPriority`: Action priority (determined by `CharacterMainControl.CurrentAction.ActionPriority()`)
+  - `0`: Whatever
+  - `1`: Reload
+  - `2`: Attack
+  - `3`: usingItem
+  - `4`: Dash
+  - `5`: Skills
+  - `6`: Fishing
+  - `7`: Interact
+  - When `ActionRunning` is `true`, the action priority can be used to approximately determine what action the character is performing
 
 #### Trigger Type Parameters
 

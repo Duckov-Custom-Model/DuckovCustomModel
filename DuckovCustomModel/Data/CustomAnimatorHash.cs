@@ -69,6 +69,9 @@ namespace DuckovCustomModel.Data
         public static readonly int InAds = Animator.StringToHash("InAds"); // bool
         public static readonly int AdsValue = Animator.StringToHash("AdsValue"); // float
         public static readonly int AimType = Animator.StringToHash("AimType"); // int
+        public static readonly int ActionRunning = Animator.StringToHash("ActionRunning"); // bool
+        public static readonly int ActionProgress = Animator.StringToHash("ActionProgress"); // float
+        public static readonly int ActionPriority = Animator.StringToHash("ActionPriority"); // int
 
         public static List<AnimatorParamInfo> GetAllParams()
         {
@@ -125,6 +128,9 @@ namespace DuckovCustomModel.Data
                 new() { Name = "InAds", Hash = InAds, Type = "bool" },
                 new() { Name = "AdsValue", Hash = AdsValue, Type = "float" },
                 new() { Name = "AimType", Hash = AimType, Type = "int" },
+                new() { Name = "ActionRunning", Hash = ActionRunning, Type = "bool" },
+                new() { Name = "ActionProgress", Hash = ActionProgress, Type = "float" },
+                new() { Name = "ActionPriority", Hash = ActionPriority, Type = "int" },
             }.OrderBy(p => p.Name).ToList();
         }
     }
