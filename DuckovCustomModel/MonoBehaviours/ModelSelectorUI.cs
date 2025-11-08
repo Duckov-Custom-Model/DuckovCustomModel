@@ -51,6 +51,10 @@ namespace DuckovCustomModel.MonoBehaviours
         private UIConfig? _uiConfig;
         private GameObject? _uiRoot;
         private UsingModel? _usingModel;
+        private bool _showAnimatorParamsWindow;
+        private Toggle? _animatorParamsToggle;
+        private Vector2 _animatorParamsScrollPosition;
+        private Rect _animatorParamsWindowRect = new(10, 10, 600, 800);
 
         private void Start()
         {
@@ -106,6 +110,81 @@ namespace DuckovCustomModel.MonoBehaviours
             if (!_uiActive || _panelRoot == null || !_panelRoot.activeSelf) return;
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
+        }
+
+        private void OnGUI()
+        {
+            if (!_showAnimatorParamsWindow) return;
+
+            var currentHandler = _currentTargetType == ModelTarget.Character ? _modelHandler : _petModelHandler;
+            if (currentHandler == null) return;
+
+            var customAnimatorControl = currentHandler.CustomAnimatorControl;
+            if (customAnimatorControl == null) return;
+
+            var animator = currentHandler.CustomAnimator;
+            if (animator == null) return;
+
+            _animatorParamsWindowRect = GUI.Window(100, _animatorParamsWindowRect, DrawAnimatorParamsWindow, "动画器参数");
+        }
+
+        private void DrawAnimatorParamsWindow(int windowID)
+        {
+            var currentHandler = _currentTargetType == ModelTarget.Character ? _modelHandler : _petModelHandler;
+            if (currentHandler == null) return;
+
+            var animator = currentHandler.CustomAnimator;
+            if (animator == null) return;
+
+            var scrollViewRect = new Rect(10, 30, _animatorParamsWindowRect.width - 20, _animatorParamsWindowRect.height - 50);
+            var contentRect = new Rect(0, 0, _animatorParamsWindowRect.width - 40, 0);
+
+            var yPos = 0f;
+            var lineHeight = 20f;
+            var spacing = 5f;
+
+            foreach (var param in animator.parameters)
+            {
+                var paramHeight = lineHeight;
+                contentRect.height = Mathf.Max(contentRect.height, yPos + paramHeight);
+                yPos += paramHeight + spacing;
+            }
+
+            _animatorParamsScrollPosition = GUI.BeginScrollView(scrollViewRect, _animatorParamsScrollPosition, contentRect);
+
+            yPos = 0f;
+            foreach (var param in animator.parameters)
+            {
+                var paramRect = new Rect(10, yPos, contentRect.width - 20, lineHeight);
+                var paramName = $"{param.name} ({param.type})";
+                var paramValue = GetParameterValue(animator, param);
+
+                GUI.Label(paramRect, $"{paramName}: {paramValue}");
+                yPos += lineHeight + spacing;
+            }
+
+            GUI.EndScrollView();
+
+            if (GUI.Button(new Rect(10, _animatorParamsWindowRect.height - 30, 100, 20), "关闭"))
+            {
+                _showAnimatorParamsWindow = false;
+                if (_animatorParamsToggle != null)
+                    _animatorParamsToggle.isOn = false;
+            }
+
+            GUI.DragWindow();
+        }
+
+        private static string GetParameterValue(Animator animator, AnimatorControllerParameter param)
+        {
+            return param.type switch
+            {
+                AnimatorControllerParameterType.Float => animator.GetFloat(param.nameHash).ToString("F3"),
+                AnimatorControllerParameterType.Int => animator.GetInteger(param.nameHash).ToString(),
+                AnimatorControllerParameterType.Bool => animator.GetBool(param.nameHash).ToString(),
+                AnimatorControllerParameterType.Trigger => "Trigger",
+                _ => "Unknown"
+            };
         }
 
         private void OnDestroy()
@@ -539,6 +618,7 @@ namespace DuckovCustomModel.MonoBehaviours
                 OnHidePetEquipmentToggleChanged);
 
             BuildKeySetting(settingsPanel);
+            BuildAnimatorParamsToggle(settingsPanel);
         }
 
         private void BuildKeySetting(GameObject settingsPanel)
@@ -682,6 +762,42 @@ namespace DuckovCustomModel.MonoBehaviours
             _hideEquipmentConfig.SetHideEquipment(ModelTarget.Pet, value);
             ConfigManager.SaveConfigToFile(_hideEquipmentConfig, "HideEquipmentConfig.json");
             ModLogger.Log($"HideEquipment setting for {ModelTarget.Pet} changed to: {value}");
+        }
+
+        private void BuildAnimatorParamsToggle(GameObject settingsPanel)
+        {
+            if (_panelRoot == null) return;
+
+            var toggleObj = new GameObject("AnimatorParamsToggle", typeof(Toggle));
+            toggleObj.transform.SetParent(settingsPanel.transform, false);
+            var toggle = toggleObj.GetComponent<Toggle>();
+            toggle.isOn = _showAnimatorParamsWindow;
+            toggle.onValueChanged.AddListener(OnAnimatorParamsToggleChanged);
+
+            var toggleImage = toggleObj.AddComponent<Image>();
+            toggleImage.color = new(0.2f, 0.2f, 0.2f, 1);
+            var toggleRect = toggleObj.GetComponent<RectTransform>();
+            toggleRect.sizeDelta = new(20, 20);
+
+            var checkmark = CreateImage("Checkmark", toggleObj.transform);
+            var checkmarkImage = checkmark.GetComponent<Image>();
+            checkmarkImage.color = new(0.2f, 0.8f, 0.2f, 1);
+            var checkmarkRect = checkmark.GetComponent<RectTransform>();
+            checkmarkRect.anchorMin = new(0.2f, 0.2f);
+            checkmarkRect.anchorMax = new(0.8f, 0.8f);
+            checkmarkRect.sizeDelta = Vector2.zero;
+            toggle.graphic = checkmarkImage;
+
+            var labelObj = CreateText("Label", settingsPanel.transform, "显示动画器参数", 14, Color.white);
+            var labelRect = labelObj.GetComponent<RectTransform>();
+            labelRect.sizeDelta = new(150, 20);
+
+            _animatorParamsToggle = toggle;
+        }
+
+        private void OnAnimatorParamsToggleChanged(bool value)
+        {
+            _showAnimatorParamsWindow = value;
         }
 
         private void OnRefreshButtonClicked()
