@@ -13,7 +13,7 @@ namespace DuckovCustomModel.Data
         public string Version { get; set; } = string.Empty;
         public string ThumbnailPath { get; set; } = string.Empty;
         public string PrefabPath { get; set; } = string.Empty;
-        public SoundInfo[] SoundInfos { get; set; } = [];
+        public SoundInfo[] CustomSounds { get; set; } = [];
 
         [JsonIgnore] public string BundleName { get; internal set; } = string.Empty;
 
@@ -33,7 +33,7 @@ namespace DuckovCustomModel.Data
             }
 
             var soundInfos = new List<SoundInfo>();
-            foreach (var soundInfo in SoundInfos ?? [])
+            foreach (var soundInfo in CustomSounds ?? [])
             {
                 // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
                 if (soundInfo == null || string.IsNullOrWhiteSpace(soundInfo.Path)) continue;
@@ -42,7 +42,7 @@ namespace DuckovCustomModel.Data
             }
 
             Target = targets.ToArray();
-            SoundInfos = soundInfos.ToArray();
+            CustomSounds = soundInfos.ToArray();
 
             return true;
         }

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Newtonsoft.Json;
 
 namespace DuckovCustomModel.Data
 {
@@ -8,31 +7,25 @@ namespace DuckovCustomModel.Data
         public string Path { get; set; } = string.Empty;
         public string[] Tags { get; set; } = [];
 
-        [JsonIgnore] public HashSet<string> TagSet { get; private set; } = [];
-
         public void Initialize()
         {
-            TagSet.Clear();
             if (Tags is not { Length: > 0 })
             {
-                TagSet = ["normal"];
+                Tags = [Constant.SoundTagNormal];
                 return;
             }
 
+            var tagSet = new List<string>();
             foreach (var tag in Tags)
             {
                 if (string.IsNullOrWhiteSpace(tag)) continue;
                 var normalizedTag = tag.ToLowerInvariant().Trim();
-                if (normalizedTag is "normal" or "surprise" or "death")
-                    TagSet.Add(normalizedTag);
+                if (normalizedTag is Constant.SoundTagNormal or Constant.SoundTagSurprise or Constant.SoundTagDeath)
+                    tagSet.Add(normalizedTag);
             }
 
-            if (TagSet.Count == 0) TagSet.Add("normal");
-        }
-
-        public bool HasTag(string tag)
-        {
-            return !string.IsNullOrWhiteSpace(tag) && TagSet.Contains(tag.ToLowerInvariant().Trim());
+            if (tagSet.Count == 0) tagSet.Add(Constant.SoundTagNormal);
+            Tags = tagSet.ToArray();
         }
     }
 }

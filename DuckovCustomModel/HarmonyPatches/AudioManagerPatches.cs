@@ -33,8 +33,10 @@ namespace DuckovCustomModel.HarmonyPatches
                 var modelHandler = characterMainControl.GetComponent<ModelHandler>();
                 if (modelHandler == null || !modelHandler.IsInitialized) return true;
 
+                if (!modelHandler.HasAnySounds()) return true;
+
                 var normalizedSoundKey = string.IsNullOrWhiteSpace(soundKey)
-                    ? "normal"
+                    ? Constant.SoundTagNormal
                     : soundKey.ToLowerInvariant().Trim();
 
                 var soundPath = modelHandler.GetRandomSoundByTag(normalizedSoundKey);
@@ -42,6 +44,39 @@ namespace DuckovCustomModel.HarmonyPatches
 
                 AudioManager.PostCustomSFX(soundPath);
                 __result = null;
+                return false;
+            }
+        }
+
+        [HarmonyPatch]
+        internal static class CharacterMainControlPatch
+        {
+            private static MethodBase TargetMethod()
+            {
+                return AccessTools.Method(typeof(CharacterMainControl), nameof(CharacterMainControl.Quack));
+            }
+
+            // ReSharper disable once InconsistentNaming
+            private static bool Prefix(CharacterMainControl __instance)
+            {
+                var modelHandler = __instance.GetComponent<ModelHandler>();
+                if (modelHandler == null || !modelHandler.IsInitialized) return true;
+
+                if (!modelHandler.HasAnySounds()) return true;
+
+                var soundPath = modelHandler.GetRandomSoundByTag(Constant.SoundTagNormal);
+                if (string.IsNullOrEmpty(soundPath)) return true;
+
+                AudioManager.PostCustomSFX(soundPath);
+                AIMainBrain.MakeSound(new()
+                {
+                    fromCharacter = __instance,
+                    fromObject = __instance.gameObject,
+                    pos = __instance.transform.position,
+                    fromTeam = __instance.Team,
+                    soundType = SoundTypes.unknowNoise,
+                    radius = 15f,
+                });
                 return false;
             }
         }

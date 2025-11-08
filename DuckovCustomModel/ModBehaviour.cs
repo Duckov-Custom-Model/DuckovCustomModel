@@ -72,8 +72,6 @@ namespace DuckovCustomModel
             LevelManager.OnLevelInitialized -= LevelManager_OnLevelInitialized;
             LevelManager.OnAfterLevelInitialized -= LevelManager_OnAfterLevelInitialized;
 
-            ModelHandler.DisableAllQuackActions();
-
             ModelListManager.CancelRefresh();
 
             ModelSelectorUILocalization.Cleanup();
@@ -150,8 +148,6 @@ namespace DuckovCustomModel
 
         private void LevelManager_OnLevelBeginInitializing()
         {
-            ModelHandler.DisableAllQuackActions();
-
             var priorityModelIDs = new List<string>();
             if (UsingModel != null)
                 priorityModelIDs.AddRange(from ModelTarget target in Enum.GetValues(typeof(ModelTarget))
