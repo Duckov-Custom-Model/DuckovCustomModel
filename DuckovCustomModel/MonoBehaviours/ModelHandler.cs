@@ -136,6 +136,7 @@ namespace DuckovCustomModel.MonoBehaviours
         {
             if (customSocketObject == null) return;
             _usingCustomSocketObjects.Add(customSocketObject);
+            UpdateToCustomSocket(customSocketObject);
         }
 
         public void UnregisterCustomSocketObject(GameObject customSocketObject)
@@ -389,9 +390,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
                     child.SetParent(customSocketMarker.OriginParent, false);
                     child.localPosition = customSocketMarker.SocketOffset ?? Vector3.zero;
-                    child.localRotation = customSocketMarker.SocketRotation != null
-                        ? Quaternion.Euler(customSocketMarker.SocketRotation.Value)
-                        : Quaternion.identity;
+                    child.localRotation = customSocketMarker.SocketRotation ?? Quaternion.identity;
                     child.localScale = customSocketMarker.SocketScale ?? Vector3.one;
                 }
             }

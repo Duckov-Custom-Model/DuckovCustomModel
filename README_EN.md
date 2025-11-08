@@ -217,6 +217,15 @@ The model Prefab's child objects need to include Transforms with the following n
 - `MeleeWeaponLocator`: Melee weapon locator point for binding melee weapon equipment
 - `PopTextLocator`: Pop text locator point for displaying pop text
 
+### Optional Locator Points
+
+In addition to the required locator points, models can also include the following optional locator points:
+
+- `PaperBoxLocator`: Paper box locator point for binding paper boxes
+  - When a custom model includes this locator point, paper boxes spawned in the game will automatically attach to this point
+  - Paper boxes will follow the custom model's position and rotation
+  - If the model does not include this locator point, paper boxes will use the original model's locator point
+
 ### Function of Locator Points
 
 - The mod automatically searches for these locator points in custom models

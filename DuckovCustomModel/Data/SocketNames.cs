@@ -9,10 +9,12 @@ namespace DuckovCustomModel.Data
         #region External Locators
 
         public const string PaperBox = "PaperBoxLocator";
+        public const string Carriable = "CarriableLocator";
 
         public static readonly List<string> ExternalSocketNames =
         [
             PaperBox,
+            Carriable,
         ];
 
         #endregion

@@ -8,7 +8,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
         [SerializeField] private Transform? originParent;
         [SerializeField] private Vector3? _socketOffset;
-        [SerializeField] private Vector3? _socketRotation;
+        [SerializeField] private Quaternion? _socketRotation;
         [SerializeField] private Vector3? _socketScale;
 
         public string CustomSocketName
@@ -29,7 +29,7 @@ namespace DuckovCustomModel.MonoBehaviours
             set => _socketOffset = value;
         }
 
-        public Vector3? SocketRotation
+        public Quaternion? SocketRotation
         {
             get => _socketRotation;
             set => _socketRotation = value;
