@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -6,6 +7,7 @@ using DuckovCustomModel.Data;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.Utils;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace DuckovCustomModel.MonoBehaviours
 {
@@ -63,7 +65,6 @@ namespace DuckovCustomModel.MonoBehaviours
                 CharacterModelSocketUtils.GetArmorSocket(OriginalCharacterModel),
                 CharacterModelSocketUtils.GetBackpackSocket(OriginalCharacterModel),
             };
-
 
             if (IsHiddenOriginalEquipment)
                 foreach (var socket in equipmentSockets)
@@ -222,10 +223,10 @@ namespace DuckovCustomModel.MonoBehaviours
 
             if (CustomModelInstance != null) CleanupCustomModel();
             InitSoundFilePath(modelBundleInfo, modelInfo);
-            InitializeCustomModelInternal(prefab);
+            InitializeCustomModelInternal(prefab, modelInfo);
         }
 
-        private void InitializeCustomModelInternal(GameObject customModelPrefab)
+        private void InitializeCustomModelInternal(GameObject customModelPrefab, ModelInfo modelInfo)
         {
             if (CharacterMainControl == null)
             {
@@ -246,7 +247,8 @@ namespace DuckovCustomModel.MonoBehaviours
             CustomModelInstance.name = "CustomModelInstance";
             CustomModelInstance.layer = LayerMask.NameToLayer("Default");
 
-            ReplaceShader(CustomModelInstance);
+            if (modelInfo.Features is not { Length: > 0 } || !Array.Exists(modelInfo.Features,
+                    feature => feature == ModelFeatures.NoAutoShaderReplace)) ReplaceShader(CustomModelInstance);
 
             // Get the Animator component from the custom model
             CustomAnimator = CustomModelInstance.GetComponent<Animator>();

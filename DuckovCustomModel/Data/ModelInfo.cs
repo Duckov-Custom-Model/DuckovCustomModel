@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json;
 
 namespace DuckovCustomModel.Data
@@ -20,6 +21,8 @@ namespace DuckovCustomModel.Data
         public ModelTarget[] Target { get; set; } = [ModelTarget.Character];
 
         public string[] SupportedAICharacters { get; set; } = [];
+
+        public string[] Features { get; set; } = [];
 
         public bool Validate()
         {
@@ -42,6 +45,15 @@ namespace DuckovCustomModel.Data
                 soundInfo.Initialize();
                 soundInfos.Add(soundInfo);
             }
+
+            var features = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var feature in Features ?? [])
+            {
+                if (string.IsNullOrWhiteSpace(feature)) continue;
+                features.Add(feature.Trim());
+            }
+
+            Features = features.ToArray();
 
             Target = targets.ToArray();
             CustomSounds = soundInfos.ToArray();
