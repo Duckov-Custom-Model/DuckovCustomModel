@@ -150,6 +150,9 @@ namespace DuckovCustomModel.MonoBehaviours
             var currentHandler = _currentTargetType == ModelTarget.Character ? _modelHandler : _petModelHandler;
             if (currentHandler == null) return;
 
+            var customAnimatorControl = currentHandler.CustomAnimatorControl;
+            if (customAnimatorControl == null) return;
+
             var animator = currentHandler.CustomAnimator;
             if (animator == null) return;
 
@@ -183,7 +186,7 @@ namespace DuckovCustomModel.MonoBehaviours
             {
                 var paramRect = new Rect(itemPadding, yPos, contentWidth - itemPadding * 2, lineHeight);
                 var paramName = $"{paramInfo.Name} ({paramInfo.Type})";
-                var paramValue = GetParameterValue(animator, paramInfo);
+                var paramValue = GetParameterValue(customAnimatorControl, paramInfo);
 
                 GUI.Label(paramRect, $"{paramName}: {paramValue}");
                 yPos += lineHeight + spacing;
@@ -206,17 +209,18 @@ namespace DuckovCustomModel.MonoBehaviours
             return CustomAnimatorHash.GetAllParams();
         }
 
-        private static string GetParameterValue(Animator animator, AnimatorParamInfo paramInfo)
+        private static string GetParameterValue(CustomAnimatorControl customAnimatorControl,
+            AnimatorParamInfo paramInfo)
         {
-            if (animator == null) return "N/A";
+            if (customAnimatorControl == null) return "N/A";
 
             try
             {
                 return paramInfo.Type switch
                 {
-                    "float" => animator.GetFloat(paramInfo.Hash).ToString("F3"),
-                    "int" => animator.GetInteger(paramInfo.Hash).ToString(),
-                    "bool" => animator.GetBool(paramInfo.Hash).ToString(),
+                    "float" => customAnimatorControl.GetParameterFloat(paramInfo.Hash).ToString("F3"),
+                    "int" => customAnimatorControl.GetParameterInteger(paramInfo.Hash).ToString(),
+                    "bool" => customAnimatorControl.GetParameterBool(paramInfo.Hash).ToString(),
                     "trigger" => "Trigger",
                     _ => "Unknown",
                 };
