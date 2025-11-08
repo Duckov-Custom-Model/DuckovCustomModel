@@ -19,6 +19,9 @@ namespace DuckovCustomModel.MonoBehaviours
 {
     public class ModelSelectorUI : MonoBehaviour
     {
+        private const float AnimatorParamsWindowWidth = 700f;
+        private const float AnimatorParamsWindowHeight = 800f;
+
         private readonly List<ModelBundleInfo> _filteredModelBundles = [];
         private Vector2 _animatorParamsScrollPosition;
         private Toggle? _animatorParamsToggle;
@@ -39,12 +42,14 @@ namespace DuckovCustomModel.MonoBehaviours
         private ScrollRect? _modelScrollRect;
         private GameObject? _overlay;
         private GameObject? _panelRoot;
+        private GUIStyle? _paramLabelStyle;
         private ModelHandler? _petModelHandler;
         private PlayerInput? _playerInput;
         private Button? _refreshButton;
         private Text? _refreshButtonText;
         private CancellationTokenSource? _refreshCancellationTokenSource;
         private UniTaskCompletionSource? _refreshCompletionSource;
+        private GUIStyle? _scrollViewStyle;
 
         private InputField? _searchField;
         private string _searchText = string.Empty;
@@ -138,10 +143,8 @@ namespace DuckovCustomModel.MonoBehaviours
             var animator = currentHandler.CustomAnimator;
             if (animator == null) return;
 
-            const float windowWidth = 600f;
-            const float windowHeight = 800f;
-            _animatorParamsWindowRect.width = windowWidth;
-            _animatorParamsWindowRect.height = windowHeight;
+            _animatorParamsWindowRect.width = AnimatorParamsWindowWidth;
+            _animatorParamsWindowRect.height = AnimatorParamsWindowHeight;
             _animatorParamsWindowRect = GUI.Window(100, _animatorParamsWindowRect, DrawAnimatorParamsWindow, "动画器参数");
         }
 
@@ -153,55 +156,89 @@ namespace DuckovCustomModel.MonoBehaviours
             var customAnimatorControl = currentHandler.CustomAnimatorControl;
             if (customAnimatorControl == null) return;
 
-            var animator = currentHandler.CustomAnimator;
-            if (animator == null) return;
+            InitializeParamStyles();
 
-            const float windowWidth = 600f;
-            const float windowHeight = 800f;
-            const float scrollViewX = 10f;
-            const float scrollViewY = 30f;
-            const float scrollViewWidth = windowWidth - 20f;
-            const float scrollViewHeight = windowHeight - 60f;
-            const float contentWidth = windowWidth - 40f;
+            GUILayout.BeginArea(new(10, 30, AnimatorParamsWindowWidth - 20, AnimatorParamsWindowHeight - 90));
+
+            _animatorParamsScrollPosition = GUILayout.BeginScrollView(_animatorParamsScrollPosition,
+                _scrollViewStyle, GUILayout.Width(AnimatorParamsWindowWidth - 20),
+                GUILayout.Height(AnimatorParamsWindowHeight - 90));
 
             var paramInfos = GetCustomAnimatorParams();
-            var scrollViewRect = new Rect(scrollViewX, scrollViewY, scrollViewWidth, scrollViewHeight);
-
-            const float lineHeight = 20f;
-            const float spacing = 5f;
-            const float itemPadding = 10f;
-
-            var totalHeight = paramInfos.Count > 0
-                ? paramInfos.Count * lineHeight + (paramInfos.Count - 1) * spacing
-                : scrollViewHeight;
-            totalHeight = Math.Max(totalHeight, scrollViewHeight);
-
-            var contentRect = new Rect(0, 0, contentWidth, totalHeight);
-
-            _animatorParamsScrollPosition =
-                GUI.BeginScrollView(scrollViewRect, _animatorParamsScrollPosition, contentRect);
-
-            var yPos = 0f;
-            foreach (var paramInfo in paramInfos)
+            for (var i = 0; i < paramInfos.Count; i += 2)
             {
-                var paramRect = new Rect(itemPadding, yPos, contentWidth - itemPadding * 2, lineHeight);
-                var paramName = $"{paramInfo.Name} ({paramInfo.Type})";
-                var paramValue = GetParameterValue(customAnimatorControl, paramInfo);
+                GUILayout.BeginHorizontal();
 
-                GUI.Label(paramRect, $"{paramName}: {paramValue}");
-                yPos += lineHeight + spacing;
+                var paramInfo1 = paramInfos[i];
+                var paramName1 = $"{paramInfo1.Name} ({paramInfo1.Type})";
+                var paramValue1 = GetParameterValue(customAnimatorControl, paramInfo1);
+
+                if (_paramLabelStyle != null)
+                    GUILayout.Label($"{paramName1}: {paramValue1}", _paramLabelStyle,
+                        GUILayout.Width((AnimatorParamsWindowWidth - 40) / 2f));
+                else
+                    GUILayout.Label($"{paramName1}: {paramValue1}",
+                        GUILayout.Width((AnimatorParamsWindowWidth - 40) / 2f));
+
+                if (i + 1 < paramInfos.Count)
+                {
+                    var paramInfo2 = paramInfos[i + 1];
+                    var paramName2 = $"{paramInfo2.Name} ({paramInfo2.Type})";
+                    var paramValue2 = GetParameterValue(customAnimatorControl, paramInfo2);
+
+                    if (_paramLabelStyle != null)
+                        GUILayout.Label($"{paramName2}: {paramValue2}", _paramLabelStyle,
+                            GUILayout.Width((AnimatorParamsWindowWidth - 40) / 2f));
+                    else
+                        GUILayout.Label($"{paramName2}: {paramValue2}",
+                            GUILayout.Width((AnimatorParamsWindowWidth - 40) / 2f));
+                }
+
+                GUILayout.EndHorizontal();
             }
 
-            GUI.EndScrollView();
+            GUILayout.EndScrollView();
 
-            if (GUI.Button(new(10, windowHeight - 30, 100, 20), "关闭"))
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("关闭", GUILayout.Width(100), GUILayout.Height(20)))
             {
                 _showAnimatorParamsWindow = false;
                 if (_animatorParamsToggle != null)
                     _animatorParamsToggle.isOn = false;
             }
 
-            GUI.DragWindow(new(0, 0, windowWidth, 20));
+            GUILayout.EndHorizontal();
+
+            GUILayout.EndArea();
+
+            GUI.DragWindow(new(0, 0, AnimatorParamsWindowWidth, 20));
+        }
+
+        private void InitializeParamStyles()
+        {
+            _paramLabelStyle ??= new(GUI.skin.label)
+            {
+                fontSize = 13,
+                normal = { textColor = Color.white },
+            };
+
+            _scrollViewStyle ??= new(GUI.skin.scrollView)
+            {
+                normal = { background = MakeTex(2, 2, new(0.1f, 0.1f, 0.1f, 0.8f)) },
+            };
+        }
+
+        private static Texture2D MakeTex(int width, int height, Color col)
+        {
+            var pix = new Color[width * height];
+            for (var i = 0; i < pix.Length; i++)
+                pix[i] = col;
+
+            var result = new Texture2D(width, height);
+            result.SetPixels(pix);
+            result.Apply();
+            return result;
         }
 
         private static List<AnimatorParamInfo> GetCustomAnimatorParams()
