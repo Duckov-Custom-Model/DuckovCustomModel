@@ -15,6 +15,7 @@
   "TargetType": "目标类型:",
   "TargetCharacter": "角色",
   "TargetPet": "宠物",
-  "TargetAICharacter": "AI角色"
+  "TargetAICharacter": "AI角色",
+  "ResetInvalidModels": "重置无效模型"
 }
 

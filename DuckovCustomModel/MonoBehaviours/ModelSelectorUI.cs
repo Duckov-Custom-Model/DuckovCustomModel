@@ -706,6 +706,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
             BuildKeySetting(settingsPanel);
             BuildAnimatorParamsToggle(settingsPanel);
+            BuildResetInvalidModelsButton(settingsPanel);
         }
 
         private void BuildKeySetting(GameObject settingsPanel)
@@ -959,6 +960,80 @@ namespace DuckovCustomModel.MonoBehaviours
         private void OnAnimatorParamsToggleChanged(bool value)
         {
             _showAnimatorParamsWindow = value;
+        }
+
+        private void BuildResetInvalidModelsButton(GameObject settingsPanel)
+        {
+            if (_panelRoot == null) return;
+
+            var resetButton = CreateButton("ResetInvalidModelsButton", settingsPanel.transform,
+                OnResetInvalidModelsButtonClicked);
+            resetButton.GetComponent<Image>().color = new(0.4f, 0.2f, 0.2f, 1);
+            var resetButtonRect = resetButton.GetComponent<RectTransform>();
+            resetButtonRect.sizeDelta = new(150, 30);
+
+            var resetText = CreateText("Text", resetButton.transform, ModelSelectorUILocalization.ResetInvalidModels,
+                14,
+                Color.white, TextAnchor.MiddleCenter);
+            SetupRectTransform(resetText, Vector2.zero, Vector2.one, Vector2.zero);
+
+            var resetButtonComponent = resetButton.GetComponent<Button>();
+            SetupButtonColors(resetButtonComponent, new(1, 1, 1, 1), new(0.6f, 0.4f, 0.4f, 1),
+                new(0.5f, 0.3f, 0.3f, 1), new(0.6f, 0.4f, 0.4f, 1));
+        }
+
+        private void OnResetInvalidModelsButtonClicked()
+        {
+            if (_usingModel == null)
+            {
+                ModLogger.LogError("UsingModel is null.");
+                return;
+            }
+
+            var hasChanges = false;
+
+            foreach (ModelTarget target in Enum.GetValues(typeof(ModelTarget)))
+            {
+                if (target == ModelTarget.AICharacter) continue;
+
+                var modelID = _usingModel.GetModelID(target);
+                if (string.IsNullOrEmpty(modelID)) continue;
+
+                var isValid = ModelManager.FindModelByID(modelID, out _, out var modelInfo);
+                if (isValid && modelInfo != null && modelInfo.CompatibleWithType(target)) continue;
+                ModLogger.Log(
+                    $"Removing invalid model '{modelID}' for {target} (not found or not compatible)");
+                _usingModel.SetModelID(target, string.Empty);
+                ModelListManager.RestoreOriginalModelForTarget(target);
+                hasChanges = true;
+            }
+
+            foreach (var nameKey in AICharacters.SupportedAICharacters)
+            {
+                var modelID = _usingModel.GetAICharacterModelID(nameKey);
+                if (string.IsNullOrEmpty(modelID)) continue;
+
+                var isValid = ModelManager.FindModelByID(modelID, out _, out var modelInfo);
+                if (modelInfo == null || (isValid && modelInfo.CompatibleWithAICharacter(nameKey))) continue;
+                ModLogger.Log(
+                    $"Removing invalid model '{modelID}' for AICharacter '{nameKey}' (not found or not compatible)");
+                _usingModel.SetAICharacterModelID(nameKey, string.Empty);
+                var handlers = ModelManager.GetAICharacterModelHandlers(nameKey);
+                foreach (var handler in handlers)
+                    handler.RestoreOriginalModel();
+                hasChanges = true;
+            }
+
+            if (hasChanges)
+            {
+                ConfigManager.SaveConfigToFile(_usingModel, "UsingModel.json");
+                ModLogger.Log("Reset invalid models completed.");
+                RefreshModelList();
+            }
+            else
+            {
+                ModLogger.Log("No invalid models found.");
+            }
         }
 
         private void OnRefreshButtonClicked()
@@ -1789,7 +1864,6 @@ namespace DuckovCustomModel.MonoBehaviours
 
             var countText = CreateText("Count", buttonObj.transform, $"{modelCount} 个模型", 14,
                 new(0.7f, 0.7f, 0.7f, 1));
-            var countTextComponent = countText.GetComponent<Text>();
             var countRect = countText.GetComponent<RectTransform>();
             countRect.anchorMin = new(1, 0);
             countRect.anchorMax = new(1, 1);
@@ -1808,7 +1882,7 @@ namespace DuckovCustomModel.MonoBehaviours
             button.onClick.AddListener(() => OnAICharacterSelected(nameKey));
         }
 
-        private int CountCompatibleModelsForAICharacter(string nameKey)
+        private static int CountCompatibleModelsForAICharacter(string nameKey)
         {
             var count = 0;
             foreach (var bundle in ModelManager.ModelBundles)

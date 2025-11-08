@@ -15,6 +15,7 @@
   "TargetType": "Target Type:",
   "TargetCharacter": "Character",
   "TargetPet": "Pet",
-  "TargetAICharacter": "AI Character"
+  "TargetAICharacter": "AI Character",
+  "ResetInvalidModels": "Reset Invalid Models"
 }
 

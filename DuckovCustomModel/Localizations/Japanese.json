@@ -15,6 +15,7 @@
   "TargetType": "対象タイプ:",
   "TargetCharacter": "キャラクター",
   "TargetPet": "ペット",
-  "TargetAICharacter": "AIキャラクター"
+  "TargetAICharacter": "AIキャラクター",
+  "ResetInvalidModels": "無効なモデルをリセット"
 }
 
