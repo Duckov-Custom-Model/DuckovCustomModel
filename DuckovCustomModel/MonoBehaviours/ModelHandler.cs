@@ -16,6 +16,22 @@ namespace DuckovCustomModel.MonoBehaviours
         private static readonly FieldInfo[] OriginalModelSocketFieldInfos =
             CharacterModelSocketUtils.AllSocketFields;
 
+        #region Custom Sockets
+
+        private static readonly Dictionary<FieldInfo, string> CustomModelSocketNames = new()
+        {
+            { CharacterModelSocketUtils.LeftHandSocket, SocketNames.LeftHandLocatorName },
+            { CharacterModelSocketUtils.RightHandSocket, SocketNames.RightHandLocatorName },
+            { CharacterModelSocketUtils.ArmorSocket, SocketNames.ArmorLocatorName },
+            { CharacterModelSocketUtils.HelmetSocket, SocketNames.HelmetLocatorName },
+            { CharacterModelSocketUtils.FaceSocket, SocketNames.FaceLocatorName },
+            { CharacterModelSocketUtils.BackpackSocket, SocketNames.BackpackLocatorName },
+            { CharacterModelSocketUtils.MeleeWeaponSocket, SocketNames.MeleeWeaponLocatorName },
+            { CharacterModelSocketUtils.PopTextSocket, SocketNames.PopTextLocatorName },
+        };
+
+        #endregion
+
         private readonly Dictionary<FieldInfo, Transform> _customModelSockets = [];
         private readonly Dictionary<FieldInfo, Transform> _originalModelSockets = [];
 
@@ -368,31 +384,6 @@ namespace DuckovCustomModel.MonoBehaviours
         private static Shader GameDefaultShader => Shader.Find("SodaCraft/SodaCharacter");
 
         private static readonly int EmissionColor = Shader.PropertyToID("_EmissionColor");
-
-        #endregion
-
-        #region Custom Sockets
-
-        private const string LeftHandLocatorName = "LeftHandLocator";
-        private const string RightHandLocatorName = "RightHandLocator";
-        private const string ArmorLocatorName = "ArmorLocator";
-        private const string HelmetLocatorName = "HelmetLocator";
-        private const string FaceLocatorName = "FaceLocator";
-        private const string BackpackLocatorName = "BackpackLocator";
-        private const string MeleeWeaponLocatorName = "MeleeWeaponLocator";
-        private const string PopTextLocatorName = "PopTextLocator";
-
-        private static readonly Dictionary<FieldInfo, string> CustomModelSocketNames = new()
-        {
-            { CharacterModelSocketUtils.LeftHandSocket, LeftHandLocatorName },
-            { CharacterModelSocketUtils.RightHandSocket, RightHandLocatorName },
-            { CharacterModelSocketUtils.ArmorSocket, ArmorLocatorName },
-            { CharacterModelSocketUtils.HelmetSocket, HelmetLocatorName },
-            { CharacterModelSocketUtils.FaceSocket, FaceLocatorName },
-            { CharacterModelSocketUtils.BackpackSocket, BackpackLocatorName },
-            { CharacterModelSocketUtils.MeleeWeaponSocket, MeleeWeaponLocatorName },
-            { CharacterModelSocketUtils.PopTextSocket, PopTextLocatorName },
-        };
 
         #endregion
 
