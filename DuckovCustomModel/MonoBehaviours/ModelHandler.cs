@@ -1,10 +1,13 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using Duckov;
 using DuckovCustomModel.Data;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.Utils;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace DuckovCustomModel.MonoBehaviours
 {
@@ -13,8 +16,15 @@ namespace DuckovCustomModel.MonoBehaviours
         private static readonly FieldInfo[] OriginalModelSocketFieldInfos =
             CharacterModelSocketUtils.AllSocketFields;
 
+        private static readonly Dictionary<ModelHandler, InputAction> ActiveQuackActions = [];
+
         private readonly Dictionary<FieldInfo, Transform> _customModelSockets = [];
         private readonly Dictionary<FieldInfo, Transform> _originalModelSockets = [];
+
+        private readonly List<string> _soundPaths = [];
+        private readonly Dictionary<string, List<string>> _soundsByTag = [];
+        private InputAction? _newAction;
+        private bool _quackEnabled;
 
         public CharacterMainControl? CharacterMainControl { get; private set; }
         public CharacterModel? OriginalCharacterModel { get; private set; }
@@ -73,6 +83,11 @@ namespace DuckovCustomModel.MonoBehaviours
                         if (!child.gameObject.activeSelf)
                             child.gameObject.SetActive(true);
                 }
+        }
+
+        private void OnDestroy()
+        {
+            DisableQuack();
         }
 
         public void Initialize(CharacterMainControl characterMainControl, ModelTarget target = ModelTarget.Character)
@@ -156,6 +171,8 @@ namespace DuckovCustomModel.MonoBehaviours
                 RestoreToOriginalModelSockets();
             }
 
+            DisableQuack();
+
             if (CustomModelInstance != null)
             {
                 if (CustomAnimatorControl != null)
@@ -171,6 +188,8 @@ namespace DuckovCustomModel.MonoBehaviours
             }
 
             _customModelSockets.Clear();
+            _soundPaths.Clear();
+            _soundsByTag.Clear();
 
             if (wasHidden)
                 ModLogger.Log("Cleaned up custom model.");
@@ -211,7 +230,10 @@ namespace DuckovCustomModel.MonoBehaviours
                 return;
             }
 
+            InitSoundFilePath(modelBundleInfo, modelInfo);
             InitializeCustomModel(prefab);
+            if (Target == ModelTarget.Character)
+                InitQuackKey();
         }
 
         public void InitializeCustomModel(GameObject customModelPrefab)
@@ -380,6 +402,155 @@ namespace DuckovCustomModel.MonoBehaviours
             { CharacterModelSocketUtils.MeleeWeaponSocket, MeleeWeaponLocatorName },
             { CharacterModelSocketUtils.PopTextSocket, PopTextLocatorName },
         };
+
+        #endregion
+
+        #region Sound System
+
+        private void InitSoundFilePath(ModelBundleInfo modelBundleInfo, ModelInfo modelInfo)
+        {
+            _soundPaths.Clear();
+            _soundsByTag.Clear();
+
+            var bundleDirectory = modelBundleInfo.DirectoryPath;
+
+            if (modelInfo.SoundInfos is { Length: > 0 })
+                foreach (var soundInfo in modelInfo.SoundInfos)
+                {
+                    if (string.IsNullOrWhiteSpace(soundInfo.Path)) continue;
+                    var fullPath = Path.Combine(bundleDirectory, soundInfo.Path);
+                    if (!File.Exists(fullPath)) continue;
+
+                    foreach (var soundTag in soundInfo.TagSet)
+                    {
+                        if (!_soundsByTag.ContainsKey(soundTag))
+                            _soundsByTag[soundTag] = [];
+                        _soundsByTag[soundTag].Add(fullPath);
+                    }
+                }
+
+            if (modelInfo.SoundPaths is not { Length: > 0 }) return;
+            {
+                foreach (var soundPath in modelInfo.SoundPaths)
+                {
+                    if (string.IsNullOrWhiteSpace(soundPath)) continue;
+                    var fullPath = Path.Combine(bundleDirectory, soundPath);
+                    if (!File.Exists(fullPath)) continue;
+                    _soundPaths.Add(fullPath);
+                    if (!_soundsByTag.ContainsKey("normal"))
+                        _soundsByTag["normal"] = [];
+                    _soundsByTag["normal"].Add(fullPath);
+                }
+            }
+        }
+
+        public string? GetRandomSoundByTag(string soundTag)
+        {
+            if (string.IsNullOrWhiteSpace(soundTag)) soundTag = "normal";
+            soundTag = soundTag.ToLowerInvariant().Trim();
+
+            if (!_soundsByTag.TryGetValue(soundTag, out var sounds) || sounds.Count == 0)
+            {
+                if (soundTag != "normal" && _soundsByTag.TryGetValue("normal", out var normalSounds) &&
+                    normalSounds.Count > 0)
+                    sounds = normalSounds;
+                else
+                    return null;
+            }
+
+            var index = Random.Range(0, sounds.Count);
+            return sounds[index];
+        }
+
+        private void InitQuackKey()
+        {
+            if (_soundsByTag.Count == 0 && _soundPaths.Count < 1) return;
+
+            if (GameManager.MainPlayerInput == null)
+            {
+                ModLogger.LogWarning("ModelHandler: MainPlayerInput is null.");
+                return;
+            }
+
+            var quackAction = GameManager.MainPlayerInput.actions.FindAction("Quack");
+            if (quackAction == null)
+            {
+                ModLogger.LogWarning("ModelHandler: Quack action not found.");
+                return;
+            }
+
+            quackAction.Disable();
+
+            _newAction = new();
+            if (quackAction.controls.Count > 0)
+                foreach (var binding in quackAction.bindings)
+                    _newAction.AddBinding(binding);
+            _newAction.performed += PlaySound;
+            _newAction.Enable();
+
+            ActiveQuackActions[this] = _newAction;
+            _quackEnabled = true;
+        }
+
+        private void DisableQuack()
+        {
+            if (!_quackEnabled && _newAction == null) return;
+
+            _quackEnabled = false;
+
+            if (_newAction != null)
+            {
+                _newAction.performed -= PlaySound;
+                _newAction.Disable();
+                _newAction.Dispose();
+                _newAction = null;
+            }
+
+            ActiveQuackActions.Remove(this);
+
+            if (GameManager.MainPlayerInput == null) return;
+            var quackAction = GameManager.MainPlayerInput.actions.FindAction("Quack");
+            quackAction?.Enable();
+        }
+
+        public static void DisableAllQuackActions()
+        {
+            var handlers = ActiveQuackActions.Keys.ToArray();
+            foreach (var handler in handlers.Where(h => h != null))
+                handler.DisableQuack();
+
+            ActiveQuackActions.Clear();
+        }
+
+        public void PlaySound(InputAction.CallbackContext context)
+        {
+            PlaySound(context, "normal");
+        }
+
+        public void PlaySound(InputAction.CallbackContext context, string soundTag)
+        {
+            if (CharacterMainControl == null) return;
+            if (OriginalCharacterModel == null) return;
+
+            var soundPath = GetRandomSoundByTag(soundTag);
+            if (string.IsNullOrEmpty(soundPath))
+            {
+                if (_soundPaths.Count == 0) return;
+                var index = Random.Range(0, _soundPaths.Count);
+                soundPath = _soundPaths[index];
+            }
+
+            AudioManager.PostCustomSFX(soundPath);
+            AIMainBrain.MakeSound(new()
+            {
+                fromCharacter = CharacterMainControl.Main,
+                fromObject = gameObject,
+                pos = OriginalCharacterModel.transform.position,
+                fromTeam = Teams.player,
+                soundType = SoundTypes.unknowNoise,
+                radius = 15f,
+            });
+        }
 
         #endregion
     }

@@ -23,6 +23,9 @@
         <Reference Include="$(DuckovPath)\Duckov_Data\Managed\Unity*">
             <Private>False</Private>
         </Reference>
+        <Reference Include="$(DuckovPath)\Duckov_Data\Managed\FMODUnity.dll">
+            <Private>False</Private>
+        </Reference>
         <Reference Include="$(DuckovPath)\Duckov_Data\Managed\UniTask.dll">
             <Private>False</Private>
         </Reference>

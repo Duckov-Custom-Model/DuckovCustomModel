@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Data;
@@ -71,6 +72,8 @@ namespace DuckovCustomModel
             LevelManager.OnLevelBeginInitializing -= LevelManager_OnLevelBeginInitializing;
             LevelManager.OnLevelInitialized -= LevelManager_OnLevelInitialized;
             LevelManager.OnAfterLevelInitialized -= LevelManager_OnAfterLevelInitialized;
+
+            ModelHandler.DisableAllQuackActions();
 
             ModelListManager.CancelRefresh();
 
@@ -148,14 +151,15 @@ namespace DuckovCustomModel
 
         private void LevelManager_OnLevelBeginInitializing()
         {
+            ModelHandler.DisableAllQuackActions();
+
             var priorityModelIDs = new List<string>();
             if (UsingModel != null)
-                foreach (ModelTarget target in Enum.GetValues(typeof(ModelTarget)))
-                {
-                    var modelID = UsingModel.GetModelID(target);
-                    if (!string.IsNullOrEmpty(modelID))
-                        priorityModelIDs.Add(modelID);
-                }
+                priorityModelIDs.AddRange(from ModelTarget target in Enum.GetValues(typeof(ModelTarget))
+                    select UsingModel.GetModelID(target)
+                    into modelID
+                    where !string.IsNullOrEmpty(modelID)
+                    select modelID);
 
             ModelListManager.RefreshModelList(priorityModelIDs);
         }

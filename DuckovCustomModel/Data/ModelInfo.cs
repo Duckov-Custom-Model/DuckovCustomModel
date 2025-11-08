@@ -13,6 +13,8 @@ namespace DuckovCustomModel.Data
         public string Version { get; set; } = string.Empty;
         public string ThumbnailPath { get; set; } = string.Empty;
         public string PrefabPath { get; set; } = string.Empty;
+        public string[] SoundPaths { get; set; } = [];
+        public SoundInfo[] SoundInfos { get; set; } = [];
 
         [JsonIgnore] public string BundleName { get; internal set; } = string.Empty;
 
@@ -24,7 +26,6 @@ namespace DuckovCustomModel.Data
             if (string.IsNullOrWhiteSpace(Name)) return false;
             if (string.IsNullOrWhiteSpace(PrefabPath)) return false;
 
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             var targets = new List<ModelTarget>();
             foreach (var target in Target ?? [])
             {
@@ -32,7 +33,24 @@ namespace DuckovCustomModel.Data
                 if (!targets.Contains(target)) targets.Add(target);
             }
 
+            var soundPaths = new List<string>();
+            foreach (var soundPath in SoundPaths ?? [])
+            {
+                if (string.IsNullOrWhiteSpace(soundPath)) continue;
+                if (!soundPaths.Contains(soundPath)) soundPaths.Add(soundPath);
+            }
+
+            var soundInfos = new List<SoundInfo>();
+            foreach (var soundInfo in SoundInfos ?? [])
+            {
+                // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+                if (soundInfo == null || string.IsNullOrWhiteSpace(soundInfo.Path)) continue;
+                soundInfo.Initialize();
+                soundInfos.Add(soundInfo);
+            }
+
             Target = targets.ToArray();
+            SoundInfos = soundInfos.ToArray();
 
             return true;
         }
