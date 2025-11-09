@@ -1,0 +1,534 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using DuckovCustomModel.Configs;
+using DuckovCustomModel.Data;
+using DuckovCustomModel.Localizations;
+using DuckovCustomModel.Managers;
+using DuckovCustomModel.MonoBehaviours;
+using DuckovCustomModel.UI.Base;
+using DuckovCustomModel.UI.Components;
+using DuckovCustomModel.UI.Tabs;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
+
+namespace DuckovCustomModel.UI
+{
+    public class ConfigWindow : MonoBehaviour
+    {
+        private const float AnimatorParamsWindowWidth = 700f;
+        private const float AnimatorParamsWindowHeight = 800f;
+        private Vector2 _animatorParamsScrollPosition;
+        private Rect _animatorParamsWindowRect = new(10, 10, 600, 800);
+
+        private CharacterInputControl? _charInput;
+        private bool _charInputWasEnabled;
+        private bool _cursorWasVisible;
+        private bool _isInitialized;
+        private ModelHandler? _modelHandler;
+        private ModelSelectionTab? _modelSelectionTab;
+        private CursorLockMode _originalCursorLockState;
+        private GameObject? _overlay;
+        private GameObject? _panelRoot;
+        private GUIStyle? _paramLabelStyle;
+        private ModelHandler? _petModelHandler;
+        private PlayerInput? _playerInput;
+        private bool _playerInputWasActive;
+        private GUIStyle? _scrollViewStyle;
+        private SettingsTab? _settingsTab;
+        private bool _showAnimatorParamsWindow;
+        private TabSystem? _tabSystem;
+        private Text? _titleText;
+        private bool _uiActive;
+        private GameObject? _uiRoot;
+
+        private static UIConfig? UIConfig => ModBehaviour.Instance?.UIConfig;
+        private static CharacterInputControl? CharacterInputControl => CharacterInputControl.Instance;
+        private static PlayerInput? PlayerInput => GameManager.MainPlayerInput;
+
+        private void Update()
+        {
+            var uiConfig = UIConfig;
+            if (uiConfig == null) return;
+
+            if (!_isInitialized)
+            {
+                InitializeUI();
+                return;
+            }
+
+            if (IsTypingInInputField() || _panelRoot == null) return;
+
+            if (_settingsTab != null && _settingsTab.IsWaitingForKeyInput) return;
+
+            if (Input.GetKeyDown(uiConfig.ToggleKey))
+            {
+                if (_panelRoot.activeSelf)
+                    HidePanel();
+                else
+                    ShowPanel();
+            }
+
+            if (_uiActive && Input.GetKeyDown(KeyCode.Escape)) HidePanel();
+
+            if (!_uiActive) return;
+
+            if (_charInput != null && _charInputWasEnabled && _charInput.enabled) _charInput.enabled = false;
+
+            if (_playerInput != null && _playerInputWasActive && _playerInput.inputIsActive)
+                _playerInput.DeactivateInput();
+        }
+
+        private void LateUpdate()
+        {
+            if (!_uiActive || _panelRoot == null || !_panelRoot.activeSelf) return;
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+        }
+
+        private void OnDestroy()
+        {
+            Localization.OnLanguageChangedEvent -= OnLanguageChanged;
+        }
+
+
+        private void OnGUI()
+        {
+            if (!_showAnimatorParamsWindow) return;
+
+            UpdateModelHandlers();
+            var currentHandler = _modelHandler;
+            if (currentHandler == null) return;
+
+            var customAnimatorControl = currentHandler.CustomAnimatorControl;
+            if (customAnimatorControl == null) return;
+
+            var animator = currentHandler.CustomAnimator;
+            if (animator == null) return;
+
+            _animatorParamsWindowRect.width = AnimatorParamsWindowWidth;
+            _animatorParamsWindowRect.height = AnimatorParamsWindowHeight;
+            _animatorParamsWindowRect = GUI.Window(100, _animatorParamsWindowRect, DrawAnimatorParamsWindow,
+                Localization.AnimatorParameters);
+        }
+
+        private void InitializeUI()
+        {
+            if (_isInitialized) return;
+
+            CreateOrFindUiRoot();
+            BuildMainPanel();
+            SetupPanels();
+
+            _uiActive = false;
+            if (_overlay != null) _overlay.SetActive(false);
+            if (_panelRoot != null) _panelRoot.SetActive(false);
+
+            _isInitialized = true;
+            Localization.OnLanguageChangedEvent += OnLanguageChanged;
+            ModLogger.Log("ConfigWindow initialized.");
+        }
+
+        private void OnLanguageChanged(SystemLanguage language)
+        {
+            if (_titleText != null)
+                _titleText.text = Localization.Title;
+        }
+
+        private void CreateOrFindUiRoot()
+        {
+            var existing = GameObject.Find("DuckovCustomModelCanvas");
+            if (existing != null)
+            {
+                _uiRoot = existing;
+                return;
+            }
+
+            var canvas = new GameObject("DuckovCustomModelCanvas", typeof(Canvas), typeof(CanvasScaler),
+                typeof(GraphicRaycaster));
+            var canvasComponent = canvas.GetComponent<Canvas>();
+            canvasComponent.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvasComponent.sortingOrder = 9999;
+
+            var scaler = canvas.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new(1920, 1080);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 0.5f;
+
+            _uiRoot = canvas;
+            DontDestroyOnLoad(_uiRoot);
+        }
+
+        private void BuildMainPanel()
+        {
+            if (_uiRoot == null) return;
+
+            _overlay = UIFactory.CreateImage("Overlay", _uiRoot.transform, new Color(0, 0, 0, 0.5f));
+            UIFactory.SetupRectTransform(_overlay, Vector2.zero, Vector2.one, Vector2.zero);
+
+            _panelRoot = UIFactory.CreateImage("MainPanel", _uiRoot.transform, new Color(0.1f, 0.12f, 0.15f, 0.95f));
+            var panelRect = _panelRoot.GetComponent<RectTransform>();
+            panelRect.anchorMin = new(0.1f, 0.1f);
+            panelRect.anchorMax = new(0.9f, 0.9f);
+            panelRect.sizeDelta = Vector2.zero;
+            panelRect.anchoredPosition = Vector2.zero;
+
+            var outline = _panelRoot.AddComponent<Outline>();
+            outline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
+            outline.effectDistance = new(2, -2);
+
+            BuildTitleBar();
+        }
+
+        private void BuildTitleBar()
+        {
+            if (_panelRoot == null) return;
+
+            var titleBar =
+                UIFactory.CreateImage("TitleBar", _panelRoot.transform, new Color(0.15f, 0.18f, 0.22f, 0.9f));
+            UIFactory.SetupRectTransform(titleBar, new(0, 1), new(1, 1), new(0, 40),
+                new Vector2(0.5f, 1), new Vector2(0, 0));
+
+            var titleContainer = new GameObject("TitleContainer", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+            titleContainer.transform.SetParent(titleBar.transform, false);
+            var titleContainerRect = titleContainer.GetComponent<RectTransform>();
+            titleContainerRect.anchorMin = new(0, 0);
+            titleContainerRect.anchorMax = new(1, 1);
+            titleContainerRect.offsetMin = new(10, 0);
+            titleContainerRect.offsetMax = new(-10, 0);
+
+            var titleLayout = titleContainer.GetComponent<HorizontalLayoutGroup>();
+            titleLayout.spacing = 8;
+            titleLayout.childAlignment = TextAnchor.MiddleCenter;
+            titleLayout.childControlWidth = false;
+            titleLayout.childControlHeight = false;
+            titleLayout.childForceExpandWidth = false;
+            titleLayout.childForceExpandHeight = false;
+            titleLayout.padding = new(0, 0, 0, 0);
+
+            var titleText = UIFactory.CreateText("Title", titleContainer.transform, Localization.Title,
+                20,
+                Color.white, TextAnchor.MiddleCenter, FontStyle.Bold);
+            _titleText = titleText.GetComponent<Text>();
+            var titleTextRect = titleText.GetComponent<RectTransform>();
+            titleTextRect.sizeDelta = new(0, 0);
+            var titleSizeFitter = titleText.AddComponent<ContentSizeFitter>();
+            titleSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            titleSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            var versionLabel = UIFactory.CreateText("Version", titleContainer.transform, $"v{Constant.ModVersion}", 14,
+                new Color(0.8f, 0.8f, 0.8f, 1));
+            var versionRect = versionLabel.GetComponent<RectTransform>();
+            versionRect.sizeDelta = new(0, 0);
+            var versionSizeFitter = versionLabel.AddComponent<ContentSizeFitter>();
+            versionSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            versionSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(titleContainerRect);
+
+            var closeButton = UIFactory.CreateButton("CloseButton", titleBar.transform, HidePanel,
+                new Color(0.2f, 0.2f, 0.2f, 1));
+            UIFactory.SetupRectTransform(closeButton, new(1, 0.5f), new(1, 0.5f), new(36, 36),
+                new Vector2(1, 0.5f), new Vector2(-10, 0));
+
+            var closeText = UIFactory.CreateText("Text", closeButton.transform, "×", 24, Color.white,
+                TextAnchor.MiddleCenter);
+            UIFactory.SetupRectTransform(closeText, Vector2.zero, Vector2.one, Vector2.zero);
+        }
+
+        private void SetupPanels()
+        {
+            if (_panelRoot == null) return;
+
+            CreateTabPanels();
+            SetupTabSystem();
+        }
+
+        private void CreateTabPanels()
+        {
+            if (_panelRoot == null) return;
+
+            var modelTabContainer = new GameObject("ModelTabContainer", typeof(RectTransform));
+            modelTabContainer.transform.SetParent(_panelRoot.transform, false);
+            UIFactory.SetupRectTransform(modelTabContainer, new(0, 0), new(1, 1), Vector2.zero);
+            modelTabContainer.GetComponent<RectTransform>().offsetMin = new(10, 10);
+            modelTabContainer.GetComponent<RectTransform>().offsetMax = new(-10, -100);
+
+            _modelSelectionTab = modelTabContainer.AddComponent<ModelSelectionTab>();
+
+            var settingsTabContainer = new GameObject("SettingsTabContainer", typeof(RectTransform));
+            settingsTabContainer.transform.SetParent(_panelRoot.transform, false);
+            UIFactory.SetupRectTransform(settingsTabContainer, new(0, 0), new(1, 1), Vector2.zero);
+            settingsTabContainer.GetComponent<RectTransform>().offsetMin = new(10, 10);
+            settingsTabContainer.GetComponent<RectTransform>().offsetMax = new(-10, -100);
+
+            _settingsTab = settingsTabContainer.AddComponent<SettingsTab>();
+            _settingsTab.OnAnimatorParamsToggleChanged += SetAnimatorParamsWindowVisible;
+        }
+
+        private void SetupTabSystem()
+        {
+            if (_panelRoot == null || _modelSelectionTab == null || _settingsTab == null) return;
+
+            _tabSystem = gameObject.AddComponent<TabSystem>();
+            _tabSystem.Initialize(_panelRoot.transform);
+
+            _tabSystem.AddTab(Localization.ModelSelection, _modelSelectionTab.gameObject, true, "ModelSelection");
+            _tabSystem.AddTab(Localization.Settings, _settingsTab.gameObject, false, "Settings");
+        }
+
+        private static bool IsTypingInInputField()
+        {
+            var current = EventSystem.current;
+            if (current == null || current.currentSelectedGameObject == null) return false;
+
+            var inputField = current.currentSelectedGameObject.GetComponent<InputField>();
+            return inputField != null && inputField.isFocused;
+        }
+
+        public void ShowPanel()
+        {
+            if (!_isInitialized || _panelRoot == null)
+            {
+                ModLogger.LogWarning("Cannot show panel - not initialized!");
+                return;
+            }
+
+            _uiActive = true;
+            if (_overlay != null) _overlay.SetActive(true);
+            if (_panelRoot != null) _panelRoot.SetActive(true);
+
+            _modelSelectionTab?.Initialize();
+            _settingsTab?.Initialize();
+
+            _tabSystem?.SwitchToTab(0);
+            _modelSelectionTab?.Show();
+
+            _cursorWasVisible = Cursor.visible;
+            _originalCursorLockState = Cursor.lockState;
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+
+            var current = EventSystem.current;
+            if (current == null)
+            {
+                var eventSystem = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+                DontDestroyOnLoad(eventSystem);
+            }
+
+            _charInput = CharacterInputControl;
+            if (_charInput != null)
+            {
+                _charInputWasEnabled = _charInput.enabled;
+                if (_charInputWasEnabled)
+                {
+                    _charInput.enabled = false;
+                    ModLogger.Log("CharacterInputControl disabled.");
+                }
+            }
+
+            _playerInput = PlayerInput;
+            if (_playerInput != null)
+            {
+                _playerInputWasActive = _playerInput.inputIsActive;
+                if (_playerInputWasActive)
+                {
+                    _playerInput.DeactivateInput();
+                    ModLogger.Log("PlayerInput deactivated (game input blocked).");
+                }
+            }
+
+            StartCoroutine(ForceCursorFree());
+            ModLogger.Log("Config window opened.");
+        }
+
+        public void HidePanel()
+        {
+            _uiActive = false;
+            StopAllCoroutines();
+
+            if (_overlay != null) _overlay.SetActive(false);
+            if (_panelRoot != null) _panelRoot.SetActive(false);
+
+            if (_charInput != null && _charInputWasEnabled)
+            {
+                _charInput.enabled = true;
+                ModLogger.Log("CharacterInputControl re-enabled.");
+            }
+
+            _charInput = null;
+            _charInputWasEnabled = false;
+
+            if (_playerInput != null && _playerInputWasActive)
+            {
+                _playerInput.ActivateInput();
+                ModLogger.Log("PlayerInput reactivated (game input restored).");
+            }
+
+            _playerInput = null;
+            _playerInputWasActive = false;
+
+            Cursor.visible = _cursorWasVisible;
+            Cursor.lockState = _originalCursorLockState;
+            ModLogger.Log("Config window closed.");
+        }
+
+        private IEnumerator ForceCursorFree()
+        {
+            while (_uiActive)
+            {
+                if (Cursor.lockState != CursorLockMode.None)
+                    Cursor.lockState = CursorLockMode.None;
+                if (!Cursor.visible)
+                    Cursor.visible = true;
+                yield return null;
+            }
+        }
+
+        private void DrawAnimatorParamsWindow(int windowID)
+        {
+            var currentHandler = _modelHandler;
+            if (currentHandler == null) return;
+
+            var customAnimatorControl = currentHandler.CustomAnimatorControl;
+            if (customAnimatorControl == null) return;
+
+            InitializeParamStyles();
+
+            GUILayout.BeginArea(new(10, 30, AnimatorParamsWindowWidth - 20, AnimatorParamsWindowHeight - 90));
+
+            _animatorParamsScrollPosition = GUILayout.BeginScrollView(_animatorParamsScrollPosition,
+                _scrollViewStyle, GUILayout.Width(AnimatorParamsWindowWidth - 20),
+                GUILayout.Height(AnimatorParamsWindowHeight - 90));
+
+            var paramInfos = GetCustomAnimatorParams();
+            for (var i = 0; i < paramInfos.Count; i += 2)
+            {
+                GUILayout.BeginHorizontal();
+
+                var paramInfo1 = paramInfos[i];
+                var paramName1 = $"{paramInfo1.Name} ({paramInfo1.Type})";
+                var paramValue1 = GetParameterValue(customAnimatorControl, paramInfo1);
+
+                if (_paramLabelStyle != null)
+                    GUILayout.Label($"{paramName1}: {paramValue1}", _paramLabelStyle,
+                        GUILayout.Width((AnimatorParamsWindowWidth - 40) / 2f));
+                else
+                    GUILayout.Label($"{paramName1}: {paramValue1}",
+                        GUILayout.Width((AnimatorParamsWindowWidth - 40) / 2f));
+
+                if (i + 1 < paramInfos.Count)
+                {
+                    var paramInfo2 = paramInfos[i + 1];
+                    var paramName2 = $"{paramInfo2.Name} ({paramInfo2.Type})";
+                    var paramValue2 = GetParameterValue(customAnimatorControl, paramInfo2);
+
+                    if (_paramLabelStyle != null)
+                        GUILayout.Label($"{paramName2}: {paramValue2}", _paramLabelStyle,
+                            GUILayout.Width((AnimatorParamsWindowWidth - 40) / 2f));
+                    else
+                        GUILayout.Label($"{paramName2}: {paramValue2}",
+                            GUILayout.Width((AnimatorParamsWindowWidth - 40) / 2f));
+                }
+
+                GUILayout.EndHorizontal();
+            }
+
+            GUILayout.EndScrollView();
+
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button(Localization.Close, GUILayout.Width(100), GUILayout.Height(20)))
+                _showAnimatorParamsWindow = false;
+
+            GUILayout.EndHorizontal();
+            GUILayout.EndArea();
+
+            GUI.DragWindow(new(0, 0, AnimatorParamsWindowWidth, 20));
+        }
+
+        private void InitializeParamStyles()
+        {
+            _paramLabelStyle ??= new(GUI.skin.label)
+            {
+                fontSize = 13,
+                normal = { textColor = Color.white },
+            };
+
+            _scrollViewStyle ??= new(GUI.skin.scrollView)
+            {
+                normal = { background = MakeTex(2, 2, new(0.1f, 0.1f, 0.1f, 0.8f)) },
+            };
+        }
+
+        private static Texture2D MakeTex(int width, int height, Color col)
+        {
+            var pix = new Color[width * height];
+            for (var i = 0; i < pix.Length; i++)
+                pix[i] = col;
+
+            var result = new Texture2D(width, height);
+            result.SetPixels(pix);
+            result.Apply();
+            return result;
+        }
+
+        private static List<AnimatorParamInfo> GetCustomAnimatorParams()
+        {
+            return CustomAnimatorHash.GetAllParams();
+        }
+
+        private static string GetParameterValue(CustomAnimatorControl customAnimatorControl,
+            AnimatorParamInfo paramInfo)
+        {
+            if (customAnimatorControl == null) return "N/A";
+
+            try
+            {
+                return paramInfo.Type switch
+                {
+                    "float" => customAnimatorControl.GetParameterFloat(paramInfo.Hash).ToString("F3"),
+                    "int" => customAnimatorControl.GetParameterInteger(paramInfo.Hash).ToString(),
+                    "bool" => customAnimatorControl.GetParameterBool(paramInfo.Hash).ToString(),
+                    "trigger" => "Trigger",
+                    _ => "Unknown",
+                };
+            }
+            catch
+            {
+                return "N/A";
+            }
+        }
+
+        private void UpdateModelHandlers()
+        {
+            if (LevelManager.Instance == null) return;
+
+            var mainCharacterControl = LevelManager.Instance.MainCharacter;
+            if (mainCharacterControl != null)
+            {
+                _modelHandler = mainCharacterControl.GetComponent<ModelHandler>();
+                if (_modelHandler == null)
+                    _modelHandler = ModelManager.InitializeModelHandler(mainCharacterControl);
+            }
+
+            var petCharacterControl = LevelManager.Instance.PetCharacter;
+            if (petCharacterControl == null) return;
+            _petModelHandler = petCharacterControl.GetComponent<ModelHandler>();
+            if (_petModelHandler == null)
+                _petModelHandler = ModelManager.InitializeModelHandler(petCharacterControl, ModelTarget.Pet);
+        }
+
+        public void SetAnimatorParamsWindowVisible(bool visible)
+        {
+            _showAnimatorParamsWindow = visible;
+        }
+
+        public bool IsAnimatorParamsWindowVisible()
+        {
+            return _showAnimatorParamsWindow;
+        }
+    }
+}

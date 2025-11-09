@@ -1,0 +1,350 @@
+using DuckovCustomModel.Configs;
+using DuckovCustomModel.Data;
+using DuckovCustomModel.Localizations;
+using DuckovCustomModel.Managers;
+using DuckovCustomModel.UI.Base;
+using DuckovCustomModel.UI.Data;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace DuckovCustomModel.UI.Components
+{
+    public class TargetSettingsPanel : MonoBehaviour
+    {
+        private GameObject? _content;
+        private TargetInfo? _currentTarget;
+        private Toggle? _enableIdleAudioToggle;
+        private Toggle? _hideEquipmentToggle;
+        private InputField? _idleAudioMaxIntervalInput;
+        private InputField? _idleAudioMinIntervalInput;
+        private ScrollRect? _scrollRect;
+        private int _settingRowIndex;
+
+        private void OnDestroy()
+        {
+            Localization.OnLanguageChangedEvent -= OnLanguageChanged;
+        }
+
+        public void Initialize(Transform parent)
+        {
+            var scrollView = UIFactory.CreateScrollView("TargetSettingsScrollView", parent, out var content);
+            UIFactory.SetupRectTransform(scrollView.gameObject, Vector2.zero, Vector2.one, Vector2.zero);
+
+            _scrollRect = scrollView;
+
+            _content = content;
+            _content.AddComponent<VerticalLayoutGroup>();
+            _content.AddComponent<ContentSizeFitter>();
+
+            var layoutGroup = _content.GetComponent<VerticalLayoutGroup>();
+            layoutGroup.padding = new(10, 10, 10, 10);
+            layoutGroup.spacing = 10;
+            layoutGroup.childAlignment = TextAnchor.UpperCenter;
+            layoutGroup.childControlWidth = true;
+            layoutGroup.childControlHeight = false;
+            layoutGroup.childForceExpandWidth = true;
+            layoutGroup.childForceExpandHeight = false;
+
+            var sizeFitter = _content.GetComponent<ContentSizeFitter>();
+            sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            sizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+
+            Localization.OnLanguageChangedEvent += OnLanguageChanged;
+        }
+
+        private void OnLanguageChanged(SystemLanguage language)
+        {
+            Refresh();
+        }
+
+        public void SetTarget(TargetInfo? targetInfo)
+        {
+            _currentTarget = targetInfo;
+            Refresh();
+        }
+
+        public void Refresh()
+        {
+            if (_content == null) return;
+
+            foreach (Transform child in _content.transform) Destroy(child.gameObject);
+
+            if (_currentTarget == null) return;
+
+            _settingRowIndex = 0;
+            BuildHideEquipmentSetting();
+            BuildEnableIdleAudioSetting();
+            BuildIdleAudioIntervalSettings();
+        }
+
+        private void BuildHideEquipmentSetting()
+        {
+            if (_content == null || _currentTarget == null) return;
+
+            var settingRow = CreateSettingRow();
+            var hideEquipmentConfig = ModBehaviour.Instance?.HideEquipmentConfig;
+
+            var label = UIFactory.CreateText("Label", settingRow.transform,
+                _currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null
+                    ? string.Format(Localization.HideAICharacterEquipment, _currentTarget.DisplayName)
+                    : _currentTarget.TargetType == ModelTarget.Character
+                        ? Localization.HideCharacterEquipment
+                        : Localization.HidePetEquipment,
+                18, Color.white);
+            var labelRect = label.GetComponent<RectTransform>();
+            labelRect.anchorMin = new(0, 0.5f);
+            labelRect.anchorMax = new(0, 0.5f);
+            labelRect.pivot = new(0, 0.5f);
+            labelRect.sizeDelta = new(0, 30);
+            labelRect.anchoredPosition = new(20, 0);
+            var labelSizeFitter = label.AddComponent<ContentSizeFitter>();
+            labelSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            labelSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            var isOn = false;
+            if (hideEquipmentConfig != null)
+            {
+                if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
+                    isOn = hideEquipmentConfig.GetHideAICharacterEquipment(_currentTarget.AICharacterNameKey);
+                else
+                    isOn = hideEquipmentConfig.GetHideEquipment(_currentTarget.TargetType);
+            }
+
+            var toggle = UIFactory.CreateToggle("HideEquipmentToggle", settingRow.transform, isOn,
+                OnHideEquipmentToggleChanged);
+            var toggleRect = toggle.GetComponent<RectTransform>();
+            toggleRect.anchorMin = new(1, 0.5f);
+            toggleRect.anchorMax = new(1, 0.5f);
+            toggleRect.pivot = new(1, 0.5f);
+            toggleRect.sizeDelta = new(20, 20);
+            toggleRect.anchoredPosition = new(-20, 0);
+
+            _hideEquipmentToggle = toggle;
+        }
+
+        private void BuildEnableIdleAudioSetting()
+        {
+            if (_content == null || _currentTarget == null) return;
+
+            var settingRow = CreateSettingRow();
+            var idleAudioConfig = ModBehaviour.Instance?.IdleAudioConfig;
+
+            var label = UIFactory.CreateText("Label", settingRow.transform, Localization.EnableIdleAudio, 18,
+                Color.white);
+            var labelRect = label.GetComponent<RectTransform>();
+            labelRect.anchorMin = new(0, 0.5f);
+            labelRect.anchorMax = new(0, 0.5f);
+            labelRect.pivot = new(0, 0.5f);
+            labelRect.sizeDelta = new(0, 30);
+            labelRect.anchoredPosition = new(20, 0);
+            var labelSizeFitter = label.AddComponent<ContentSizeFitter>();
+            labelSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            labelSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            var isOn = false;
+            if (idleAudioConfig != null)
+            {
+                if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
+                    isOn = idleAudioConfig.IsAICharacterIdleAudioEnabled(_currentTarget.AICharacterNameKey);
+                else
+                    isOn = idleAudioConfig.IsIdleAudioEnabled(_currentTarget.TargetType);
+            }
+
+            var toggle = UIFactory.CreateToggle("EnableIdleAudioToggle", settingRow.transform, isOn,
+                OnEnableIdleAudioToggleChanged);
+            var toggleRect = toggle.GetComponent<RectTransform>();
+            toggleRect.anchorMin = new(1, 0.5f);
+            toggleRect.anchorMax = new(1, 0.5f);
+            toggleRect.pivot = new(1, 0.5f);
+            toggleRect.sizeDelta = new(20, 20);
+            toggleRect.anchoredPosition = new(-20, 0);
+
+            _enableIdleAudioToggle = toggle;
+        }
+
+        private void BuildIdleAudioIntervalSettings()
+        {
+            if (_content == null || _currentTarget == null) return;
+
+            var idleAudioConfig = ModBehaviour.Instance?.IdleAudioConfig;
+            if (idleAudioConfig == null) return;
+
+            IdleAudioInterval interval;
+            if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
+                interval = idleAudioConfig.GetAICharacterIdleAudioInterval(_currentTarget.AICharacterNameKey);
+            else
+                interval = idleAudioConfig.GetIdleAudioInterval(_currentTarget.TargetType);
+
+            var minIntervalRow = CreateSettingRow();
+            var minLabel = UIFactory.CreateText("Label", minIntervalRow.transform,
+                $"{Localization.IdleAudioInterval} {Localization.Seconds} ({Localization.MinValue})", 18, Color.white);
+            var minLabelRect = minLabel.GetComponent<RectTransform>();
+            minLabelRect.anchorMin = new(0, 0.5f);
+            minLabelRect.anchorMax = new(0, 0.5f);
+            minLabelRect.pivot = new(0, 0.5f);
+            minLabelRect.sizeDelta = new(0, 30);
+            minLabelRect.anchoredPosition = new(20, 0);
+            var minLabelSizeFitter = minLabel.AddComponent<ContentSizeFitter>();
+            minLabelSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            minLabelSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            _idleAudioMinIntervalInput =
+                UIFactory.CreateInputField("IdleAudioMinIntervalInput", minIntervalRow.transform);
+            _idleAudioMinIntervalInput.text = interval.Min.ToString("F1");
+            if (_idleAudioMinIntervalInput.textComponent != null)
+                _idleAudioMinIntervalInput.textComponent.fontSize += 4;
+            var minInputRect = _idleAudioMinIntervalInput.GetComponent<RectTransform>();
+            minInputRect.anchorMin = new(1, 0.5f);
+            minInputRect.anchorMax = new(1, 0.5f);
+            minInputRect.pivot = new(1, 0.5f);
+            minInputRect.sizeDelta = new(100, 30);
+            minInputRect.anchoredPosition = new(-20, 0);
+            _idleAudioMinIntervalInput.onEndEdit.AddListener(OnIdleAudioMinIntervalChanged);
+
+            var maxIntervalRow = CreateSettingRow();
+            var maxLabel = UIFactory.CreateText("Label", maxIntervalRow.transform,
+                $"{Localization.IdleAudioInterval} {Localization.Seconds} ({Localization.MaxValue})", 18, Color.white);
+            var maxLabelRect = maxLabel.GetComponent<RectTransform>();
+            maxLabelRect.anchorMin = new(0, 0.5f);
+            maxLabelRect.anchorMax = new(0, 0.5f);
+            maxLabelRect.pivot = new(0, 0.5f);
+            maxLabelRect.sizeDelta = new(0, 30);
+            maxLabelRect.anchoredPosition = new(20, 0);
+            var maxLabelSizeFitter = maxLabel.AddComponent<ContentSizeFitter>();
+            maxLabelSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            maxLabelSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            _idleAudioMaxIntervalInput =
+                UIFactory.CreateInputField("IdleAudioMaxIntervalInput", maxIntervalRow.transform);
+            _idleAudioMaxIntervalInput.text = interval.Max.ToString("F1");
+            if (_idleAudioMaxIntervalInput.textComponent != null)
+                _idleAudioMaxIntervalInput.textComponent.fontSize += 4;
+            var maxInputRect = _idleAudioMaxIntervalInput.GetComponent<RectTransform>();
+            maxInputRect.anchorMin = new(1, 0.5f);
+            maxInputRect.anchorMax = new(1, 0.5f);
+            maxInputRect.pivot = new(1, 0.5f);
+            maxInputRect.sizeDelta = new(100, 30);
+            maxInputRect.anchoredPosition = new(-20, 0);
+            _idleAudioMaxIntervalInput.onEndEdit.AddListener(OnIdleAudioMaxIntervalChanged);
+        }
+
+        private GameObject CreateSettingRow()
+        {
+            if (_content == null) return new();
+
+            var row = new GameObject("SettingRow", typeof(RectTransform), typeof(Image));
+            row.transform.SetParent(_content.transform, false);
+
+            var rowImage = row.GetComponent<Image>();
+            var isEven = _settingRowIndex % 2 == 0;
+            rowImage.color = isEven ? new(0.12f, 0.14f, 0.16f, 0.8f) : new(0.1f, 0.12f, 0.14f, 0.8f);
+            _settingRowIndex++;
+
+            var rowRect = row.GetComponent<RectTransform>();
+            rowRect.anchorMin = new(0, 1);
+            rowRect.anchorMax = new(1, 1);
+            rowRect.pivot = new(0.5f, 1);
+            rowRect.sizeDelta = new(0, 50);
+            rowRect.anchoredPosition = Vector2.zero;
+
+            var rowLayoutElement = row.AddComponent<LayoutElement>();
+            rowLayoutElement.preferredHeight = 50;
+            rowLayoutElement.flexibleWidth = 1;
+            rowLayoutElement.flexibleHeight = 0;
+
+            return row;
+        }
+
+        private void OnHideEquipmentToggleChanged(bool value)
+        {
+            if (_currentTarget == null) return;
+
+            var hideEquipmentConfig = ModBehaviour.Instance?.HideEquipmentConfig;
+            if (hideEquipmentConfig == null) return;
+
+            if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
+            {
+                hideEquipmentConfig.SetHideAICharacterEquipment(_currentTarget.AICharacterNameKey, value);
+                ConfigManager.SaveConfigToFile(hideEquipmentConfig, "HideEquipmentConfig.json");
+            }
+            else
+            {
+                hideEquipmentConfig.SetHideEquipment(_currentTarget.TargetType, value);
+                ConfigManager.SaveConfigToFile(hideEquipmentConfig, "HideEquipmentConfig.json");
+            }
+        }
+
+        private void OnEnableIdleAudioToggleChanged(bool value)
+        {
+            if (_currentTarget == null) return;
+
+            var idleAudioConfig = ModBehaviour.Instance?.IdleAudioConfig;
+            if (idleAudioConfig == null) return;
+
+            if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
+            {
+                idleAudioConfig.SetAICharacterIdleAudioEnabled(_currentTarget.AICharacterNameKey, value);
+                ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
+            }
+            else
+            {
+                idleAudioConfig.SetIdleAudioEnabled(_currentTarget.TargetType, value);
+                ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
+            }
+        }
+
+        private void OnIdleAudioMinIntervalChanged(string value)
+        {
+            if (_currentTarget == null) return;
+
+            var idleAudioConfig = ModBehaviour.Instance?.IdleAudioConfig;
+            if (idleAudioConfig == null) return;
+
+            if (!float.TryParse(value, out var minValue)) return;
+            if (minValue < 0.1f) minValue = 0.1f;
+
+            IdleAudioInterval interval;
+            if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
+            {
+                interval = idleAudioConfig.GetAICharacterIdleAudioInterval(_currentTarget.AICharacterNameKey);
+                idleAudioConfig.SetAICharacterIdleAudioInterval(_currentTarget.AICharacterNameKey, minValue,
+                    interval.Max);
+                ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
+            }
+            else
+            {
+                interval = idleAudioConfig.GetIdleAudioInterval(_currentTarget.TargetType);
+                idleAudioConfig.SetIdleAudioInterval(_currentTarget.TargetType, minValue, interval.Max);
+                ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
+            }
+        }
+
+        private void OnIdleAudioMaxIntervalChanged(string value)
+        {
+            if (_currentTarget == null) return;
+
+            var idleAudioConfig = ModBehaviour.Instance?.IdleAudioConfig;
+            if (idleAudioConfig == null) return;
+
+            if (!float.TryParse(value, out var maxValue)) return;
+            if (maxValue < 0.1f) maxValue = 0.1f;
+
+            IdleAudioInterval interval;
+            if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
+            {
+                interval = idleAudioConfig.GetAICharacterIdleAudioInterval(_currentTarget.AICharacterNameKey);
+                if (maxValue < interval.Min) maxValue = interval.Min;
+                idleAudioConfig.SetAICharacterIdleAudioInterval(_currentTarget.AICharacterNameKey, interval.Min,
+                    maxValue);
+                ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
+            }
+            else
+            {
+                interval = idleAudioConfig.GetIdleAudioInterval(_currentTarget.TargetType);
+                if (maxValue < interval.Min) maxValue = interval.Min;
+                idleAudioConfig.SetIdleAudioInterval(_currentTarget.TargetType, interval.Min, maxValue);
+                ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
+            }
+        }
+    }
+}

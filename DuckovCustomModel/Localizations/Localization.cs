@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace DuckovCustomModel.Localizations
 {
-    public static class ModelSelectorUILocalization
+    public static class Localization
     {
         private static Dictionary<string, string>? _currentLanguageDict;
         private static Dictionary<string, string>? _englishDict;
@@ -19,21 +19,21 @@ namespace DuckovCustomModel.Localizations
         {
             get
             {
-                var dllPath = Path.GetDirectoryName(typeof(ModelSelectorUILocalization).Assembly.Location);
+                var dllPath = Path.GetDirectoryName(typeof(Localization).Assembly.Location);
                 return Path.Combine(dllPath ?? string.Empty, "Localizations");
             }
         }
 
         private static Dictionary<string, string> DefaultEnglish => new()
         {
-            { "Title", "Model Selector" },
+            { "Title", "Duckov Custom Model" },
             { "SearchPlaceholder", "Search models..." },
             { "Refresh", "Refresh" },
             { "Loading", "Loading..." },
             { "LoadingModelList", "Loading model list..." },
             { "HideCharacterEquipment", "Hide Character Equipment" },
             { "HidePetEquipment", "Hide Pet Equipment" },
-            { "Hotkey", "Hotkey:" },
+            { "Hotkey", "Hotkey" },
             { "PressAnyKey", "Press any key..." },
             { "NoPreview", "No Preview" },
             { "Author", "Author" },
@@ -44,6 +44,23 @@ namespace DuckovCustomModel.Localizations
             { "TargetPet", "Pet" },
             { "TargetAICharacter", "AI Character" },
             { "ResetInvalidModels", "Reset Invalid Models" },
+            { "ModelSelection", "Model Selection" },
+            { "Settings", "Settings" },
+            { "ShowAnimatorParameters", "Show Animator Parameters" },
+            { "AnimatorParameters", "Animator Parameters" },
+            { "Close", "Close" },
+            { "HotkeySettings", "Hotkey Settings" },
+            { "EquipmentSettings", "Equipment Settings" },
+            { "ModelSettings", "Model Settings" },
+            { "AnimatorSettings", "Animator Settings" },
+            { "UtilityTools", "Utility Tools" },
+            { "EnableIdleAudio", "Enable Idle Audio" },
+            { "IdleAudioInterval", "Idle Audio Interval" },
+            { "Seconds", "seconds" },
+            { "Updating", "Updating..." },
+            { "HideAICharacterEquipment", "Hide {0} Equipment" },
+            { "MinValue", "Min" },
+            { "MaxValue", "Max" },
         };
 
         public static string Title => GetText("Title");
@@ -64,6 +81,25 @@ namespace DuckovCustomModel.Localizations
         public static string TargetPet => GetText("TargetPet");
         public static string TargetAICharacter => GetText("TargetAICharacter");
         public static string ResetInvalidModels => GetText("ResetInvalidModels");
+        public static string ModelSelection => GetText("ModelSelection");
+        public static string Settings => GetText("Settings");
+        public static string ShowAnimatorParameters => GetText("ShowAnimatorParameters");
+        public static string AnimatorParameters => GetText("AnimatorParameters");
+        public static string Close => GetText("Close");
+        public static string HotkeySettings => GetText("HotkeySettings");
+        public static string EquipmentSettings => GetText("EquipmentSettings");
+        public static string ModelSettings => GetText("ModelSettings");
+        public static string AnimatorSettings => GetText("AnimatorSettings");
+        public static string UtilityTools => GetText("UtilityTools");
+        public static string EnableIdleAudio => GetText("EnableIdleAudio");
+        public static string IdleAudioInterval => GetText("IdleAudioInterval");
+        public static string Seconds => GetText("Seconds");
+        public static string Updating => GetText("Updating");
+        public static string HideAICharacterEquipment => GetText("HideAICharacterEquipment");
+        public static string MinValue => GetText("MinValue");
+        public static string MaxValue => GetText("MaxValue");
+
+        public static event Action<SystemLanguage>? OnLanguageChangedEvent;
 
         private static void Initialize()
         {
@@ -92,6 +128,7 @@ namespace DuckovCustomModel.Localizations
             _isInitialized = false;
             LoadLanguageFiles();
             _isInitialized = true;
+            OnLanguageChangedEvent?.Invoke(language);
         }
 
         private static void LoadLanguageFiles()
@@ -175,11 +212,6 @@ namespace DuckovCustomModel.Localizations
                 return englishText;
 
             return key;
-        }
-
-        public static string GetLoadingProgress(int count, int total)
-        {
-            return $"{Loading} ({count}/{total})";
         }
 
         public static string GetModelInfo(string modelId, string? author, string? version, string? bundleName = null)

@@ -6,7 +6,7 @@ using DuckovCustomModel.Configs;
 using DuckovCustomModel.Data;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
-using DuckovCustomModel.MonoBehaviours;
+using DuckovCustomModel.UI;
 using HarmonyLib;
 using UnityEngine;
 
@@ -16,8 +16,8 @@ namespace DuckovCustomModel
     public class ModBehaviour : Duckov.Modding.ModBehaviour
     {
         public static ModBehaviour? Instance;
+        private ConfigWindow? _configWindow;
         private Harmony? _harmony;
-        private ModelSelectorUI? _modelSelectorUI;
         public HideEquipmentConfig? HideEquipmentConfig;
         public IdleAudioConfig? IdleAudioConfig;
         public UIConfig? UIConfig;
@@ -59,7 +59,7 @@ namespace DuckovCustomModel
 
             ModelListManager.RefreshModelList(priorityModelIDs);
 
-            InitializeModelSelectorUI();
+            InitializeConfigWindow();
         }
 
         private void OnDisable()
@@ -75,11 +75,11 @@ namespace DuckovCustomModel
 
             ModelListManager.CancelRefresh();
 
-            ModelSelectorUILocalization.Cleanup();
+            Localization.Cleanup();
 
-            if (_modelSelectorUI == null) return;
-            Destroy(_modelSelectorUI);
-            _modelSelectorUI = null;
+            if (_configWindow == null) return;
+            Destroy(_configWindow.gameObject);
+            _configWindow = null;
         }
 
         private void OnDestroy()
@@ -185,14 +185,14 @@ namespace DuckovCustomModel
             ModelListManager.ApplyAllModelsFromConfig();
         }
 
-        private void InitializeModelSelectorUI()
+        private void InitializeConfigWindow()
         {
-            if (_modelSelectorUI != null) return;
+            if (_configWindow != null) return;
 
-            var uiObject = new GameObject("ModelSelectorUI");
-            _modelSelectorUI = uiObject.AddComponent<ModelSelectorUI>();
+            var uiObject = new GameObject("ConfigWindow");
+            _configWindow = uiObject.AddComponent<ConfigWindow>();
             DontDestroyOnLoad(uiObject);
-            ModLogger.Log("ModelSelectorUI initialized.");
+            ModLogger.Log("ConfigWindow initialized.");
         }
 
         private void InitializeModelHandlerToCharacter(CharacterMainControl characterMainControl,
