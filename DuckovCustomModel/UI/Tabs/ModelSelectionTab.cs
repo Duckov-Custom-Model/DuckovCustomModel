@@ -25,8 +25,7 @@ namespace DuckovCustomModel.UI.Tabs
             Localization.OnLanguageChangedEvent -= OnLanguageChanged;
             base.OnDestroy();
         }
-
-
+        
         protected override void CreatePanel()
         {
             PanelRoot = UIFactory.CreateImage("ModelSelectionPanel", transform, new(0.08f, 0.1f, 0.12f, 0.95f));
@@ -62,7 +61,10 @@ namespace DuckovCustomModel.UI.Tabs
             _modelListPanel.Initialize(modelListContainer.transform);
             _targetSettingsPanel.Initialize(targetSettingsContainer.transform);
 
-            _functionButtonBar.OnRefresh += () => _modelListPanel?.Refresh();
+            _functionButtonBar.OnRefresh += () =>
+            {
+                ModelListManager.RefreshModelList();
+            };
             _functionButtonBar.OnResetInvalidModels += () => _modelListPanel?.Refresh();
             _targetListPanel.OnTargetSelected += targetInfo =>
             {
@@ -125,6 +127,9 @@ namespace DuckovCustomModel.UI.Tabs
         private void OnRefreshCompleted()
         {
             UpdateRefreshOverlay();
+            _targetListPanel?.Refresh();
+            _modelListPanel?.Refresh();
+            _targetSettingsPanel?.Refresh();
         }
 
         private void UpdateRefreshOverlay()
