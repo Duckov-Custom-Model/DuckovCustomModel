@@ -6,7 +6,7 @@ using HarmonyLib;
 namespace DuckovCustomModel.HarmonyPatches
 {
     [HarmonyPatch]
-    internal class SpawnPaperBoxActionPatches
+    internal static class SpawnPaperBoxActionPatches
     {
         private static readonly FieldInfo InstanceField = AccessTools.Field(typeof(SpawnPaperBoxAction), "instance");
 

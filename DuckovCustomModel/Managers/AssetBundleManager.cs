@@ -169,6 +169,8 @@ namespace DuckovCustomModel.Managers
 
         public static T? LoadAssetFromBundle<T>(ModelBundleInfo bundleInfo, string assetPath) where T : Object
         {
+            if (string.IsNullOrEmpty(assetPath)) return null;
+
             var bundle = GetOrLoadAssetBundle(bundleInfo);
             if (bundle == null) return null;
 
@@ -191,6 +193,11 @@ namespace DuckovCustomModel.Managers
         public static GameObject? LoadModelPrefab(ModelBundleInfo bundleInfo, ModelInfo modelInfo)
         {
             return LoadAssetFromBundle<GameObject>(bundleInfo, modelInfo.PrefabPath);
+        }
+
+        public static GameObject? LoadDeathLootBoxPrefab(ModelBundleInfo bundleInfo, ModelInfo modelInfo)
+        {
+            return LoadAssetFromBundle<GameObject>(bundleInfo, modelInfo.DeathLootBoxPrefabPath ?? string.Empty);
         }
 
         public static Texture2D? LoadThumbnailTexture(ModelBundleInfo bundleInfo, ModelInfo modelInfo)

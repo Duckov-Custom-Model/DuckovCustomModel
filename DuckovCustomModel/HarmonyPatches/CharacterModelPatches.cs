@@ -6,7 +6,7 @@ using HarmonyLib;
 namespace DuckovCustomModel.HarmonyPatches
 {
     [HarmonyPatch]
-    internal class CharacterModelPatches
+    internal static class CharacterModelPatches
     {
         [HarmonyPatch(typeof(AICharacterController), nameof(AICharacterController.Init))]
         [HarmonyPostfix]

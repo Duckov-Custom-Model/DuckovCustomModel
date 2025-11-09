@@ -21,6 +21,7 @@ namespace DuckovCustomModel.MonoBehaviours
         private readonly Dictionary<string, Transform> _customModelLocatorCache = [];
 
         private readonly Dictionary<FieldInfo, Transform> _customModelSockets = [];
+        private readonly HashSet<GameObject> _modifiedDeathLootBoxes = [];
         private readonly Dictionary<FieldInfo, Transform> _originalModelSockets = [];
 
         private readonly Dictionary<string, List<string>> _soundsByTag = [];
@@ -61,6 +62,7 @@ namespace DuckovCustomModel.MonoBehaviours
         public GameObject? CustomModelInstance { get; private set; }
         public Animator? CustomAnimator { get; private set; }
         public CustomAnimatorControl? CustomAnimatorControl { get; private set; }
+        public GameObject? DeathLootBoxPrefab { get; private set; }
 
         private void Update()
         {
@@ -177,6 +179,18 @@ namespace DuckovCustomModel.MonoBehaviours
             _usingCustomSocketObjects.Remove(customSocketObject);
         }
 
+        public void RegisterModifiedDeathLootBox(GameObject deathLootBox)
+        {
+            if (deathLootBox == null) return;
+            _modifiedDeathLootBoxes.Add(deathLootBox);
+        }
+
+        public void UnregisterModifiedDeathLootBox(GameObject deathLootBox)
+        {
+            if (deathLootBox == null) return;
+            _modifiedDeathLootBoxes.Remove(deathLootBox);
+        }
+
         public void RestoreOriginalModel()
         {
             if (OriginalCharacterModel == null)
@@ -233,6 +247,22 @@ namespace DuckovCustomModel.MonoBehaviours
                 CustomModelInstance = null;
             }
 
+            if (DeathLootBoxPrefab != null)
+            {
+                DestroyImmediate(DeathLootBoxPrefab);
+                DeathLootBoxPrefab = null;
+            }
+
+            foreach (var destroyAdapter in _modifiedDeathLootBoxes
+                         .Select(deathLootBox => deathLootBox.GetComponent<OnDestroyAdapter>())
+                         .Where(destroyAdapter => destroyAdapter != null))
+            {
+                destroyAdapter.ForceInvoke();
+                destroyAdapter.ClearListeners();
+
+                DestroyImmediate(destroyAdapter.gameObject);
+            }
+
             _customModelSockets.Clear();
             _customModelLocatorCache.Clear();
             _soundsByTag.Clear();
@@ -279,6 +309,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
             if (CustomModelInstance != null) CleanupCustomModel();
             InitSoundFilePath(modelBundleInfo, modelInfo);
+            InitializeDeathLootBoxPrefab(modelBundleInfo, modelInfo);
             InitializeCustomModelInternal(prefab, modelInfo);
 
             if (!HasIdleSounds()) return;
@@ -296,6 +327,19 @@ namespace DuckovCustomModel.MonoBehaviours
                     ModBehaviour.Instance.IdleAudioConfig.IsIdleAudioEnabled(Target))
                     ScheduleNextIdleAudio();
             }
+        }
+
+        private void InitializeDeathLootBoxPrefab(ModelBundleInfo modelBundleInfo, ModelInfo modelInfo)
+        {
+            DeathLootBoxPrefab = null;
+
+            if (string.IsNullOrWhiteSpace(modelInfo.DeathLootBoxPrefabPath)) return;
+
+            var prefab = AssetBundleManager.LoadDeathLootBoxPrefab(modelBundleInfo, modelInfo);
+            if (prefab == null) return;
+
+            DeathLootBoxPrefab = prefab;
+            ModLogger.Log($"Death loot box prefab initialized: {prefab.name}");
         }
 
         private void InitializeCustomModelInternal(GameObject customModelPrefab, ModelInfo modelInfo)

@@ -14,6 +14,9 @@ namespace DuckovCustomModel.Data
         public string Version { get; set; } = string.Empty;
         public string ThumbnailPath { get; set; } = string.Empty;
         public string PrefabPath { get; set; } = string.Empty;
+
+        public string? DeathLootBoxPrefabPath { get; set; }
+
         public SoundInfo[] CustomSounds { get; set; } = [];
 
         [JsonIgnore] public string BundleName { get; internal set; } = string.Empty;
@@ -29,6 +32,8 @@ namespace DuckovCustomModel.Data
             if (string.IsNullOrWhiteSpace(ModelID)) return false;
             if (string.IsNullOrWhiteSpace(Name)) return false;
             if (string.IsNullOrWhiteSpace(PrefabPath)) return false;
+
+            if (string.IsNullOrWhiteSpace(DeathLootBoxPrefabPath)) DeathLootBoxPrefabPath = null;
 
             var targets = new List<ModelTarget>();
             foreach (var target in Target ?? [])

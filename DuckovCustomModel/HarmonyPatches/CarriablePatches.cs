@@ -6,7 +6,7 @@ using UnityEngine;
 namespace DuckovCustomModel.HarmonyPatches
 {
     [HarmonyPatch]
-    internal class CarriablePatches
+    internal static class CarriablePatches
     {
         [HarmonyPatch(typeof(Carriable), nameof(Carriable.Take))]
         [HarmonyPostfix]
