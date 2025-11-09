@@ -65,15 +65,18 @@ namespace DuckovCustomModel.MonoBehaviours
             if (modelHandler == null)
                 return;
 
-            var prefab = modelHandler.DeathLootBoxPrefab;
-            if (prefab == null)
+            if (!modelHandler.HaveCustomDeathLootBox())
+                return;
+
+            // Instantiate custom model
+            var customModel = modelHandler.CreateCustomDeathLootBoxInstance();
+            if (customModel == null)
                 return;
 
             // Disable default model
             foreach (Transform child in modelRoot) child.gameObject.SetActive(false);
 
-            // Instantiate custom model
-            var customModel = Object.Instantiate(prefab, modelRoot);
+            customModel.transform.SetParent(modelRoot, false);
             customModel.transform.localPosition = Vector3.zero;
             customModel.transform.localRotation = Quaternion.identity;
             customModel.transform.localScale = Vector3.one;
