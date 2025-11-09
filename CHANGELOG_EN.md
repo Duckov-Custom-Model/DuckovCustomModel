@@ -1,0 +1,70 @@
+# Changelog
+
+English | [中文](CHANGELOG.md)
+
+## v1.6.3
+
+- Added `DeathLootBoxPrefabPath` field to models for specifying death loot box style (optional, defaults to original model)
+- Death loot box models can now be customized
+
+## v1.6.2
+
+- Removed idle audio feature restrictions for player characters; players can now enable automatic audio
+- Added idle audio feature settings for each target character; each target can now be individually configured for automatic audio and audio intervals
+- Refactored the model manager UI interface to improve user comfort, aesthetics, and structure
+
+## v1.6.1
+
+- Added idle audio automatic playback feature, supporting configuration of idle audio playback intervals for non-player characters (AI characters and pets)
+- Added idle sound tag support; model sounds can be configured with "idle" tag for idle audio playback
+
+## v1.6.0
+
+- Optimized some logic processing
+- Added paper box locator support; custom models can include `PaperBoxLocator` locator point, paper boxes will automatically attach to this locator and follow the model
+- Hiding equipment no longer causes paper boxes to be hidden
+- Added carriable item locator support; custom models can include `CarriableLocator` locator point, carriable items will automatically attach and save original position information when carried
+
+## v1.5.1-fix2
+
+- Fixed issue where audio settings were not correctly applied when reloading models
+
+## v1.5.1-fix1
+
+- Fixed issue where interface did not refresh when selecting models
+
+## v1.5.1
+
+- Added `AICharacter` target for AI characters that are not players or pets (NPCs are not supported as they are actually part of buildings, not conventional model structures)
+- Added one-click reset invalid model settings button to quickly reset characters using incompatible or non-existent models back to default model
+- Added audio playback related interfaces, supporting replacement of player quacks and AI automatic quacks
+
+## v1.4.1
+
+- Added extensive Animator parameter support to enhance animation control capabilities
+- Added firearm-related parameters: `Loaded` (reload state), `Shoot` (shoot trigger), `ShootMode` (shoot mode), `AmmoRate` (ammo ratio)
+- Added aiming-related parameters: `InAds` (aiming state), `AdsValue` (aiming progress), `AimType` (aiming type), `AimDirX/Y/Z` (aiming direction)
+- Added action-related parameters: `ActionRunning` (action execution state), `ActionProgress` (action progress), `ActionPriority` (action priority)
+- Added state-related parameters: `Hidden` (hidden state), `ThermalOn` (thermal imaging state), `VelocityX/Y/Z` (velocity components)
+- Optimized some code logic and performance
+- Added Animator parameter window to view supported Animator parameter values in real-time
+
+## v1.2.0
+
+- Refactored configuration system:
+  - `UsingModel.json` changed to dictionary format
+  - Added `HideEquipmentConfig.json` and removed related configurations from `UIConfig.json`
+  - Supports automatic migration of old configurations
+- Performance optimization: Implemented incremental update mechanism using runtime hash caching, only reloading when Bundle files or configurations change
+- Multi-object support: Each ModelTarget can correspond to multiple game objects, uniformly applying changes to all objects when switching models
+- Refresh process optimization: Skip Bundle loading and state checks when there are no changes, avoiding unnecessary repeated loading
+- Temporary model restoration: Automatically temporarily switch back to original model when Bundle updates, automatically restore after update completes
+- User selection protection: User model changes during refresh process will not be overwritten
+- UI improvements: Model information displays Bundle name
+- Fixed issue where models were loaded multiple times during refresh
+
+## v1.1.2
+
+- Optimized some logic
+- Added `CurrentCharacterType` parameter to determine whether it applies to player character (0) or pet (1)
+

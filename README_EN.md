@@ -2,6 +2,8 @@
 
 English | [中文](README.md)
 
+[Changelog](CHANGELOG_EN.md)
+
 A custom player model mod for Duckov game.
 
 ## Basic Features

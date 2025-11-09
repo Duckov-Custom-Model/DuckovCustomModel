@@ -2,6 +2,8 @@
 
 [English](README_EN.md) | 中文
 
+[更新日志](CHANGELOG.md)
+
 一个用于 Duckov 游戏的自定义玩家模型模组。
 
 ## 基本功能
