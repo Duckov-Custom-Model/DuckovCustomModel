@@ -177,7 +177,7 @@ namespace DuckovCustomModel.MonoBehaviours
             if (_deathLootBoxPrefab == null) return null;
             var instance = Instantiate(_deathLootBoxPrefab);
             instance.name = "DeathLootBox_CustomModel";
-            ReplaceShader(instance);
+            ReplaceShaderAndLayer(instance);
             return instance;
         }
 
@@ -384,10 +384,10 @@ namespace DuckovCustomModel.MonoBehaviours
             // Instantiate the custom model prefab
             CustomModelInstance = Instantiate(customModelPrefab, OriginalCharacterModel.transform);
             CustomModelInstance.name = "CustomModelInstance";
-            CustomModelInstance.layer = LayerMask.NameToLayer("Character");
 
             if (modelInfo.Features is not { Length: > 0 } || !Array.Exists(modelInfo.Features,
-                    feature => feature == ModelFeatures.NoAutoShaderReplace)) ReplaceShader(CustomModelInstance);
+                    feature => feature == ModelFeatures.NoAutoShaderReplace))
+                ReplaceShaderAndLayer(CustomModelInstance);
 
             // Get the Animator component from the custom model
             CustomAnimator = CustomModelInstance.GetComponent<Animator>();
@@ -537,7 +537,7 @@ namespace DuckovCustomModel.MonoBehaviours
             return transforms.FirstOrDefault(t => t.name == locatorName);
         }
 
-        private static void ReplaceShader(GameObject targetGameObject)
+        private static void ReplaceShaderAndLayer(GameObject targetGameObject, string layerName = "Character")
         {
             var shader = GameDefaultShader;
             if (shader == null)
@@ -546,14 +546,26 @@ namespace DuckovCustomModel.MonoBehaviours
                 return;
             }
 
+            var layer = LayerMask.NameToLayer(layerName);
+            if (layer == -1)
+            {
+                ModLogger.LogError($"Layer '{layerName}' not found.");
+                return;
+            }
+
             var renderers = targetGameObject.GetComponentsInChildren<Renderer>(true);
             foreach (var renderer in renderers)
-            foreach (var material in renderer.materials)
             {
-                if (material == null) continue;
-                material.shader = shader;
-                if (material.HasProperty(EmissionColor))
-                    material.SetColor(EmissionColor, Color.black);
+                var gameObject = renderer.gameObject;
+                if (gameObject.layer != layer)
+                    gameObject.layer = layer;
+                foreach (var material in renderer.materials)
+                {
+                    if (material == null) continue;
+                    material.shader = shader;
+                    if (material.HasProperty(EmissionColor))
+                        material.SetColor(EmissionColor, Color.black);
+                }
             }
         }
 
