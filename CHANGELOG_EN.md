@@ -2,6 +2,10 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.6.8
+
+- Now automatically sets the layer of objects containing Renderer in the model to "Character"
+
 ## v1.6.7
 
 - Fixed issue where hand-held equipment related parameters (such as `LeftHandEquip`, `RightHandEquip`, etc.) would not update correctly in certain situations

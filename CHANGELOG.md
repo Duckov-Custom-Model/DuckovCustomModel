@@ -2,6 +2,10 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.6.8
+
+- 现在会自动修改模型内包含 Renderer 的对象的 layer 为 "Character"
+
 ## v1.6.7
 
 - 修复了手持装备相关参数（如 `LeftHandEquip`、`RightHandEquip` 等）在某些情况下不会正确更新的问题
