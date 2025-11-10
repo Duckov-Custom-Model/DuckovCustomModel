@@ -192,6 +192,14 @@ namespace DuckovCustomModel.MonoBehaviours
         {
             if (customSocketObject == null) return;
             _usingCustomSocketObjects.Remove(customSocketObject);
+
+            var customSocketMarker = customSocketObject.GetComponent<CustomSocketMarker>();
+            if (customSocketMarker == null || customSocketMarker.OriginParent == null) return;
+
+            customSocketObject.transform.SetParent(customSocketMarker.OriginParent, false);
+            customSocketObject.transform.localPosition = customSocketMarker.SocketOffset ?? Vector3.zero;
+            customSocketObject.transform.localRotation = customSocketMarker.SocketRotation ?? Quaternion.identity;
+            customSocketObject.transform.localScale = customSocketMarker.SocketScale ?? Vector3.one;
         }
 
         public void RegisterModifiedDeathLootBox(GameObject deathLootBox)
