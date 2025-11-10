@@ -459,16 +459,19 @@ namespace DuckovCustomModel.MonoBehaviours
             var isReloading = false;
             var ammoRate = 0.0f;
             var shootMode = 0;
+            var gunState = -1;
             if (_gunAgent != null)
             {
                 isReloading = _gunAgent.IsReloading();
                 isGunReady = _gunAgent.BulletCount > 0 && !isReloading;
                 shootMode = (int)_gunAgent.GunItemSetting.triggerMode;
+                gunState = (int)_gunAgent.GunState;
                 var maxAmmo = _gunAgent.Capacity;
                 if (maxAmmo > 0)
                     ammoRate = (float)_gunAgent.BulletCount / maxAmmo;
             }
 
+            SetAnimatorInteger(CustomAnimatorHash.GunState, gunState);
             SetAnimatorInteger(CustomAnimatorHash.ShootMode, shootMode);
             SetAnimatorFloat(CustomAnimatorHash.AmmoRate, ammoRate);
             SetAnimatorBool(CustomAnimatorHash.Reloading, isReloading);

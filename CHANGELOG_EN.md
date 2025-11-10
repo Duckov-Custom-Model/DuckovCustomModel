@@ -2,6 +2,10 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.6.6
+
+- Added `GunState` Animator parameter to indicate the current state of the gun (shoot cooling, ready, fire, burst each shot cooling, empty, reloading)
+
 ## v1.6.5
 
 - Fixed the working logic of paper box locator and carriable locator

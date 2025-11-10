@@ -390,6 +390,13 @@ Animator Controller 可以使用以下参数：
   - `0`：自动（auto）
   - `1`：半自动（semi）
   - `2`：栓动（bolt）
+- `GunState`：枪械状态（当持有 `ItemAgent_Gun` 时，由枪械的 `GunState` 决定）
+  - `0`：射击冷却（shootCooling）
+  - `1`：就绪（ready）
+  - `2`：开火（fire）
+  - `3`：连发每发冷却（burstEachShotCooling）
+  - `4`：空弹（empty）
+  - `5`：装弹中（reloading）
 - `AimType`：瞄准类型（由 `CharacterMainControl.AimType` 决定）
   - `0`：正常瞄准（normalAim）
   - `1`：角色技能（characterSkill）

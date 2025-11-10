@@ -27,6 +27,7 @@ namespace DuckovCustomModel.Data
         public static readonly int Shoot = Animator.StringToHash("Shoot"); // trigger
         public static readonly int HandState = Animator.StringToHash("HandState"); // int
         public static readonly int GunReady = Animator.StringToHash("GunReady"); // bool
+        public static readonly int GunState = Animator.StringToHash("GunState"); // int
         public static readonly int ShootMode = Animator.StringToHash("ShootMode"); // int
         public static readonly int Loaded = Animator.StringToHash("Loaded"); // bool
         public static readonly int Reloading = Animator.StringToHash("Reloading"); // bool

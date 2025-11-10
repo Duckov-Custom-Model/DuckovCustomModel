@@ -390,6 +390,13 @@ The Animator Controller can use the following parameters:
   - `0`: Auto
   - `1`: Semi-automatic
   - `2`: Bolt-action
+- `GunState`: Gun state (determined by gun's `GunState` when holding `ItemAgent_Gun`)
+  - `0`: Shoot cooling (shootCooling)
+  - `1`: Ready
+  - `2`: Fire
+  - `3`: Burst each shot cooling (burstEachShotCooling)
+  - `4`: Empty
+  - `5`: Reloading
 - `AimType`: Aim type (determined by `CharacterMainControl.AimType`)
   - `0`: Normal aim
   - `1`: Character skill
