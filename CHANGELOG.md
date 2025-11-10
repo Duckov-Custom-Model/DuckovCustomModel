@@ -2,6 +2,13 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.7.3
+
+- 新增 `Weather` Animator 参数（int 类型），用于获取当前天气状态（晴天、多云、雨天、风暴 I、风暴 II）
+- 新增 `Time` Animator 参数（float 类型），用于获取当前 24 小时时间
+- 新增 `TimePhase` Animator 参数（int 类型），用于获取当前时间阶段（白天、黎明、夜晚）
+- 当 `TimeOfDayController.Instance` 不可用时，这三个参数会被设置为 -1
+
 ## v1.7.2
 
 - 为 AnimatorParamInfo 添加了 InitialValue 属性，用于存储参数的初始值

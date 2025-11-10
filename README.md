@@ -400,6 +400,7 @@ Animator Controller 可以使用以下参数：
 - `WaterRate`：水分比率（0.0 - 1.0，当前水分 / 最大水分）
 - `WeightRate`：重量比率（当前总重量 / 最大负重，可能大于 1.0）
 - `ActionProgress`：动作进度百分比（0.0 - 1.0，当前动作的进度，由 `IProgress.GetProgress().progress` 获取）
+- `Time`：当前 24 小时时间（0.0 - 24.0，由 `TimeOfDayController.Instance.Time` 获取，不可用时为 -1.0）
 
 #### Int 类型参数
 
@@ -457,6 +458,16 @@ Animator Controller 可以使用以下参数：
   - `6`：Fishing（钓鱼）
   - `7`：Interact（交互）
   - 当 `ActionRunning` 为 `true` 时，动作优先级可以近似用于判断角色正在执行什么动作
+- `Weather`：当前天气状态（由 `TimeOfDayController.Instance.CurrentWeather` 获取，不可用时为 -1）
+  - `0`：晴天（Sunny）
+  - `1`：多云（Cloudy）
+  - `2`：雨天（Rainy）
+  - `3`：风暴 I（Stormy_I）
+  - `4`：风暴 II（Stormy_II）
+- `TimePhase`：当前时间阶段（由 `TimeOfDayController.Instance.CurrentPhase.timePhaseTag` 获取，不可用时为 -1）
+  - `0`：白天（day）
+  - `1`：黎明（dawn）
+  - `2`：夜晚（night）
 
 #### Trigger 类型参数
 

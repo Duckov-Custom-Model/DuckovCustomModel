@@ -77,6 +77,10 @@ namespace DuckovCustomModel.Data
         public static readonly int ActionProgress = Animator.StringToHash("ActionProgress"); // float
         public static readonly int ActionPriority = Animator.StringToHash("ActionPriority"); // int
 
+        public static readonly int Weather = Animator.StringToHash("Weather"); // int
+        public static readonly int Time = Animator.StringToHash("Time"); // float
+        public static readonly int TimePhase = Animator.StringToHash("TimePhase"); // int
+
         public static List<AnimatorParamInfo> GetAllParams()
         {
             return new List<AnimatorParamInfo>
@@ -141,6 +145,9 @@ namespace DuckovCustomModel.Data
                 new() { Name = "ActionRunning", Hash = ActionRunning, Type = "bool", InitialValue = false },
                 new() { Name = "ActionProgress", Hash = ActionProgress, Type = "float", InitialValue = 0f },
                 new() { Name = "ActionPriority", Hash = ActionPriority, Type = "int", InitialValue = 0 },
+                new() { Name = "Weather", Hash = Weather, Type = "int", InitialValue = -1 },
+                new() { Name = "Time", Hash = Time, Type = "float", InitialValue = -1f },
+                new() { Name = "TimePhase", Hash = TimePhase, Type = "int", InitialValue = -1 },
             }.OrderBy(p => p.Name).ToList();
         }
     }

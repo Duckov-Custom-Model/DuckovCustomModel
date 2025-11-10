@@ -400,6 +400,7 @@ The Animator Controller can use the following parameters:
 - `WaterRate`: Water ratio (0.0 - 1.0, current water / max water)
 - `WeightRate`: Weight ratio (current total weight / max carrying capacity, may exceed 1.0)
 - `ActionProgress`: Action progress percentage (0.0 - 1.0, current action progress, obtained from `IProgress.GetProgress().progress`)
+- `Time`: Current 24-hour time (0.0 - 24.0, obtained from `TimeOfDayController.Instance.Time`, -1.0 when unavailable)
 
 #### Int Type Parameters
 
@@ -457,6 +458,16 @@ The Animator Controller can use the following parameters:
   - `6`: Fishing
   - `7`: Interact
   - When `ActionRunning` is `true`, the action priority can be used to approximately determine what action the character is performing
+- `Weather`: Current weather state (obtained from `TimeOfDayController.Instance.CurrentWeather`, -1 when unavailable)
+  - `0`: Sunny
+  - `1`: Cloudy
+  - `2`: Rainy
+  - `3`: Stormy_I
+  - `4`: Stormy_II
+- `TimePhase`: Current time phase (obtained from `TimeOfDayController.Instance.CurrentPhase.timePhaseTag`, -1 when unavailable)
+  - `0`: Day
+  - `1`: Dawn
+  - `2`: Night
 
 #### Trigger Type Parameters
 

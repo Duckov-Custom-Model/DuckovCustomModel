@@ -428,11 +428,11 @@ namespace DuckovCustomModel.UI
 
             InitializeParamStyles();
 
-            GUILayout.BeginArea(new(10, 30, AnimatorParamsWindowWidth - 20, AnimatorParamsWindowHeight - 90));
+            GUILayout.BeginArea(new(10, 30, AnimatorParamsWindowWidth - 20, AnimatorParamsWindowHeight - 20));
 
             _animatorParamsScrollPosition = GUILayout.BeginScrollView(_animatorParamsScrollPosition,
                 _scrollViewStyle, GUILayout.Width(AnimatorParamsWindowWidth - 20),
-                GUILayout.Height(AnimatorParamsWindowHeight - 90));
+                GUILayout.Height(AnimatorParamsWindowHeight - 20));
 
             var paramInfos = GetCustomAnimatorParams();
             for (var i = 0; i < paramInfos.Count; i += 2)
@@ -738,13 +738,13 @@ namespace DuckovCustomModel.UI
             SetSettingsButtonVisible(shouldShow);
         }
 
-        private bool IsInMainMenu()
+        private static bool IsInMainMenu()
         {
             var currentScene = SceneManager.GetActiveScene();
             return currentScene.name == "MainMenu";
         }
 
-        private bool IsInLootView()
+        private static bool IsInLootView()
         {
             var activeView = View.ActiveView;
             var lootView = LootView.Instance;

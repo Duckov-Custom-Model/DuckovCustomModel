@@ -2,6 +2,13 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.7.3
+
+- Added `Weather` Animator parameter (int type) to get current weather state (Sunny, Cloudy, Rainy, Stormy_I, Stormy_II)
+- Added `Time` Animator parameter (float type) to get current 24-hour time
+- Added `TimePhase` Animator parameter (int type) to get current time phase (day, dawn, night)
+- When `TimeOfDayController.Instance` is unavailable, these three parameters will be set to -1
+
 ## v1.7.2
 
 - Added InitialValue property to AnimatorParamInfo for storing parameter initial values

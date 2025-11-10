@@ -87,6 +87,7 @@ namespace DuckovCustomModel.MonoBehaviours
             UpdateEquipmentTypeID();
             UpdateAttackLayerWeight();
             UpdateActionState();
+            UpdateTimeAndWeather();
         }
 
         private void OnDestroy()
@@ -475,6 +476,31 @@ namespace DuckovCustomModel.MonoBehaviours
             SetAnimatorBool(CustomAnimatorHash.ActionRunning, isActionRunning);
             SetAnimatorFloat(CustomAnimatorHash.ActionProgress, actionProgress);
             SetAnimatorInteger(CustomAnimatorHash.ActionPriority, actionPriority);
+        }
+
+        private void UpdateTimeAndWeather()
+        {
+            if (!_initialized) return;
+
+            var timeOfDayController = TimeOfDayController.Instance;
+            if (timeOfDayController == null)
+            {
+                SetAnimatorFloat(CustomAnimatorHash.Time, -1f);
+                SetAnimatorInteger(CustomAnimatorHash.Weather, -1);
+                SetAnimatorInteger(CustomAnimatorHash.TimePhase, -1);
+                return;
+            }
+
+            var time = timeOfDayController.Time;
+            SetAnimatorFloat(CustomAnimatorHash.Time, time);
+
+            var currentWeather = timeOfDayController.CurrentWeather;
+            var weatherValue = (int)currentWeather;
+            SetAnimatorInteger(CustomAnimatorHash.Weather, weatherValue);
+
+            var currentPhase = timeOfDayController.CurrentPhase.timePhaseTag;
+            var timePhaseValue = (int)currentPhase;
+            SetAnimatorInteger(CustomAnimatorHash.TimePhase, timePhaseValue);
         }
 
         private void FindMeleeAttackLayerIndex()
