@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using Duckov.UI;
 using DuckovCustomModel.Configs;
@@ -28,6 +29,10 @@ namespace DuckovCustomModel.UI
         private bool _charInputWasEnabled;
         private bool _cursorWasVisible;
         private bool _isInitialized;
+
+        private AnchorPosition _lastAnchorPosition;
+        private float _lastOffsetX;
+        private float _lastOffsetY;
         private ModelHandler? _modelHandler;
         private ModelSelectionTab? _modelSelectionTab;
         private CursorLockMode _originalCursorLockState;
@@ -62,6 +67,16 @@ namespace DuckovCustomModel.UI
             }
 
             UpdateSettingsButtonVisibility();
+
+            if (uiConfig.DCMButtonAnchor != _lastAnchorPosition ||
+                Math.Abs(uiConfig.DCMButtonOffsetX - _lastOffsetX) > 0.01f ||
+                Math.Abs(uiConfig.DCMButtonOffsetY - _lastOffsetY) > 0.01f)
+            {
+                _lastAnchorPosition = uiConfig.DCMButtonAnchor;
+                _lastOffsetX = uiConfig.DCMButtonOffsetX;
+                _lastOffsetY = uiConfig.DCMButtonOffsetY;
+                RefreshSettingsButton();
+            }
 
             if (IsTypingInInputField() || _panelRoot == null) return;
 
@@ -133,6 +148,15 @@ namespace DuckovCustomModel.UI
 
             _isInitialized = true;
             Localization.OnLanguageChangedEvent += OnLanguageChanged;
+
+            var uiConfig = UIConfig;
+            if (uiConfig != null)
+            {
+                _lastAnchorPosition = uiConfig.DCMButtonAnchor;
+                _lastOffsetX = uiConfig.DCMButtonOffsetX;
+                _lastOffsetY = uiConfig.DCMButtonOffsetY;
+            }
+
             ModLogger.Log("ConfigWindow initialized.");
         }
 
@@ -541,14 +565,22 @@ namespace DuckovCustomModel.UI
         {
             if (_uiRoot == null) return;
 
+            var uiConfig = UIConfig;
+            if (uiConfig == null) return;
+
             _settingsButton = UIFactory.CreateButton("SettingsButton", _uiRoot.transform, OnSettingsButtonClicked,
                 new Color(0.2f, 0.25f, 0.3f, 0.9f));
             var buttonRect = _settingsButton.GetComponent<RectTransform>();
-            buttonRect.anchorMin = new(0, 1);
-            buttonRect.anchorMax = new(0, 1);
-            buttonRect.pivot = new(0, 1);
+
+            var anchorMin = GetAnchorValue(uiConfig.DCMButtonAnchor);
+            var anchorMax = anchorMin;
+            var pivot = anchorMin;
+
+            buttonRect.anchorMin = anchorMin;
+            buttonRect.anchorMax = anchorMax;
+            buttonRect.pivot = pivot;
             buttonRect.sizeDelta = new(80, 50);
-            buttonRect.anchoredPosition = new(10, -10);
+            buttonRect.anchoredPosition = new(uiConfig.DCMButtonOffsetX, uiConfig.DCMButtonOffsetY);
 
             var outline = _settingsButton.AddComponent<Outline>();
             outline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
@@ -591,9 +623,35 @@ namespace DuckovCustomModel.UI
             if (_settingsButton != null) _settingsButton.SetActive(visible);
         }
 
+        public void RefreshSettingsButton()
+        {
+            if (_settingsButton == null || UIConfig == null) return;
+
+            var buttonRect = _settingsButton.GetComponent<RectTransform>();
+            if (buttonRect == null) return;
+
+            var anchorMin = GetAnchorValue(UIConfig.DCMButtonAnchor);
+            var anchorMax = anchorMin;
+            var pivot = anchorMin;
+
+            buttonRect.anchorMin = anchorMin;
+            buttonRect.anchorMax = anchorMax;
+            buttonRect.pivot = pivot;
+            buttonRect.anchoredPosition = new(UIConfig.DCMButtonOffsetX, UIConfig.DCMButtonOffsetY);
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(buttonRect);
+        }
+
         private void UpdateSettingsButtonVisibility()
         {
-            var shouldShow = IsInMainMenu() || IsInLootView();
+            var uiConfig = UIConfig;
+            if (uiConfig == null)
+            {
+                SetSettingsButtonVisible(false);
+                return;
+            }
+
+            var shouldShow = uiConfig.ShowDCMButton && (IsInMainMenu() || IsInLootView());
             SetSettingsButtonVisible(shouldShow);
         }
 
@@ -608,6 +666,23 @@ namespace DuckovCustomModel.UI
             var activeView = View.ActiveView;
             var lootView = LootView.Instance;
             return activeView != null && lootView != null && activeView == lootView;
+        }
+
+        private static Vector2 GetAnchorValue(AnchorPosition position)
+        {
+            return position switch
+            {
+                AnchorPosition.TopLeft => new(0f, 1f),
+                AnchorPosition.TopCenter => new(0.5f, 1f),
+                AnchorPosition.TopRight => new(1f, 1f),
+                AnchorPosition.MiddleLeft => new(0f, 0.5f),
+                AnchorPosition.MiddleCenter => new(0.5f, 0.5f),
+                AnchorPosition.MiddleRight => new(1f, 0.5f),
+                AnchorPosition.BottomLeft => new(0f, 0f),
+                AnchorPosition.BottomCenter => new(0.5f, 0f),
+                AnchorPosition.BottomRight => new(1f, 0f),
+                _ => new(0f, 1f),
+            };
         }
     }
 }

@@ -33,6 +33,20 @@
   "Updating": "正在更新中...",
   "HideAICharacterEquipment": "隐藏 {0} 的装备",
   "MinValue": "最小值",
-  "MaxValue": "最大值"
+  "MaxValue": "最大值",
+  "ShowDCMButton": "在主菜单和背包界面显示 DCM 按钮",
+  "DCMButtonAnchor": "DCM 按钮锚点",
+  "DCMButtonOffset": "DCM 按钮偏移",
+  "TopLeft": "左上",
+  "TopCenter": "上中",
+  "TopRight": "右上",
+  "MiddleLeft": "左中",
+  "MiddleCenter": "中央",
+  "MiddleRight": "右中",
+  "BottomLeft": "左下",
+  "BottomCenter": "下中",
+  "BottomRight": "右下",
+  "OffsetX": "偏移 X",
+  "OffsetY": "偏移 Y"
 }
 

@@ -26,12 +26,28 @@ UI interface related configuration.
 
 ```json
 {
-  "ToggleKey": "Backslash"
+  "ToggleKey": "Backslash",
+  "ShowDCMButton": true,
+  "DCMButtonAnchor": "TopLeft",
+  "DCMButtonOffsetX": 10.0,
+  "DCMButtonOffsetY": -10.0
 }
 ```
 
 - `ToggleKey`: Key to open/close the model selection interface (default: `Backslash`, i.e., backslash key `\`)
   - Supported key values can refer to Unity KeyCode enum
+- `ShowDCMButton`: Whether to show the DCM button in the main menu and inventory interface (default: `true`)
+  - When set to `true`, the DCM button will automatically appear in the main menu or inventory interface
+  - Can be toggled in the settings interface
+- `DCMButtonAnchor`: Anchor position of the DCM button (default: `"TopLeft"`)
+  - Valid values: `"TopLeft"`, `"TopCenter"`, `"TopRight"`, `"MiddleLeft"`, `"MiddleCenter"`, `"MiddleRight"`, `"BottomLeft"`, `"BottomCenter"`, `"BottomRight"`
+  - Can be selected through a dropdown menu in the settings interface
+- `DCMButtonOffsetX`: X-axis offset value of the DCM button (default: `10.0`)
+  - X-axis offset relative to the anchor position (in pixels)
+  - Can be set through an input field in the settings interface
+- `DCMButtonOffsetY`: Y-axis offset value of the DCM button (default: `-10.0`)
+  - Y-axis offset relative to the anchor position (in pixels)
+  - Can be set through an input field in the settings interface
 
 ### HideEquipmentConfig.json
 
@@ -170,10 +186,16 @@ The model selection interface provides the following features:
 - **Model Selection**: Click the model button to apply the model to all objects of that target type
 - **Model Information**: Each model card displays the model name, ID, author, version, and the Bundle name it belongs to
 - **AI Character Selection**: When selecting "AI Character" target type, first select a specific AI character, then select a model for that character
-- **Settings Options**: Toggle "Hide Original Equipment" options at the bottom of the interface
-  - Separate options for "Hide Character Equipment" and "Hide Pet Equipment"
-  - These options are immediately saved to the configuration file
-  - Affect the Animator's `HideOriginalEquipment` parameter value
+- **Settings Options**: In the settings tab, you can configure the following options:
+  - **Hide Original Equipment**: Separate options for "Hide Character Equipment" and "Hide Pet Equipment"
+    - These options are immediately saved to the configuration file
+    - Affect the Animator's `HideOriginalEquipment` parameter value
+  - **Show Animator Parameters**: Toggle whether to show the animator parameters window
+  - **Show DCM Button in Main Menu and Inventory**: Control whether to show the DCM button when in the main menu or inventory interface
+  - **DCM Button Position**: Configure the anchor position and offset values of the DCM button
+    - Anchor Position: Select one of 9 positions through a dropdown menu (top-left, top-center, top-right, middle-left, middle-center, middle-right, bottom-left, bottom-center, bottom-right)
+    - Offset Values: Set X and Y axis offset values (in pixels)
+    - Configuration changes will be immediately applied to the button position
 - **AI Character Equipment Settings**: When selecting "AI Character" target type and a specific AI character, a "Hide Equipment" option for that AI character will be displayed at the top of the model list page
   - Each AI character has an independent hide equipment setting
   - This option is immediately saved to the configuration file
@@ -184,6 +206,10 @@ The model selection interface provides the following features:
 - Default key: `\` (backslash key)
 - Can be changed by modifying `ToggleKey` in `UIConfig.json`
 - Press `ESC` key to close the interface
+- **DCM Button**: When in the main menu or inventory interface, a fixed DCM button will appear in the top-left corner of the screen
+  - Click the button to quickly open/close the model selection interface
+  - Button position and visibility can be configured in the settings interface
+  - Button position supports 9 anchor positions (top-left, top-center, top-right, middle-left, middle-center, middle-right, bottom-left, bottom-center, bottom-right) and custom offset values
 
 ## Model Installation
 

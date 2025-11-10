@@ -176,5 +176,131 @@ namespace DuckovCustomModel.UI.Base
             colors.selectedColor = selectedColor ?? new(0.5f, 0.7f, 0.9f, 1);
             button.colors = colors;
         }
+
+        public static Dropdown CreateDropdown(string name, Transform parent, UnityAction<int>? onValueChanged = null)
+        {
+            var dropdownObj = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Dropdown));
+            dropdownObj.transform.SetParent(parent, false);
+
+            var dropdownImage = dropdownObj.GetComponent<Image>();
+            dropdownImage.color = new(0.1f, 0.12f, 0.15f, 0.9f);
+
+            var outline = dropdownObj.AddComponent<Outline>();
+            outline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
+            outline.effectDistance = new(1, -1);
+
+            var dropdown = dropdownObj.GetComponent<Dropdown>();
+            if (onValueChanged != null) dropdown.onValueChanged.AddListener(onValueChanged);
+
+            var labelObj = new GameObject("Label", typeof(Text));
+            labelObj.transform.SetParent(dropdownObj.transform, false);
+            var labelText = labelObj.GetComponent<Text>();
+            labelText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            labelText.fontSize = 14;
+            labelText.color = Color.white;
+            labelText.alignment = TextAnchor.MiddleLeft;
+            var labelRect = labelObj.GetComponent<RectTransform>();
+            labelRect.anchorMin = new(0, 0);
+            labelRect.anchorMax = new(1, 1);
+            labelRect.offsetMin = new(10, 2);
+            labelRect.offsetMax = new(-25, -2);
+            dropdown.captionText = labelText;
+
+            var arrowObj = new GameObject("Arrow", typeof(Image));
+            arrowObj.transform.SetParent(dropdownObj.transform, false);
+            var arrowImage = arrowObj.GetComponent<Image>();
+            arrowImage.color = Color.white;
+            var arrowRect = arrowObj.GetComponent<RectTransform>();
+            arrowRect.anchorMin = new(1, 0.5f);
+            arrowRect.anchorMax = new(1, 0.5f);
+            arrowRect.pivot = new(1, 0.5f);
+            arrowRect.sizeDelta = new(20, 20);
+            arrowRect.anchoredPosition = new(-5, 0);
+            dropdown.captionImage = arrowImage;
+
+            var templateObj = new GameObject("Template", typeof(RectTransform), typeof(Image), typeof(ScrollRect));
+            templateObj.transform.SetParent(dropdownObj.transform, false);
+            templateObj.SetActive(false);
+            var templateRect = templateObj.GetComponent<RectTransform>();
+            templateRect.anchorMin = new(0, 0);
+            templateRect.anchorMax = new(1, 0);
+            templateRect.pivot = new(0.5f, 1);
+            templateRect.sizeDelta = new(0, 150);
+            templateRect.anchoredPosition = new(0, 2);
+
+            var templateImage = templateObj.GetComponent<Image>();
+            templateImage.color = new(0.1f, 0.12f, 0.15f, 0.95f);
+
+            var templateScrollRect = templateObj.GetComponent<ScrollRect>();
+            templateScrollRect.horizontal = false;
+            templateScrollRect.vertical = true;
+
+            var viewportObj = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(Mask));
+            viewportObj.transform.SetParent(templateObj.transform, false);
+            var viewportRect = viewportObj.GetComponent<RectTransform>();
+            viewportRect.anchorMin = Vector2.zero;
+            viewportRect.anchorMax = Vector2.one;
+            viewportRect.sizeDelta = Vector2.zero;
+            viewportRect.anchoredPosition = Vector2.zero;
+            templateScrollRect.viewport = viewportRect;
+
+            var contentObj = new GameObject("Content", typeof(RectTransform), typeof(ToggleGroup));
+            contentObj.transform.SetParent(viewportObj.transform, false);
+            var contentRect = contentObj.GetComponent<RectTransform>();
+            contentRect.anchorMin = new(0, 1);
+            contentRect.anchorMax = new(1, 1);
+            contentRect.pivot = new(0.5f, 1);
+            contentRect.sizeDelta = new(0, 28);
+            contentRect.anchoredPosition = Vector2.zero;
+            templateScrollRect.content = contentRect;
+
+            var itemObj = new GameObject("Item", typeof(RectTransform), typeof(Toggle));
+            itemObj.transform.SetParent(contentObj.transform, false);
+            var itemRect = itemObj.GetComponent<RectTransform>();
+            itemRect.anchorMin = new(0, 1);
+            itemRect.anchorMax = new(1, 1);
+            itemRect.pivot = new(0.5f, 1);
+            itemRect.sizeDelta = new(0, 20);
+            itemRect.anchoredPosition = Vector2.zero;
+
+            var itemBackgroundObj = new GameObject("Item Background", typeof(Image));
+            itemBackgroundObj.transform.SetParent(itemObj.transform, false);
+            var itemBackgroundRect = itemBackgroundObj.GetComponent<RectTransform>();
+            itemBackgroundRect.anchorMin = Vector2.zero;
+            itemBackgroundRect.anchorMax = Vector2.one;
+            itemBackgroundRect.sizeDelta = Vector2.zero;
+            itemBackgroundRect.anchoredPosition = Vector2.zero;
+            var itemBackgroundImage = itemBackgroundObj.GetComponent<Image>();
+            itemBackgroundImage.color = new(0.1f, 0.12f, 0.15f, 0.9f);
+
+            var itemToggle = itemObj.GetComponent<Toggle>();
+            itemToggle.targetGraphic = itemBackgroundImage;
+
+            var colors = itemToggle.colors;
+            colors.normalColor = new(0.1f, 0.12f, 0.15f, 0.9f);
+            colors.highlightedColor = new(0.2f, 0.25f, 0.3f, 0.9f);
+            colors.pressedColor = new(0.15f, 0.18f, 0.22f, 0.9f);
+            colors.selectedColor = new(0.2f, 0.25f, 0.3f, 0.9f);
+            colors.disabledColor = new(0.1f, 0.12f, 0.15f, 0.5f);
+            itemToggle.colors = colors;
+
+            var itemLabelObj = new GameObject("Item Label", typeof(Text));
+            itemLabelObj.transform.SetParent(itemObj.transform, false);
+            var itemLabelText = itemLabelObj.GetComponent<Text>();
+            itemLabelText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            itemLabelText.fontSize = 14;
+            itemLabelText.color = Color.white;
+            itemLabelText.alignment = TextAnchor.MiddleLeft;
+            var itemLabelRect = itemLabelObj.GetComponent<RectTransform>();
+            itemLabelRect.anchorMin = new(0, 0);
+            itemLabelRect.anchorMax = new(1, 1);
+            itemLabelRect.offsetMin = new(10, 1);
+            itemLabelRect.offsetMax = new(-10, -2);
+
+            dropdown.template = templateRect;
+            dropdown.itemText = itemLabelText;
+
+            return dropdown;
+        }
     }
 }

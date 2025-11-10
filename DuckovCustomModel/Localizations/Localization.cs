@@ -61,6 +61,20 @@ namespace DuckovCustomModel.Localizations
             { "HideAICharacterEquipment", "Hide {0} Equipment" },
             { "MinValue", "Min" },
             { "MaxValue", "Max" },
+            { "ShowDCMButton", "Show DCM Button in Main Menu and Inventory" },
+            { "DCMButtonAnchor", "DCM Button Anchor" },
+            { "DCMButtonOffset", "DCM Button Offset" },
+            { "TopLeft", "Top-Left" },
+            { "TopCenter", "Top-Center" },
+            { "TopRight", "Top-Right" },
+            { "MiddleLeft", "Middle-Left" },
+            { "MiddleCenter", "Middle-Center" },
+            { "MiddleRight", "Middle-Right" },
+            { "BottomLeft", "Bottom-Left" },
+            { "BottomCenter", "Bottom-Center" },
+            { "BottomRight", "Bottom-Right" },
+            { "OffsetX", "Offset X" },
+            { "OffsetY", "Offset Y" },
         };
 
         public static string Title => GetText("Title");
@@ -98,6 +112,20 @@ namespace DuckovCustomModel.Localizations
         public static string HideAICharacterEquipment => GetText("HideAICharacterEquipment");
         public static string MinValue => GetText("MinValue");
         public static string MaxValue => GetText("MaxValue");
+        public static string ShowDCMButton => GetText("ShowDCMButton");
+        public static string DCMButtonAnchor => GetText("DCMButtonAnchor");
+        public static string DCMButtonOffset => GetText("DCMButtonOffset");
+        public static string TopLeft => GetText("TopLeft");
+        public static string TopCenter => GetText("TopCenter");
+        public static string TopRight => GetText("TopRight");
+        public static string MiddleLeft => GetText("MiddleLeft");
+        public static string MiddleCenter => GetText("MiddleCenter");
+        public static string MiddleRight => GetText("MiddleRight");
+        public static string BottomLeft => GetText("BottomLeft");
+        public static string BottomCenter => GetText("BottomCenter");
+        public static string BottomRight => GetText("BottomRight");
+        public static string OffsetX => GetText("OffsetX");
+        public static string OffsetY => GetText("OffsetY");
 
         public static event Action<SystemLanguage>? OnLanguageChangedEvent;
 

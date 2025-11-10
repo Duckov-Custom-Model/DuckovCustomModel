@@ -33,6 +33,20 @@
   "Updating": "更新中...",
   "HideAICharacterEquipment": "{0}の装備を非表示",
   "MinValue": "最小値",
-  "MaxValue": "最大値"
+  "MaxValue": "最大値",
+  "ShowDCMButton": "メインメニューとインベントリでDCMボタンを表示",
+  "DCMButtonAnchor": "DCMボタンのアンカー",
+  "DCMButtonOffset": "DCMボタンのオフセット",
+  "TopLeft": "左上",
+  "TopCenter": "上中央",
+  "TopRight": "右上",
+  "MiddleLeft": "中央左",
+  "MiddleCenter": "中央",
+  "MiddleRight": "中央右",
+  "BottomLeft": "左下",
+  "BottomCenter": "下中央",
+  "BottomRight": "右下",
+  "OffsetX": "オフセット X",
+  "OffsetY": "オフセット Y"
 }
 

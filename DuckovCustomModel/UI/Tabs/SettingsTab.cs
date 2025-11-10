@@ -12,10 +12,15 @@ namespace DuckovCustomModel.UI.Tabs
     {
         private Text? _animatorParamsLabel;
         private Toggle? _animatorParamsToggle;
+        private Dropdown? _dcmButtonAnchorDropdown;
+        private InputField? _dcmButtonOffsetXInput;
+        private InputField? _dcmButtonOffsetYInput;
         private Text? _keyButtonText;
         private Text? _keyLabel;
 
         private int _settingRowIndex;
+        private Text? _showDCMButtonLabel;
+        private Toggle? _showDCMButtonToggle;
 
         public bool IsWaitingForKeyInput { get; private set; }
 
@@ -63,6 +68,18 @@ namespace DuckovCustomModel.UI.Tabs
 
             if (_animatorParamsLabel != null)
                 _animatorParamsLabel.text = Localization.ShowAnimatorParameters;
+
+            if (_showDCMButtonLabel != null)
+                _showDCMButtonLabel.text = Localization.ShowDCMButton;
+
+            if (_dcmButtonAnchorDropdown != null)
+            {
+                var currentValue = _dcmButtonAnchorDropdown.value;
+                RefreshAnchorDropdownOptions(_dcmButtonAnchorDropdown);
+                _dcmButtonAnchorDropdown.value = currentValue;
+            }
+
+            RefreshDCMButtonPositionDisplay();
         }
 
         private void BuildSettingsContent()
@@ -78,7 +95,7 @@ namespace DuckovCustomModel.UI.Tabs
             contentArea.AddComponent<ContentSizeFitter>();
 
             var contentRect = contentArea.GetComponent<RectTransform>();
-            contentRect.sizeDelta = new(400, 0);
+            contentRect.sizeDelta = new(800, 0);
 
             var layoutGroup = contentArea.GetComponent<VerticalLayoutGroup>();
             layoutGroup.padding = new(10, 10, 10, 10);
@@ -95,6 +112,8 @@ namespace DuckovCustomModel.UI.Tabs
 
             BuildKeySetting(contentArea);
             BuildAnimatorParamsToggle(contentArea);
+            BuildShowDCMButtonToggle(contentArea);
+            BuildDCMButtonPositionSettings(contentArea);
         }
 
         private void BuildKeySetting(GameObject parent)
@@ -160,6 +179,245 @@ namespace DuckovCustomModel.UI.Tabs
             _animatorParamsToggle = toggle;
         }
 
+        private void BuildShowDCMButtonToggle(GameObject parent)
+        {
+            var row = CreateSettingRow(parent);
+
+            var label = UIFactory.CreateText("Label", row.transform,
+                Localization.ShowDCMButton, 18, Color.white);
+            _showDCMButtonLabel = label.GetComponent<Text>();
+            var labelRect = label.GetComponent<RectTransform>();
+            labelRect.anchorMin = new(0, 0.5f);
+            labelRect.anchorMax = new(0, 0.5f);
+            labelRect.pivot = new(0, 0.5f);
+            labelRect.sizeDelta = new(0, 30);
+            labelRect.anchoredPosition = new(20, 0);
+            var labelSizeFitter = label.AddComponent<ContentSizeFitter>();
+            labelSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            labelSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            var toggle = UIFactory.CreateToggle("ShowDCMButtonToggle", row.transform,
+                UIConfig?.ShowDCMButton ?? true, OnShowDCMButtonToggleChanged);
+            var toggleRect = toggle.GetComponent<RectTransform>();
+            toggleRect.anchorMin = new(1, 0.5f);
+            toggleRect.anchorMax = new(1, 0.5f);
+            toggleRect.pivot = new(1, 0.5f);
+            toggleRect.sizeDelta = new(20, 20);
+            toggleRect.anchoredPosition = new(-20, 0);
+
+            _showDCMButtonToggle = toggle;
+        }
+
+        private void OnShowDCMButtonToggleChanged(bool value)
+        {
+            if (UIConfig == null) return;
+            UIConfig.ShowDCMButton = value;
+            ConfigManager.SaveConfigToFile(UIConfig, "UIConfig.json");
+        }
+
+        private void BuildDCMButtonPositionSettings(GameObject parent)
+        {
+            var anchorRow = CreateSettingRow(parent);
+            var anchorLabel = UIFactory.CreateText("AnchorLabel", anchorRow.transform,
+                Localization.DCMButtonAnchor, 18, Color.white);
+            var anchorLabelRect = anchorLabel.GetComponent<RectTransform>();
+            anchorLabelRect.anchorMin = new(0, 0.5f);
+            anchorLabelRect.anchorMax = new(0, 0.5f);
+            anchorLabelRect.pivot = new(0, 0.5f);
+            anchorLabelRect.sizeDelta = new(0, 30);
+            anchorLabelRect.anchoredPosition = new(20, 0);
+            var anchorLabelSizeFitter = anchorLabel.AddComponent<ContentSizeFitter>();
+            anchorLabelSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            anchorLabelSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            var dropdown = UIFactory.CreateDropdown("AnchorDropdown", anchorRow.transform, OnAnchorDropdownChanged);
+            var dropdownRect = dropdown.GetComponent<RectTransform>();
+            dropdownRect.anchorMin = new(0.3f, 0.5f);
+            dropdownRect.anchorMax = new(0.7f, 0.5f);
+            dropdownRect.pivot = new(0.5f, 0.5f);
+            dropdownRect.sizeDelta = new(0, 30);
+            dropdownRect.anchoredPosition = new(0, 0);
+
+            RefreshAnchorDropdownOptions(dropdown);
+
+            _dcmButtonAnchorDropdown = dropdown;
+
+            var offsetRow = CreateSettingRow(parent);
+            var offsetLabel = UIFactory.CreateText("OffsetLabel", offsetRow.transform,
+                Localization.DCMButtonOffset, 18, Color.white);
+            var offsetLabelRect = offsetLabel.GetComponent<RectTransform>();
+            offsetLabelRect.anchorMin = new(0, 0.5f);
+            offsetLabelRect.anchorMax = new(0, 0.5f);
+            offsetLabelRect.pivot = new(0, 0.5f);
+            offsetLabelRect.sizeDelta = new(0, 30);
+            offsetLabelRect.anchoredPosition = new(20, 0);
+            var offsetLabelSizeFitter = offsetLabel.AddComponent<ContentSizeFitter>();
+            offsetLabelSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            offsetLabelSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            var offsetXLabel = UIFactory.CreateText("OffsetXLabel", offsetRow.transform,
+                Localization.OffsetX, 16, new Color(0.9f, 0.9f, 0.9f, 1));
+            var offsetXLabelRect = offsetXLabel.GetComponent<RectTransform>();
+            offsetXLabelRect.anchorMin = new(0.3f, 0.5f);
+            offsetXLabelRect.anchorMax = new(0.3f, 0.5f);
+            offsetXLabelRect.pivot = new(0, 0.5f);
+            offsetXLabelRect.sizeDelta = new(0, 25);
+            offsetXLabelRect.anchoredPosition = new(20, 0);
+
+            var offsetXInput = UIFactory.CreateInputField("OffsetXInput", offsetRow.transform);
+            var offsetXInputRect = offsetXInput.GetComponent<RectTransform>();
+            offsetXInputRect.anchorMin = new(0.4f, 0.5f);
+            offsetXInputRect.anchorMax = new(0.55f, 0.5f);
+            offsetXInputRect.pivot = new(0.5f, 0.5f);
+            offsetXInputRect.sizeDelta = new(0, 25);
+            offsetXInputRect.anchoredPosition = new(0, 0);
+            offsetXInput.contentType = InputField.ContentType.DecimalNumber;
+            offsetXInput.onValueChanged.AddListener(OnOffsetXValueChanged);
+            offsetXInput.onEndEdit.AddListener(OnOffsetXEndEdit);
+            _dcmButtonOffsetXInput = offsetXInput;
+
+            var offsetYLabel = UIFactory.CreateText("OffsetYLabel", offsetRow.transform,
+                Localization.OffsetY, 16, new Color(0.9f, 0.9f, 0.9f, 1));
+            var offsetYLabelRect = offsetYLabel.GetComponent<RectTransform>();
+            offsetYLabelRect.anchorMin = new(0.6f, 0.5f);
+            offsetYLabelRect.anchorMax = new(0.6f, 0.5f);
+            offsetYLabelRect.pivot = new(0, 0.5f);
+            offsetYLabelRect.sizeDelta = new(0, 25);
+            offsetYLabelRect.anchoredPosition = new(20, 0);
+
+            var offsetYInput = UIFactory.CreateInputField("OffsetYInput", offsetRow.transform);
+            var offsetYInputRect = offsetYInput.GetComponent<RectTransform>();
+            offsetYInputRect.anchorMin = new(0.7f, 0.5f);
+            offsetYInputRect.anchorMax = new(0.85f, 0.5f);
+            offsetYInputRect.pivot = new(0.5f, 0.5f);
+            offsetYInputRect.sizeDelta = new(0, 25);
+            offsetYInputRect.anchoredPosition = new(0, 0);
+            offsetYInput.contentType = InputField.ContentType.DecimalNumber;
+            offsetYInput.onValueChanged.AddListener(OnOffsetYValueChanged);
+            offsetYInput.onEndEdit.AddListener(OnOffsetYEndEdit);
+            _dcmButtonOffsetYInput = offsetYInput;
+
+            RefreshDCMButtonPositionDisplay();
+        }
+
+        private void RefreshAnchorDropdownOptions(Dropdown dropdown)
+        {
+            dropdown.options.Clear();
+            dropdown.options.Add(new(GetAnchorPositionText(AnchorPosition.TopLeft)));
+            dropdown.options.Add(new(GetAnchorPositionText(AnchorPosition.TopCenter)));
+            dropdown.options.Add(new(GetAnchorPositionText(AnchorPosition.TopRight)));
+            dropdown.options.Add(new(GetAnchorPositionText(AnchorPosition.MiddleLeft)));
+            dropdown.options.Add(new(GetAnchorPositionText(AnchorPosition.MiddleCenter)));
+            dropdown.options.Add(new(GetAnchorPositionText(AnchorPosition.MiddleRight)));
+            dropdown.options.Add(new(GetAnchorPositionText(AnchorPosition.BottomLeft)));
+            dropdown.options.Add(new(GetAnchorPositionText(AnchorPosition.BottomCenter)));
+            dropdown.options.Add(new(GetAnchorPositionText(AnchorPosition.BottomRight)));
+        }
+
+        private void RefreshDCMButtonPositionDisplay()
+        {
+            if (UIConfig == null) return;
+
+            if (_dcmButtonAnchorDropdown != null)
+            {
+                var anchorValues = Enum.GetValues(typeof(AnchorPosition));
+                var index = Array.IndexOf(anchorValues, UIConfig.DCMButtonAnchor);
+                if (index >= 0 && index < _dcmButtonAnchorDropdown.options.Count)
+                    _dcmButtonAnchorDropdown.value = index;
+            }
+
+            if (_dcmButtonOffsetXInput != null)
+                _dcmButtonOffsetXInput.text = UIConfig.DCMButtonOffsetX.ToString("F1");
+
+            if (_dcmButtonOffsetYInput != null)
+                _dcmButtonOffsetYInput.text = UIConfig.DCMButtonOffsetY.ToString("F1");
+        }
+
+        private static string GetAnchorPositionText(AnchorPosition position)
+        {
+            return position switch
+            {
+                AnchorPosition.TopLeft => Localization.TopLeft,
+                AnchorPosition.TopCenter => Localization.TopCenter,
+                AnchorPosition.TopRight => Localization.TopRight,
+                AnchorPosition.MiddleLeft => Localization.MiddleLeft,
+                AnchorPosition.MiddleCenter => Localization.MiddleCenter,
+                AnchorPosition.MiddleRight => Localization.MiddleRight,
+                AnchorPosition.BottomLeft => Localization.BottomLeft,
+                AnchorPosition.BottomCenter => Localization.BottomCenter,
+                AnchorPosition.BottomRight => Localization.BottomRight,
+                _ => Localization.TopLeft,
+            };
+        }
+
+        private void OnAnchorDropdownChanged(int index)
+        {
+            if (UIConfig == null) return;
+            var anchorValues = Enum.GetValues(typeof(AnchorPosition));
+            if (index >= 0 && index < anchorValues.Length)
+            {
+                UIConfig.DCMButtonAnchor = (AnchorPosition)anchorValues.GetValue(index);
+                ConfigManager.SaveConfigToFile(UIConfig, "UIConfig.json");
+                RefreshSettingsButton();
+            }
+        }
+
+        private void OnOffsetXValueChanged(string value)
+        {
+            if (UIConfig == null) return;
+            if (float.TryParse(value, out var offsetX))
+            {
+                UIConfig.DCMButtonOffsetX = offsetX;
+                RefreshSettingsButton();
+            }
+        }
+
+        private void OnOffsetXEndEdit(string value)
+        {
+            if (UIConfig == null) return;
+            if (float.TryParse(value, out var offsetX))
+            {
+                UIConfig.DCMButtonOffsetX = offsetX;
+                ConfigManager.SaveConfigToFile(UIConfig, "UIConfig.json");
+                RefreshSettingsButton();
+            }
+            else
+            {
+                RefreshDCMButtonPositionDisplay();
+            }
+        }
+
+        private void OnOffsetYValueChanged(string value)
+        {
+            if (UIConfig == null) return;
+            if (float.TryParse(value, out var offsetY))
+            {
+                UIConfig.DCMButtonOffsetY = offsetY;
+                RefreshSettingsButton();
+            }
+        }
+
+        private void OnOffsetYEndEdit(string value)
+        {
+            if (UIConfig == null) return;
+            if (float.TryParse(value, out var offsetY))
+            {
+                UIConfig.DCMButtonOffsetY = offsetY;
+                ConfigManager.SaveConfigToFile(UIConfig, "UIConfig.json");
+                RefreshSettingsButton();
+            }
+            else
+            {
+                RefreshDCMButtonPositionDisplay();
+            }
+        }
+
+        private void RefreshSettingsButton()
+        {
+            var configWindow = GetComponentInParent<ConfigWindow>();
+            configWindow?.RefreshSettingsButton();
+        }
+
         private GameObject CreateSettingRow(GameObject parent)
         {
             var row = new GameObject("SettingRow", typeof(RectTransform), typeof(Image));
@@ -174,13 +432,13 @@ namespace DuckovCustomModel.UI.Tabs
             rowRect.anchorMin = new(0, 1);
             rowRect.anchorMax = new(1, 1);
             rowRect.pivot = new(0.5f, 1);
-            rowRect.sizeDelta = new(400, 50);
+            rowRect.sizeDelta = new(800, 50);
             rowRect.anchoredPosition = Vector2.zero;
 
             var rowLayoutElement = row.AddComponent<LayoutElement>();
             rowLayoutElement.preferredHeight = 50;
-            rowLayoutElement.minWidth = 400;
-            rowLayoutElement.preferredWidth = 400;
+            rowLayoutElement.minWidth = 800;
+            rowLayoutElement.preferredWidth = 800;
             rowLayoutElement.flexibleWidth = 0;
             rowLayoutElement.flexibleHeight = 0;
 

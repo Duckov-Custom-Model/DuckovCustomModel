@@ -33,6 +33,20 @@
   "Updating": "Updating...",
   "HideAICharacterEquipment": "Hide {0} Equipment",
   "MinValue": "Min",
-  "MaxValue": "Max"
+  "MaxValue": "Max",
+  "ShowDCMButton": "Show DCM Button in Main Menu and Inventory",
+  "DCMButtonAnchor": "DCM Button Anchor",
+  "DCMButtonOffset": "DCM Button Offset",
+  "TopLeft": "Top-Left",
+  "TopCenter": "Top-Center",
+  "TopRight": "Top-Right",
+  "MiddleLeft": "Middle-Left",
+  "MiddleCenter": "Middle-Center",
+  "MiddleRight": "Middle-Right",
+  "BottomLeft": "Bottom-Left",
+  "BottomCenter": "Bottom-Center",
+  "BottomRight": "Bottom-Right",
+  "OffsetX": "Offset X",
+  "OffsetY": "Offset Y"
 }
 
