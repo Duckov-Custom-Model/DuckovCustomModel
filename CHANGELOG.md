@@ -2,6 +2,11 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.6.7
+
+- 修复了手持装备相关参数（如 `LeftHandEquip`、`RightHandEquip` 等）在某些情况下不会正确更新的问题
+- 修复了部分 Animator 参数（如 `GunState`、`WeaponInLocator`）不会显示在参数窗口中的问题，现在所有定义的参数都会正确显示
+
 ## v1.6.6
 
 - 新增 `GunState` Animator 参数，用于指示枪械的当前状态（射击冷却、就绪、开火、连发每发冷却、空弹、装弹中）

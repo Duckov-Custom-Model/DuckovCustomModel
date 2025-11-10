@@ -40,7 +40,7 @@ namespace DuckovCustomModel.Data
         public static readonly int WeightRate = Animator.StringToHash("WeightRate"); // float
 
         public static readonly int HideOriginalEquipment = Animator.StringToHash("HideOriginalEquipment"); // bool
-        public static readonly int WeaponInLocator = Animator.StringToHash("WeaponInLocator"); // bool
+        public static readonly int WeaponInLocator = Animator.StringToHash("WeaponInLocator"); // int
         public static readonly int LeftHandEquip = Animator.StringToHash("LeftHandEquip"); // bool
         public static readonly int RightHandEquip = Animator.StringToHash("RightHandEquip"); // bool
         public static readonly int ArmorEquip = Animator.StringToHash("ArmorEquip"); // bool
@@ -93,6 +93,7 @@ namespace DuckovCustomModel.Data
                 new() { Name = "Shoot", Hash = Shoot, Type = "trigger" },
                 new() { Name = "HandState", Hash = HandState, Type = "int" },
                 new() { Name = "GunReady", Hash = GunReady, Type = "bool" },
+                new() { Name = "GunState", Hash = GunState, Type = "int" },
                 new() { Name = "ShootMode", Hash = ShootMode, Type = "int" },
                 new() { Name = "Loaded", Hash = Loaded, Type = "bool" },
                 new() { Name = "Reloading", Hash = Reloading, Type = "bool" },
@@ -103,6 +104,7 @@ namespace DuckovCustomModel.Data
                 new() { Name = "WeightState", Hash = WeightState, Type = "int" },
                 new() { Name = "WeightRate", Hash = WeightRate, Type = "float" },
                 new() { Name = "HideOriginalEquipment", Hash = HideOriginalEquipment, Type = "bool" },
+                new() { Name = "WeaponInLocator", Hash = WeaponInLocator, Type = "int" },
                 new() { Name = "LeftHandEquip", Hash = LeftHandEquip, Type = "bool" },
                 new() { Name = "RightHandEquip", Hash = RightHandEquip, Type = "bool" },
                 new() { Name = "ArmorEquip", Hash = ArmorEquip, Type = "bool" },

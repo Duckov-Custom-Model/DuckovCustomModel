@@ -2,6 +2,11 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.6.7
+
+- Fixed issue where hand-held equipment related parameters (such as `LeftHandEquip`, `RightHandEquip`, etc.) would not update correctly in certain situations
+- Fixed issue where some Animator parameters (such as `GunState`, `WeaponInLocator`) would not display in the parameter window; now all defined parameters will display correctly
+
 ## v1.6.6
 
 - Added `GunState` Animator parameter to indicate the current state of the gun (shoot cooling, ready, fire, burst each shot cooling, empty, reloading)
