@@ -55,7 +55,7 @@ namespace DuckovCustomModel.UI.Components
 
             var text = UIFactory.CreateText("Text", button.transform, tabName, 16, Color.white,
                 TextAnchor.MiddleCenter);
-            UIFactory.SetupRectTransform(text, Vector2.zero, Vector2.one, Vector2.zero);
+            UIFactory.SetupButtonText(text);
 
             var tabInfo = new TabInfo
             {

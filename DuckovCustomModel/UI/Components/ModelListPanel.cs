@@ -264,9 +264,9 @@ namespace DuckovCustomModel.UI.Components
 
             var text = UIFactory.CreateText("Text", buttonObj.transform, Localization.NoModel, 16, Color.white,
                 TextAnchor.MiddleCenter);
-            UIFactory.SetupRectTransform(text, Vector2.zero, Vector2.one, Vector2.zero);
             var textComponent = text.GetComponent<Text>();
             textComponent.fontStyle = FontStyle.Bold;
+            UIFactory.SetupButtonText(text);
 
             var button = buttonObj.GetComponent<Button>();
             UIFactory.SetupButtonColors(button, new(1, 1, 1, 1), new(0.7f, 0.5f, 0.5f, 1),

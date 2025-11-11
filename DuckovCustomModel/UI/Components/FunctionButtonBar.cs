@@ -30,14 +30,19 @@ namespace DuckovCustomModel.UI.Components
             var buttonBar = UIFactory.CreateImage("FunctionButtonBar", parent, new(0.15f, 0.18f, 0.22f, 0.9f));
             UIFactory.SetupRectTransform(buttonBar, Vector2.zero, Vector2.one, Vector2.zero);
 
+            var layoutElement = buttonBar.AddComponent<LayoutElement>();
+            layoutElement.flexibleWidth = 1;
+            layoutElement.flexibleHeight = 1;
+            layoutElement.preferredHeight = 80;
+
             var layoutGroup = buttonBar.AddComponent<HorizontalLayoutGroup>();
             layoutGroup.spacing = 10;
             layoutGroup.padding = new(10, 10, 10, 10);
             layoutGroup.childAlignment = TextAnchor.MiddleLeft;
             layoutGroup.childControlWidth = false;
-            layoutGroup.childControlHeight = false;
+            layoutGroup.childControlHeight = true;
             layoutGroup.childForceExpandWidth = false;
-            layoutGroup.childForceExpandHeight = false;
+            layoutGroup.childForceExpandHeight = true;
 
             BuildRefreshButton(buttonBar);
             BuildResetInvalidModelsButton(buttonBar);
@@ -61,11 +66,17 @@ namespace DuckovCustomModel.UI.Components
             _refreshButton = UIFactory.CreateButton("RefreshButton", parent.transform, OnRefreshButtonClicked,
                 new(0.2f, 0.3f, 0.4f, 1)).GetComponent<Button>();
             var refreshButtonRect = _refreshButton.GetComponent<RectTransform>();
-            refreshButtonRect.sizeDelta = new(100, 30);
+            refreshButtonRect.sizeDelta = new(180, 0);
 
-            _refreshButtonText = UIFactory.CreateText("Text", _refreshButton.transform, Localization.Refresh, 18,
-                Color.white, TextAnchor.MiddleCenter).GetComponent<Text>();
-            UIFactory.SetupRectTransform(_refreshButtonText.gameObject, Vector2.zero, Vector2.one, Vector2.zero);
+            var refreshButtonLayoutElement = _refreshButton.gameObject.AddComponent<LayoutElement>();
+            refreshButtonLayoutElement.preferredWidth = 180;
+            refreshButtonLayoutElement.flexibleWidth = 0;
+            refreshButtonLayoutElement.flexibleHeight = 1;
+
+            var refreshTextObj = UIFactory.CreateText("Text", _refreshButton.transform, Localization.Refresh, 18,
+                Color.white, TextAnchor.MiddleCenter);
+            UIFactory.SetupButtonText(refreshTextObj);
+            _refreshButtonText = refreshTextObj.GetComponent<Text>();
 
             UIFactory.SetupButtonColors(_refreshButton, new(1, 1, 1, 1), new(0.4f, 0.5f, 0.6f, 1),
                 new(0.3f, 0.4f, 0.5f, 1), new(0.4f, 0.5f, 0.6f, 1));
@@ -76,12 +87,17 @@ namespace DuckovCustomModel.UI.Components
             _resetInvalidModelsButton = UIFactory.CreateButton("ResetInvalidModelsButton", parent.transform,
                 OnResetInvalidModelsButtonClicked, new(0.4f, 0.2f, 0.2f, 1)).GetComponent<Button>();
             var resetButtonRect = _resetInvalidModelsButton.GetComponent<RectTransform>();
-            resetButtonRect.sizeDelta = new(150, 30);
+            resetButtonRect.sizeDelta = new(180, 0);
 
-            _resetInvalidModelsButtonText = UIFactory.CreateText("Text", _resetInvalidModelsButton.transform,
-                Localization.ResetInvalidModels, 18, Color.white, TextAnchor.MiddleCenter).GetComponent<Text>();
-            UIFactory.SetupRectTransform(_resetInvalidModelsButtonText.gameObject, Vector2.zero, Vector2.one,
-                Vector2.zero);
+            var resetButtonLayoutElement = _resetInvalidModelsButton.gameObject.AddComponent<LayoutElement>();
+            resetButtonLayoutElement.preferredWidth = 180;
+            resetButtonLayoutElement.flexibleWidth = 0;
+            resetButtonLayoutElement.flexibleHeight = 1;
+
+            var resetTextObj = UIFactory.CreateText("Text", _resetInvalidModelsButton.transform,
+                Localization.ResetInvalidModels, 18, Color.white, TextAnchor.MiddleCenter);
+            UIFactory.SetupButtonText(resetTextObj);
+            _resetInvalidModelsButtonText = resetTextObj.GetComponent<Text>();
 
             UIFactory.SetupButtonColors(_resetInvalidModelsButton, new(1, 1, 1, 1), new(0.6f, 0.4f, 0.4f, 1),
                 new(0.5f, 0.3f, 0.3f, 1), new(0.6f, 0.4f, 0.4f, 1));

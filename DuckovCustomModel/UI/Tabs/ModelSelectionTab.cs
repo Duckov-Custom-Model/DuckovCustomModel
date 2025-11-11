@@ -25,7 +25,7 @@ namespace DuckovCustomModel.UI.Tabs
             Localization.OnLanguageChangedEvent -= OnLanguageChanged;
             base.OnDestroy();
         }
-        
+
         protected override void CreatePanel()
         {
             PanelRoot = UIFactory.CreateImage("ModelSelectionPanel", transform, new(0.08f, 0.1f, 0.12f, 0.95f));
@@ -61,10 +61,7 @@ namespace DuckovCustomModel.UI.Tabs
             _modelListPanel.Initialize(modelListContainer.transform);
             _targetSettingsPanel.Initialize(targetSettingsContainer.transform);
 
-            _functionButtonBar.OnRefresh += () =>
-            {
-                ModelListManager.RefreshModelList();
-            };
+            _functionButtonBar.OnRefresh += () => { ModelListManager.RefreshModelList(); };
             _functionButtonBar.OnResetInvalidModels += () => _modelListPanel?.Refresh();
             _targetListPanel.OnTargetSelected += targetInfo =>
             {
@@ -127,6 +124,7 @@ namespace DuckovCustomModel.UI.Tabs
         private void OnRefreshCompleted()
         {
             UpdateRefreshOverlay();
+
             _targetListPanel?.Refresh();
             _modelListPanel?.Refresh();
             _targetSettingsPanel?.Refresh();
@@ -168,17 +166,23 @@ namespace DuckovCustomModel.UI.Tabs
             UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
 
             var layoutElement = container.GetComponent<LayoutElement>();
-            layoutElement.preferredHeight = 50;
+            layoutElement.preferredHeight = 80;
             layoutElement.flexibleHeight = 0;
+            layoutElement.flexibleWidth = 1;
 
             return container;
         }
 
         private static GameObject CreateBottomContainer(GameObject parent)
         {
-            var container = new GameObject("BottomContainer", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+            var container = new GameObject("BottomContainer", typeof(RectTransform), typeof(HorizontalLayoutGroup),
+                typeof(LayoutElement));
             container.transform.SetParent(parent.transform, false);
             UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
+
+            var layoutElement = container.GetComponent<LayoutElement>();
+            layoutElement.flexibleHeight = 1;
+            layoutElement.flexibleWidth = 1;
 
             var layoutGroup = container.GetComponent<HorizontalLayoutGroup>();
             layoutGroup.spacing = 10;
@@ -187,9 +191,6 @@ namespace DuckovCustomModel.UI.Tabs
             layoutGroup.childControlHeight = true;
             layoutGroup.childForceExpandWidth = false;
             layoutGroup.childForceExpandHeight = true;
-
-            var layoutElement = container.AddComponent<LayoutElement>();
-            layoutElement.flexibleHeight = 1;
 
             return container;
         }
@@ -203,6 +204,7 @@ namespace DuckovCustomModel.UI.Tabs
             var layoutElement = container.GetComponent<LayoutElement>();
             layoutElement.preferredWidth = 200;
             layoutElement.flexibleWidth = 0;
+            layoutElement.flexibleHeight = 1;
 
             return container;
         }
@@ -224,6 +226,7 @@ namespace DuckovCustomModel.UI.Tabs
 
             var layoutElement = container.GetComponent<LayoutElement>();
             layoutElement.flexibleWidth = 1;
+            layoutElement.flexibleHeight = 1;
 
             return container;
         }
@@ -237,15 +240,22 @@ namespace DuckovCustomModel.UI.Tabs
             var layoutElement = container.GetComponent<LayoutElement>();
             layoutElement.preferredWidth = 500;
             layoutElement.flexibleWidth = 0;
+            layoutElement.flexibleHeight = 1;
 
             return container;
         }
 
         private static GameObject CreateFunctionButtonBarContainer(GameObject parent)
         {
-            var container = new GameObject("FunctionButtonBarContainer", typeof(RectTransform));
+            var container = new GameObject("FunctionButtonBarContainer", typeof(RectTransform), typeof(LayoutElement));
             container.transform.SetParent(parent.transform, false);
             UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
+
+            var layoutElement = container.GetComponent<LayoutElement>();
+            layoutElement.preferredHeight = 80;
+            layoutElement.flexibleHeight = 0;
+            layoutElement.flexibleWidth = 1;
+
             return container;
         }
 
@@ -266,6 +276,7 @@ namespace DuckovCustomModel.UI.Tabs
             var layoutElement = container.GetComponent<LayoutElement>();
             layoutElement.preferredHeight = 40;
             layoutElement.flexibleHeight = 0;
+            layoutElement.flexibleWidth = 1;
 
             return container;
         }
@@ -278,15 +289,21 @@ namespace DuckovCustomModel.UI.Tabs
 
             var layoutElement = container.GetComponent<LayoutElement>();
             layoutElement.flexibleHeight = 1;
+            layoutElement.flexibleWidth = 1;
 
             return container;
         }
 
         private static GameObject CreateTargetSettingsContainer(GameObject parent)
         {
-            var container = new GameObject("TargetSettingsContainer", typeof(RectTransform));
+            var container = new GameObject("TargetSettingsContainer", typeof(RectTransform), typeof(LayoutElement));
             container.transform.SetParent(parent.transform, false);
             UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
+
+            var layoutElement = container.GetComponent<LayoutElement>();
+            layoutElement.flexibleWidth = 1;
+            layoutElement.flexibleHeight = 1;
+
             return container;
         }
 

@@ -28,7 +28,7 @@ namespace DuckovCustomModel.Localizations
         {
             { "Title", "Duckov Custom Model" },
             { "SearchPlaceholder", "Search models..." },
-            { "Refresh", "Refresh" },
+            { "Refresh", "Reload All Model Information" },
             { "Loading", "Loading..." },
             { "LoadingModelList", "Loading model list..." },
             { "HideCharacterEquipment", "Hide Character Equipment" },

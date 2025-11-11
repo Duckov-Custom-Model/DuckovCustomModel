@@ -33,6 +33,25 @@ namespace DuckovCustomModel.UI.Base
             return obj;
         }
 
+        public static void SetupButtonText(GameObject textObj, int minFontSize = 12, int maxFontSize = 18,
+            float padding = 8f)
+        {
+            var textComponent = textObj.GetComponent<Text>();
+            if (textComponent == null) return;
+
+            textComponent.horizontalOverflow = HorizontalWrapMode.Wrap;
+            textComponent.verticalOverflow = VerticalWrapMode.Overflow;
+            textComponent.resizeTextForBestFit = true;
+            textComponent.resizeTextMinSize = minFontSize;
+            textComponent.resizeTextMaxSize = maxFontSize;
+
+            var textRect = textObj.GetComponent<RectTransform>();
+            textRect.offsetMin = new(padding, 0);
+            textRect.offsetMax = new(-padding, 0);
+            textRect.anchorMin = new(0, 0);
+            textRect.anchorMax = new(1, 1);
+        }
+
         public static GameObject CreateButton(string name, Transform parent, UnityAction? onClick = null,
             Color? backgroundColor = null)
         {

@@ -1,7 +1,7 @@
 {
   "Title": "Duckov Custom Model",
   "SearchPlaceholder": "搜索模型...",
-  "Refresh": "刷新",
+  "Refresh": "重新加载所有模型信息",
   "Loading": "加载中...",
   "LoadingModelList": "正在加载模型列表...",
   "HideCharacterEquipment": "隐藏角色装备",

@@ -145,7 +145,7 @@ namespace DuckovCustomModel.UI.Tabs
             var keyButtonText = UIFactory.CreateText("Text", keyButton.transform,
                 GetKeyCodeDisplayName(UIConfig?.ToggleKey ?? KeyCode.Backslash), 18, Color.white,
                 TextAnchor.MiddleCenter);
-            UIFactory.SetupRectTransform(keyButtonText, Vector2.zero, Vector2.one, Vector2.zero);
+            UIFactory.SetupButtonText(keyButtonText);
             _keyButtonText = keyButtonText.GetComponent<Text>();
         }
 
@@ -232,11 +232,11 @@ namespace DuckovCustomModel.UI.Tabs
 
             var dropdown = UIFactory.CreateDropdown("AnchorDropdown", anchorRow.transform, OnAnchorDropdownChanged);
             var dropdownRect = dropdown.GetComponent<RectTransform>();
-            dropdownRect.anchorMin = new(0.3f, 0.5f);
-            dropdownRect.anchorMax = new(0.7f, 0.5f);
-            dropdownRect.pivot = new(0.5f, 0.5f);
-            dropdownRect.sizeDelta = new(0, 30);
-            dropdownRect.anchoredPosition = new(0, 0);
+            dropdownRect.anchorMin = new(1, 0.5f);
+            dropdownRect.anchorMax = new(1, 0.5f);
+            dropdownRect.pivot = new(1, 0.5f);
+            dropdownRect.sizeDelta = new(200, 30);
+            dropdownRect.anchoredPosition = new(-20, 0);
 
             RefreshAnchorDropdownOptions(dropdown);
 
@@ -255,47 +255,53 @@ namespace DuckovCustomModel.UI.Tabs
             offsetLabelSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
             offsetLabelSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            var offsetXLabel = UIFactory.CreateText("OffsetXLabel", offsetRow.transform,
-                Localization.OffsetX, 16, new Color(0.9f, 0.9f, 0.9f, 1));
-            var offsetXLabelRect = offsetXLabel.GetComponent<RectTransform>();
-            offsetXLabelRect.anchorMin = new(0.3f, 0.5f);
-            offsetXLabelRect.anchorMax = new(0.3f, 0.5f);
-            offsetXLabelRect.pivot = new(0, 0.5f);
-            offsetXLabelRect.sizeDelta = new(0, 25);
-            offsetXLabelRect.anchoredPosition = new(20, 0);
+            var offsetYInput = UIFactory.CreateInputField("OffsetYInput", offsetRow.transform);
+            var offsetYInputRect = offsetYInput.GetComponent<RectTransform>();
+            offsetYInputRect.anchorMin = new(1, 0.5f);
+            offsetYInputRect.anchorMax = new(1, 0.5f);
+            offsetYInputRect.pivot = new(1, 0.5f);
+            offsetYInputRect.sizeDelta = new(80, 25);
+            offsetYInputRect.anchoredPosition = new(-20, 0);
+            offsetYInput.contentType = InputField.ContentType.DecimalNumber;
+            offsetYInput.onValueChanged.AddListener(OnOffsetYValueChanged);
+            offsetYInput.onEndEdit.AddListener(OnOffsetYEndEdit);
+            _dcmButtonOffsetYInput = offsetYInput;
+
+            var offsetYLabel = UIFactory.CreateText("OffsetYLabel", offsetRow.transform,
+                Localization.OffsetY, 16, new Color(0.9f, 0.9f, 0.9f, 1));
+            var offsetYLabelRect = offsetYLabel.GetComponent<RectTransform>();
+            offsetYLabelRect.anchorMin = new(1, 0.5f);
+            offsetYLabelRect.anchorMax = new(1, 0.5f);
+            offsetYLabelRect.pivot = new(1, 0.5f);
+            offsetYLabelRect.sizeDelta = new(0, 25);
+            offsetYLabelRect.anchoredPosition = new(-120, 0);
+            var offsetYLabelSizeFitter = offsetYLabel.AddComponent<ContentSizeFitter>();
+            offsetYLabelSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            offsetYLabelSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             var offsetXInput = UIFactory.CreateInputField("OffsetXInput", offsetRow.transform);
             var offsetXInputRect = offsetXInput.GetComponent<RectTransform>();
-            offsetXInputRect.anchorMin = new(0.4f, 0.5f);
-            offsetXInputRect.anchorMax = new(0.55f, 0.5f);
-            offsetXInputRect.pivot = new(0.5f, 0.5f);
-            offsetXInputRect.sizeDelta = new(0, 25);
-            offsetXInputRect.anchoredPosition = new(0, 0);
+            offsetXInputRect.anchorMin = new(1, 0.5f);
+            offsetXInputRect.anchorMax = new(1, 0.5f);
+            offsetXInputRect.pivot = new(1, 0.5f);
+            offsetXInputRect.sizeDelta = new(80, 25);
+            offsetXInputRect.anchoredPosition = new(-220, 0);
             offsetXInput.contentType = InputField.ContentType.DecimalNumber;
             offsetXInput.onValueChanged.AddListener(OnOffsetXValueChanged);
             offsetXInput.onEndEdit.AddListener(OnOffsetXEndEdit);
             _dcmButtonOffsetXInput = offsetXInput;
 
-            var offsetYLabel = UIFactory.CreateText("OffsetYLabel", offsetRow.transform,
-                Localization.OffsetY, 16, new Color(0.9f, 0.9f, 0.9f, 1));
-            var offsetYLabelRect = offsetYLabel.GetComponent<RectTransform>();
-            offsetYLabelRect.anchorMin = new(0.6f, 0.5f);
-            offsetYLabelRect.anchorMax = new(0.6f, 0.5f);
-            offsetYLabelRect.pivot = new(0, 0.5f);
-            offsetYLabelRect.sizeDelta = new(0, 25);
-            offsetYLabelRect.anchoredPosition = new(20, 0);
-
-            var offsetYInput = UIFactory.CreateInputField("OffsetYInput", offsetRow.transform);
-            var offsetYInputRect = offsetYInput.GetComponent<RectTransform>();
-            offsetYInputRect.anchorMin = new(0.7f, 0.5f);
-            offsetYInputRect.anchorMax = new(0.85f, 0.5f);
-            offsetYInputRect.pivot = new(0.5f, 0.5f);
-            offsetYInputRect.sizeDelta = new(0, 25);
-            offsetYInputRect.anchoredPosition = new(0, 0);
-            offsetYInput.contentType = InputField.ContentType.DecimalNumber;
-            offsetYInput.onValueChanged.AddListener(OnOffsetYValueChanged);
-            offsetYInput.onEndEdit.AddListener(OnOffsetYEndEdit);
-            _dcmButtonOffsetYInput = offsetYInput;
+            var offsetXLabel = UIFactory.CreateText("OffsetXLabel", offsetRow.transform,
+                Localization.OffsetX, 16, new Color(0.9f, 0.9f, 0.9f, 1));
+            var offsetXLabelRect = offsetXLabel.GetComponent<RectTransform>();
+            offsetXLabelRect.anchorMin = new(1, 0.5f);
+            offsetXLabelRect.anchorMax = new(1, 0.5f);
+            offsetXLabelRect.pivot = new(1, 0.5f);
+            offsetXLabelRect.sizeDelta = new(0, 25);
+            offsetXLabelRect.anchoredPosition = new(-320, 0);
+            var offsetXLabelSizeFitter = offsetXLabel.AddComponent<ContentSizeFitter>();
+            offsetXLabelSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            offsetXLabelSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             RefreshDCMButtonPositionDisplay();
         }

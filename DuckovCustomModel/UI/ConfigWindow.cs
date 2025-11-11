@@ -669,7 +669,7 @@ namespace DuckovCustomModel.UI
 
             var buttonText = UIFactory.CreateText("Text", _settingsButton.transform, "DCM", 24, Color.white,
                 TextAnchor.MiddleCenter);
-            UIFactory.SetupRectTransform(buttonText, Vector2.zero, Vector2.one, Vector2.zero);
+            UIFactory.SetupButtonText(buttonText, 16, 24);
 
             UIFactory.SetupButtonColors(_settingsButton.GetComponent<Button>(),
                 new(0.2f, 0.25f, 0.3f, 0.9f),
