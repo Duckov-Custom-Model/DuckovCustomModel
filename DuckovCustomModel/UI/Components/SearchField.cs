@@ -9,13 +9,7 @@ namespace DuckovCustomModel.UI.Components
     public class SearchField : MonoBehaviour
     {
         private InputField? _inputField;
-        private Text? _placeholderText;
         private string _searchText = string.Empty;
-
-        private void OnDestroy()
-        {
-            Localization.OnLanguageChangedEvent -= OnLanguageChanged;
-        }
 
         public event Action<string>? OnSearchChanged;
 
@@ -27,18 +21,14 @@ namespace DuckovCustomModel.UI.Components
 
             if (_inputField != null && _inputField.placeholder != null)
             {
-                _placeholderText = _inputField.placeholder.GetComponent<Text>();
-                if (_placeholderText != null)
-                    _placeholderText.fontSize += 4;
+                var placeholderText = _inputField.placeholder.GetComponent<Text>();
+                if (placeholderText != null)
+                {
+                    placeholderText.fontSize += 4;
+                    UIFactory.SetLocalizedText(_inputField.placeholder.gameObject,
+                        () => Localization.SearchPlaceholder);
+                }
             }
-
-            Localization.OnLanguageChangedEvent += OnLanguageChanged;
-        }
-
-        private void OnLanguageChanged(SystemLanguage language)
-        {
-            if (_placeholderText != null)
-                _placeholderText.text = Localization.SearchPlaceholder;
         }
 
         private void OnSearchValueChanged(string text)

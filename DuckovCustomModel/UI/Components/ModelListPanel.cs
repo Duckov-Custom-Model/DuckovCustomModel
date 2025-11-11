@@ -43,14 +43,8 @@ namespace DuckovCustomModel.UI.Components
             _content.AddComponent<VerticalLayoutGroup>();
             _content.AddComponent<ContentSizeFitter>();
 
-            var layoutGroup = _content.GetComponent<VerticalLayoutGroup>();
-            layoutGroup.padding = new(10, 10, 10, 10);
-            layoutGroup.spacing = 10;
-            layoutGroup.childAlignment = TextAnchor.UpperLeft;
-            layoutGroup.childControlWidth = true;
-            layoutGroup.childControlHeight = false;
-            layoutGroup.childForceExpandWidth = true;
-            layoutGroup.childForceExpandHeight = false;
+            UIFactory.SetupVerticalLayoutGroup(_content, 10f, new(10, 10, 10, 10), TextAnchor.UpperLeft,
+                true, false, true);
 
             var sizeFitter = _content.GetComponent<ContentSizeFitter>();
             sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
@@ -363,30 +357,16 @@ namespace DuckovCustomModel.UI.Components
 
             var contentArea = new GameObject("ContentArea", typeof(RectTransform), typeof(VerticalLayoutGroup));
             contentArea.transform.SetParent(buttonObj.transform, false);
-            var contentRect = contentArea.GetComponent<RectTransform>();
-            contentRect.anchorMin = new(0, 0);
-            contentRect.anchorMax = new(1, 1);
-            contentRect.offsetMin = new(150, 10);
-            contentRect.offsetMax = new(-10, -10);
-
-            var layoutGroup = contentArea.GetComponent<VerticalLayoutGroup>();
-            layoutGroup.spacing = 2;
-            layoutGroup.childAlignment = TextAnchor.UpperLeft;
-            layoutGroup.childControlWidth = true;
-            layoutGroup.childControlHeight = false;
-            layoutGroup.childForceExpandWidth = true;
-            layoutGroup.childForceExpandHeight = false;
-            layoutGroup.padding = new(0, 0, 0, 0);
+            UIFactory.SetupRectTransform(contentArea, new(0, 0), new(1, 1), offsetMin: new(150, 10),
+                offsetMax: new(-10, -10));
+            UIFactory.SetupVerticalLayoutGroup(contentArea, 2f, new(0, 0, 0, 0), TextAnchor.UpperLeft,
+                true, false, true);
 
             var nameText = UIFactory.CreateText("Name", contentArea.transform,
                 string.IsNullOrEmpty(model.Name) ? model.ModelID : model.Name, 20,
                 hasError ? new(1f, 0.6f, 0.6f, 1) : Color.white, TextAnchor.UpperLeft, FontStyle.Bold);
-            var nameRect = nameText.GetComponent<RectTransform>();
-            nameRect.anchorMin = new(0, 1);
-            nameRect.anchorMax = new(1, 1);
-            nameRect.pivot = new(0, 1);
-            nameRect.sizeDelta = new(0, 24);
-            nameRect.anchoredPosition = Vector2.zero;
+            UIFactory.SetupRectTransform(nameText, new(0, 1), new(1, 1), new(0, 24), pivot: new(0, 1),
+                anchoredPosition: Vector2.zero);
             var nameTextComponent = nameText.GetComponent<Text>();
             nameTextComponent.horizontalOverflow = HorizontalWrapMode.Wrap;
             nameTextComponent.verticalOverflow = VerticalWrapMode.Overflow;
@@ -395,8 +375,7 @@ namespace DuckovCustomModel.UI.Components
                 Localization.GetModelInfo(model.ModelID, model.Author, model.Version, model.BundleName),
                 16,
                 hasError ? new(1f, 0.7f, 0.7f, 1) : new(0.8f, 0.8f, 0.8f, 1), TextAnchor.UpperLeft);
-            var infoRect = infoText.GetComponent<RectTransform>();
-            infoRect.sizeDelta = new(0, 18);
+            UIFactory.SetupRectTransform(infoText, Vector2.zero, Vector2.one, new(0, 18));
             var infoTextComponent = infoText.GetComponent<Text>();
             infoTextComponent.horizontalOverflow = HorizontalWrapMode.Wrap;
             infoTextComponent.verticalOverflow = VerticalWrapMode.Truncate;

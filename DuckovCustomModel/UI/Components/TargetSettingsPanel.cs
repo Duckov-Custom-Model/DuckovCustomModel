@@ -20,29 +20,17 @@ namespace DuckovCustomModel.UI.Components
         private ScrollRect? _scrollRect;
         private int _settingRowIndex;
 
-        private void OnDestroy()
-        {
-            Localization.OnLanguageChangedEvent -= OnLanguageChanged;
-        }
-
         public void Initialize(Transform parent)
         {
             var scrollView = UIFactory.CreateScrollView("TargetSettingsScrollView", parent, out var content);
             UIFactory.SetupRectTransform(scrollView.gameObject, Vector2.zero, Vector2.one, Vector2.zero);
 
             _scrollRect = scrollView;
-
             _content = content;
+
             UIFactory.SetupVerticalLayoutGroup(_content, 10f, new(10, 10, 10, 10), TextAnchor.UpperCenter,
                 true, false, true);
             UIFactory.SetupContentSizeFitter(_content, ContentSizeFitter.FitMode.Unconstrained);
-
-            Localization.OnLanguageChangedEvent += OnLanguageChanged;
-        }
-
-        private void OnLanguageChanged(SystemLanguage language)
-        {
-            Refresh();
         }
 
         public void SetTarget(TargetInfo? targetInfo)
@@ -82,6 +70,16 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupLeftLabel(label);
             UIFactory.SetupContentSizeFitter(label);
 
+            var displayName = _currentTarget.DisplayName;
+            var targetType = _currentTarget.TargetType;
+            var aiCharacterNameKey = _currentTarget.AICharacterNameKey;
+            UIFactory.SetLocalizedText(label, () =>
+                targetType == ModelTarget.AICharacter && aiCharacterNameKey != null
+                    ? string.Format(Localization.HideAICharacterEquipment, displayName)
+                    : targetType == ModelTarget.Character
+                        ? Localization.HideCharacterEquipment
+                        : Localization.HidePetEquipment);
+
             var isOn = false;
             if (hideEquipmentConfig != null)
             {
@@ -109,6 +107,7 @@ namespace DuckovCustomModel.UI.Components
                 Color.white);
             UIFactory.SetupLeftLabel(label);
             UIFactory.SetupContentSizeFitter(label);
+            UIFactory.SetLocalizedText(label, () => Localization.EnableIdleAudio);
 
             var isOn = false;
             if (idleAudioConfig != null)
@@ -144,6 +143,8 @@ namespace DuckovCustomModel.UI.Components
                 $"{Localization.IdleAudioInterval} {Localization.Seconds} ({Localization.MinValue})", 18, Color.white);
             UIFactory.SetupLeftLabel(minLabel);
             UIFactory.SetupContentSizeFitter(minLabel);
+            UIFactory.SetLocalizedText(minLabel, () =>
+                $"{Localization.IdleAudioInterval} {Localization.Seconds} ({Localization.MinValue})");
 
             _idleAudioMinIntervalInput =
                 UIFactory.CreateInputField("IdleAudioMinIntervalInput", minIntervalRow.transform);
@@ -158,6 +159,8 @@ namespace DuckovCustomModel.UI.Components
                 $"{Localization.IdleAudioInterval} {Localization.Seconds} ({Localization.MaxValue})", 18, Color.white);
             UIFactory.SetupLeftLabel(maxLabel);
             UIFactory.SetupContentSizeFitter(maxLabel);
+            UIFactory.SetLocalizedText(maxLabel, () =>
+                $"{Localization.IdleAudioInterval} {Localization.Seconds} ({Localization.MaxValue})");
 
             _idleAudioMaxIntervalInput =
                 UIFactory.CreateInputField("IdleAudioMaxIntervalInput", maxIntervalRow.transform);

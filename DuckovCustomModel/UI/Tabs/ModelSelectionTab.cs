@@ -13,7 +13,6 @@ namespace DuckovCustomModel.UI.Tabs
         private FunctionButtonBar? _functionButtonBar;
         private ModelListPanel? _modelListPanel;
         private GameObject? _overlayPanel;
-        private Text? _overlayText;
         private SearchField? _searchField;
         private TargetListPanel? _targetListPanel;
         private TargetSettingsPanel? _targetSettingsPanel;
@@ -22,7 +21,6 @@ namespace DuckovCustomModel.UI.Tabs
         {
             ModelListManager.OnRefreshStarted -= OnRefreshStarted;
             ModelListManager.OnRefreshCompleted -= OnRefreshCompleted;
-            Localization.OnLanguageChangedEvent -= OnLanguageChanged;
             base.OnDestroy();
         }
 
@@ -84,15 +82,8 @@ namespace DuckovCustomModel.UI.Tabs
 
             ModelListManager.OnRefreshStarted += OnRefreshStarted;
             ModelListManager.OnRefreshCompleted += OnRefreshCompleted;
-            Localization.OnLanguageChangedEvent += OnLanguageChanged;
 
             UpdateRefreshOverlay();
-        }
-
-        private void OnLanguageChanged(SystemLanguage language)
-        {
-            if (_overlayText != null)
-                _overlayText.text = Localization.Updating;
         }
 
         private void CreateOverlayPanel()
@@ -110,8 +101,10 @@ namespace DuckovCustomModel.UI.Tabs
             var overlayText = UIFactory.CreateText("OverlayText", _overlayPanel.transform, Localization.Updating, 24,
                 Color.white, TextAnchor.MiddleCenter);
             UIFactory.SetupRectTransform(overlayText, Vector2.zero, Vector2.one, Vector2.zero);
-            _overlayText = overlayText.GetComponent<Text>();
-            _overlayText.fontStyle = FontStyle.Bold;
+            var overlayTextComponent = overlayText.GetComponent<Text>();
+            overlayTextComponent.fontStyle = FontStyle.Bold;
+
+            UIFactory.SetLocalizedText(overlayText, () => Localization.Updating);
 
             _overlayPanel.SetActive(false);
         }
@@ -147,14 +140,8 @@ namespace DuckovCustomModel.UI.Tabs
             var content = new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup));
             content.transform.SetParent(PanelRoot!.transform, false);
             UIFactory.SetupRectTransform(content, Vector2.zero, Vector2.one, Vector2.zero);
-
-            var layoutGroup = content.GetComponent<VerticalLayoutGroup>();
-            layoutGroup.spacing = 10;
-            layoutGroup.padding = new(10, 10, 10, 10);
-            layoutGroup.childControlWidth = true;
-            layoutGroup.childControlHeight = true;
-            layoutGroup.childForceExpandWidth = true;
-            layoutGroup.childForceExpandHeight = false;
+            UIFactory.SetupVerticalLayoutGroup(content, 10f, new(10, 10, 10, 10), TextAnchor.UpperCenter,
+                true, true, true);
 
             return content;
         }
@@ -184,13 +171,8 @@ namespace DuckovCustomModel.UI.Tabs
             layoutElement.flexibleHeight = 1;
             layoutElement.flexibleWidth = 1;
 
-            var layoutGroup = container.GetComponent<HorizontalLayoutGroup>();
-            layoutGroup.spacing = 10;
-            layoutGroup.padding = new(0, 0, 0, 0);
-            layoutGroup.childControlWidth = true;
-            layoutGroup.childControlHeight = true;
-            layoutGroup.childForceExpandWidth = false;
-            layoutGroup.childForceExpandHeight = true;
+            UIFactory.SetupHorizontalLayoutGroup(container, 10f, new(0, 0, 0, 0), TextAnchor.MiddleLeft,
+                true);
 
             return container;
         }
@@ -215,14 +197,8 @@ namespace DuckovCustomModel.UI.Tabs
             container.AddComponent<VerticalLayoutGroup>();
             container.AddComponent<LayoutElement>();
             UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
-
-            var layoutGroup = container.GetComponent<VerticalLayoutGroup>();
-            layoutGroup.spacing = 10;
-            layoutGroup.padding = new(0, 0, 0, 0);
-            layoutGroup.childControlWidth = true;
-            layoutGroup.childControlHeight = true;
-            layoutGroup.childForceExpandWidth = true;
-            layoutGroup.childForceExpandHeight = false;
+            UIFactory.SetupVerticalLayoutGroup(container, 10f, new(0, 0, 0, 0), TextAnchor.UpperCenter,
+                true, true, true);
 
             var layoutElement = container.GetComponent<LayoutElement>();
             layoutElement.flexibleWidth = 1;

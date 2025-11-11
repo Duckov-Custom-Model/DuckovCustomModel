@@ -10,16 +10,13 @@ namespace DuckovCustomModel.UI.Tabs
 {
     public class SettingsTab : Base.UIPanel
     {
-        private Text? _animatorParamsLabel;
         private Toggle? _animatorParamsToggle;
         private Dropdown? _dcmButtonAnchorDropdown;
         private InputField? _dcmButtonOffsetXInput;
         private InputField? _dcmButtonOffsetYInput;
-        private Text? _keyButtonText;
-        private Text? _keyLabel;
+        private GameObject? _keyButton;
 
         private int _settingRowIndex;
-        private Text? _showDCMButtonLabel;
         private Toggle? _showDCMButtonToggle;
 
         public bool IsWaitingForKeyInput { get; private set; }
@@ -29,12 +26,6 @@ namespace DuckovCustomModel.UI.Tabs
         private void Update()
         {
             if (IsWaitingForKeyInput) HandleKeyInputCapture();
-        }
-
-        protected override void OnDestroy()
-        {
-            Localization.OnLanguageChangedEvent -= OnLanguageChanged;
-            base.OnDestroy();
         }
 
         public event Action<bool>? OnAnimatorParamsToggleChanged;
@@ -55,31 +46,6 @@ namespace DuckovCustomModel.UI.Tabs
 
             _settingRowIndex = 0;
             BuildSettingsContent();
-            Localization.OnLanguageChangedEvent += OnLanguageChanged;
-        }
-
-        private void OnLanguageChanged(SystemLanguage language)
-        {
-            if (_keyButtonText != null && !IsWaitingForKeyInput)
-                _keyButtonText.text = GetKeyCodeDisplayName(UIConfig?.ToggleKey ?? KeyCode.Backslash);
-
-            if (_keyLabel != null)
-                _keyLabel.text = Localization.Hotkey;
-
-            if (_animatorParamsLabel != null)
-                _animatorParamsLabel.text = Localization.ShowAnimatorParameters;
-
-            if (_showDCMButtonLabel != null)
-                _showDCMButtonLabel.text = Localization.ShowDCMButton;
-
-            if (_dcmButtonAnchorDropdown != null)
-            {
-                var currentValue = _dcmButtonAnchorDropdown.value;
-                RefreshAnchorDropdownOptions(_dcmButtonAnchorDropdown);
-                _dcmButtonAnchorDropdown.value = currentValue;
-            }
-
-            RefreshDCMButtonPositionDisplay();
         }
 
         private void BuildSettingsContent()
@@ -96,15 +62,7 @@ namespace DuckovCustomModel.UI.Tabs
 
             var contentRect = contentArea.GetComponent<RectTransform>();
             contentRect.sizeDelta = new(800, 0);
-
-            var layoutGroup = contentArea.GetComponent<VerticalLayoutGroup>();
-            layoutGroup.padding = new(10, 10, 10, 10);
-            layoutGroup.spacing = 10;
-            layoutGroup.childAlignment = TextAnchor.UpperCenter;
-            layoutGroup.childControlWidth = true;
-            layoutGroup.childControlHeight = false;
-            layoutGroup.childForceExpandWidth = false;
-            layoutGroup.childForceExpandHeight = false;
+            UIFactory.SetupVerticalLayoutGroup(contentArea, 10f, new(10, 10, 10, 10));
 
             var sizeFitter = contentArea.GetComponent<ContentSizeFitter>();
             sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
@@ -122,19 +80,23 @@ namespace DuckovCustomModel.UI.Tabs
 
             var keyLabel = UIFactory.CreateText("KeyLabel", row.transform,
                 Localization.Hotkey, 18, Color.white);
-            _keyLabel = keyLabel.GetComponent<Text>();
             UIFactory.SetupLeftLabel(keyLabel);
             UIFactory.SetupContentSizeFitter(keyLabel);
+            UIFactory.SetLocalizedText(keyLabel, () => Localization.Hotkey);
 
             var keyButton = UIFactory.CreateButton("KeyButton", row.transform, OnKeyButtonClicked,
                 new(0.2f, 0.2f, 0.2f, 1));
+            _keyButton = keyButton;
             UIFactory.SetupRightControl(keyButton, new(100, 30));
 
             var keyButtonText = UIFactory.CreateText("Text", keyButton.transform,
                 GetKeyCodeDisplayName(UIConfig?.ToggleKey ?? KeyCode.Backslash), 18, Color.white,
                 TextAnchor.MiddleCenter);
             UIFactory.SetupButtonText(keyButtonText);
-            _keyButtonText = keyButtonText.GetComponent<Text>();
+            UIFactory.SetLocalizedText(keyButtonText, () =>
+                IsWaitingForKeyInput
+                    ? Localization.PressAnyKey
+                    : GetKeyCodeDisplayName(UIConfig?.ToggleKey ?? KeyCode.Backslash));
         }
 
         private void BuildAnimatorParamsToggle(GameObject parent)
@@ -143,9 +105,9 @@ namespace DuckovCustomModel.UI.Tabs
 
             var label = UIFactory.CreateText("Label", row.transform,
                 Localization.ShowAnimatorParameters, 18, Color.white);
-            _animatorParamsLabel = label.GetComponent<Text>();
             UIFactory.SetupLeftLabel(label);
             UIFactory.SetupContentSizeFitter(label);
+            UIFactory.SetLocalizedText(label, () => Localization.ShowAnimatorParameters);
 
             var configWindow = GetComponentInParent<ConfigWindow>();
             var toggle = UIFactory.CreateToggle("AnimatorParamsToggle", row.transform,
@@ -161,9 +123,9 @@ namespace DuckovCustomModel.UI.Tabs
 
             var label = UIFactory.CreateText("Label", row.transform,
                 Localization.ShowDCMButton, 18, Color.white);
-            _showDCMButtonLabel = label.GetComponent<Text>();
             UIFactory.SetupLeftLabel(label);
             UIFactory.SetupContentSizeFitter(label);
+            UIFactory.SetLocalizedText(label, () => Localization.ShowDCMButton);
 
             var toggle = UIFactory.CreateToggle("ShowDCMButtonToggle", row.transform,
                 UIConfig?.ShowDCMButton ?? true, OnShowDCMButtonToggleChanged);
@@ -186,6 +148,7 @@ namespace DuckovCustomModel.UI.Tabs
                 Localization.DCMButtonAnchor, 18, Color.white);
             UIFactory.SetupLeftLabel(anchorLabel);
             UIFactory.SetupContentSizeFitter(anchorLabel);
+            UIFactory.SetLocalizedText(anchorLabel, () => Localization.DCMButtonAnchor);
 
             var dropdown = UIFactory.CreateDropdown("AnchorDropdown", anchorRow.transform, OnAnchorDropdownChanged);
             UIFactory.SetupRightControl(dropdown.gameObject, new(200, 30));
@@ -194,11 +157,16 @@ namespace DuckovCustomModel.UI.Tabs
 
             _dcmButtonAnchorDropdown = dropdown;
 
+            var dropdownLocalizedText = dropdown.gameObject.AddComponent<LocalizedDropdown>();
+            dropdownLocalizedText.SetDropdown(dropdown);
+            dropdownLocalizedText.SetRefreshAction(RefreshAnchorDropdownOnLanguageChange);
+
             var offsetRow = CreateSettingRow(parent);
             var offsetLabel = UIFactory.CreateText("OffsetLabel", offsetRow.transform,
                 Localization.DCMButtonOffset, 18, Color.white);
             UIFactory.SetupLeftLabel(offsetLabel);
             UIFactory.SetupContentSizeFitter(offsetLabel);
+            UIFactory.SetLocalizedText(offsetLabel, () => Localization.DCMButtonOffset);
 
             var offsetYInput = UIFactory.CreateInputField("OffsetYInput", offsetRow.transform);
             UIFactory.SetupRightControl(offsetYInput.gameObject, new(80, 25));
@@ -211,6 +179,7 @@ namespace DuckovCustomModel.UI.Tabs
                 Localization.OffsetY, 16, new Color(0.9f, 0.9f, 0.9f, 1));
             UIFactory.SetupRightLabel(offsetYLabel);
             UIFactory.SetupContentSizeFitter(offsetYLabel);
+            UIFactory.SetLocalizedText(offsetYLabel, () => Localization.OffsetY);
 
             var offsetXInput = UIFactory.CreateInputField("OffsetXInput", offsetRow.transform);
             UIFactory.SetupRightControl(offsetXInput.gameObject, new(80, 25), -220f);
@@ -223,6 +192,7 @@ namespace DuckovCustomModel.UI.Tabs
                 Localization.OffsetX, 16, new Color(0.9f, 0.9f, 0.9f, 1));
             UIFactory.SetupRightLabel(offsetXLabel, 25f, -320f);
             UIFactory.SetupContentSizeFitter(offsetXLabel);
+            UIFactory.SetLocalizedText(offsetXLabel, () => Localization.OffsetX);
 
             RefreshDCMButtonPositionDisplay();
         }
@@ -239,6 +209,14 @@ namespace DuckovCustomModel.UI.Tabs
             dropdown.options.Add(new(GetAnchorPositionText(AnchorPosition.BottomLeft)));
             dropdown.options.Add(new(GetAnchorPositionText(AnchorPosition.BottomCenter)));
             dropdown.options.Add(new(GetAnchorPositionText(AnchorPosition.BottomRight)));
+        }
+
+        private void RefreshAnchorDropdownOnLanguageChange()
+        {
+            if (_dcmButtonAnchorDropdown == null) return;
+            var currentValue = _dcmButtonAnchorDropdown.value;
+            RefreshAnchorDropdownOptions(_dcmButtonAnchorDropdown);
+            _dcmButtonAnchorDropdown.value = currentValue;
         }
 
         private void RefreshDCMButtonPositionDisplay()
@@ -371,8 +349,12 @@ namespace DuckovCustomModel.UI.Tabs
         {
             if (UIConfig == null) return;
             IsWaitingForKeyInput = true;
-            if (_keyButtonText != null)
-                _keyButtonText.text = Localization.PressAnyKey;
+            if (_keyButton == null) return;
+            var textObj = _keyButton.transform.Find("Text");
+            if (textObj == null) return;
+            var localizedText = textObj.GetComponent<LocalizedText>();
+            if (localizedText != null)
+                localizedText.RefreshText();
         }
 
         private void HandleKeyInputCapture()
@@ -382,24 +364,33 @@ namespace DuckovCustomModel.UI.Tabs
             if (Input.GetKeyDown(KeyCode.Escape))
             {
                 IsWaitingForKeyInput = false;
-                if (_keyButtonText != null)
-                    _keyButtonText.text = GetKeyCodeDisplayName(UIConfig.ToggleKey);
+                if (_keyButton == null) return;
+                var textObj = _keyButton.transform.Find("Text");
+                if (textObj == null) return;
+                var localizedText = textObj.GetComponent<LocalizedText>();
+                if (localizedText != null)
+                    localizedText.RefreshText();
+
                 return;
             }
 
             foreach (KeyCode keyCode in Enum.GetValues(typeof(KeyCode)))
                 if (Input.GetKeyDown(keyCode))
                 {
-                    if (keyCode == KeyCode.Mouse0 || keyCode == KeyCode.Mouse1 || keyCode == KeyCode.Mouse2 ||
-                        keyCode == KeyCode.Mouse3 || keyCode == KeyCode.Mouse4 || keyCode == KeyCode.Mouse5 ||
-                        keyCode == KeyCode.Mouse6)
+                    if (keyCode is KeyCode.Mouse0 or KeyCode.Mouse1 or KeyCode.Mouse2 or KeyCode.Mouse3
+                        or KeyCode.Mouse4 or KeyCode.Mouse5 or KeyCode.Mouse6)
                         continue;
 
                     UIConfig.ToggleKey = keyCode;
                     ConfigManager.SaveConfigToFile(UIConfig, "UIConfig.json");
                     IsWaitingForKeyInput = false;
-                    if (_keyButtonText != null)
-                        _keyButtonText.text = GetKeyCodeDisplayName(keyCode);
+                    if (_keyButton == null) return;
+                    var textObj = _keyButton.transform.Find("Text");
+                    if (textObj == null) return;
+                    var localizedText = textObj.GetComponent<LocalizedText>();
+                    if (localizedText != null)
+                        localizedText.RefreshText();
+
                     return;
                 }
         }

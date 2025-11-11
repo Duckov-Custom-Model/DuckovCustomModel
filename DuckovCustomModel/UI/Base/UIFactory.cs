@@ -1,3 +1,5 @@
+using System;
+using DuckovCustomModel.Localizations;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -31,6 +33,26 @@ namespace DuckovCustomModel.UI.Base
             textComponent.alignment = alignment;
             textComponent.fontStyle = fontStyle;
             return obj;
+        }
+
+        public static GameObject CreateLocalizedText(string name, Transform parent, Func<string> textGetter,
+            int fontSize = 14, Color? color = null, TextAnchor alignment = TextAnchor.MiddleLeft,
+            FontStyle fontStyle = FontStyle.Normal)
+        {
+            var obj = CreateText(name, parent, textGetter(), fontSize, color, alignment, fontStyle);
+            SetLocalizedText(obj, textGetter);
+            return obj;
+        }
+
+        public static void SetLocalizedText(GameObject textObj, Func<string>? textGetter)
+        {
+            if (textObj == null || textGetter == null) return;
+
+            var localizedText = textObj.GetComponent<LocalizedText>();
+            if (localizedText == null)
+                localizedText = textObj.AddComponent<LocalizedText>();
+
+            localizedText.SetTextGetter(textGetter);
         }
 
         public static void SetupButtonText(GameObject textObj, int minFontSize = 12, int maxFontSize = 18,
@@ -162,25 +184,32 @@ namespace DuckovCustomModel.UI.Base
             content = new("Content", typeof(RectTransform));
             content.transform.SetParent(scrollView.transform, false);
             var contentRect = content.GetComponent<RectTransform>();
-            contentRect.anchorMin = new(0, 1);
-            contentRect.anchorMax = new(1, 1);
-            contentRect.pivot = new(0, 1);
-            contentRect.anchoredPosition = Vector2.zero;
-            contentRect.sizeDelta = Vector2.zero;
+            SetupRectTransform(content, new(0, 1), new(1, 1), Vector2.zero, pivot: new(0, 1),
+                anchoredPosition: Vector2.zero);
 
             scrollRect.content = contentRect;
 
             return scrollRect;
         }
 
-        public static void SetupRectTransform(GameObject obj, Vector2 anchorMin, Vector2 anchorMax, Vector2 sizeDelta,
+        public static void SetupRectTransform(GameObject obj, Vector2 anchorMin, Vector2 anchorMax,
+            Vector2? sizeDelta = null, Vector2? offsetMin = null, Vector2? offsetMax = null,
             Vector2? pivot = null, Vector2? anchoredPosition = null)
         {
             var rect = obj.GetComponent<RectTransform>();
             if (rect == null) return;
             rect.anchorMin = anchorMin;
             rect.anchorMax = anchorMax;
-            rect.sizeDelta = sizeDelta;
+            if (offsetMin.HasValue || offsetMax.HasValue)
+            {
+                if (offsetMin.HasValue) rect.offsetMin = offsetMin.Value;
+                if (offsetMax.HasValue) rect.offsetMax = offsetMax.Value;
+            }
+            else if (sizeDelta.HasValue)
+            {
+                rect.sizeDelta = sizeDelta.Value;
+            }
+
             if (pivot.HasValue) rect.pivot = pivot.Value;
             if (anchoredPosition.HasValue) rect.anchoredPosition = anchoredPosition.Value;
         }

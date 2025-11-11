@@ -51,7 +51,6 @@ namespace DuckovCustomModel.UI
         private SettingsTab? _settingsTab;
         private bool _showAnimatorParamsWindow;
         private TabSystem? _tabSystem;
-        private Text? _titleText;
         private bool _uiActive;
         private GameObject? _uiRoot;
 
@@ -111,12 +110,6 @@ namespace DuckovCustomModel.UI
             Cursor.lockState = CursorLockMode.None;
         }
 
-        private void OnDestroy()
-        {
-            Localization.OnLanguageChangedEvent -= OnLanguageChanged;
-        }
-
-
         private void OnGUI()
         {
             if (!_showAnimatorParamsWindow) return;
@@ -148,7 +141,6 @@ namespace DuckovCustomModel.UI
             if (_panelRoot != null) _panelRoot.SetActive(false);
 
             _isInitialized = true;
-            Localization.OnLanguageChangedEvent += OnLanguageChanged;
 
             var uiConfig = UIConfig;
             if (uiConfig != null)
@@ -159,12 +151,6 @@ namespace DuckovCustomModel.UI
             }
 
             ModLogger.Log("ConfigWindow initialized.");
-        }
-
-        private void OnLanguageChanged(SystemLanguage language)
-        {
-            if (_titleText != null)
-                _titleText.text = Localization.Title;
         }
 
         private void CreateOrFindUiRoot()
@@ -220,7 +206,7 @@ namespace DuckovCustomModel.UI
             var titleBar =
                 UIFactory.CreateImage("TitleBar", _panelRoot.transform, new Color(0.15f, 0.18f, 0.22f, 0.9f));
             UIFactory.SetupRectTransform(titleBar, new(0, 1), new(1, 1), new(0, 40),
-                new Vector2(0.5f, 1), new Vector2(0, 0));
+                pivot: new Vector2(0.5f, 1), anchoredPosition: new Vector2(0, 0));
 
             var titleContainer = new GameObject("TitleContainer", typeof(RectTransform), typeof(HorizontalLayoutGroup));
             titleContainer.transform.SetParent(titleBar.transform, false);
@@ -242,7 +228,8 @@ namespace DuckovCustomModel.UI
             var titleText = UIFactory.CreateText("Title", titleContainer.transform, Localization.Title,
                 20,
                 Color.white, TextAnchor.MiddleCenter, FontStyle.Bold);
-            _titleText = titleText.GetComponent<Text>();
+            UIFactory.SetLocalizedText(titleText, () => Localization.Title);
+
             var titleTextRect = titleText.GetComponent<RectTransform>();
             titleTextRect.sizeDelta = new(0, 0);
             var titleSizeFitter = titleText.AddComponent<ContentSizeFitter>();
@@ -262,7 +249,7 @@ namespace DuckovCustomModel.UI
             var closeButton = UIFactory.CreateButton("CloseButton", titleBar.transform, HidePanel,
                 new Color(0.2f, 0.2f, 0.2f, 1));
             UIFactory.SetupRectTransform(closeButton, new(1, 0.5f), new(1, 0.5f), new(36, 36),
-                new Vector2(1, 0.5f), new Vector2(-10, 0));
+                pivot: new Vector2(1, 0.5f), anchoredPosition: new Vector2(-10, 0));
 
             var closeText = UIFactory.CreateText("Text", closeButton.transform, "×", 24, Color.white,
                 TextAnchor.MiddleCenter);

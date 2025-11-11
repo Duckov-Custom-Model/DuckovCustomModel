@@ -34,14 +34,8 @@ namespace DuckovCustomModel.UI.Components
             _content.AddComponent<VerticalLayoutGroup>();
             _content.AddComponent<ContentSizeFitter>();
 
-            var layoutGroup = _content.GetComponent<VerticalLayoutGroup>();
-            layoutGroup.padding = new(10, 10, 10, 10);
-            layoutGroup.spacing = 10;
-            layoutGroup.childAlignment = TextAnchor.UpperLeft;
-            layoutGroup.childControlWidth = false;
-            layoutGroup.childControlHeight = false;
-            layoutGroup.childForceExpandWidth = false;
-            layoutGroup.childForceExpandHeight = false;
+            UIFactory.SetupVerticalLayoutGroup(_content, 10f, new(10, 10, 10, 10), TextAnchor.UpperLeft,
+                false);
 
             var sizeFitter = _content.GetComponent<ContentSizeFitter>();
             sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
@@ -137,7 +131,7 @@ namespace DuckovCustomModel.UI.Components
             _targetButtons[targetInfo.Id] = buttonObj;
         }
 
-        private void UpdateTargetButton(GameObject buttonObj, TargetInfo targetInfo)
+        private static void UpdateTargetButton(GameObject buttonObj, TargetInfo targetInfo)
         {
             SetupTargetButton(buttonObj, targetInfo);
         }

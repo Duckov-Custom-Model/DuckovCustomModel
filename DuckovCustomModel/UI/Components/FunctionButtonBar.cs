@@ -13,17 +13,13 @@ namespace DuckovCustomModel.UI.Components
     {
         private bool _isRefreshing;
         private Button? _openModelFolderButton;
-        private Text? _openModelFolderButtonText;
         private Button? _refreshButton;
-        private Text? _refreshButtonText;
         private Button? _resetInvalidModelsButton;
-        private Text? _resetInvalidModelsButtonText;
 
         private void OnDestroy()
         {
             ModelListManager.OnRefreshStarted -= OnModelListRefreshStarted;
             ModelListManager.OnRefreshCompleted -= OnModelListRefreshCompleted;
-            Localization.OnLanguageChangedEvent -= OnLanguageChanged;
         }
 
         public event Action? OnRefresh;
@@ -39,14 +35,8 @@ namespace DuckovCustomModel.UI.Components
             layoutElement.flexibleHeight = 1;
             layoutElement.preferredHeight = 80;
 
-            var layoutGroup = buttonBar.AddComponent<HorizontalLayoutGroup>();
-            layoutGroup.spacing = 10;
-            layoutGroup.padding = new(10, 10, 10, 10);
-            layoutGroup.childAlignment = TextAnchor.MiddleLeft;
-            layoutGroup.childControlWidth = false;
-            layoutGroup.childControlHeight = true;
-            layoutGroup.childForceExpandWidth = false;
-            layoutGroup.childForceExpandHeight = true;
+            buttonBar.AddComponent<HorizontalLayoutGroup>();
+            UIFactory.SetupHorizontalLayoutGroup(buttonBar, 10f, new(10, 10, 10, 10));
 
             BuildRefreshButton(buttonBar);
             BuildResetInvalidModelsButton(buttonBar);
@@ -54,19 +44,6 @@ namespace DuckovCustomModel.UI.Components
 
             ModelListManager.OnRefreshStarted += OnModelListRefreshStarted;
             ModelListManager.OnRefreshCompleted += OnModelListRefreshCompleted;
-            Localization.OnLanguageChangedEvent += OnLanguageChanged;
-        }
-
-        private void OnLanguageChanged(SystemLanguage language)
-        {
-            if (_refreshButtonText != null)
-                _refreshButtonText.text = _isRefreshing ? Localization.Loading : Localization.Refresh;
-
-            if (_resetInvalidModelsButtonText != null)
-                _resetInvalidModelsButtonText.text = Localization.ResetInvalidModels;
-
-            if (_openModelFolderButtonText != null)
-                _openModelFolderButtonText.text = Localization.OpenModelFolder;
         }
 
         private void BuildRefreshButton(GameObject parent)
@@ -81,11 +58,10 @@ namespace DuckovCustomModel.UI.Components
             refreshButtonLayoutElement.flexibleWidth = 0;
             refreshButtonLayoutElement.flexibleHeight = 1;
 
-            var refreshTextObj = UIFactory.CreateText("Text", _refreshButton.transform, Localization.Refresh, 18,
+            var refreshTextObj = UIFactory.CreateLocalizedText("Text", _refreshButton.transform,
+                () => _isRefreshing ? Localization.Loading : Localization.Refresh, 18,
                 Color.white, TextAnchor.MiddleCenter);
             UIFactory.SetupButtonText(refreshTextObj);
-            _refreshButtonText = refreshTextObj.GetComponent<Text>();
-
             UIFactory.SetupButtonColors(_refreshButton, new(1, 1, 1, 1), new(0.4f, 0.5f, 0.6f, 1),
                 new(0.3f, 0.4f, 0.5f, 1), new(0.4f, 0.5f, 0.6f, 1));
         }
@@ -105,8 +81,7 @@ namespace DuckovCustomModel.UI.Components
             var resetTextObj = UIFactory.CreateText("Text", _resetInvalidModelsButton.transform,
                 Localization.ResetInvalidModels, 18, Color.white, TextAnchor.MiddleCenter);
             UIFactory.SetupButtonText(resetTextObj);
-            _resetInvalidModelsButtonText = resetTextObj.GetComponent<Text>();
-
+            UIFactory.SetLocalizedText(resetTextObj, () => Localization.ResetInvalidModels);
             UIFactory.SetupButtonColors(_resetInvalidModelsButton, new(1, 1, 1, 1), new(0.6f, 0.4f, 0.4f, 1),
                 new(0.5f, 0.3f, 0.3f, 1), new(0.6f, 0.4f, 0.4f, 1));
         }
@@ -132,8 +107,7 @@ namespace DuckovCustomModel.UI.Components
             var openFolderTextObj = UIFactory.CreateText("Text", _openModelFolderButton.transform,
                 Localization.OpenModelFolder, 18, Color.white, TextAnchor.MiddleCenter);
             UIFactory.SetupButtonText(openFolderTextObj);
-            _openModelFolderButtonText = openFolderTextObj.GetComponent<Text>();
-
+            UIFactory.SetLocalizedText(openFolderTextObj, () => Localization.OpenModelFolder);
             UIFactory.SetupButtonColors(_openModelFolderButton, new(1, 1, 1, 1), new(0.4f, 0.6f, 0.4f, 1),
                 new(0.3f, 0.5f, 0.3f, 1), new(0.4f, 0.6f, 0.4f, 1));
         }
@@ -177,10 +151,13 @@ namespace DuckovCustomModel.UI.Components
 
         private void UpdateRefreshButtonState(bool isLoading)
         {
-            if (_refreshButton != null) _refreshButton.interactable = !isLoading;
-
-            if (_refreshButtonText != null)
-                _refreshButtonText.text = isLoading ? Localization.Loading : Localization.Refresh;
+            if (_refreshButton == null) return;
+            _refreshButton.interactable = !isLoading;
+            var textObj = _refreshButton.transform.Find("Text");
+            if (textObj == null) return;
+            var localizedText = textObj.GetComponent<LocalizedText>();
+            if (localizedText != null)
+                localizedText.RefreshText();
         }
     }
 }
