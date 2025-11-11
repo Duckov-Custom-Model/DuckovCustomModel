@@ -9,7 +9,7 @@ English | [中文](CHANGELOG.md)
 - Optimized some collision detection calculation logic when using custom models
 - Fixed issue where headshot detection could not be triggered when character equipment was hidden
 - Fixed issue where some slots would become invisible when switching models
-- Fixed fallback logic for AI character configurations; audio, equipment hiding, and other settings now correctly fall back to `*` configuration
+- Fixed fallback logic for AI character configurations; audio, equipment hiding, and other settings now correctly select configuration based on the actually used model: if using fallback model (`*`), use `*` settings; if using own model configuration, use own settings
 
 ## v1.7.6
 

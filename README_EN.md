@@ -206,6 +206,9 @@ Model audio toggle configuration. Used to control whether to use model-provided 
   - Special key `"*"`: Sets default value for all AI characters
     - When an AI character doesn't have an individual configuration, the value corresponding to `"*"` will be used
     - If `"*"` is also not configured, default value will be used (`true`)
+  - **Configuration Selection Logic**: Audio settings will select configuration based on the actually used model
+    - If an AI character uses its own model configuration (a model is individually configured for that AI character in `UsingModel.json`), it will use that AI character's audio settings
+    - If an AI character uses the fallback model (`*`, i.e., the default model for "All AI Characters"), it will use `*` audio settings
   - Default value: `true` (use model audio)
   - Can be toggled in the target settings area of the model selection interface
 
@@ -700,7 +703,9 @@ You can configure whether to hide original equipment for each AI character indiv
 - Select a specific AI character (or select "All AI Characters" to set the default value)
 - A "Hide Equipment" toggle option for that AI character will be displayed in the target settings area
 - Each AI character has an independent hide equipment setting, and you can also set a default value for "All AI Characters"
-- When an AI character does not have an individual configuration, it will use the default value for "All AI Characters"
+- **Configuration Selection Logic**: Audio, equipment hiding, and other settings will select configuration based on the actually used model
+  - If an AI character uses its own model configuration (a model is individually configured for that AI character in `UsingModel.json`), it will use that AI character's settings
+  - If an AI character uses the fallback model (`*`, i.e., the default model for "All AI Characters"), it will use `*` settings
 - Configuration will be automatically saved to `HideEquipmentConfig.json`
 
 ### Notes

@@ -55,9 +55,11 @@ namespace DuckovCustomModel.MonoBehaviours
                 if (Target != ModelTarget.AICharacter)
                     return ModBehaviour.Instance.HideEquipmentConfig.GetHideEquipment(Target);
                 var nameKey = CharacterMainControl?.characterPreset?.nameKey;
-                return !string.IsNullOrEmpty(nameKey)
-                    ? ModBehaviour.Instance.HideEquipmentConfig.GetHideAICharacterEquipment(nameKey)
-                    : ModBehaviour.Instance.HideEquipmentConfig.GetHideEquipment(Target);
+                if (string.IsNullOrEmpty(nameKey))
+                    return ModBehaviour.Instance.HideEquipmentConfig.GetHideEquipment(Target);
+
+                var effectiveNameKey = GetEffectiveAICharacterConfigKey(nameKey);
+                return ModBehaviour.Instance.HideEquipmentConfig.GetHideAICharacterEquipment(effectiveNameKey);
             }
         }
 
@@ -72,8 +74,10 @@ namespace DuckovCustomModel.MonoBehaviours
                     return modelAudioConfig.IsModelAudioEnabled(Target);
 
                 var nameKey = NameKey;
-                return !string.IsNullOrEmpty(nameKey) &&
-                       modelAudioConfig.IsAICharacterModelAudioEnabled(nameKey);
+                if (string.IsNullOrEmpty(nameKey)) return true;
+
+                var effectiveNameKey = GetEffectiveAICharacterConfigKey(nameKey);
+                return modelAudioConfig.IsAICharacterModelAudioEnabled(effectiveNameKey);
             }
         }
 
@@ -97,8 +101,9 @@ namespace DuckovCustomModel.MonoBehaviours
                 if (Target == ModelTarget.AICharacter)
                 {
                     var nameKey = NameKey;
-                    if (string.IsNullOrEmpty(nameKey) ||
-                        !ModBehaviour.Instance.IdleAudioConfig.IsAICharacterIdleAudioEnabled(nameKey))
+                    if (string.IsNullOrEmpty(nameKey)) return;
+                    var effectiveNameKey = GetEffectiveAICharacterConfigKey(nameKey);
+                    if (!ModBehaviour.Instance.IdleAudioConfig.IsAICharacterIdleAudioEnabled(effectiveNameKey))
                         return;
                 }
                 else
@@ -378,10 +383,16 @@ namespace DuckovCustomModel.MonoBehaviours
             if (Target == ModelTarget.AICharacter)
             {
                 var nameKey = NameKey;
-                if (ModBehaviour.Instance?.IdleAudioConfig == null ||
-                    string.IsNullOrEmpty(nameKey) ||
-                    ModBehaviour.Instance.IdleAudioConfig.IsAICharacterIdleAudioEnabled(nameKey))
+                if (ModBehaviour.Instance?.IdleAudioConfig == null || string.IsNullOrEmpty(nameKey))
+                {
                     ScheduleNextIdleAudio();
+                }
+                else
+                {
+                    var effectiveNameKey = GetEffectiveAICharacterConfigKey(nameKey);
+                    if (ModBehaviour.Instance.IdleAudioConfig.IsAICharacterIdleAudioEnabled(effectiveNameKey))
+                        ScheduleNextIdleAudio();
+                }
             }
             else
             {
@@ -683,6 +694,17 @@ namespace DuckovCustomModel.MonoBehaviours
             }
         }
 
+        private static string GetEffectiveAICharacterConfigKey(string nameKey)
+        {
+            if (string.IsNullOrEmpty(nameKey)) return AICharacters.AllAICharactersKey;
+
+            var usingModel = ModBehaviour.Instance?.UsingModel;
+            if (usingModel == null) return nameKey;
+
+            var modelID = usingModel.GetAICharacterModelID(nameKey);
+            return !string.IsNullOrEmpty(modelID) ? nameKey : AICharacters.AllAICharactersKey;
+        }
+
         private static Transform? SearchLocatorTransform(GameObject modelInstance, string locatorName)
         {
             var transforms = modelInstance.GetComponentsInChildren<Transform>(true);
@@ -824,9 +846,15 @@ namespace DuckovCustomModel.MonoBehaviours
             if (Target == ModelTarget.AICharacter)
             {
                 var nameKey = NameKey;
-                interval = !string.IsNullOrEmpty(nameKey)
-                    ? ModBehaviour.Instance.IdleAudioConfig.GetAICharacterIdleAudioInterval(nameKey)
-                    : ModBehaviour.Instance.IdleAudioConfig.GetIdleAudioInterval(Target);
+                if (string.IsNullOrEmpty(nameKey))
+                {
+                    interval = ModBehaviour.Instance.IdleAudioConfig.GetIdleAudioInterval(Target);
+                }
+                else
+                {
+                    var effectiveNameKey = GetEffectiveAICharacterConfigKey(nameKey);
+                    interval = ModBehaviour.Instance.IdleAudioConfig.GetAICharacterIdleAudioInterval(effectiveNameKey);
+                }
             }
             else
             {
