@@ -492,9 +492,11 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private Transform? GetOriginalCustomFaceInstance()
         {
-            if (OriginalCharacterModel == null) return null;
-            var targetTransformName = Target == ModelTarget.Pet ? "Dog" : "CustomFaceInstance";
-            return OriginalCharacterModel.transform.Find(targetTransformName);
+            if (OriginalAnimationControl != null)
+                return OriginalAnimationControl.animator.transform;
+            return OriginalMagicBlendAnimationControl != null
+                ? OriginalMagicBlendAnimationControl.animator.transform
+                : null;
         }
 
         private void UpdateToCustomSocket(GameObject targetGameObject)
