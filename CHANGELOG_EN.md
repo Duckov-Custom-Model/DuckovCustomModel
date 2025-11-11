@@ -2,6 +2,11 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.7.4
+
+- Optimized interface structure and logic to ensure proper display across all languages
+- Added button to open model folder
+
 ## v1.7.3
 
 - Added `Weather` Animator parameter (int type) to get current weather state (Sunny, Cloudy, Rainy, Stormy_I, Stormy_II)
