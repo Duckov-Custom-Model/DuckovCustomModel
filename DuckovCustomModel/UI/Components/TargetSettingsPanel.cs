@@ -14,6 +14,7 @@ namespace DuckovCustomModel.UI.Components
         private GameObject? _content;
         private TargetInfo? _currentTarget;
         private Toggle? _enableIdleAudioToggle;
+        private Toggle? _enableModelAudioToggle;
         private Toggle? _hideEquipmentToggle;
         private InputField? _idleAudioMaxIntervalInput;
         private InputField? _idleAudioMinIntervalInput;
@@ -49,6 +50,7 @@ namespace DuckovCustomModel.UI.Components
 
             _settingRowIndex = 0;
             BuildHideEquipmentSetting();
+            BuildEnableModelAudioSetting();
             BuildEnableIdleAudioSetting();
             BuildIdleAudioIntervalSettings();
         }
@@ -94,6 +96,35 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupRightControl(toggle.gameObject, new(20, 20));
 
             _hideEquipmentToggle = toggle;
+        }
+
+        private void BuildEnableModelAudioSetting()
+        {
+            if (_content == null || _currentTarget == null) return;
+
+            var settingRow = CreateSettingRow();
+            var modelAudioConfig = ModBehaviour.Instance?.ModelAudioConfig;
+
+            var label = UIFactory.CreateText("Label", settingRow.transform, Localization.EnableModelAudio, 18,
+                Color.white);
+            UIFactory.SetupLeftLabel(label);
+            UIFactory.SetupContentSizeFitter(label);
+            UIFactory.SetLocalizedText(label, () => Localization.EnableModelAudio);
+
+            var isOn = true;
+            if (modelAudioConfig != null)
+            {
+                if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
+                    isOn = modelAudioConfig.IsAICharacterModelAudioEnabled(_currentTarget.AICharacterNameKey);
+                else
+                    isOn = modelAudioConfig.IsModelAudioEnabled(_currentTarget.TargetType);
+            }
+
+            var toggle = UIFactory.CreateToggle("EnableModelAudioToggle", settingRow.transform, isOn,
+                OnEnableModelAudioToggleChanged);
+            UIFactory.SetupRightControl(toggle.gameObject, new(20, 20));
+
+            _enableModelAudioToggle = toggle;
         }
 
         private void BuildEnableIdleAudioSetting()
@@ -209,6 +240,25 @@ namespace DuckovCustomModel.UI.Components
             {
                 hideEquipmentConfig.SetHideEquipment(_currentTarget.TargetType, value);
                 ConfigManager.SaveConfigToFile(hideEquipmentConfig, "HideEquipmentConfig.json");
+            }
+        }
+
+        private void OnEnableModelAudioToggleChanged(bool value)
+        {
+            if (_currentTarget == null) return;
+
+            var modelAudioConfig = ModBehaviour.Instance?.ModelAudioConfig;
+            if (modelAudioConfig == null) return;
+
+            if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
+            {
+                modelAudioConfig.SetAICharacterModelAudioEnabled(_currentTarget.AICharacterNameKey, value);
+                ConfigManager.SaveConfigToFile(modelAudioConfig, "ModelAudioConfig.json");
+            }
+            else
+            {
+                modelAudioConfig.SetModelAudioEnabled(_currentTarget.TargetType, value);
+                ConfigManager.SaveConfigToFile(modelAudioConfig, "ModelAudioConfig.json");
             }
         }
 

@@ -55,6 +55,7 @@ namespace DuckovCustomModel.Localizations
             { "ModelSettings", "Model Settings" },
             { "AnimatorSettings", "Animator Settings" },
             { "UtilityTools", "Utility Tools" },
+            { "EnableModelAudio", "Enable Model Audio" },
             { "EnableIdleAudio", "Enable Idle Audio" },
             { "IdleAudioInterval", "Idle Audio Interval" },
             { "Seconds", "seconds" },
@@ -107,6 +108,7 @@ namespace DuckovCustomModel.Localizations
         public static string ModelSettings => GetText("ModelSettings");
         public static string AnimatorSettings => GetText("AnimatorSettings");
         public static string UtilityTools => GetText("UtilityTools");
+        public static string EnableModelAudio => GetText("EnableModelAudio");
         public static string EnableIdleAudio => GetText("EnableIdleAudio");
         public static string IdleAudioInterval => GetText("IdleAudioInterval");
         public static string Seconds => GetText("Seconds");

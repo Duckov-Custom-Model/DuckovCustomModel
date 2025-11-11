@@ -28,6 +28,7 @@
   "ModelSettings": "Model Settings",
   "AnimatorSettings": "Animator Settings",
   "UtilityTools": "Utility Tools",
+  "EnableModelAudio": "Enable Model Audio",
   "EnableIdleAudio": "Enable Idle Audio",
   "IdleAudioInterval": "Idle Audio Interval",
   "Seconds": "seconds",

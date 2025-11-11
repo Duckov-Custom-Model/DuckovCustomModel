@@ -28,6 +28,7 @@
   "ModelSettings": "モデル設定",
   "AnimatorSettings": "アニメーター設定",
   "UtilityTools": "ユーティリティツール",
+  "EnableModelAudio": "モデル音声を使用",
   "EnableIdleAudio": "IDLE音声の再生を許可",
   "IdleAudioInterval": "IDLE音声再生間隔",
   "Seconds": "秒",

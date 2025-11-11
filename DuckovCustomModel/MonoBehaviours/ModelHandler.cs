@@ -61,6 +61,22 @@ namespace DuckovCustomModel.MonoBehaviours
             }
         }
 
+        public bool IsModelAudioEnabled
+        {
+            get
+            {
+                var modelAudioConfig = ModBehaviour.Instance?.ModelAudioConfig;
+                if (modelAudioConfig == null) return true;
+
+                if (Target != ModelTarget.AICharacter)
+                    return modelAudioConfig.IsModelAudioEnabled(Target);
+
+                var nameKey = NameKey;
+                return !string.IsNullOrEmpty(nameKey) &&
+                       modelAudioConfig.IsAICharacterModelAudioEnabled(nameKey);
+            }
+        }
+
         public ModelTarget Target { get; private set; }
         public string? NameKey => CharacterMainControl?.characterPreset?.nameKey;
 
@@ -668,6 +684,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void PlayIdleAudio()
         {
+            if (!IsModelAudioEnabled) return;
+
             var soundPath = GetRandomSoundByTag(SoundTags.Idle);
             if (string.IsNullOrEmpty(soundPath)) return;
 

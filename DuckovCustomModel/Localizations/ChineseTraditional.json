@@ -28,6 +28,7 @@
   "ModelSettings": "模型設定",
   "AnimatorSettings": "動畫器設定",
   "UtilityTools": "實用工具",
+  "EnableModelAudio": "使用模型音訊",
   "EnableIdleAudio": "是否允許播放IDLE音訊",
   "IdleAudioInterval": "IDLE音訊播放間隔",
   "Seconds": "秒",

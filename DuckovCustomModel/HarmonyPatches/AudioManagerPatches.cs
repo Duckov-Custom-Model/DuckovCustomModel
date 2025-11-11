@@ -35,6 +35,7 @@ namespace DuckovCustomModel.HarmonyPatches
                 if (modelHandler == null || !modelHandler.IsInitialized) return true;
 
                 if (!modelHandler.HasAnySounds()) return true;
+                if (!modelHandler.IsModelAudioEnabled) return true;
 
                 var normalizedSoundKey = string.IsNullOrWhiteSpace(soundKey)
                     ? SoundTags.Normal
@@ -64,6 +65,7 @@ namespace DuckovCustomModel.HarmonyPatches
                 if (modelHandler == null || !modelHandler.IsInitialized) return true;
 
                 if (!modelHandler.HasAnySounds()) return true;
+                if (!modelHandler.IsModelAudioEnabled) return true;
 
                 var soundPath = modelHandler.GetRandomSoundByTag(SoundTags.Normal);
                 if (string.IsNullOrEmpty(soundPath)) return true;
