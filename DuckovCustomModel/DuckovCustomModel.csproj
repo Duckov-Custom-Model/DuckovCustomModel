@@ -50,4 +50,33 @@
         </None>
     </ItemGroup>
 
+    <Target Name="PackageRelease" BeforeTargets="PostBuildEvent" Condition="'$(Configuration)' == 'Release'"
+            Inputs="$(OutputPath)**\*;$(MSBuildProjectDirectory)\info.ini"
+            Outputs="$([System.IO.Path]::Combine($([System.IO.Path]::GetFullPath($(OutputPath)..\)), '$(AssemblyName).zip'))">
+        <PropertyGroup>
+            <AssemblyName Condition="'$(AssemblyName)' == ''">$(MSBuildProjectName)</AssemblyName>
+            <ParentOutputPath>$([System.IO.Path]::GetFullPath($(OutputPath)..\))</ParentOutputPath>
+            <PackageDir>$([System.IO.Path]::Combine($(ParentOutputPath), 'PackageTemp'))</PackageDir>
+            <ZipFileName>$(AssemblyName).zip</ZipFileName>
+            <ZipPath>$([System.IO.Path]::Combine($(ParentOutputPath), $(ZipFileName)))</ZipPath>
+            <SourceInfoIni>$(MSBuildProjectDirectory)\info.ini</SourceInfoIni>
+        </PropertyGroup>
+
+        <Message Text="开始打包 Release 版本..." Importance="high"/>
+        <Message Text="输出目录: $(OutputPath)" Importance="normal"/>
+        <Message Text="父目录: $(ParentOutputPath)" Importance="normal"/>
+        <Message Text="打包目录: $(PackageDir)" Importance="normal"/>
+        <Message Text="ZIP 文件: $(ZipPath)" Importance="normal"/>
+
+        <MakeDir Directories="$(PackageDir)"/>
+
+        <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$outputPath = [System.IO.Path]::GetFullPath('$(OutputPath)'); $packageDir = [System.IO.Path]::GetFullPath('$(PackageDir)'); $sourceInfoIni = [System.IO.Path]::GetFullPath('$(SourceInfoIni)'); Get-ChildItem -Path $outputPath -Recurse -File | Where-Object { $_.Name -ne 'info.ini' -and $_.Name -ne 'preview.png' } | ForEach-Object { $relativePath = $_.FullName.Substring($outputPath.Length).TrimStart('\', '/'); $destPath = Join-Path $packageDir $relativePath; $destDir = Split-Path $destPath -Parent; if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }; Copy-Item $_.FullName -Destination $destPath -Force }; if (Test-Path $sourceInfoIni) { Copy-Item $sourceInfoIni -Destination $packageDir -Force }&quot;"/>
+
+        <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$zipPath = [System.IO.Path]::GetFullPath('$(ZipPath)'); $packageDir = [System.IO.Path]::GetFullPath('$(PackageDir)'); if (Test-Path $zipPath) { Remove-Item $zipPath -Force }; Compress-Archive -Path (Join-Path $packageDir '*') -DestinationPath $zipPath -Force&quot;"/>
+
+        <RemoveDir Directories="$(PackageDir)"/>
+
+        <Message Text="打包完成: $(ZipPath)" Importance="high"/>
+    </Target>
+
 </Project>
