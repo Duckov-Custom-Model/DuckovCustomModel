@@ -2,6 +2,12 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.7.5
+
+- Added model audio toggle feature, can configure whether to use model-provided audio in target settings
+- When disabled, all model audio (including key press triggers, AI automatic triggers, and idle audio) for the corresponding character will not play
+- Supports separate configuration for characters, pets, and AI characters
+
 ## v1.7.4
 
 - Optimized interface structure and logic to ensure proper display across all languages

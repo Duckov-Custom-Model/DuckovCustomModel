@@ -176,6 +176,49 @@ Idle audio automatic playback interval configuration. Used to configure automati
 - Only character types with automatic playback enabled will automatically play idle sounds (controlled by `EnableIdleAudio` and `AICharacterEnableIdleAudio` configurations)
 - Player characters are not allowed to automatically play idle sounds by default, but can be enabled through configuration
 
+### ModelAudioConfig.json
+
+Model audio toggle configuration. Used to control whether to use model-provided audio (including key press triggers, AI automatic triggers, and idle audio).
+
+```json
+{
+  "EnableModelAudio": {
+    "Character": true,
+    "Pet": true
+  },
+  "AICharacterEnableModelAudio": {
+    "*": true
+  }
+}
+```
+
+- `EnableModelAudio`: Dictionary type, where keys are `ModelTarget` enum values (e.g., `"Character"`, `"Pet"`), and values are boolean values that control whether the character type uses model audio
+  - `Character`: Whether player characters use model audio (default: `true`)
+    - When set to `false`, all model audio for player characters will not play (including key press triggers and idle audio)
+    - Can be toggled in the target settings area of the model selection interface
+  - `Pet`: Whether pet characters use model audio (default: `true`)
+    - When set to `false`, all model audio for pet characters will not play (including AI automatic triggers and idle audio)
+    - Can be toggled in the target settings area of the model selection interface
+  - When new `ModelTarget` types are added, the configuration will automatically include that type (default value: `true`)
+
+- `AICharacterEnableModelAudio`: Dictionary type, where keys are AI character name keys (e.g., `"Cname_Wolf"`, `"Cname_Scav"`), and values are boolean values that control whether the AI character uses model audio
+  - Can configure whether each AI character uses model audio individually
+  - Special key `"*"`: Sets default value for all AI characters
+    - When an AI character doesn't have an individual configuration, the value corresponding to `"*"` will be used
+    - If `"*"` is also not configured, default value will be used (`true`)
+  - Default value: `true` (use model audio)
+  - Can be toggled in the target settings area of the model selection interface
+
+**Notes**:
+- When model audio is disabled, all model audio for the corresponding character will not play, including:
+  - Player key press triggered audio (`"normal"` tag)
+  - AI automatic triggered audio (`"normal"`, `"surprise"`, `"death"` tags)
+  - Idle audio (`"idle"` tag)
+- This configuration is independent from the `EnableIdleAudio` configuration in `IdleAudioConfig.json`:
+  - `ModelAudioConfig.json` controls whether to use model audio (master switch)
+  - `EnableIdleAudio` in `IdleAudioConfig.json` controls whether to allow automatic playback of idle audio (only affects automatic playback of idle audio)
+  - If model audio is disabled in `ModelAudioConfig.json`, idle audio will not play even if `EnableIdleAudio` is `true`
+
 ## Model Selection Interface
 
 The model selection interface provides the following features:
@@ -196,7 +239,19 @@ The model selection interface provides the following features:
     - Anchor Position: Select one of 9 positions through a dropdown menu (top-left, top-center, top-right, middle-left, middle-center, middle-right, bottom-left, bottom-center, bottom-right)
     - Offset Values: Set X and Y axis offset values (in pixels)
     - Configuration changes will be immediately applied to the button position
-- **AI Character Equipment Settings**: When selecting "AI Character" target type and a specific AI character, a "Hide Equipment" option for that AI character will be displayed at the top of the model list page
+- **Target Settings**: In the target settings area, you can configure the following options (displayed based on the currently selected target type):
+  - **Enable Model Audio**: Control whether to use model-provided audio
+    - When disabled, all model audio for the corresponding character will not play (including key press triggers, AI automatic triggers, and idle audio)
+    - Supports separate configuration for characters, pets, and AI characters
+    - This option is immediately saved to `ModelAudioConfig.json`
+  - **Enable Idle Audio**: Control whether to allow automatic playback of idle audio
+    - This option is immediately saved to `IdleAudioConfig.json`
+  - **Idle Audio Interval**: Configure the playback interval for idle audio (minimum and maximum values)
+    - This option is immediately saved to `IdleAudioConfig.json`
+  - **Hide Equipment**: Control whether to hide original equipment
+    - This option is immediately saved to `HideEquipmentConfig.json`
+    - Affects the Animator's `HideOriginalEquipment` parameter value
+- **AI Character Equipment Settings**: When selecting "AI Character" target type and a specific AI character, a "Hide Equipment" toggle option for that AI character will be displayed at the top of the model list page
   - Each AI character has an independent hide equipment setting
   - This option is immediately saved to the configuration file
   - Affects the Animator's `HideOriginalEquipment` parameter value
