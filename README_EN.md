@@ -27,6 +27,7 @@ UI interface related configuration.
 ```json
 {
   "ToggleKey": "Backslash",
+  "AnimatorParamsToggleKey": "None",
   "ShowDCMButton": true,
   "DCMButtonAnchor": "TopLeft",
   "DCMButtonOffsetX": 10.0,
@@ -36,6 +37,10 @@ UI interface related configuration.
 
 - `ToggleKey`: Key to open/close the model selection interface (default: `Backslash`, i.e., backslash key `\`)
   - Supported key values can refer to Unity KeyCode enum
+- `AnimatorParamsToggleKey`: Key to open/close the animator parameters window (default: `None`, i.e., no key)
+  - Users need to actively set it in the settings interface
+  - Supported key values can refer to Unity KeyCode enum
+  - When set to `None`, the hotkey feature will be disabled
 - `ShowDCMButton`: Whether to show the DCM button in the main menu and inventory interface (default: `true`)
   - When set to `true`, the DCM button will automatically appear in the main menu or inventory interface
   - Can be toggled in the settings interface
@@ -232,7 +237,12 @@ The model selection interface provides the following features:
 - **Model Selection**: Click the model button to apply the model to all objects of that target type
 - **Model Information**: Each model card displays the model name, ID, author, version, and the Bundle name it belongs to
 - **AI Character Selection**: When selecting "AI Character" target type, first select a specific AI character, then select a model for that character
-- **Settings Options**: In the settings tab, you can configure the following options:
+  - **Settings Options**: In the settings tab, you can configure the following options:
+  - **Hotkey**: Configure the hotkey to open/close the model selection interface
+    - Can be set by clicking the button in the settings interface
+  - **Animator Parameters Hotkey**: Configure the hotkey to open/close the animator parameters window
+    - Default value is no key, users need to actively set it
+    - Can be set by clicking the button in the settings interface
   - **Hide Original Equipment**: Separate options for "Hide Character Equipment" and "Hide Pet Equipment"
     - These options are immediately saved to the configuration file
     - Affect the Animator's `HideOriginalEquipment` parameter value

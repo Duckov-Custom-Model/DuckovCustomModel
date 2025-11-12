@@ -2,6 +2,12 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.7.8
+
+- Added animator parameters window hotkey feature, can configure a hotkey in the settings interface to toggle the animator parameters window
+- Default value is no key, users need to actively set it in the settings interface
+- Fixed the display determination logic for custom models; models now strictly follow the game's native view range logic for display switching
+
 ## v1.7.7
 
 - Added "All AI Characters" target settings feature for uniformly setting default configuration items for all AI characters

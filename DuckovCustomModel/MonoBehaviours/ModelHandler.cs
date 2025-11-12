@@ -24,9 +24,11 @@ namespace DuckovCustomModel.MonoBehaviours
         private readonly Dictionary<string, Transform> _originalModelLocators = [];
         private readonly Dictionary<FieldInfo, Transform> _originalModelSockets = [];
         private readonly Dictionary<string, List<string>> _soundsByTag = [];
+        private Renderer[]? _cachedCustomModelRenderers;
 
         private ModelBundleInfo? _currentModelBundleInfo;
         private ModelInfo? _currentModelInfo;
+        private CharacterSubVisuals? _customModelSubVisuals;
         private GameObject? _deathLootBoxPrefab;
         private GameObject? _headColliderObject;
 
@@ -279,7 +281,16 @@ namespace DuckovCustomModel.MonoBehaviours
                 return;
             }
 
+            if (CharacterMainControl == null)
+            {
+                ModLogger.LogError("CharacterMainControl is not set.");
+                return;
+            }
+
             if (!IsHiddenOriginalModel) return;
+
+            if (_customModelSubVisuals != null)
+                CharacterMainControl.RemoveVisual(_customModelSubVisuals);
 
             RestoreToOriginalModelSockets();
             UpdateColliderHeight();
@@ -310,6 +321,8 @@ namespace DuckovCustomModel.MonoBehaviours
                 DestroyImmediate(CustomModelInstance);
                 CustomModelInstance = null;
             }
+
+            _cachedCustomModelRenderers = null;
 
             if (CustomAnimatorControl != null)
                 CustomAnimatorControl.SetCustomAnimator(null);
@@ -349,6 +362,15 @@ namespace DuckovCustomModel.MonoBehaviours
                 ModLogger.LogError("Custom model instance is not initialized.");
                 return;
             }
+
+            if (CharacterMainControl == null)
+            {
+                ModLogger.LogError("CharacterMainControl is not set.");
+                return;
+            }
+
+            if (_customModelSubVisuals != null)
+                CharacterMainControl.AddSubVisuals(_customModelSubVisuals);
 
             ChangeToCustomModelSockets();
             UpdateColliderHeight();
@@ -435,12 +457,13 @@ namespace DuckovCustomModel.MonoBehaviours
             CustomModelInstance = Instantiate(customModelPrefab, OriginalCharacterModel.transform);
             CustomModelInstance.name = "CustomModelInstance";
 
-            var renderers = GetAllRenderers(CustomModelInstance);
-            ReplaceRenderersLayer(renderers);
+            _cachedCustomModelRenderers = GetAllRenderers(CustomModelInstance);
+            ReplaceRenderersLayer(_cachedCustomModelRenderers);
             if (ReplaceShader)
-                ReplaceRenderersShader(renderers);
+                ReplaceRenderersShader(_cachedCustomModelRenderers);
 
-            SetShowBackMaterial(CustomModelInstance);
+            SetShowBackMaterial();
+            InitializeCustomCharacterSubVisuals();
 
             // Get the Animator component from the custom model
             CustomAnimator = CustomModelInstance.GetComponent<Animator>();
@@ -668,7 +691,7 @@ namespace DuckovCustomModel.MonoBehaviours
             }
         }
 
-        private void SetShowBackMaterial(GameObject modelInstance)
+        private void SetShowBackMaterial()
         {
             if (_originalModelOcclusionBody == null) return;
 
@@ -684,7 +707,8 @@ namespace DuckovCustomModel.MonoBehaviours
             if (originalMaterial == null) return;
 
             var clonedMaterial = new Material(originalMaterial);
-            var renderers = GetAllRenderers(modelInstance).OfType<SkinnedMeshRenderer>().ToArray();
+            var renderers = _cachedCustomModelRenderers?.OfType<SkinnedMeshRenderer>().ToArray();
+            if (renderers == null || renderers.Length == 0) return;
             foreach (var renderer in renderers)
             {
                 if (renderer.material == null) continue;
@@ -692,6 +716,26 @@ namespace DuckovCustomModel.MonoBehaviours
                     continue;
                 renderer.materials = renderer.materials.Concat([clonedMaterial]).ToArray();
             }
+        }
+
+        private void InitializeCustomCharacterSubVisuals()
+        {
+            if (CustomModelInstance == null || _customModelSubVisuals != null) return;
+
+            var subVisuals = CustomModelInstance.GetComponent<CharacterSubVisuals>();
+            if (subVisuals == null)
+            {
+                subVisuals = CustomModelInstance.AddComponent<CharacterSubVisuals>();
+                subVisuals.renderers = [];
+                subVisuals.particles = [];
+                subVisuals.lights = [];
+                subVisuals.sodaPointLights = [];
+                subVisuals.character = CharacterMainControl;
+                subVisuals.mainModel = OriginalCharacterModel;
+            }
+
+            _customModelSubVisuals = subVisuals;
+            _customModelSubVisuals.SetRenderers();
         }
 
         private static string GetEffectiveAICharacterConfigKey(string nameKey)
