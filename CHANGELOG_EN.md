@@ -2,7 +2,7 @@
 
 English | [中文](CHANGELOG.md)
 
-## v1.7.8-fix1
+## v1.7.8-fix2
 
 - Improved Harmony Patch application and removal mechanism, added fallback methods to improve fault tolerance, automatically tries fallback method when primary method fails
 

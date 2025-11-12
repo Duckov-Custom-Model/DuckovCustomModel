@@ -2,7 +2,7 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
-## v1.7.8-fix1
+## v1.7.8-fix2
 
 - 改进了 Harmony Patch 的应用和移除机制，增加了备用方法以提高容错性，当主方法失败时会自动尝试备用方法
 

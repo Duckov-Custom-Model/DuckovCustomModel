@@ -143,7 +143,7 @@ namespace DuckovCustomModel
             catch (Exception ex)
             {
                 ModLogger.LogError($"Failed to apply Harmony patches by method A: {ex}");
-                throw;
+                return false;
             }
         }
 
@@ -177,7 +177,7 @@ namespace DuckovCustomModel
             catch (Exception ex)
             {
                 ModLogger.LogError($"Failed to remove Harmony patches by method A: {ex}");
-                throw;
+                return false;
             }
         }
 
@@ -193,7 +193,7 @@ namespace DuckovCustomModel
             catch (Exception ex)
             {
                 ModLogger.LogError($"Failed to apply Harmony patches by method B: {ex}");
-                throw;
+                return false;
             }
         }
 
@@ -209,7 +209,7 @@ namespace DuckovCustomModel
             catch (Exception ex)
             {
                 ModLogger.LogError($"Failed to remove Harmony patches by method B: {ex}");
-                throw;
+                return false;
             }
         }
 
