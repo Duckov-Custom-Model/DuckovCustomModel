@@ -8,6 +8,7 @@ namespace DuckovCustomModel.Data
         public const string Surprise = "surprise";
         public const string Death = "death";
         public const string Idle = "idle";
+        public const string TriggerOnDeath = "trigger_on_death";
 
         public static IReadOnlyCollection<string> ValidTags =>
         [
@@ -15,6 +16,7 @@ namespace DuckovCustomModel.Data
             Surprise,
             Death,
             Idle,
+            TriggerOnDeath,
         ];
     }
 }

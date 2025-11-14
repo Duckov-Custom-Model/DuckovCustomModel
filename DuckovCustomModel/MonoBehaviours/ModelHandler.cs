@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Duckov;
+using Duckov.UI;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Data;
 using DuckovCustomModel.Managers;
@@ -199,6 +200,8 @@ namespace DuckovCustomModel.MonoBehaviours
             RecordOriginalHeadCollider();
             RecordOriginalSoundMaker();
 
+            if (CharacterMainControl.Health != null) CharacterMainControl.Health.OnDeadEvent.AddListener(OnDeath);
+
             ModLogger.Log("ModelHandler initialized successfully.");
             IsInitialized = true;
         }
@@ -305,6 +308,8 @@ namespace DuckovCustomModel.MonoBehaviours
             if (customFaceInstance != null) customFaceInstance.gameObject.SetActive(true);
             if (CustomModelInstance != null) CustomModelInstance.SetActive(false);
 
+            ForceUpdateHealthBar();
+
             if (IsHiddenOriginalModel)
                 ModLogger.Log("Restored to original model.");
             IsHiddenOriginalModel = false;
@@ -388,6 +393,8 @@ namespace DuckovCustomModel.MonoBehaviours
             if (customFaceInstance != null) customFaceInstance.gameObject.SetActive(false);
 
             CustomModelInstance.SetActive(true);
+
+            ForceUpdateHealthBar();
 
             if (!IsHiddenOriginalModel)
                 ModLogger.Log("Changed to custom model.");
@@ -738,6 +745,24 @@ namespace DuckovCustomModel.MonoBehaviours
                     continue;
                 renderer.materials = renderer.materials.Concat([clonedMaterial]).ToArray();
             }
+        }
+
+        private void ForceUpdateHealthBar()
+        {
+            if (CharacterMainControl == null || CharacterMainControl.Health == null) return;
+            var healthBar = HealthBarManager.Instance.GetActiveHealthBar(CharacterMainControl.Health);
+            if (healthBar == null) return;
+            healthBar.RefreshOffset();
+        }
+
+        private void OnDeath(DamageInfo damageInfo)
+        {
+            if (!IsModelAudioEnabled) return;
+
+            var soundPath = GetRandomSoundByTag(SoundTags.TriggerOnDeath);
+            if (string.IsNullOrEmpty(soundPath)) return;
+
+            AudioManager.PostCustomSFX(soundPath);
         }
 
         private void InitializeCustomCharacterSubVisuals()
