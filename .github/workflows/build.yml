@@ -11,7 +11,6 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: read
-      packages: read
     
     steps:
     - uses: actions/checkout@v4
@@ -20,10 +19,6 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.x'
-    
-    - name: Configure NuGet sources
-      run: |
-        dotnet nuget add source https://nuget.pkg.github.com/Duckov-Custom-Model/index.json --name github --username Duckov-Custom-Model --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text
     
     - name: Restore dependencies
       run: dotnet restore
