@@ -40,4 +40,12 @@ jobs:
     - name: Test (if any)
       run: dotnet test --configuration Release --no-build --verbosity normal
       continue-on-error: true
+    
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-package
+        path: |
+          DuckovCustomModel/bin/Release/*.zip
+        retention-days: 7
 
