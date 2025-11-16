@@ -606,6 +606,9 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
   - `"surprise"`: Surprise sound, used for AI surprise state
   - `"death"`: Death sound, used for AI death state
   - `"idle"`: Idle sound, used for automatic playback by characters (can be controlled through configuration to determine which character types are allowed to automatically play)
+  - `"trigger_on_hurt"`: Hurt trigger sound, automatically plays when the character takes damage
+  - `"trigger_on_death"`: Death trigger sound, automatically plays when the character dies
+  - `"search_found_item_quality_xxx"`: Plays when a searched item of the specified quality is revealed; `xxx` can be `none`, `white`, `green`, `blue`, `purple`, `orange`, `red`, `q7`, or `q8`
   - Can contain multiple tags, indicating the sound can be used in multiple scenarios
   - Defaults to `["normal"]` when no tags are specified
 
@@ -626,13 +629,21 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
 - `"normal"`: Triggered during AI normal state
 - `"surprise"`: Triggered during AI surprise state
 - `"death"`: Triggered during AI death state
+- `"trigger_on_hurt"`: Automatically plays when the character takes damage (applies to all character types)
 - `"idle"`: Characters with automatic playback enabled will automatically play idle sounds at random intervals
+- `"trigger_on_death"`: Automatically plays when the character dies (applies to all character types)
   - Play interval can be configured in `IdleAudioConfig.json`
   - Default interval is 30-45 seconds (random)
   - Will not play when the character is dead
   - Which character types are allowed to automatically play can be controlled through `EnableIdleAudio` and `AICharacterEnableIdleAudio` configurations
   - By default, AI characters and pets are allowed to automatically play, while player characters are not (can be enabled through configuration)
 - If a sound with the specified tag doesn't exist, the original game event will be used (no fallback to other tags)
+
+#### Search Discovery Trigger
+
+- When the player finishes searching or inspecting an item and its quality is revealed, the corresponding sound tag is triggered
+- Use `search_found_item_quality_xxx`, where `xxx` matches the same quality suffix listed in `Tags`: `none`, `white`, `green`, `blue`, `purple`, `orange`, `red`, `q7`, `q8`
+- If no sound is configured for that quality, nothing plays and the vanilla behavior remains unchanged
 
 ### Sound File Requirements
 
