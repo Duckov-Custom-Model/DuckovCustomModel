@@ -38,17 +38,11 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupRectTransform(scrollView.gameObject, Vector2.zero, Vector2.one, Vector2.zero);
 
             _scrollRect = scrollView;
-
             _content = content;
-            _content.AddComponent<VerticalLayoutGroup>();
-            _content.AddComponent<ContentSizeFitter>();
 
             UIFactory.SetupVerticalLayoutGroup(_content, 10f, new(10, 10, 10, 10), TextAnchor.UpperLeft,
                 true, false, true);
-
-            var sizeFitter = _content.GetComponent<ContentSizeFitter>();
-            sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            sizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            UIFactory.SetupContentSizeFitter(_content, ContentSizeFitter.FitMode.Unconstrained);
         }
 
         public void SetTarget(TargetInfo? targetInfo)
@@ -246,11 +240,7 @@ namespace DuckovCustomModel.UI.Components
                 new(0.2f, 0.15f, 0.15f, 0.8f)).gameObject;
             buttonObj.transform.SetAsFirstSibling();
 
-            var buttonRect = buttonObj.GetComponent<RectTransform>();
-            buttonRect.anchorMin = new(0, 0);
-            buttonRect.anchorMax = new(1, 0);
-            buttonRect.pivot = new(0.5f, 0.5f);
-            buttonRect.sizeDelta = new(0, 150);
+            UIFactory.SetupRectTransform(buttonObj, new(0, 0), new(1, 0), new(0, 150), pivot: new(0.5f, 0.5f));
 
             var layoutElement = buttonObj.AddComponent<LayoutElement>();
             layoutElement.minHeight = 150;
@@ -263,9 +253,7 @@ namespace DuckovCustomModel.UI.Components
             outline.effectDistance = new(1, -1);
 
             var text = UIFactory.CreateText("Text", buttonObj.transform, Localization.NoModel, 16, Color.white,
-                TextAnchor.MiddleCenter);
-            var textComponent = text.GetComponent<Text>();
-            textComponent.fontStyle = FontStyle.Bold;
+                TextAnchor.MiddleCenter, FontStyle.Bold);
             UIFactory.SetupButtonText(text);
 
             var button = buttonObj.GetComponent<Button>();
@@ -292,22 +280,15 @@ namespace DuckovCustomModel.UI.Components
                     isInUse = usingModel.GetModelID(_currentTarget.TargetType) == model.ModelID;
             }
 
-            var buttonObj = new GameObject($"ModelButton_{model.ModelID}", typeof(Image), typeof(Button),
-                typeof(LayoutElement));
-            buttonObj.transform.SetParent(_content.transform, false);
-
-            var buttonImage = buttonObj.GetComponent<Image>();
             Color baseColor = hasError ? new(0.22f, 0.15f, 0.15f, 0.8f) : new(0.15f, 0.18f, 0.22f, 0.8f);
             if (isInUse && !hasError) baseColor = new(0.15f, 0.22f, 0.18f, 0.8f);
-            buttonImage.color = baseColor;
 
-            var buttonRect = buttonObj.GetComponent<RectTransform>();
-            buttonRect.anchorMin = new(0, 0);
-            buttonRect.anchorMax = new(1, 0);
-            buttonRect.pivot = new(0.5f, 0.5f);
-            buttonRect.sizeDelta = new(0, 150);
+            var buttonObj = UIFactory.CreateButton($"ModelButton_{model.ModelID}", _content.transform, null, baseColor)
+                .gameObject;
 
-            var layoutElement = buttonObj.GetComponent<LayoutElement>();
+            UIFactory.SetupRectTransform(buttonObj, new(0, 0), new(1, 0), new(0, 150), pivot: new(0.5f, 0.5f));
+
+            var layoutElement = buttonObj.AddComponent<LayoutElement>();
             layoutElement.minHeight = 150;
             layoutElement.preferredHeight = 150;
             layoutElement.flexibleWidth = 0;
@@ -322,15 +303,12 @@ namespace DuckovCustomModel.UI.Components
                     : new(0.3f, 0.35f, 0.4f, 0.6f);
             outline.effectDistance = new(1, -1);
 
-            var thumbnailImage = new GameObject("Thumbnail", typeof(Image), typeof(LayoutElement));
-            thumbnailImage.transform.SetParent(buttonObj.transform, false);
+            var thumbnailImage = UIFactory.CreateImage("Thumbnail", buttonObj.transform);
+            thumbnailImage.AddComponent<LayoutElement>();
             var thumbnailImageComponent = thumbnailImage.GetComponent<Image>();
-            var thumbnailRect = thumbnailImage.GetComponent<RectTransform>();
-            thumbnailRect.anchorMin = new(0, 0.5f);
-            thumbnailRect.anchorMax = new(0, 0.5f);
-            thumbnailRect.pivot = new(0, 0.5f);
-            thumbnailRect.anchoredPosition = new(10, 0);
-            thumbnailRect.sizeDelta = new(130, 130);
+
+            UIFactory.SetupRectTransform(thumbnailImage, new(0, 0.5f), new(0, 0.5f), new(130, 130),
+                pivot: new(0, 0.5f), anchoredPosition: new(10, 0));
 
             var thumbnailLayoutElement = thumbnailImage.GetComponent<LayoutElement>();
             thumbnailLayoutElement.minWidth = 130;
@@ -361,12 +339,11 @@ namespace DuckovCustomModel.UI.Components
                 UIFactory.SetupRectTransform(placeholderText, Vector2.zero, Vector2.one, Vector2.zero);
             }
 
-            var contentArea = new GameObject("ContentArea", typeof(RectTransform), typeof(VerticalLayoutGroup));
+            var contentArea = new GameObject("ContentArea", typeof(RectTransform));
             contentArea.transform.SetParent(buttonObj.transform, false);
             UIFactory.SetupRectTransform(contentArea, new(0, 0), new(1, 1), offsetMin: new(150, 10),
                 offsetMax: new(-10, -10));
-            UIFactory.SetupVerticalLayoutGroup(contentArea, 2f, new(0, 0, 0, 0), TextAnchor.UpperLeft,
-                true, false, true);
+            UIFactory.SetupVerticalLayoutGroup(contentArea, 2f, new(0, 0, 0, 0), TextAnchor.UpperLeft, true, true);
 
             var nameText = UIFactory.CreateText("Name", contentArea.transform,
                 string.IsNullOrEmpty(model.Name) ? model.ModelID : model.Name, 20,
@@ -388,45 +365,38 @@ namespace DuckovCustomModel.UI.Components
 
             if (hasError)
             {
-                var errorText = new GameObject("Error", typeof(Text), typeof(ContentSizeFitter));
-                errorText.transform.SetParent(contentArea.transform, false);
+                var errorText = UIFactory.CreateText("Error", contentArea.transform,
+                    $"⚠ {(!string.IsNullOrEmpty(errorMessage) ? errorMessage : "Unknown error")}", 15,
+                    new(1f, 0.4f, 0.4f, 1), TextAnchor.UpperLeft, FontStyle.Bold);
                 var errorTextComponent = errorText.GetComponent<Text>();
-                errorTextComponent.text = $"⚠ {(!string.IsNullOrEmpty(errorMessage) ? errorMessage : "Unknown error")}";
-                errorTextComponent.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-                errorTextComponent.fontSize = 15;
-                errorTextComponent.color = new(1f, 0.4f, 0.4f, 1);
-                errorTextComponent.alignment = TextAnchor.UpperLeft;
-                errorTextComponent.fontStyle = FontStyle.Bold;
                 errorTextComponent.horizontalOverflow = HorizontalWrapMode.Wrap;
                 errorTextComponent.verticalOverflow = VerticalWrapMode.Overflow;
-                var errorRect = errorText.GetComponent<RectTransform>();
-                errorRect.sizeDelta = new(0, 20);
+
+                UIFactory.SetupRectTransform(errorText, Vector2.zero, Vector2.one, new(0, 20));
+
                 var errorLayoutElement = errorText.AddComponent<LayoutElement>();
                 errorLayoutElement.minHeight = 20;
                 errorLayoutElement.flexibleHeight = 1;
-                var contentSizeFitter = errorText.GetComponent<ContentSizeFitter>();
-                contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+                UIFactory.SetupContentSizeFitter(errorText, ContentSizeFitter.FitMode.Unconstrained);
             }
 
             if (!string.IsNullOrEmpty(model.Description))
             {
-                var descText = new GameObject("Description", typeof(Text), typeof(ContentSizeFitter));
-                descText.transform.SetParent(contentArea.transform, false);
+                var descSpacer = new GameObject("DescriptionSpacer", typeof(RectTransform));
+                descSpacer.transform.SetParent(contentArea.transform, false);
+                var descSpacerLayout = descSpacer.AddComponent<LayoutElement>();
+                descSpacerLayout.minHeight = 10;
+                descSpacerLayout.preferredHeight = 10;
+                descSpacerLayout.flexibleHeight = 0;
+
+                var descText = UIFactory.CreateText("Description", contentArea.transform, model.Description, 15,
+                    new(0.7f, 0.7f, 0.7f, 1), TextAnchor.UpperLeft);
                 var descTextComponent = descText.GetComponent<Text>();
-                descTextComponent.text = model.Description;
-                descTextComponent.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-                descTextComponent.fontSize = 15;
-                descTextComponent.color = new(0.7f, 0.7f, 0.7f, 1);
-                descTextComponent.alignment = TextAnchor.UpperLeft;
                 descTextComponent.horizontalOverflow = HorizontalWrapMode.Wrap;
                 descTextComponent.verticalOverflow = VerticalWrapMode.Overflow;
-                var descRect = descText.GetComponent<RectTransform>();
-                descRect.sizeDelta = new(0, 20);
-                var descLayoutElement = descText.AddComponent<LayoutElement>();
-                descLayoutElement.minHeight = 20;
-                descLayoutElement.flexibleHeight = 1;
-                var contentSizeFitter = descText.GetComponent<ContentSizeFitter>();
-                contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+                UIFactory.SetupContentSizeFitter(descText, ContentSizeFitter.FitMode.Unconstrained);
             }
 
             var button = buttonObj.GetComponent<Button>();

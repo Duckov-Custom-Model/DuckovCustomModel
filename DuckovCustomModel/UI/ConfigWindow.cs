@@ -194,11 +194,8 @@ namespace DuckovCustomModel.UI
             UIFactory.SetupRectTransform(_overlay, Vector2.zero, Vector2.one, Vector2.zero);
 
             _panelRoot = UIFactory.CreateImage("MainPanel", _uiRoot.transform, new Color(0.1f, 0.12f, 0.15f, 0.95f));
-            var panelRect = _panelRoot.GetComponent<RectTransform>();
-            panelRect.anchorMin = new(0.1f, 0.1f);
-            panelRect.anchorMax = new(0.9f, 0.9f);
-            panelRect.sizeDelta = Vector2.zero;
-            panelRect.anchoredPosition = Vector2.zero;
+            UIFactory.SetupRectTransform(_panelRoot, new(0.1f, 0.1f), new(0.9f, 0.9f), Vector2.zero,
+                anchoredPosition: Vector2.zero);
 
             var outline = _panelRoot.AddComponent<Outline>();
             outline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
@@ -216,42 +213,27 @@ namespace DuckovCustomModel.UI
             UIFactory.SetupRectTransform(titleBar, new(0, 1), new(1, 1), new(0, 40),
                 pivot: new Vector2(0.5f, 1), anchoredPosition: new Vector2(0, 0));
 
-            var titleContainer = new GameObject("TitleContainer", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+            var titleContainer = new GameObject("TitleContainer", typeof(RectTransform));
             titleContainer.transform.SetParent(titleBar.transform, false);
-            var titleContainerRect = titleContainer.GetComponent<RectTransform>();
-            titleContainerRect.anchorMin = new(0, 0);
-            titleContainerRect.anchorMax = new(1, 1);
-            titleContainerRect.offsetMin = new(10, 0);
-            titleContainerRect.offsetMax = new(-10, 0);
-
-            var titleLayout = titleContainer.GetComponent<HorizontalLayoutGroup>();
-            titleLayout.spacing = 8;
-            titleLayout.childAlignment = TextAnchor.MiddleCenter;
-            titleLayout.childControlWidth = false;
-            titleLayout.childControlHeight = false;
-            titleLayout.childForceExpandWidth = false;
-            titleLayout.childForceExpandHeight = false;
-            titleLayout.padding = new(0, 0, 0, 0);
+            UIFactory.SetupRectTransform(titleContainer, new(0, 0), new(1, 1), offsetMin: new(10, 0),
+                offsetMax: new(-10, 0));
+            UIFactory.SetupHorizontalLayoutGroup(titleContainer, 8f, new(0, 0, 0, 0), TextAnchor.MiddleCenter,
+                false, false, false, false);
 
             var titleText = UIFactory.CreateText("Title", titleContainer.transform, Localization.Title,
                 20,
                 Color.white, TextAnchor.MiddleCenter, FontStyle.Bold);
             UIFactory.SetLocalizedText(titleText, () => Localization.Title);
 
-            var titleTextRect = titleText.GetComponent<RectTransform>();
-            titleTextRect.sizeDelta = new(0, 0);
-            var titleSizeFitter = titleText.AddComponent<ContentSizeFitter>();
-            titleSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-            titleSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            UIFactory.SetupRectTransform(titleText, Vector2.zero, Vector2.zero, new(0, 0));
+            UIFactory.SetupContentSizeFitter(titleText);
 
             var versionLabel = UIFactory.CreateText("Version", titleContainer.transform, $"v{Constant.ModVersion}", 14,
                 new Color(0.8f, 0.8f, 0.8f, 1));
-            var versionRect = versionLabel.GetComponent<RectTransform>();
-            versionRect.sizeDelta = new(0, 0);
-            var versionSizeFitter = versionLabel.AddComponent<ContentSizeFitter>();
-            versionSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-            versionSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            UIFactory.SetupRectTransform(versionLabel, Vector2.zero, Vector2.zero, new(0, 0));
+            UIFactory.SetupContentSizeFitter(versionLabel);
 
+            var titleContainerRect = titleContainer.GetComponent<RectTransform>();
             LayoutRebuilder.ForceRebuildLayoutImmediate(titleContainerRect);
 
             var closeButton = UIFactory.CreateButton("CloseButton", titleBar.transform, HidePanel,
@@ -278,17 +260,15 @@ namespace DuckovCustomModel.UI
 
             var modelTabContainer = new GameObject("ModelTabContainer", typeof(RectTransform));
             modelTabContainer.transform.SetParent(_panelRoot.transform, false);
-            UIFactory.SetupRectTransform(modelTabContainer, new(0, 0), new(1, 1), Vector2.zero);
-            modelTabContainer.GetComponent<RectTransform>().offsetMin = new(10, 10);
-            modelTabContainer.GetComponent<RectTransform>().offsetMax = new(-10, -100);
+            UIFactory.SetupRectTransform(modelTabContainer, new(0, 0), new(1, 1), offsetMin: new(10, 10),
+                offsetMax: new(-10, -100));
 
             _modelSelectionTab = modelTabContainer.AddComponent<ModelSelectionTab>();
 
             var settingsTabContainer = new GameObject("SettingsTabContainer", typeof(RectTransform));
             settingsTabContainer.transform.SetParent(_panelRoot.transform, false);
-            UIFactory.SetupRectTransform(settingsTabContainer, new(0, 0), new(1, 1), Vector2.zero);
-            settingsTabContainer.GetComponent<RectTransform>().offsetMin = new(10, 10);
-            settingsTabContainer.GetComponent<RectTransform>().offsetMax = new(-10, -100);
+            UIFactory.SetupRectTransform(settingsTabContainer, new(0, 0), new(1, 1), offsetMin: new(10, 10),
+                offsetMax: new(-10, -100));
 
             _settingsTab = settingsTabContainer.AddComponent<SettingsTab>();
             _settingsTab.OnAnimatorParamsToggleChanged += SetAnimatorParamsWindowVisible;
@@ -672,17 +652,10 @@ namespace DuckovCustomModel.UI
 
             _settingsButton = UIFactory.CreateButton("SettingsButton", _uiRoot.transform, OnSettingsButtonClicked,
                 new Color(0.2f, 0.25f, 0.3f, 0.9f));
-            var buttonRect = _settingsButton.GetComponent<RectTransform>();
 
             var anchorMin = GetAnchorValue(uiConfig.DCMButtonAnchor);
-            var anchorMax = anchorMin;
-            var pivot = anchorMin;
-
-            buttonRect.anchorMin = anchorMin;
-            buttonRect.anchorMax = anchorMax;
-            buttonRect.pivot = pivot;
-            buttonRect.sizeDelta = new(80, 50);
-            buttonRect.anchoredPosition = new(uiConfig.DCMButtonOffsetX, uiConfig.DCMButtonOffsetY);
+            UIFactory.SetupRectTransform(_settingsButton, anchorMin, anchorMin, new(80, 50), pivot: anchorMin,
+                anchoredPosition: new(uiConfig.DCMButtonOffsetX, uiConfig.DCMButtonOffsetY));
 
             var outline = _settingsButton.AddComponent<Outline>();
             outline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
@@ -729,19 +702,13 @@ namespace DuckovCustomModel.UI
         {
             if (_settingsButton == null || UIConfig == null) return;
 
-            var buttonRect = _settingsButton.GetComponent<RectTransform>();
-            if (buttonRect == null) return;
-
             var anchorMin = GetAnchorValue(UIConfig.DCMButtonAnchor);
-            var anchorMax = anchorMin;
-            var pivot = anchorMin;
+            UIFactory.SetupRectTransform(_settingsButton, anchorMin, anchorMin, new(80, 50), pivot: anchorMin,
+                anchoredPosition: new(UIConfig.DCMButtonOffsetX, UIConfig.DCMButtonOffsetY));
 
-            buttonRect.anchorMin = anchorMin;
-            buttonRect.anchorMax = anchorMax;
-            buttonRect.pivot = pivot;
-            buttonRect.anchoredPosition = new(UIConfig.DCMButtonOffsetX, UIConfig.DCMButtonOffsetY);
-
-            LayoutRebuilder.ForceRebuildLayoutImmediate(buttonRect);
+            var buttonRect = _settingsButton.GetComponent<RectTransform>();
+            if (buttonRect != null)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(buttonRect);
         }
 
         private void UpdateSettingsButtonVisibility()
