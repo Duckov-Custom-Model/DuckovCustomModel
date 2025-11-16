@@ -10,6 +10,13 @@ namespace DuckovCustomModel
 
         private void Awake()
         {
+            if (Instance != null)
+            {
+                ModLogger.LogWarning("Multiple instances of ModBehaviour detected. Destroying duplicate.");
+                Destroy(this);
+                return;
+            }
+
             Instance = this;
             ModLogger.Log($"{Constant.ModName} Loaded");
         }

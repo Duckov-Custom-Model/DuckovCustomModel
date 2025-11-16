@@ -26,7 +26,7 @@ namespace DuckovCustomModel
 
         public static void Uninitialize()
         {
-            ModLogger.LogError("Failed to unpatch Harmony patches during uninitialization.");
+            // Currently, no uninitialization logic is required.
         }
 
         private static void RegisterModActivatedEvents()
