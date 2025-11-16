@@ -6,6 +6,7 @@
 
 - 新增音效标签 `trigger_on_hurt`，用于角色受伤时自动播放音效
 - 新增 `search_found_item_quality_xxx` 系列音效标签，可在搜索完成时根据物品品质触发不同音效（支持 none/white/green/blue/purple/orange/red/q7/q8）
+- 改进了事件订阅的清理逻辑，防止内存泄漏
 
 ## v1.8.0-fix1
 

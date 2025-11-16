@@ -6,6 +6,7 @@ English | [中文](CHANGELOG.md)
 
 - Added sound tag `trigger_on_hurt` for automatically playing sounds when a character is hurt
 - Added `search_found_item_quality_xxx` tag series so different sounds can play after finishing a search based on the revealed item quality (supports none/white/green/blue/purple/orange/red/q7/q8)
+- Improved event subscription cleanup logic to prevent memory leaks
 
 ## v1.8.0-fix1
 

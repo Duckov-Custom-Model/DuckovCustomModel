@@ -156,6 +156,14 @@ namespace DuckovCustomModel.MonoBehaviours
                 }
         }
 
+        private void OnDestroy()
+        {
+            if (CharacterMainControl == null) return;
+            if (CharacterMainControl.Health == null) return;
+            CharacterMainControl.Health.OnHurtEvent.RemoveListener(OnHurt);
+            CharacterMainControl.Health.OnDeadEvent.RemoveListener(OnDeath);
+        }
+
         public void Initialize(CharacterMainControl characterMainControl, ModelTarget target = ModelTarget.Character)
         {
             if (IsInitialized) return;

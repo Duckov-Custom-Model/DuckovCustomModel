@@ -48,6 +48,7 @@ namespace DuckovCustomModel.HarmonyPatches
             if (item.Inspecting || !item.Inspected) return;
             if (!RecordedItems.Contains(item)) return;
 
+            item.onDestroy -= OnItemDestroyed;
             RecordedItems.Remove(item);
 
             var mainPlayer = CharacterMainControl.Main;
