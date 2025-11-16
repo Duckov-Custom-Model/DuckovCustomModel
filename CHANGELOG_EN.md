@@ -2,6 +2,11 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.8.2
+
+- Optimized UI component layout and initialization logic, simplified code using UIFactory methods, improved readability
+- Improved event subscription cleanup logic to prevent memory leaks
+
 ## v1.8.1
 
 - Added sound tag `trigger_on_hurt` for automatically playing sounds when a character is hurt

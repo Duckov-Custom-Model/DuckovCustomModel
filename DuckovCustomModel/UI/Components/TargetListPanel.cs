@@ -29,17 +29,10 @@ namespace DuckovCustomModel.UI.Components
                 scrollViewImage.color = new(0.05f, 0.08f, 0.12f, 0.8f);
 
             _scrollRect = scrollView;
-
             _content = content;
-            _content.AddComponent<VerticalLayoutGroup>();
-            _content.AddComponent<ContentSizeFitter>();
 
-            UIFactory.SetupVerticalLayoutGroup(_content, 10f, new(10, 10, 10, 10), TextAnchor.UpperLeft,
-                false);
-
-            var sizeFitter = _content.GetComponent<ContentSizeFitter>();
-            sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            sizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            UIFactory.SetupVerticalLayoutGroup(_content, 10f, new(10, 10, 10, 10), TextAnchor.UpperLeft, false);
+            UIFactory.SetupContentSizeFitter(_content, ContentSizeFitter.FitMode.Unconstrained);
         }
 
         public void Refresh()
@@ -119,8 +112,7 @@ namespace DuckovCustomModel.UI.Components
 
             var buttonObj = UIFactory.CreateButton($"TargetButton_{targetInfo.Id}", _content.transform,
                 () => OnTargetButtonClicked(targetInfo)).gameObject;
-            var buttonRect = buttonObj.GetComponent<RectTransform>();
-            buttonRect.sizeDelta = new(180, 50);
+            UIFactory.SetupRectTransform(buttonObj, Vector2.zero, Vector2.zero, new(180, 50));
 
             var layoutElement = buttonObj.AddComponent<LayoutElement>();
             layoutElement.minHeight = 50;

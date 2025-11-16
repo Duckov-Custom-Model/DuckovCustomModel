@@ -35,7 +35,6 @@ namespace DuckovCustomModel.UI.Components
             layoutElement.flexibleHeight = 1;
             layoutElement.preferredHeight = 80;
 
-            buttonBar.AddComponent<HorizontalLayoutGroup>();
             UIFactory.SetupHorizontalLayoutGroup(buttonBar, 10f, new(10, 10, 10, 10));
 
             BuildRefreshButton(buttonBar);
@@ -50,8 +49,7 @@ namespace DuckovCustomModel.UI.Components
         {
             _refreshButton = UIFactory.CreateButton("RefreshButton", parent.transform, OnRefreshButtonClicked,
                 new(0.2f, 0.3f, 0.4f, 1)).GetComponent<Button>();
-            var refreshButtonRect = _refreshButton.GetComponent<RectTransform>();
-            refreshButtonRect.sizeDelta = new(180, 0);
+            UIFactory.SetupRectTransform(_refreshButton.gameObject, Vector2.zero, Vector2.zero, new(180, 0));
 
             var refreshButtonLayoutElement = _refreshButton.gameObject.AddComponent<LayoutElement>();
             refreshButtonLayoutElement.preferredWidth = 180;
@@ -70,8 +68,7 @@ namespace DuckovCustomModel.UI.Components
         {
             _resetInvalidModelsButton = UIFactory.CreateButton("ResetInvalidModelsButton", parent.transform,
                 OnResetInvalidModelsButtonClicked, new(0.4f, 0.2f, 0.2f, 1)).GetComponent<Button>();
-            var resetButtonRect = _resetInvalidModelsButton.GetComponent<RectTransform>();
-            resetButtonRect.sizeDelta = new(180, 0);
+            UIFactory.SetupRectTransform(_resetInvalidModelsButton.gameObject, Vector2.zero, Vector2.zero, new(180, 0));
 
             var resetButtonLayoutElement = _resetInvalidModelsButton.gameObject.AddComponent<LayoutElement>();
             resetButtonLayoutElement.preferredWidth = 180;
@@ -96,8 +93,7 @@ namespace DuckovCustomModel.UI.Components
         {
             _openModelFolderButton = UIFactory.CreateButton("OpenModelFolderButton", parent.transform,
                 OnOpenModelFolderButtonClicked, new(0.3f, 0.5f, 0.3f, 1)).GetComponent<Button>();
-            var openFolderButtonRect = _openModelFolderButton.GetComponent<RectTransform>();
-            openFolderButtonRect.sizeDelta = new(180, 0);
+            UIFactory.SetupRectTransform(_openModelFolderButton.gameObject, Vector2.zero, Vector2.zero, new(180, 0));
 
             var openFolderButtonLayoutElement = _openModelFolderButton.gameObject.AddComponent<LayoutElement>();
             openFolderButtonLayoutElement.preferredWidth = 180;
