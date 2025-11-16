@@ -25,12 +25,30 @@ namespace DuckovCustomModel.HarmonyPatches
                 { DisplayQuality.Q8, SoundTags.SearchFoundItemQualityQ8 },
             };
 
+        private static readonly HashSet<Item> RecordedItems = [];
+
+        [HarmonyPatch(typeof(ItemDisplay), nameof(ItemDisplay.Setup))]
+        [HarmonyPostfix]
+        // ReSharper disable once InconsistentNaming
+        private static void ItemDisplay_Setup_Postfix(ItemDisplay __instance, Item target)
+        {
+            if (target == null) return;
+            if (RecordedItems.Contains(target)) return;
+            if (!target.NeedInspection) return;
+
+            RecordedItems.Add(target);
+            target.onDestroy += OnItemDestroyed;
+        }
+
         [HarmonyPatch(typeof(ItemDisplay), nameof(ItemDisplay.OnTargetInspectionStateChanged))]
         [HarmonyPostfix]
         private static void ItemDisplay_OnTargetInspectionStateChanged_Postfix(Item item)
         {
             if (item == null) return;
             if (item.Inspecting || !item.Inspected) return;
+            if (!RecordedItems.Contains(item)) return;
+
+            RecordedItems.Remove(item);
 
             var mainPlayer = CharacterMainControl.Main;
             if (mainPlayer == null) return;
@@ -46,6 +64,14 @@ namespace DuckovCustomModel.HarmonyPatches
             if (string.IsNullOrEmpty(soundPath)) return;
 
             AudioManager.PostCustomSFX(soundPath);
+        }
+
+        private static void OnItemDestroyed(Item item)
+        {
+            if (item == null) return;
+            if (!RecordedItems.Contains(item)) return;
+
+            RecordedItems.Remove(item);
         }
     }
 }
