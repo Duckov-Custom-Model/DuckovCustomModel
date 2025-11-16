@@ -612,7 +612,9 @@ Animator Controller 可以使用以下参数：
   - `"surprise"`：惊讶音效，用于 AI 惊讶状态
   - `"death"`：死亡音效，用于 AI 死亡状态
   - `"idle"`：待机音效，用于角色自动播放（可通过配置控制哪些角色类型允许自动播放）
+  - `"trigger_on_hurt"`：受伤触发音效，用于角色受到伤害时自动播放
   - `"trigger_on_death"`：死亡触发音效，用于角色死亡时自动播放
+  - `"search_found_item_quality_xxx"`：搜索完成时发现指定品质物品会触发音效，`xxx` 可为 `none`、`white`、`green`、`blue`、`purple`、`orange`、`red`、`q7`、`q8`
   - 可以同时包含多个标签，表示该音效可用于多个场景
   - 未指定标签时，默认为 `["normal"]`
 
@@ -633,6 +635,7 @@ Animator Controller 可以使用以下参数：
 - `"normal"`：AI 普通状态时触发
 - `"surprise"`：AI 惊讶状态时触发
 - `"death"`：AI 死亡状态时触发
+- `"trigger_on_hurt"`：角色受到伤害时自动播放（适用于所有角色类型）
 - `"idle"`：启用了自动播放的角色会在随机间隔时间自动播放待机音效
 - `"trigger_on_death"`：角色死亡时自动播放（适用于所有角色类型）
   - 播放间隔可在 `IdleAudioConfig.json` 中配置
@@ -641,6 +644,12 @@ Animator Controller 可以使用以下参数：
   - 哪些角色类型允许自动播放可通过 `EnableIdleAudio` 和 `AICharacterEnableIdleAudio` 配置控制
   - 默认情况下，AI 角色和宠物允许自动播放，玩家角色不允许（可通过配置启用）
 - 如果指定标签的音效不存在，将使用原版事件（不会回退到其他标签）
+
+#### 搜索发现触发
+
+- 玩家完成物品搜索或检查后（UI 展示品质信息的那一刻）会触发对应品质的音效
+- 使用 `search_found_item_quality_xxx` 标签，`xxx` 与 `Tags` 描述相同：`none`、`white`、`green`、`blue`、`purple`、`orange`、`red`、`q7`、`q8`
+- 若模型未配置对应品质的音效，则不会播放，保持与原版一致
 
 ### 音效文件要求
 

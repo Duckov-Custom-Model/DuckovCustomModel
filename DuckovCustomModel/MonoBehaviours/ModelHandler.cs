@@ -156,6 +156,14 @@ namespace DuckovCustomModel.MonoBehaviours
                 }
         }
 
+        private void OnDestroy()
+        {
+            if (CharacterMainControl == null) return;
+            if (CharacterMainControl.Health == null) return;
+            CharacterMainControl.Health.OnHurtEvent.RemoveListener(OnHurt);
+            CharacterMainControl.Health.OnDeadEvent.RemoveListener(OnDeath);
+        }
+
         public void Initialize(CharacterMainControl characterMainControl, ModelTarget target = ModelTarget.Character)
         {
             if (IsInitialized) return;
@@ -199,7 +207,11 @@ namespace DuckovCustomModel.MonoBehaviours
             RecordOriginalHeadCollider();
             RecordOriginalSoundMaker();
 
-            if (CharacterMainControl.Health != null) CharacterMainControl.Health.OnDeadEvent.AddListener(OnDeath);
+            if (CharacterMainControl.Health != null)
+            {
+                CharacterMainControl.Health.OnHurtEvent.AddListener(OnHurt);
+                CharacterMainControl.Health.OnDeadEvent.AddListener(OnDeath);
+            }
 
             ModLogger.Log("ModelHandler initialized successfully.");
             IsInitialized = true;
@@ -759,6 +771,16 @@ namespace DuckovCustomModel.MonoBehaviours
             var healthBar = HealthBarManager.Instance.GetActiveHealthBar(CharacterMainControl.Health);
             if (healthBar == null) return;
             healthBar.RefreshOffset();
+        }
+
+        private void OnHurt(DamageInfo damageInfo)
+        {
+            if (!IsModelAudioEnabled) return;
+
+            var soundPath = GetRandomSoundByTag(SoundTags.TriggerOnHurt);
+            if (string.IsNullOrEmpty(soundPath)) return;
+
+            AudioManager.PostCustomSFX(soundPath);
         }
 
         private void OnDeath(DamageInfo damageInfo)
