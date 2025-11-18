@@ -8,6 +8,7 @@ using DuckovCustomModel.Configs;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.Utils;
+using FMOD.Studio;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -15,6 +16,14 @@ namespace DuckovCustomModel.MonoBehaviours
 {
     public class ModelHandler : MonoBehaviour
     {
+        public enum SoundPlayMode
+        {
+            Normal,
+            StopPrevious,
+            SkipIfPlaying,
+            UseTempObject,
+        }
+
         private static readonly IReadOnlyDictionary<string, FieldInfo> OriginalModelSocketFieldInfos =
             CharacterModelSocketUtils.AllSocketFields;
 
@@ -24,6 +33,8 @@ namespace DuckovCustomModel.MonoBehaviours
         private readonly HashSet<GameObject> _modifiedDeathLootBoxes = [];
         private readonly Dictionary<string, Transform> _originalModelLocators = [];
         private readonly Dictionary<FieldInfo, Transform> _originalModelSockets = [];
+
+        private readonly Dictionary<string, List<EventInstance>> _playingSoundInstances = [];
         private readonly Dictionary<string, List<string>> _soundsByTag = [];
         private Renderer[]? _cachedCustomModelRenderers;
 
@@ -124,6 +135,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void LateUpdate()
         {
+            RefreshPlayingSounds();
+
             if (OriginalCharacterModel == null) return;
 
             var equipmentSockets = new[]
@@ -780,7 +793,7 @@ namespace DuckovCustomModel.MonoBehaviours
             var soundPath = GetRandomSoundByTag(SoundTags.TriggerOnHurt);
             if (string.IsNullOrEmpty(soundPath)) return;
 
-            AudioManager.PostCustomSFX(soundPath, gameObject);
+            PlaySound("onHurt", soundPath, playMode: SoundPlayMode.SkipIfPlaying);
         }
 
         private void OnDeath(DamageInfo damageInfo)
@@ -790,7 +803,8 @@ namespace DuckovCustomModel.MonoBehaviours
             var soundPath = GetRandomSoundByTag(SoundTags.TriggerOnDeath);
             if (string.IsNullOrEmpty(soundPath)) return;
 
-            AudioUtils.PlayAudioWithTempObject(soundPath, gameObject.transform);
+            StopAllSounds();
+            PlaySound("onDeath", soundPath, playMode: SoundPlayMode.UseTempObject);
         }
 
         private void InitializeCustomCharacterSubVisuals()
@@ -966,6 +980,100 @@ namespace DuckovCustomModel.MonoBehaviours
             return sounds[index];
         }
 
+        public EventInstance? PlaySound(
+            string eventName,
+            string path,
+            bool loop = false,
+            SoundPlayMode playMode = SoundPlayMode.Normal)
+        {
+            if (string.IsNullOrEmpty(path)) return null;
+
+            if (!_playingSoundInstances.TryGetValue(eventName, out var existingInstances))
+            {
+                existingInstances = [];
+                _playingSoundInstances[eventName] = existingInstances;
+            }
+
+            EventInstance? eventInstance = null;
+
+            switch (playMode)
+            {
+                case SoundPlayMode.StopPrevious:
+                    StopSound(eventName);
+                    goto default;
+                case SoundPlayMode.SkipIfPlaying:
+                    if (existingInstances.Any(existingInstance => existingInstance.isValid()))
+                        return null;
+                    goto default;
+                case SoundPlayMode.UseTempObject:
+                    if (loop)
+                        ModLogger.LogWarning(
+                            $"Sound '{eventName}' is set to loop, but 'useTempObject' is true. Loop will be ignored.");
+                    eventInstance = AudioUtils.PlayAudioWithTempObject(path, gameObject.transform);
+                    break;
+                default:
+                    eventInstance = AudioManager.Instance.MPostCustomSFX(path, gameObject, loop);
+                    break;
+            }
+
+            if (eventInstance == null)
+            {
+                ModLogger.LogError($"Failed to play sound '{eventName}' from path: {path}");
+                return null;
+            }
+
+            existingInstances.Add(eventInstance.Value);
+
+            return eventInstance;
+        }
+
+        public bool IsSoundPlaying(string eventName)
+        {
+            return _playingSoundInstances.TryGetValue(eventName, out var existingInstances) &&
+                   existingInstances.Any(existingInstance => existingInstance.isValid());
+        }
+
+        public void StopSound(string eventName)
+        {
+            if (!_playingSoundInstances.TryGetValue(eventName, out var existingInstances)) return;
+
+            foreach (var existingInstance in existingInstances)
+            {
+                existingInstance.stop(STOP_MODE.IMMEDIATE);
+                existingInstance.release();
+            }
+
+            existingInstances.Clear();
+        }
+
+        public void StopAllSounds()
+        {
+            foreach (var existingInstances in _playingSoundInstances.Select(kvp => kvp.Value))
+            {
+                foreach (var existingInstance in existingInstances)
+                {
+                    existingInstance.stop(STOP_MODE.IMMEDIATE);
+                    existingInstance.release();
+                }
+
+                existingInstances.Clear();
+            }
+
+            _playingSoundInstances.Clear();
+        }
+
+        private void RefreshPlayingSounds()
+        {
+            var keys = _playingSoundInstances.Keys.ToArray();
+            foreach (var eventName in keys)
+            {
+                var existingInstances = _playingSoundInstances[eventName];
+                existingInstances.RemoveAll(existingInstance => !existingInstance.isValid());
+                if (existingInstances.Count == 0)
+                    _playingSoundInstances.Remove(eventName);
+            }
+        }
+
         private bool HasIdleSounds()
         {
             return _soundsByTag.ContainsKey(SoundTags.Idle) &&
@@ -979,7 +1087,7 @@ namespace DuckovCustomModel.MonoBehaviours
             var soundPath = GetRandomSoundByTag(SoundTags.Idle);
             if (string.IsNullOrEmpty(soundPath)) return;
 
-            AudioManager.PostCustomSFX(soundPath, gameObject);
+            PlaySound("idle", soundPath);
         }
 
         private void ScheduleNextIdleAudio()

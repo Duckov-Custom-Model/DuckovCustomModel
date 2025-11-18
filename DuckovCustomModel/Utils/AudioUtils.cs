@@ -1,6 +1,7 @@
 ﻿using System;
 using Cysharp.Threading.Tasks;
 using Duckov;
+using FMOD.Studio;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -8,10 +9,10 @@ namespace DuckovCustomModel.Utils
 {
     public static class AudioUtils
     {
-        public static void PlayAudioWithTempObject(string soundPath, Transform parentTransform)
+        public static EventInstance? PlayAudioWithTempObject(string soundPath, Transform parentTransform)
         {
-            if (string.IsNullOrEmpty(soundPath)) return;
-            if (parentTransform == null) return;
+            if (string.IsNullOrEmpty(soundPath)) return null;
+            if (parentTransform == null) return null;
 
             var tempObject = new GameObject("DuckovCustomModel_TempAudioObject")
             {
@@ -25,7 +26,7 @@ namespace DuckovCustomModel.Utils
             if (eventInstance == null || !eventInstance.Value.isValid())
             {
                 Object.Destroy(tempObject);
-                return;
+                return null;
             }
 
             UniTask.Void(async () =>
@@ -49,6 +50,8 @@ namespace DuckovCustomModel.Utils
                         Object.Destroy(tempObject);
                 }
             });
+
+            return eventInstance;
         }
     }
 }

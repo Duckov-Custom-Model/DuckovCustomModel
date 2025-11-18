@@ -2,6 +2,19 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.8.5
+
+- Improved audio playback system, unified use of `ModelHandler.PlaySound` method to manage all audio playback
+- Added audio playback mode support (Normal, StopPrevious, SkipIfPlaying, UseTempObject), providing finer audio control
+- Added audio instance management functionality, supporting stopping specific sounds or all sounds
+- Improved sound interrupt mechanism:
+  - Player key press triggers (F1 quack) and AI automatic triggers (`normal`, `surprise` tags) share the same interrupt group, newly played sounds will interrupt sounds playing in the same group
+  - Footsteps have their own independent interrupt group, newly played footsteps will interrupt footsteps playing in the same group
+  - Hurt sounds (`trigger_on_hurt`) skip if a hurt sound is already playing to avoid duplicate playback
+  - Death sounds (`trigger_on_death`) stop all currently playing sounds before playing the death sound
+- Improved `AudioUtils.PlayAudioWithTempObject` method to return `EventInstance` for better audio lifecycle management
+- Removed unused `SoundTags.Death` constant, unified use of `trigger_on_death` tag
+
 ## v1.8.4
 
 - Added footstep sound tag support, allowing custom footstep sounds for different materials (organic, mech, danger, no sound) and different states (light/heavy walk, light/heavy run)

@@ -6,7 +6,6 @@ namespace DuckovCustomModel.Core.Data
     {
         public const string Normal = "normal";
         public const string Surprise = "surprise";
-        public const string Death = "death";
         public const string Idle = "idle";
         public const string TriggerOnHurt = "trigger_on_hurt";
         public const string TriggerOnDeath = "trigger_on_death";
@@ -41,7 +40,6 @@ namespace DuckovCustomModel.Core.Data
         [
             Normal,
             Surprise,
-            Death,
             Idle,
             TriggerOnHurt,
             TriggerOnDeath,

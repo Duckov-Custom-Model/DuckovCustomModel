@@ -592,7 +592,7 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
     },
     {
       "Path": "sounds/death.wav",
-      "Tags": ["death"]
+      "Tags": ["trigger_on_death"]
     }
   ]
 }
@@ -602,12 +602,11 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
 
 - `Path` (required): Sound file path, relative to the model bundle folder
 - `Tags` (optional): Array of sound tags, used to specify sound usage scenarios
-  - `"normal"`: Normal sound, used for player key press triggers and AI normal state
-  - `"surprise"`: Surprise sound, used for AI surprise state
-  - `"death"`: Death sound, used for AI death state
+  - `"normal"`: Normal sound, used for player key press triggers (F1 quack) and AI automatic triggers (normal state and surprise state)
+  - `"surprise"`: Surprise sound, used for AI surprise state (shares the same interrupt group with `"normal"` tag)
   - `"idle"`: Idle sound, used for automatic playback by characters (can be controlled through configuration to determine which character types are allowed to automatically play)
-  - `"trigger_on_hurt"`: Hurt trigger sound, automatically plays when the character takes damage
-  - `"trigger_on_death"`: Death trigger sound, automatically plays when the character dies
+  - `"trigger_on_hurt"`: Hurt trigger sound, automatically plays when the character takes damage (skips if a hurt sound is already playing)
+  - `"trigger_on_death"`: Death trigger sound, automatically plays when the character dies (stops all currently playing sounds before playing)
   - `"search_found_item_quality_xxx"`: Plays when a searched item of the specified quality is revealed; `xxx` can be `none`, `white`, `green`, `blue`, `purple`, `orange`, `red`, `q7`, or `q8`
   - `"footstep_organic_walk_light"`, `"footstep_organic_walk_heavy"`, `"footstep_organic_run_light"`, `"footstep_organic_run_heavy"`: Organic material footstep sounds (light/heavy walk, light/heavy run)
   - `"footstep_mech_walk_light"`, `"footstep_mech_walk_heavy"`, `"footstep_mech_run_light"`, `"footstep_mech_run_heavy"`: Mechanical material footstep sounds (light/heavy walk, light/heavy run)
@@ -621,26 +620,29 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
 
 #### Player Key Press Trigger
 
-- When a character model has sounds configured, pressing the `Quack` key in-game will trigger a sound
+- When a character model has sounds configured, pressing the `Quack` key (F1) in-game will trigger a sound
 - Only sounds tagged with `"normal"` will be played
 - Randomly selects one sound from all sounds tagged with `"normal"`
 - Only player characters respond to key presses, pets do not trigger
 - When playing a sound, it also creates an AI sound, allowing other AIs to hear the player's sound
+- **Sound Interrupt Mechanism**: Player key press triggered sounds share the same interrupt group with AI automatic triggered sounds (`"normal"` and `"surprise"` tags), newly played sounds will interrupt sounds playing in the same group
 
 #### AI Automatic Trigger
 
 - AI will automatically trigger sounds with corresponding tags based on game state
 - `"normal"`: Triggered during AI normal state
 - `"surprise"`: Triggered during AI surprise state
-- `"death"`: Triggered during AI death state
+- **Sound Interrupt Mechanism**: AI automatic triggered sounds (`"normal"` and `"surprise"` tags) share the same interrupt group with player key press triggered sounds, newly played sounds will interrupt sounds playing in the same group
 - `"trigger_on_hurt"`: Automatically plays when the character takes damage (applies to all character types)
+  - **Sound Interrupt Mechanism**: If a hurt sound is already playing, the new hurt sound will be skipped to avoid duplicate playback
 - `"idle"`: Characters with automatic playback enabled will automatically play idle sounds at random intervals
-- `"trigger_on_death"`: Automatically plays when the character dies (applies to all character types)
   - Play interval can be configured in `IdleAudioConfig.json`
   - Default interval is 30-45 seconds (random)
   - Will not play when the character is dead
   - Which character types are allowed to automatically play can be controlled through `EnableIdleAudio` and `AICharacterEnableIdleAudio` configurations
   - By default, AI characters and pets are allowed to automatically play, while player characters are not (can be enabled through configuration)
+- `"trigger_on_death"`: Automatically plays when the character dies (applies to all character types)
+  - **Sound Interrupt Mechanism**: Before playing the death sound, all currently playing sounds will be stopped, then the death sound will play
 - If a sound with the specified tag doesn't exist, the original game event will be used (no fallback to other tags)
 
 #### Footstep Trigger
@@ -649,6 +651,7 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
 - Supports four ground materials: organic, mech, danger, and no sound
 - Supports four movement states: light walk (walkLight), heavy walk (walkHeavy), light run (runLight), and heavy run (runHeavy)
 - The system automatically selects the corresponding sound tag based on the character's `footStepMaterialType` and `FootStepTypes`
+- **Sound Interrupt Mechanism**: Footsteps have their own independent interrupt group, newly played footsteps will interrupt footsteps playing in the same group
 - If the model doesn't have footstep sounds configured for the corresponding material and state, vanilla footstep sounds will be used
 
 #### Search Discovery Trigger
