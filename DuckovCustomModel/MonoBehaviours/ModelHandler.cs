@@ -16,14 +16,6 @@ namespace DuckovCustomModel.MonoBehaviours
 {
     public class ModelHandler : MonoBehaviour
     {
-        public enum SoundPlayMode
-        {
-            Normal,
-            StopPrevious,
-            SkipIfPlaying,
-            UseTempObject,
-        }
-
         private static readonly IReadOnlyDictionary<string, FieldInfo> OriginalModelSocketFieldInfos =
             CharacterModelSocketUtils.AllSocketFields;
 
@@ -994,7 +986,7 @@ namespace DuckovCustomModel.MonoBehaviours
                 _playingSoundInstances[eventName] = existingInstances;
             }
 
-            EventInstance? eventInstance = null;
+            EventInstance? eventInstance;
 
             switch (playMode)
             {
