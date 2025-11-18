@@ -9,6 +9,14 @@ namespace DuckovCustomModel.Utils
 {
     public static class AudioUtils
     {
+        public static bool CheckSoundIsPlaying(EventInstance eventInstance)
+        {
+            if (!eventInstance.isValid()) return false;
+
+            eventInstance.getPlaybackState(out var playbackState);
+            return playbackState is PLAYBACK_STATE.STARTING or PLAYBACK_STATE.PLAYING;
+        }
+
         public static EventInstance? PlayAudioWithTempObject(string soundPath, Transform parentTransform)
         {
             if (string.IsNullOrEmpty(soundPath)) return null;

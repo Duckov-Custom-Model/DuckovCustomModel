@@ -994,7 +994,7 @@ namespace DuckovCustomModel.MonoBehaviours
                     StopSound(eventName);
                     goto default;
                 case SoundPlayMode.SkipIfPlaying:
-                    if (existingInstances.Any(existingInstance => existingInstance.isValid()))
+                    if (existingInstances.Any(AudioUtils.CheckSoundIsPlaying))
                         return null;
                     goto default;
                 case SoundPlayMode.UseTempObject:
@@ -1022,7 +1022,7 @@ namespace DuckovCustomModel.MonoBehaviours
         public bool IsSoundPlaying(string eventName)
         {
             return _playingSoundInstances.TryGetValue(eventName, out var existingInstances) &&
-                   existingInstances.Any(existingInstance => existingInstance.isValid());
+                   existingInstances.Any(AudioUtils.CheckSoundIsPlaying);
         }
 
         public void StopSound(string eventName)
@@ -1060,7 +1060,7 @@ namespace DuckovCustomModel.MonoBehaviours
             foreach (var eventName in keys)
             {
                 var existingInstances = _playingSoundInstances[eventName];
-                existingInstances.RemoveAll(existingInstance => !existingInstance.isValid());
+                existingInstances.RemoveAll(existingInstance => !AudioUtils.CheckSoundIsPlaying(existingInstance));
                 if (existingInstances.Count == 0)
                     _playingSoundInstances.Remove(eventName);
             }
