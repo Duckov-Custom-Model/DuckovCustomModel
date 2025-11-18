@@ -44,7 +44,7 @@ namespace DuckovCustomModel.HarmonyPatches
                 var soundPath = modelHandler.GetRandomSoundByTag(normalizedSoundKey);
                 if (string.IsNullOrEmpty(soundPath)) return true;
 
-                AudioManager.PostCustomSFX(soundPath);
+                AudioManager.PostCustomSFX(soundPath, gameObject);
                 __result = null;
                 return false;
             }
@@ -70,7 +70,7 @@ namespace DuckovCustomModel.HarmonyPatches
                 var soundPath = modelHandler.GetRandomSoundByTag(SoundTags.Normal);
                 if (string.IsNullOrEmpty(soundPath)) return true;
 
-                AudioManager.PostCustomSFX(soundPath);
+                AudioManager.PostCustomSFX(soundPath, __instance.gameObject);
                 AIMainBrain.MakeSound(new()
                 {
                     fromCharacter = __instance,

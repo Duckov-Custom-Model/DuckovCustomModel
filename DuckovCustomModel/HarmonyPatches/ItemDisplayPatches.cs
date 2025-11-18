@@ -64,7 +64,7 @@ namespace DuckovCustomModel.HarmonyPatches
             var soundPath = modelHandler.GetRandomSoundByTag(soundTag);
             if (string.IsNullOrEmpty(soundPath)) return;
 
-            AudioManager.PostCustomSFX(soundPath);
+            AudioManager.PostCustomSFX(soundPath, modelHandler.gameObject);
         }
 
         private static void OnItemDestroyed(Item item)

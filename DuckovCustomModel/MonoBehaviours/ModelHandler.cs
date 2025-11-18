@@ -780,7 +780,7 @@ namespace DuckovCustomModel.MonoBehaviours
             var soundPath = GetRandomSoundByTag(SoundTags.TriggerOnHurt);
             if (string.IsNullOrEmpty(soundPath)) return;
 
-            AudioManager.PostCustomSFX(soundPath);
+            AudioManager.PostCustomSFX(soundPath, gameObject);
         }
 
         private void OnDeath(DamageInfo damageInfo)
@@ -790,7 +790,7 @@ namespace DuckovCustomModel.MonoBehaviours
             var soundPath = GetRandomSoundByTag(SoundTags.TriggerOnDeath);
             if (string.IsNullOrEmpty(soundPath)) return;
 
-            AudioManager.PostCustomSFX(soundPath);
+            AudioManager.PostCustomSFX(soundPath, gameObject);
         }
 
         private void InitializeCustomCharacterSubVisuals()
@@ -979,7 +979,7 @@ namespace DuckovCustomModel.MonoBehaviours
             var soundPath = GetRandomSoundByTag(SoundTags.Idle);
             if (string.IsNullOrEmpty(soundPath)) return;
 
-            AudioManager.PostCustomSFX(soundPath);
+            AudioManager.PostCustomSFX(soundPath, gameObject);
         }
 
         private void ScheduleNextIdleAudio()
