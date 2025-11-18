@@ -2,6 +2,10 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.8.3
+
+- Fixed audio playback logic to ensure correct game object references are included when playing sounds
+
 ## v1.8.2
 
 - Optimized UI component layout and initialization logic, simplified code using UIFactory methods, improved readability
