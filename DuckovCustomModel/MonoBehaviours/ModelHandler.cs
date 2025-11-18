@@ -790,7 +790,7 @@ namespace DuckovCustomModel.MonoBehaviours
             var soundPath = GetRandomSoundByTag(SoundTags.TriggerOnDeath);
             if (string.IsNullOrEmpty(soundPath)) return;
 
-            AudioManager.PostCustomSFX(soundPath, gameObject);
+            AudioUtils.PlayAudioWithTempObject(soundPath, gameObject.transform);
         }
 
         private void InitializeCustomCharacterSubVisuals()

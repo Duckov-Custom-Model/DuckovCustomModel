@@ -609,6 +609,10 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
   - `"trigger_on_hurt"`: Hurt trigger sound, automatically plays when the character takes damage
   - `"trigger_on_death"`: Death trigger sound, automatically plays when the character dies
   - `"search_found_item_quality_xxx"`: Plays when a searched item of the specified quality is revealed; `xxx` can be `none`, `white`, `green`, `blue`, `purple`, `orange`, `red`, `q7`, or `q8`
+  - `"footstep_organic_walk_light"`, `"footstep_organic_walk_heavy"`, `"footstep_organic_run_light"`, `"footstep_organic_run_heavy"`: Organic material footstep sounds (light/heavy walk, light/heavy run)
+  - `"footstep_mech_walk_light"`, `"footstep_mech_walk_heavy"`, `"footstep_mech_run_light"`, `"footstep_mech_run_heavy"`: Mechanical material footstep sounds (light/heavy walk, light/heavy run)
+  - `"footstep_danger_walk_light"`, `"footstep_danger_walk_heavy"`, `"footstep_danger_run_light"`, `"footstep_danger_run_heavy"`: Danger material footstep sounds (light/heavy walk, light/heavy run)
+  - `"footstep_nosound_walk_light"`, `"footstep_nosound_walk_heavy"`, `"footstep_nosound_run_light"`, `"footstep_nosound_run_heavy"`: No sound material footstep sounds (light/heavy walk, light/heavy run)
   - Can contain multiple tags, indicating the sound can be used in multiple scenarios
   - Defaults to `["normal"]` when no tags are specified
 
@@ -638,6 +642,14 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
   - Which character types are allowed to automatically play can be controlled through `EnableIdleAudio` and `AICharacterEnableIdleAudio` configurations
   - By default, AI characters and pets are allowed to automatically play, while player characters are not (can be enabled through configuration)
 - If a sound with the specified tag doesn't exist, the original game event will be used (no fallback to other tags)
+
+#### Footstep Trigger
+
+- Footstep sounds are automatically triggered based on ground material and movement state when characters move
+- Supports four ground materials: organic, mech, danger, and no sound
+- Supports four movement states: light walk (walkLight), heavy walk (walkHeavy), light run (runLight), and heavy run (runHeavy)
+- The system automatically selects the corresponding sound tag based on the character's `footStepMaterialType` and `FootStepTypes`
+- If the model doesn't have footstep sounds configured for the corresponding material and state, vanilla footstep sounds will be used
 
 #### Search Discovery Trigger
 
