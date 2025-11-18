@@ -2,6 +2,13 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.8.4
+
+- Added footstep sound tag support, allowing custom footstep sounds for different materials (organic, mech, danger, no sound) and different states (light/heavy walk, light/heavy run)
+- Added 16 footstep sound tags including `footstep_organic_walk_light`, `footstep_organic_walk_heavy`, `footstep_organic_run_light`, `footstep_organic_run_heavy`, etc.
+- Added `AudioUtils` utility class for playing audio and automatically cleaning up temporary objects
+- Improved death sound playback logic, using temporary objects to ensure correct audio playback and cleanup
+
 ## v1.8.3
 
 - Fixed audio playback logic to ensure correct game object references are included when playing sounds

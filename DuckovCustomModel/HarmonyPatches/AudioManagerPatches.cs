@@ -12,7 +12,7 @@ namespace DuckovCustomModel.HarmonyPatches
     internal static class AudioManagerPatches
     {
         [HarmonyPatch]
-        internal static class AudioManagerPatch
+        internal static class AudioManagerPostQuarkPatch
         {
             private static MethodBase TargetMethod()
             {
@@ -51,7 +51,78 @@ namespace DuckovCustomModel.HarmonyPatches
         }
 
         [HarmonyPatch]
-        internal static class CharacterMainControlPatch
+        internal static class AudioManagerOnFootStepSoundPatch
+        {
+            private static MethodBase TargetMethod()
+            {
+                return AccessTools.Method(typeof(AudioManager), "OnFootStepSound");
+            }
+
+            // ReSharper disable InconsistentNaming
+            private static bool Prefix(
+                    AudioManager __instance,
+                    Vector3 position,
+                    CharacterSoundMaker.FootStepTypes type,
+                    CharacterMainControl character)
+                // ReSharper restore InconsistentNaming
+            {
+                if (character == null) return true;
+
+                __instance.MSetParameter(character.gameObject, "terrain", "floor");
+
+                var modelHandler = character.GetComponent<ModelHandler>();
+                if (modelHandler == null || !modelHandler.IsInitialized) return true;
+
+                if (!modelHandler.HasAnySounds()) return true;
+                if (!modelHandler.IsModelAudioEnabled) return true;
+
+                var soundTag = character.footStepMaterialType switch
+                {
+                    AudioManager.FootStepMaterialType.organic => type switch
+                    {
+                        CharacterSoundMaker.FootStepTypes.walkLight => SoundTags.FootStepOrganicWalkLight,
+                        CharacterSoundMaker.FootStepTypes.walkHeavy => SoundTags.FootStepOrganicWalkHeavy,
+                        CharacterSoundMaker.FootStepTypes.runLight => SoundTags.FootStepOrganicRunLight,
+                        CharacterSoundMaker.FootStepTypes.runHeavy => SoundTags.FootStepOrganicRunHeavy,
+                        _ => SoundTags.FootStepOrganicWalkLight,
+                    },
+                    AudioManager.FootStepMaterialType.mech => type switch
+                    {
+                        CharacterSoundMaker.FootStepTypes.walkLight => SoundTags.FootStepMechWalkLight,
+                        CharacterSoundMaker.FootStepTypes.walkHeavy => SoundTags.FootStepMechWalkHeavy,
+                        CharacterSoundMaker.FootStepTypes.runLight => SoundTags.FootStepMechRunLight,
+                        CharacterSoundMaker.FootStepTypes.runHeavy => SoundTags.FootStepMechRunHeavy,
+                        _ => SoundTags.FootStepMechWalkLight,
+                    },
+                    AudioManager.FootStepMaterialType.danger => type switch
+                    {
+                        CharacterSoundMaker.FootStepTypes.walkLight => SoundTags.FootStepDangerWalkLight,
+                        CharacterSoundMaker.FootStepTypes.walkHeavy => SoundTags.FootStepDangerWalkHeavy,
+                        CharacterSoundMaker.FootStepTypes.runLight => SoundTags.FootStepDangerRunLight,
+                        CharacterSoundMaker.FootStepTypes.runHeavy => SoundTags.FootStepDangerRunHeavy,
+                        _ => SoundTags.FootStepDangerWalkLight,
+                    },
+                    _ => type switch
+                    {
+                        CharacterSoundMaker.FootStepTypes.walkLight => SoundTags.FootStepNoSoundWalkLight,
+                        CharacterSoundMaker.FootStepTypes.walkHeavy => SoundTags.FootStepNoSoundWalkHeavy,
+                        CharacterSoundMaker.FootStepTypes.runLight => SoundTags.FootStepNoSoundRunLight,
+                        CharacterSoundMaker.FootStepTypes.runHeavy => SoundTags.FootStepNoSoundRunHeavy,
+                        _ => SoundTags.FootStepNoSoundWalkLight,
+                    },
+                };
+
+                var soundPath = modelHandler.GetRandomSoundByTag(soundTag);
+                if (string.IsNullOrEmpty(soundPath)) return true;
+
+                AudioManager.PostCustomSFX(soundPath, character.gameObject);
+
+                return false;
+            }
+        }
+
+        [HarmonyPatch]
+        internal static class CharacterMainControlQuarkPatch
         {
             private static MethodBase TargetMethod()
             {

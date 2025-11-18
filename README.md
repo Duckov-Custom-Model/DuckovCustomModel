@@ -615,6 +615,10 @@ Animator Controller 可以使用以下参数：
   - `"trigger_on_hurt"`：受伤触发音效，用于角色受到伤害时自动播放
   - `"trigger_on_death"`：死亡触发音效，用于角色死亡时自动播放
   - `"search_found_item_quality_xxx"`：搜索完成时发现指定品质物品会触发音效，`xxx` 可为 `none`、`white`、`green`、`blue`、`purple`、`orange`、`red`、`q7`、`q8`
+  - `"footstep_organic_walk_light"`、`"footstep_organic_walk_heavy"`、`"footstep_organic_run_light"`、`"footstep_organic_run_heavy"`：有机材质脚步声（轻/重步行、轻/重跑步）
+  - `"footstep_mech_walk_light"`、`"footstep_mech_walk_heavy"`、`"footstep_mech_run_light"`、`"footstep_mech_run_heavy"`：机械材质脚步声（轻/重步行、轻/重跑步）
+  - `"footstep_danger_walk_light"`、`"footstep_danger_walk_heavy"`、`"footstep_danger_run_light"`、`"footstep_danger_run_heavy"`：危险材质脚步声（轻/重步行、轻/重跑步）
+  - `"footstep_nosound_walk_light"`、`"footstep_nosound_walk_heavy"`、`"footstep_nosound_run_light"`、`"footstep_nosound_run_heavy"`：无声材质脚步声（轻/重步行、轻/重跑步）
   - 可以同时包含多个标签，表示该音效可用于多个场景
   - 未指定标签时，默认为 `["normal"]`
 
@@ -644,6 +648,14 @@ Animator Controller 可以使用以下参数：
   - 哪些角色类型允许自动播放可通过 `EnableIdleAudio` 和 `AICharacterEnableIdleAudio` 配置控制
   - 默认情况下，AI 角色和宠物允许自动播放，玩家角色不允许（可通过配置启用）
 - 如果指定标签的音效不存在，将使用原版事件（不会回退到其他标签）
+
+#### 脚步声触发
+
+- 角色移动时会根据地面材质和移动状态自动触发相应的脚步声
+- 支持四种地面材质：有机（organic）、机械（mech）、危险（danger）、无声（no sound）
+- 支持四种移动状态：轻步行（walkLight）、重步行（walkHeavy）、轻跑步（runLight）、重跑步（runHeavy）
+- 系统会根据角色的 `footStepMaterialType` 和 `FootStepTypes` 自动选择对应的音效标签
+- 如果模型未配置对应材质和状态的脚步声，将使用原版脚步声
 
 #### 搜索发现触发
 

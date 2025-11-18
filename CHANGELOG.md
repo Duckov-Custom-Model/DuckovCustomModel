@@ -2,6 +2,13 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.8.4
+
+- 新增脚步声音效标签支持，支持为不同材质（有机、机械、危险、无声）和不同状态（轻/重步行、轻/重跑步）配置自定义脚步声
+- 新增 `footstep_organic_walk_light`、`footstep_organic_walk_heavy`、`footstep_organic_run_light`、`footstep_organic_run_heavy` 等16个脚步声音效标签
+- 新增 `AudioUtils` 工具类，用于播放音频并自动清理临时对象
+- 改进死亡音效播放逻辑，使用临时对象确保音效正确播放和清理
+
 ## v1.8.3
 
 - 修复了音效播放逻辑，确保音效播放时包含正确的游戏对象引用
