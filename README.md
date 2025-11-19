@@ -598,7 +598,7 @@ Animator Controller 可以使用以下参数：
     },
     {
       "Path": "sounds/death.wav",
-      "Tags": ["death"]
+      "Tags": ["trigger_on_death"]
     }
   ]
 }
@@ -608,12 +608,11 @@ Animator Controller 可以使用以下参数：
 
 - `Path`（必需）：音效文件路径，相对于模型包文件夹
 - `Tags`（可选）：音效标签数组，用于指定音效的使用场景
-  - `"normal"`：普通音效，用于玩家按键触发和 AI 普通状态
-  - `"surprise"`：惊讶音效，用于 AI 惊讶状态
-  - `"death"`：死亡音效，用于 AI 死亡状态
+  - `"normal"`：普通音效，用于玩家按键触发（F1 嘎嘎）和 AI 自动触发（普通状态和惊讶状态）
+  - `"surprise"`：惊讶音效，用于 AI 惊讶状态（与 `"normal"` 标签共享同一打断组）
   - `"idle"`：待机音效，用于角色自动播放（可通过配置控制哪些角色类型允许自动播放）
-  - `"trigger_on_hurt"`：受伤触发音效，用于角色受到伤害时自动播放
-  - `"trigger_on_death"`：死亡触发音效，用于角色死亡时自动播放
+  - `"trigger_on_hurt"`：受伤触发音效，用于角色受到伤害时自动播放（如果已有受伤音效正在播放则跳过）
+  - `"trigger_on_death"`：死亡触发音效，用于角色死亡时自动播放（会打断所有正在播放的音效）
   - `"search_found_item_quality_xxx"`：搜索完成时发现指定品质物品会触发音效，`xxx` 可为 `none`、`white`、`green`、`blue`、`purple`、`orange`、`red`、`q7`、`q8`
   - `"footstep_organic_walk_light"`、`"footstep_organic_walk_heavy"`、`"footstep_organic_run_light"`、`"footstep_organic_run_heavy"`：有机材质脚步声（轻/重步行、轻/重跑步）
   - `"footstep_mech_walk_light"`、`"footstep_mech_walk_heavy"`、`"footstep_mech_run_light"`、`"footstep_mech_run_heavy"`：机械材质脚步声（轻/重步行、轻/重跑步）
@@ -627,26 +626,29 @@ Animator Controller 可以使用以下参数：
 
 #### 玩家按键触发
 
-- 当角色模型配置了音效时，玩家按下游戏中的 `Quack` 键会触发音效
+- 当角色模型配置了音效时，玩家按下游戏中的 `Quack` 键（F1）会触发音效
 - 只会播放标签为 `"normal"` 的音效
 - 从所有 `"normal"` 标签的音效中随机选择一个播放
 - 只有玩家角色会响应按键，宠物不会触发
 - 播放音效时会同时创建 AI 声音，使其他 AI 能够听到玩家发出的声音
+- **音效打断机制**：玩家按键触发的音效与 AI 自动触发的音效（`"normal"` 和 `"surprise"` 标签）共享同一打断组，新播放的音效会打断同组内正在播放的音效
 
 #### AI 自动触发
 
 - AI 会根据游戏状态自动触发相应标签的音效
 - `"normal"`：AI 普通状态时触发
 - `"surprise"`：AI 惊讶状态时触发
-- `"death"`：AI 死亡状态时触发
+- **音效打断机制**：AI 自动触发的音效（`"normal"` 和 `"surprise"` 标签）与玩家按键触发的音效共享同一打断组，新播放的音效会打断同组内正在播放的音效
 - `"trigger_on_hurt"`：角色受到伤害时自动播放（适用于所有角色类型）
+  - **音效打断机制**：如果已有受伤音效正在播放，则跳过新的受伤音效播放，避免重复播放
 - `"idle"`：启用了自动播放的角色会在随机间隔时间自动播放待机音效
-- `"trigger_on_death"`：角色死亡时自动播放（适用于所有角色类型）
   - 播放间隔可在 `IdleAudioConfig.json` 中配置
   - 默认间隔为 30-45 秒（随机）
   - 角色死亡时不会播放
   - 哪些角色类型允许自动播放可通过 `EnableIdleAudio` 和 `AICharacterEnableIdleAudio` 配置控制
   - 默认情况下，AI 角色和宠物允许自动播放，玩家角色不允许（可通过配置启用）
+- `"trigger_on_death"`：角色死亡时自动播放（适用于所有角色类型）
+  - **音效打断机制**：播放死亡音效前会先停止所有正在播放的音效，然后播放死亡音效
 - 如果指定标签的音效不存在，将使用原版事件（不会回退到其他标签）
 
 #### 脚步声触发
@@ -655,6 +657,7 @@ Animator Controller 可以使用以下参数：
 - 支持四种地面材质：有机（organic）、机械（mech）、危险（danger）、无声（no sound）
 - 支持四种移动状态：轻步行（walkLight）、重步行（walkHeavy）、轻跑步（runLight）、重跑步（runHeavy）
 - 系统会根据角色的 `footStepMaterialType` 和 `FootStepTypes` 自动选择对应的音效标签
+- **音效打断机制**：脚步声拥有独立的打断组，新播放的脚步声会打断同组内正在播放的脚步声
 - 如果模型未配置对应材质和状态的脚步声，将使用原版脚步声
 
 #### 搜索发现触发

@@ -2,6 +2,19 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.8.5
+
+- 改进音效播放系统，统一使用 `ModelHandler.PlaySound` 方法管理所有音效播放
+- 新增音效播放模式支持（Normal、StopPrevious、SkipIfPlaying、UseTempObject），提供更精细的音效控制
+- 新增音效实例管理功能，支持停止指定音效或所有音效
+- 改进音效打断机制：
+  - 玩家按键触发（F1 嘎嘎）和 AI 自动触发（`normal`、`surprise` 标签）共享同一打断组，新播放的音效会打断同组内正在播放的音效
+  - 脚步声拥有独立的打断组，新播放的脚步声会打断同组内正在播放的脚步声
+  - 受伤音效（`trigger_on_hurt`）如果已有音效正在播放则跳过，避免重复播放
+  - 死亡音效（`trigger_on_death`）会先停止所有正在播放的音效，然后播放死亡音效
+- 改进 `AudioUtils.PlayAudioWithTempObject` 方法，返回 `EventInstance` 以便更好地管理音效生命周期
+- 移除不再使用的 `SoundTags.Death` 常量，统一使用 `trigger_on_death` 标签
+
 ## v1.8.4
 
 - 新增脚步声音效标签支持，支持为不同材质（有机、机械、危险、无声）和不同状态（轻/重步行、轻/重跑步）配置自定义脚步声
