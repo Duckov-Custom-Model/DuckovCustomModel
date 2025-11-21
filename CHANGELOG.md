@@ -2,6 +2,34 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.8.7
+
+- 新增自定义对话系统，支持在动画状态机中触发对话
+  - 新增 `ModelDialogueTrigger` 组件，可在动画状态进入时触发对话
+  - 新增 `CustomDialogueManager` 管理器，统一管理对话的加载和播放
+  - 支持多语言对话文件，自动根据当前语言加载对应文件
+  - 支持多种对话播放模式：顺序播放、随机播放、随机不重复播放、连续播放
+- 新增 `ModelSoundTrigger` 组件，支持在动画状态机中直接触发音效
+  - 可在动画状态进入时根据配置的音效标签播放音效
+  - 支持随机或顺序选择多个音效标签
+  - 支持配置音效播放模式（Normal、StopPrevious、SkipIfPlaying、UseTempObject）
+- 增强音效触发功能，新增多个战斗相关音效标签
+  - 新增 `trigger_on_hit_target`：命中目标时触发
+  - 新增 `trigger_on_kill_target`：击杀目标时触发
+  - 新增 `trigger_on_crit_hurt`：受到暴击伤害时触发
+  - 新增 `trigger_on_crit_dead`：暴击死亡时触发
+  - 新增 `trigger_on_crit_hit_target`：暴击命中目标时触发
+  - 新增 `trigger_on_crit_kill_target`：暴击击杀目标时触发
+- 增强动画器控制功能，新增多个战斗相关触发器
+  - 新增 `Hurt`、`Dead`、`HitTarget`、`KillTarget` 触发器
+  - 新增 `CritHurt`、`CritDead`、`CritHitTarget`、`CritKillTarget` 触发器
+  - 在 `CustomAnimatorControl` 中新增对应的触发方法
+- 增强 `ModelHandler` 音效触发功能
+  - 支持根据伤害信息判断是否为暴击，自动触发对应的音效和动画器触发器
+  - 支持监听全局伤害和死亡事件，在命中或击杀目标时触发音效和动画器触发器
+  - 新增音效播放概率配置（`SoundTagPlayChance`），支持为不同音效标签配置播放概率
+- 优化音效标签处理，移除标签验证限制，允许使用任意自定义标签
+
 ## v1.8.6-fix1
 
 - 修复 AnimatorParameterDriverManager 中的随机整数生成逻辑

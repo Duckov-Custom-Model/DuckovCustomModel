@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Duckov;
 using Duckov.UI;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.MonoBehaviours;
@@ -26,6 +25,7 @@ namespace DuckovCustomModel.HarmonyPatches
             };
 
         private static readonly HashSet<Item> RecordedItems = [];
+        private static DisplayQuality? _highestPlayedQuality;
 
         [HarmonyPatch(typeof(ItemDisplay), nameof(ItemDisplay.Setup))]
         [HarmonyPostfix]
@@ -61,10 +61,29 @@ namespace DuckovCustomModel.HarmonyPatches
 
             if (!QualitySoundTags.TryGetValue(item.DisplayQuality, out var soundTag)) return;
 
-            var soundPath = modelHandler.GetRandomSoundByTag(soundTag);
-            if (string.IsNullOrEmpty(soundPath)) return;
+            var soundPath = modelHandler.GetRandomSoundByTag(soundTag, out var skippedByProbability);
+            if (string.IsNullOrEmpty(soundPath) || skippedByProbability) return;
 
-            AudioManager.PostCustomSFX(soundPath, modelHandler.gameObject);
+            const string eventName = "ItemInspectionSound";
+            var isPlaying = modelHandler.IsSoundPlaying(eventName);
+
+            if (!isPlaying) _highestPlayedQuality = null;
+
+            var playMode = SoundPlayMode.SkipIfPlaying;
+            if (_highestPlayedQuality.HasValue)
+            {
+                if (item.DisplayQuality > _highestPlayedQuality.Value)
+                {
+                    playMode = SoundPlayMode.StopPrevious;
+                    _highestPlayedQuality = item.DisplayQuality;
+                }
+            }
+            else
+            {
+                _highestPlayedQuality = item.DisplayQuality;
+            }
+
+            modelHandler.PlaySound(eventName, soundPath, playMode: playMode);
         }
 
         private static void OnItemDestroyed(Item item)

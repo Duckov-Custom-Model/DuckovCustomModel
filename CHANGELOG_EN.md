@@ -2,6 +2,34 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.8.7
+
+- Added custom dialogue system, supporting dialogue triggering in animation state machines
+  - Added `ModelDialogueTrigger` component that can trigger dialogue when animation state enters
+  - Added `CustomDialogueManager` manager to uniformly manage dialogue loading and playback
+  - Supports multilingual dialogue files, automatically loads corresponding files based on current language
+  - Supports multiple dialogue playback modes: Sequential, Random, RandomNoRepeat, Continuous
+- Added `ModelSoundTrigger` component, supporting direct sound effect triggering in animation state machines
+  - Can play sound effects based on configured sound tags when animation state enters
+  - Supports random or sequential selection from multiple sound tags
+  - Supports configuring sound playback modes (Normal, StopPrevious, SkipIfPlaying, UseTempObject)
+- Enhanced sound effect triggering functionality, added multiple combat-related sound tags
+  - Added `trigger_on_hit_target`: triggers when hitting a target
+  - Added `trigger_on_kill_target`: triggers when killing a target
+  - Added `trigger_on_crit_hurt`: triggers when receiving critical damage
+  - Added `trigger_on_crit_dead`: triggers when dying from critical damage
+  - Added `trigger_on_crit_hit_target`: triggers when critically hitting a target
+  - Added `trigger_on_crit_kill_target`: triggers when critically killing a target
+- Enhanced animator control functionality, added multiple combat-related triggers
+  - Added `Hurt`, `Dead`, `HitTarget`, `KillTarget` triggers
+  - Added `CritHurt`, `CritDead`, `CritHitTarget`, `CritKillTarget` triggers
+  - Added corresponding trigger methods in `CustomAnimatorControl`
+- Enhanced `ModelHandler` sound effect triggering functionality
+  - Supports determining whether damage is critical based on damage information, automatically triggering corresponding sound effects and animator triggers
+  - Supports listening to global damage and death events, triggering sound effects and animator triggers when hitting or killing targets
+  - Added sound playback probability configuration (`SoundTagPlayChance`), supporting playback probability configuration for different sound tags
+- Optimized sound tag processing, removed tag validation restrictions, allowing use of any custom tags
+
 ## v1.8.6-fix1
 
 - Fixed random integer generation logic in AnimatorParameterDriverManager

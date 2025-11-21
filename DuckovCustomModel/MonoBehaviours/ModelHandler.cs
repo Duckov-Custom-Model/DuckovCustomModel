@@ -6,6 +6,7 @@ using Duckov;
 using Duckov.UI;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.Core.MonoBehaviours.Animators;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.Utils;
 using FMOD.Studio;
@@ -28,6 +29,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private readonly Dictionary<string, List<EventInstance>> _playingSoundInstances = [];
         private readonly Dictionary<string, List<string>> _soundsByTag = [];
+        private readonly Dictionary<string, float> _soundTagPlayChance = [];
         private Renderer[]? _cachedCustomModelRenderers;
 
         private ModelBundleInfo? _currentModelBundleInfo;
@@ -90,6 +92,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
         public ModelTarget Target { get; private set; }
         public string? NameKey => CharacterMainControl?.characterPreset?.nameKey;
+
+        public string? CurrentModelDirectory => _currentModelBundleInfo?.DirectoryPath;
 
         public bool IsInitialized { get; private set; }
 
@@ -163,6 +167,11 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void OnDestroy()
         {
+            ModelSoundTrigger.OnSoundTriggered -= OnSoundTriggered;
+
+            Health.OnHurt -= OnGlobalHurt;
+            Health.OnDead -= OnGlobalDead;
+
             if (CharacterMainControl == null) return;
             if (CharacterMainControl.Health == null) return;
             CharacterMainControl.Health.OnHurtEvent.RemoveListener(OnHurt);
@@ -217,6 +226,11 @@ namespace DuckovCustomModel.MonoBehaviours
                 CharacterMainControl.Health.OnHurtEvent.AddListener(OnHurt);
                 CharacterMainControl.Health.OnDeadEvent.AddListener(OnDeath);
             }
+
+            Health.OnHurt += OnGlobalHurt;
+            Health.OnDead += OnGlobalDead;
+
+            ModelSoundTrigger.OnSoundTriggered += OnSoundTriggered;
 
             ModLogger.Log("ModelHandler initialized successfully.");
             IsInitialized = true;
@@ -780,23 +794,135 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void OnHurt(DamageInfo damageInfo)
         {
+            var isCrit = damageInfo.crit > 0;
+
+            if (CustomAnimatorControl != null)
+            {
+                if (isCrit)
+                    CustomAnimatorControl.TriggerCritHurt();
+                else
+                    CustomAnimatorControl.TriggerHurt();
+            }
+
             if (!IsModelAudioEnabled) return;
 
-            var soundPath = GetRandomSoundByTag(SoundTags.TriggerOnHurt);
-            if (string.IsNullOrEmpty(soundPath)) return;
+            string soundTag;
+            string eventName;
+            if (isCrit)
+            {
+                soundTag = SoundTags.TriggerOnCritHurt;
+                eventName = "onCritHurt";
+            }
+            else
+            {
+                soundTag = SoundTags.TriggerOnHurt;
+                eventName = "onHurt";
+            }
 
-            PlaySound("onHurt", soundPath, playMode: SoundPlayMode.SkipIfPlaying);
+            var soundPath = GetRandomSoundByTag(soundTag, out var skippedByProbability);
+            if (string.IsNullOrEmpty(soundPath) || skippedByProbability) return;
+
+            PlaySound(eventName, soundPath, playMode: SoundPlayMode.SkipIfPlaying);
         }
 
         private void OnDeath(DamageInfo damageInfo)
         {
+            var isCrit = damageInfo.crit > 0;
+
+            if (CustomAnimatorControl != null)
+            {
+                if (isCrit)
+                    CustomAnimatorControl.TriggerCritDead();
+                else
+                    CustomAnimatorControl.TriggerDead();
+            }
+
             if (!IsModelAudioEnabled) return;
 
-            var soundPath = GetRandomSoundByTag(SoundTags.TriggerOnDeath);
-            if (string.IsNullOrEmpty(soundPath)) return;
+            string soundTag;
+            string eventName;
+            if (isCrit)
+            {
+                soundTag = SoundTags.TriggerOnCritDead;
+                eventName = "onCritDead";
+            }
+            else
+            {
+                soundTag = SoundTags.TriggerOnDeath;
+                eventName = "onDeath";
+            }
+
+            var soundPath = GetRandomSoundByTag(soundTag, out var skippedByProbability);
+            if (string.IsNullOrEmpty(soundPath) || skippedByProbability) return;
 
             StopAllSounds();
-            PlaySound("onDeath", soundPath, playMode: SoundPlayMode.UseTempObject);
+            PlaySound(eventName, soundPath, playMode: SoundPlayMode.UseTempObject);
+        }
+
+        private void OnGlobalHurt(Health health, DamageInfo damageInfo)
+        {
+            if (CharacterMainControl == null || CustomAnimatorControl == null) return;
+            if (damageInfo.fromCharacter != CharacterMainControl) return;
+
+            var isCrit = damageInfo.crit > 0;
+
+            if (isCrit)
+                CustomAnimatorControl.TriggerCritHitTarget();
+            else
+                CustomAnimatorControl.TriggerHitTarget();
+
+            if (!IsModelAudioEnabled) return;
+
+            string soundTag;
+            string eventName;
+            if (isCrit)
+            {
+                soundTag = SoundTags.TriggerOnCritHitTarget;
+                eventName = "onCritHitTarget";
+            }
+            else
+            {
+                soundTag = SoundTags.TriggerOnHitTarget;
+                eventName = "onHitTarget";
+            }
+
+            var soundPath = GetRandomSoundByTag(soundTag, out var skippedByProbability);
+            if (string.IsNullOrEmpty(soundPath) || skippedByProbability) return;
+
+            PlaySound(eventName, soundPath, playMode: SoundPlayMode.SkipIfPlaying);
+        }
+
+        private void OnGlobalDead(Health health, DamageInfo damageInfo)
+        {
+            if (CharacterMainControl == null || CustomAnimatorControl == null) return;
+            if (damageInfo.fromCharacter != CharacterMainControl) return;
+
+            var isCrit = damageInfo.crit > 0;
+
+            if (isCrit)
+                CustomAnimatorControl.TriggerCritKillTarget();
+            else
+                CustomAnimatorControl.TriggerKillTarget();
+
+            if (!IsModelAudioEnabled) return;
+
+            string soundTag;
+            string eventName;
+            if (isCrit)
+            {
+                soundTag = SoundTags.TriggerOnCritKillTarget;
+                eventName = "onCritKillTarget";
+            }
+            else
+            {
+                soundTag = SoundTags.TriggerOnKillTarget;
+                eventName = "onKillTarget";
+            }
+
+            var soundPath = GetRandomSoundByTag(soundTag, out var skippedByProbability);
+            if (string.IsNullOrEmpty(soundPath) || skippedByProbability) return;
+
+            PlaySound(eventName, soundPath, playMode: SoundPlayMode.SkipIfPlaying);
         }
 
         private void InitializeCustomCharacterSubVisuals()
@@ -925,8 +1051,18 @@ namespace DuckovCustomModel.MonoBehaviours
         private void InitSoundFilePath(ModelBundleInfo modelBundleInfo, ModelInfo modelInfo)
         {
             _soundsByTag.Clear();
+            _soundTagPlayChance.Clear();
 
             var bundleDirectory = modelBundleInfo.DirectoryPath;
+
+            if (modelInfo.SoundTagPlayChance != null)
+                foreach (var kvp in modelInfo.SoundTagPlayChance)
+                {
+                    var normalizedTag = kvp.Key.ToLowerInvariant().Trim();
+                    if (string.IsNullOrWhiteSpace(normalizedTag)) continue;
+                    var chance = Mathf.Clamp01(kvp.Value / 100f);
+                    _soundTagPlayChance[normalizedTag] = chance;
+                }
 
             if (modelInfo.CustomSounds is not { Length: > 0 }) return;
 
@@ -941,7 +1077,10 @@ namespace DuckovCustomModel.MonoBehaviours
                 if (soundInfo.Tags is not { Length: > 0 })
                     soundInfo.Tags = [SoundTags.Normal];
 
-                foreach (var soundTag in soundInfo.Tags)
+                foreach (var soundTag in soundInfo.Tags
+                             .Select(soundTag => soundTag?.ToLowerInvariant().Trim())
+                             .Where(x => !string.IsNullOrWhiteSpace(x))
+                             .Cast<string>())
                 {
                     if (!_soundsByTag.ContainsKey(soundTag))
                         _soundsByTag[soundTag] = [];
@@ -961,15 +1100,31 @@ namespace DuckovCustomModel.MonoBehaviours
             return _soundsByTag.Count > 0 && _soundsByTag.Values.Any(sounds => sounds.Count > 0);
         }
 
-        public string? GetRandomSoundByTag(string soundTag)
+        public bool HasSoundTag(string soundTag)
         {
+            if (string.IsNullOrWhiteSpace(soundTag)) soundTag = SoundTags.Normal;
+            soundTag = soundTag.ToLowerInvariant().Trim();
+            return _soundsByTag.TryGetValue(soundTag, out var sounds) && sounds.Count > 0;
+        }
+
+        public string? GetRandomSoundByTag(string soundTag, out bool skippedByProbability)
+        {
+            skippedByProbability = false;
             if (string.IsNullOrWhiteSpace(soundTag)) soundTag = SoundTags.Normal;
             soundTag = soundTag.ToLowerInvariant().Trim();
 
             if (!_soundsByTag.TryGetValue(soundTag, out var sounds) || sounds.Count == 0) return null;
 
+            if (_soundTagPlayChance.TryGetValue(soundTag, out var playChance) && Random.value > playChance)
+                skippedByProbability = true;
+
             var index = Random.Range(0, sounds.Count);
             return sounds[index];
+        }
+
+        public string? GetRandomSoundByTag(string soundTag)
+        {
+            return GetRandomSoundByTag(soundTag, out _);
         }
 
         public EventInstance? PlaySound(
@@ -1076,10 +1231,24 @@ namespace DuckovCustomModel.MonoBehaviours
         {
             if (!IsModelAudioEnabled) return;
 
-            var soundPath = GetRandomSoundByTag(SoundTags.Idle);
-            if (string.IsNullOrEmpty(soundPath)) return;
+            var soundPath = GetRandomSoundByTag(SoundTags.Idle, out var skippedByProbability);
+            if (string.IsNullOrEmpty(soundPath) || skippedByProbability) return;
 
             PlaySound("idle", soundPath);
+        }
+
+        private void OnSoundTriggered(string soundTag, string eventName, SoundPlayMode playMode, Animator animator)
+        {
+            if (animator == null) return;
+            if (CustomModelInstance == null) return;
+            if (animator.gameObject != CustomModelInstance) return;
+
+            if (!IsModelAudioEnabled) return;
+
+            var soundPath = GetRandomSoundByTag(soundTag, out var skippedByProbability);
+            if (string.IsNullOrEmpty(soundPath) || skippedByProbability) return;
+
+            PlaySound($"CustomModelSoundTrigger:{eventName}", soundPath, playMode: playMode);
         }
 
         private void ScheduleNextIdleAudio()

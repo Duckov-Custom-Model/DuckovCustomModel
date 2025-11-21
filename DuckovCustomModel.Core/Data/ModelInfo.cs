@@ -19,6 +19,8 @@ namespace DuckovCustomModel.Core.Data
 
         public SoundInfo[] CustomSounds { get; set; } = [];
 
+        public Dictionary<string, float>? SoundTagPlayChance { get; set; }
+
         [JsonIgnore] public string BundleName { get; set; } = string.Empty;
 
         public ModelTarget[] Target { get; set; } = [ModelTarget.Character];
