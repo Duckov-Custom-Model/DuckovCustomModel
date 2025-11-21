@@ -1077,13 +1077,14 @@ namespace DuckovCustomModel.MonoBehaviours
                 if (soundInfo.Tags is not { Length: > 0 })
                     soundInfo.Tags = [SoundTags.Normal];
 
-                foreach (var soundTag in soundInfo.Tags)
+                foreach (var soundTag in soundInfo.Tags
+                             .Select(soundTag => soundTag?.ToLowerInvariant().Trim())
+                             .Where(x => !string.IsNullOrWhiteSpace(x))
+                             .Cast<string>())
                 {
-                    var normalizedTag = soundTag.ToLowerInvariant().Trim();
-                    if (string.IsNullOrWhiteSpace(normalizedTag)) continue;
-                    if (!_soundsByTag.ContainsKey(normalizedTag))
-                        _soundsByTag[normalizedTag] = [];
-                    _soundsByTag[normalizedTag].Add(fullPath);
+                    if (!_soundsByTag.ContainsKey(soundTag))
+                        _soundsByTag[soundTag] = [];
+                    _soundsByTag[soundTag].Add(fullPath);
                 }
 
                 validSoundCount++;
