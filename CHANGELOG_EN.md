@@ -2,6 +2,24 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.8.6
+
+- Added `ModelParameterDriver` component, supporting custom parameter control in animation state machines
+  - Supports multiple parameter operation types:
+    - `Set`: Directly set parameter value
+    - `Add`: Add specified value to existing value
+    - `Random`: Randomly set parameter value (supports range randomization and probability triggering)
+    - `Copy`: Copy value from source parameter to target parameter (supports range conversion)
+  - Supports all Animator parameter types (Float, Int, Bool, Trigger)
+  - Automatically applies parameter driver when animation state enters
+  - Supports parameter validation, ensuring target and source parameters exist before applying driver
+- Added `AnimatorParameterDriverManager` manager to uniformly manage parameter driver initialization and application logic
+- Enhanced animator parameter display functionality:
+  - Added parameter caching mechanism to optimize parameter retrieval performance and reduce redundant calculations
+  - Supports displaying external parameters defined in Animator controller, defaulting to the end of the list
+- Added `BlueprintID` component for assigning unique identifiers to game objects (currently no actual functionality)
+- Updated dependency version: `DuckovGameLibs` updated from 1.1.6-Steam to 1.2.5-Steam
+
 ## v1.8.5
 
 - Improved audio playback system, unified use of `ModelHandler.PlaySound` method to manage all audio playback
