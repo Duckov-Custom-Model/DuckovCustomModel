@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.HarmonyPatches;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.UI;
@@ -65,9 +66,17 @@ namespace DuckovCustomModel
             InitializeConfigWindow();
             InitializeUpdateChecker();
 
+            UpdateChecker.OnUpdateCheckCompleted += OnUpdateCheckCompleted;
+            GameVersionDisplayPatches.Initialize();
+
             CustomDialogueManager.Initialize();
 
             ModLogger.Log($"{Constant.ModName} loaded (Version {Constant.ModVersion})");
+        }
+
+        private static void OnUpdateCheckCompleted(bool hasUpdate, string? latestVersion)
+        {
+            GameVersionDisplayPatches.RefreshUpdateVersionDisplay();
         }
 
         public static void Uninitialize()
@@ -91,8 +100,11 @@ namespace DuckovCustomModel
 
             ModelListManager.CancelRefresh();
 
+            UpdateChecker.OnUpdateCheckCompleted -= OnUpdateCheckCompleted;
+
             Localization.Cleanup();
             CustomDialogueManager.Cleanup();
+            GameVersionDisplayPatches.Cleanup();
 
             if (_configWindow != null)
             {

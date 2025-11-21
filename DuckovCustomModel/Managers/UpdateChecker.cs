@@ -11,7 +11,9 @@ namespace DuckovCustomModel.Managers
 {
     public class UpdateChecker : MonoBehaviour
     {
-        private const string UpdateUrl = "https://duckov-custom-model-release-version.ritsukage.com/";
+        private const string UpdateUrl =
+            "https://duckov-custom-model-release-version.ritsukage.com/";
+
         private const float CheckIntervalHours = 1f;
         private CancellationTokenSource? _periodicCheckCts;
         private UpdateInfoConfig? _updateInfoConfig;
@@ -126,8 +128,8 @@ namespace DuckovCustomModel.Managers
 
                         _updateInfoConfig ??= new UpdateInfoConfig();
 
-                        _updateInfoConfig.LatestVersion = releaseInfo.Version;
-                        _updateInfoConfig.LatestReleaseName = releaseInfo.ReleaseName ?? releaseInfo.Version;
+                        _updateInfoConfig.LatestVersion = latestVersion;
+                        _updateInfoConfig.LatestReleaseName = releaseInfo.ReleaseName ?? latestVersion;
                         _updateInfoConfig.LastCheckTime = DateTime.Now;
                         _updateInfoConfig.HasUpdate = hasUpdate;
 
@@ -138,7 +140,7 @@ namespace DuckovCustomModel.Managers
 
                         ModLogger.Log(
                             $"Update check completed. Current: {Constant.ModVersion}, Latest: {releaseInfo.Version}, HasUpdate: {hasUpdate}");
-                        OnUpdateCheckCompleted?.Invoke(hasUpdate, releaseInfo.Version);
+                        OnUpdateCheckCompleted?.Invoke(hasUpdate, latestVersion);
                         return;
                     }
 
@@ -187,10 +189,7 @@ namespace DuckovCustomModel.Managers
 
             version = version.Trim();
 
-            if (version.StartsWith("v", StringComparison.OrdinalIgnoreCase)) version = version.Substring(1);
-
-            var dashIndex = version.IndexOf('-');
-            if (dashIndex >= 0) version = version.Substring(0, dashIndex);
+            if (version.StartsWith("v", StringComparison.OrdinalIgnoreCase)) version = version[1..];
 
             return version.Trim();
         }
@@ -204,8 +203,17 @@ namespace DuckovCustomModel.Managers
             if (string.IsNullOrEmpty(version2))
                 return 1;
 
-            var v1Parts = version1.Split('.');
-            var v2Parts = version2.Split('.');
+            var v1DashIndex = version1.IndexOf('-');
+            var v2DashIndex = version2.IndexOf('-');
+
+            var v1Main = v1DashIndex >= 0 ? version1[..v1DashIndex] : version1;
+            var v2Main = v2DashIndex >= 0 ? version2[..v2DashIndex] : version2;
+
+            var v1Suffix = v1DashIndex >= 0 ? version1[(v1DashIndex + 1)..] : string.Empty;
+            var v2Suffix = v2DashIndex >= 0 ? version2[(v2DashIndex + 1)..] : string.Empty;
+
+            var v1Parts = v1Main.Split('.');
+            var v2Parts = v2Main.Split('.');
 
             var maxLength = Math.Max(v1Parts.Length, v2Parts.Length);
 
@@ -220,7 +228,31 @@ namespace DuckovCustomModel.Managers
                     return 1;
             }
 
-            return 0;
+            return CompareVersionSuffix(v1Suffix, v2Suffix);
+        }
+
+        private static int CompareVersionSuffix(string suffix1, string suffix2)
+        {
+            if (string.IsNullOrEmpty(suffix1) && string.IsNullOrEmpty(suffix2))
+                return 0;
+            if (string.IsNullOrEmpty(suffix1))
+                return -1;
+            if (string.IsNullOrEmpty(suffix2))
+                return 1;
+
+            suffix1 = suffix1.Trim();
+            suffix2 = suffix2.Trim();
+
+            var v1Match = Regex.Match(suffix1, @"^fix(\d+)", RegexOptions.IgnoreCase);
+            var v2Match = Regex.Match(suffix2, @"^fix(\d+)", RegexOptions.IgnoreCase);
+
+            if (!v1Match.Success || !v2Match.Success)
+                return string.Compare(suffix1, suffix2, StringComparison.OrdinalIgnoreCase);
+            if (int.TryParse(v1Match.Groups[1].Value, out var v1Fix) &&
+                int.TryParse(v2Match.Groups[1].Value, out var v2Fix))
+                return v1Fix.CompareTo(v2Fix);
+
+            return string.Compare(suffix1, suffix2, StringComparison.OrdinalIgnoreCase);
         }
 
         private static int ParseVersionPart(string part)

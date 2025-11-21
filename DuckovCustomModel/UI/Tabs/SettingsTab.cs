@@ -677,12 +677,14 @@ namespace DuckovCustomModel.UI.Tabs
             if (hasUpdate && !string.IsNullOrEmpty(latestVersion))
             {
                 info.AppendLine($"{Localization.UpdateAvailable}:");
-                info.AppendLine(latestReleaseName ?? latestVersion);
+                var displayVersion = !string.IsNullOrEmpty(latestReleaseName) ? latestReleaseName : $"v{latestVersion}";
+                info.AppendLine(displayVersion);
             }
             else if (!string.IsNullOrEmpty(latestVersion))
             {
                 info.AppendLine($"{Localization.LatestVersion}:");
-                info.AppendLine(latestReleaseName ?? latestVersion);
+                var displayVersion = !string.IsNullOrEmpty(latestReleaseName) ? latestReleaseName : $"v{latestVersion}";
+                info.AppendLine(displayVersion);
             }
 
             if (lastCheckTime.HasValue)

@@ -895,13 +895,13 @@ namespace DuckovCustomModel.UI
                     var localizedText = _updateIndicatorTitle.GetComponent<LocalizedText>();
                     if (localizedText != null)
                     {
-                        localizedText.SetTextGetter(() => $"{Localization.UpdateAvailable}: {latestVersion}");
+                        localizedText.SetTextGetter(() => $"{Localization.UpdateAvailable}: v{latestVersion}");
                     }
                     else
                     {
                         var text = _updateIndicatorTitle.GetComponent<TextMeshProUGUI>();
                         if (text != null)
-                            text.text = $"{Localization.UpdateAvailable}: {latestVersion}";
+                            text.text = $"{Localization.UpdateAvailable}: v{latestVersion}";
                     }
                 }
                 else
