@@ -53,6 +53,16 @@
   "BottomCenter": "下中央",
   "BottomRight": "右下",
   "OffsetX": "オフセット X",
-  "OffsetY": "オフセット Y"
+  "OffsetY": "オフセット Y",
+  "UpdateAvailable": "更新あり",
+  "CheckForUpdate": "更新を確認",
+  "LatestVersion": "最新バージョン",
+  "LastCheckTime": "最終確認",
+  "UpdateCheckNotAvailable": "更新確認が利用できません",
+  "NeverChecked": "未確認",
+  "JustNow": "たった今",
+  "MinutesAgo": "分前",
+  "HoursAgo": "時間前",
+  "DaysAgo": "日前"
 }
 

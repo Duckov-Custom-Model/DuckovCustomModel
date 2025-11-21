@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
@@ -19,9 +20,13 @@ namespace DuckovCustomModel.UI.Tabs
 
         private bool _isWaitingForUIKeyInput;
         private GameObject? _keyButton;
+        private float _lastUpdateInfoRefreshTime;
 
         private int _settingRowIndex;
         private Toggle? _showDCMButtonToggle;
+        private GameObject? _updateCheckButton;
+        private LocalizedText? _updateInfoLocalizedText;
+        private GameObject? _updateInfoPanel;
 
         private static UIConfig? UIConfig => ModEntry.UIConfig;
 
@@ -30,6 +35,18 @@ namespace DuckovCustomModel.UI.Tabs
         private void Update()
         {
             if (_isWaitingForUIKeyInput || _isWaitingForAnimatorParamsKeyInput) HandleKeyInputCapture();
+
+            if (_updateInfoLocalizedText != null && Time.time - _lastUpdateInfoRefreshTime > 30f)
+            {
+                RefreshUpdateInfo();
+                _lastUpdateInfoRefreshTime = Time.time;
+            }
+        }
+
+        protected override void OnDestroy()
+        {
+            UpdateChecker.OnUpdateCheckCompleted -= OnUpdateCheckCompleted;
+            base.OnDestroy();
         }
 
         public void RefreshAnimatorParamsToggleState(bool visible)
@@ -83,6 +100,7 @@ namespace DuckovCustomModel.UI.Tabs
             BuildAnimatorParamsToggle(contentArea);
             BuildShowDCMButtonToggle(contentArea);
             BuildDCMButtonPositionSettings(contentArea);
+            BuildUpdateCheckSection(contentArea);
         }
 
         private void BuildKeySetting(GameObject parent)
@@ -547,6 +565,167 @@ namespace DuckovCustomModel.UI.Tabs
         public void SetAnimatorParamsWindowVisible(bool visible)
         {
             OnAnimatorParamsToggleChanged?.Invoke(visible);
+        }
+
+        private void BuildUpdateCheckSection(GameObject parent)
+        {
+            if (PanelRoot == null) return;
+
+            var updatePanel = new GameObject("UpdateCheckPanel", typeof(RectTransform));
+            updatePanel.transform.SetParent(PanelRoot.transform, false);
+            var updatePanelRect = updatePanel.GetComponent<RectTransform>();
+            updatePanelRect.anchorMin = new Vector2(1f, 0f);
+            updatePanelRect.anchorMax = new Vector2(1f, 0f);
+            updatePanelRect.pivot = new Vector2(1f, 0f);
+            updatePanelRect.anchoredPosition = new Vector2(-20f, 20f);
+            updatePanelRect.sizeDelta = new Vector2(300f, 120f);
+
+            var updatePanelImage = updatePanel.AddComponent<Image>();
+            updatePanelImage.color = new Color(0.1f, 0.12f, 0.14f, 0.9f);
+
+            var outline = updatePanel.AddComponent<Outline>();
+            outline.effectColor = new Color(0.3f, 0.35f, 0.4f, 0.7f);
+            outline.effectDistance = new Vector2(1, -1);
+
+            var verticalLayout = updatePanel.AddComponent<VerticalLayoutGroup>();
+            verticalLayout.spacing = 8f;
+            verticalLayout.padding = new RectOffset(10, 10, 10, 10);
+            verticalLayout.childAlignment = TextAnchor.UpperCenter;
+            verticalLayout.childControlHeight = true;
+            verticalLayout.childControlWidth = true;
+            verticalLayout.childForceExpandHeight = true;
+            verticalLayout.childForceExpandWidth = true;
+
+            var layoutElement = updatePanel.AddComponent<LayoutElement>();
+            layoutElement.minWidth = 300f;
+            layoutElement.minHeight = 120f;
+            layoutElement.preferredWidth = 340f;
+            layoutElement.preferredHeight = 160f;
+            layoutElement.flexibleWidth = 0f;
+            layoutElement.flexibleHeight = 0f;
+
+            _updateInfoPanel = updatePanel;
+
+            var updateInfoText = UIFactory.CreateText("UpdateInfo", updatePanel.transform, "", 18,
+                new Color(0.9f, 0.9f, 0.9f, 1), TextAnchor.UpperCenter);
+            var updateInfoRect = updateInfoText.GetComponent<RectTransform>();
+            updateInfoRect.sizeDelta = new Vector2(0f, 0f);
+            updateInfoRect.anchorMin = new Vector2(0f, 0.35f);
+            updateInfoRect.anchorMax = new Vector2(1f, 1f);
+            updateInfoRect.pivot = new Vector2(0.5f, 1f);
+            updateInfoRect.anchoredPosition = Vector2.zero;
+
+            var textComponent = updateInfoText.GetComponent<Text>();
+            if (textComponent != null)
+            {
+                textComponent.resizeTextForBestFit = true;
+                textComponent.resizeTextMinSize = 12;
+                textComponent.resizeTextMaxSize = 20;
+            }
+
+            var updateInfoLayoutElement = updateInfoText.AddComponent<LayoutElement>();
+            updateInfoLayoutElement.flexibleHeight = 1f;
+            updateInfoLayoutElement.flexibleWidth = 1f;
+            updateInfoLayoutElement.minHeight = 50f;
+
+            var localizedUpdateInfo = updateInfoText.AddComponent<LocalizedText>();
+            localizedUpdateInfo.SetTextGetter(GetUpdateInfoText);
+            _updateInfoLocalizedText = localizedUpdateInfo;
+
+            var checkButton = UIFactory.CreateButton("UpdateCheckButton", updatePanel.transform,
+                OnUpdateCheckButtonClicked,
+                new Color(0.2f, 0.3f, 0.4f, 0.9f));
+            var checkButtonRect = checkButton.GetComponent<RectTransform>();
+            checkButtonRect.sizeDelta = new Vector2(120f, 30f);
+            checkButtonRect.anchorMin = new Vector2(0.5f, 0f);
+            checkButtonRect.anchorMax = new Vector2(0.5f, 0f);
+            checkButtonRect.pivot = new Vector2(0.5f, 0f);
+            checkButtonRect.anchoredPosition = new Vector2(0f, 10f);
+
+            var checkButtonLayoutElement = checkButton.AddComponent<LayoutElement>();
+            checkButtonLayoutElement.ignoreLayout = true;
+            checkButtonLayoutElement.preferredHeight = 30f;
+            checkButtonLayoutElement.preferredWidth = 120f;
+
+            var checkButtonText = UIFactory.CreateText("Text", checkButton.transform, Localization.CheckForUpdate, 16,
+                Color.white, TextAnchor.MiddleCenter);
+            UIFactory.SetupButtonText(checkButtonText);
+            UIFactory.SetLocalizedText(checkButtonText, () => Localization.CheckForUpdate);
+
+            _updateCheckButton = checkButton;
+
+            if (UpdateChecker.Instance != null) UpdateChecker.OnUpdateCheckCompleted += OnUpdateCheckCompleted;
+
+            _lastUpdateInfoRefreshTime = Time.time;
+            RefreshUpdateInfo();
+        }
+
+        private static void OnUpdateCheckButtonClicked()
+        {
+            if (UpdateChecker.Instance != null) UpdateChecker.Instance.CheckForUpdate();
+        }
+
+        private void OnUpdateCheckCompleted(bool hasUpdate, string? latestVersion)
+        {
+            RefreshUpdateInfo();
+        }
+
+        private static string GetUpdateInfoText()
+        {
+            var updateChecker = UpdateChecker.Instance;
+            if (updateChecker == null)
+                return Localization.UpdateCheckNotAvailable;
+
+            var hasUpdate = updateChecker.HasUpdate();
+            var latestVersion = updateChecker.GetLatestVersion();
+            var latestReleaseName = updateChecker.GetLatestReleaseName();
+            var lastCheckTime = updateChecker.GetLastCheckTime();
+
+            var info = new StringBuilder();
+
+            if (hasUpdate && !string.IsNullOrEmpty(latestVersion))
+            {
+                info.AppendLine($"{Localization.UpdateAvailable}:");
+                info.AppendLine(latestReleaseName ?? latestVersion);
+            }
+            else if (!string.IsNullOrEmpty(latestVersion))
+            {
+                info.AppendLine($"{Localization.LatestVersion}:");
+                info.AppendLine(latestReleaseName ?? latestVersion);
+            }
+
+            if (lastCheckTime.HasValue)
+            {
+                var timeAgo = DateTime.Now - lastCheckTime.Value;
+                var timeText = timeAgo.TotalMinutes < 1
+                    ? Localization.JustNow
+                    : timeAgo.TotalHours < 1
+                        ? $"{(int)timeAgo.TotalMinutes} {Localization.MinutesAgo}"
+                        : timeAgo.TotalDays < 1
+                            ? $"{(int)timeAgo.TotalHours} {Localization.HoursAgo}"
+                            : $"{(int)timeAgo.TotalDays} {Localization.DaysAgo}";
+                if (info.Length > 0)
+                    info.AppendLine();
+                info.Append($"{Localization.LastCheckTime}: {timeText}");
+            }
+            else
+            {
+                if (info.Length > 0)
+                    info.AppendLine();
+                info.Append(Localization.NeverChecked);
+            }
+
+            return info.ToString();
+        }
+
+        private void RefreshUpdateInfo()
+        {
+            if (_updateInfoPanel == null) return;
+
+            var updateInfoText = _updateInfoPanel.transform.Find("UpdateInfo");
+            if (updateInfoText == null) return;
+            var localizedText = updateInfoText.GetComponent<LocalizedText>();
+            localizedText?.RefreshText();
         }
     }
 }

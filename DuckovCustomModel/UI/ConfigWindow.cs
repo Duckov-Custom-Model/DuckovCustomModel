@@ -57,6 +57,8 @@ namespace DuckovCustomModel.UI
         private TabSystem? _tabSystem;
         private bool _uiActive;
         private GameObject? _uiRoot;
+        private GameObject? _updateIndicatorButton;
+        private GameObject? _updateIndicatorTitle;
 
         private static UIConfig? UIConfig => ModEntry.UIConfig;
         private static CharacterInputControl? CharacterInputControl => CharacterInputControl.Instance;
@@ -74,6 +76,7 @@ namespace DuckovCustomModel.UI
             }
 
             UpdateSettingsButtonVisibility();
+            UpdateUpdateIndicators();
 
             if (uiConfig.DCMButtonAnchor != _lastAnchorPosition ||
                 Math.Abs(uiConfig.DCMButtonOffsetX - _lastOffsetX) > 0.01f ||
@@ -121,6 +124,11 @@ namespace DuckovCustomModel.UI
             Cursor.lockState = CursorLockMode.None;
         }
 
+        private void OnDestroy()
+        {
+            UpdateChecker.OnUpdateCheckCompleted -= OnUpdateCheckCompleted;
+        }
+
         private void OnGUI()
         {
             if (!_showAnimatorParamsWindow) return;
@@ -159,6 +167,12 @@ namespace DuckovCustomModel.UI
                 _lastAnchorPosition = uiConfig.DCMButtonAnchor;
                 _lastOffsetX = uiConfig.DCMButtonOffsetX;
                 _lastOffsetY = uiConfig.DCMButtonOffsetY;
+            }
+
+            if (UpdateChecker.Instance != null)
+            {
+                UpdateChecker.OnUpdateCheckCompleted += OnUpdateCheckCompleted;
+                UpdateChecker.Instance.CheckForUpdate();
             }
 
             ModLogger.Log("ConfigWindow initialized.");
@@ -220,8 +234,8 @@ namespace DuckovCustomModel.UI
             titleContainer.transform.SetParent(titleBar.transform, false);
             UIFactory.SetupRectTransform(titleContainer, new(0, 0), new(1, 1), offsetMin: new(10, 0),
                 offsetMax: new(-10, 0));
-            UIFactory.SetupHorizontalLayoutGroup(titleContainer, 8f, new(0, 0, 0, 0), TextAnchor.MiddleCenter,
-                false, false, false, false);
+            UIFactory.SetupHorizontalLayoutGroup(titleContainer, 12f, new(0, 0, 0, 0), TextAnchor.MiddleCenter,
+                true, false, false, false);
 
             var titleText = UIFactory.CreateText("Title", titleContainer.transform, Localization.Title,
                 20,
@@ -235,6 +249,12 @@ namespace DuckovCustomModel.UI
                 new Color(0.8f, 0.8f, 0.8f, 1));
             UIFactory.SetupRectTransform(versionLabel, Vector2.zero, Vector2.zero, new(0, 0));
             UIFactory.SetupContentSizeFitter(versionLabel);
+
+            _updateIndicatorTitle = UIFactory.CreateText("UpdateIndicator", titleContainer.transform, "", 16,
+                new Color(1f, 0.6f, 0f, 1), TextAnchor.MiddleCenter, FontStyle.Bold);
+            UIFactory.SetupRectTransform(_updateIndicatorTitle, Vector2.zero, Vector2.zero, new(0, 0));
+            UIFactory.SetupContentSizeFitter(_updateIndicatorTitle);
+            _updateIndicatorTitle.SetActive(false);
 
             var titleContainerRect = titleContainer.GetComponent<RectTransform>();
             LayoutRebuilder.ForceRebuildLayoutImmediate(titleContainerRect);
@@ -757,6 +777,13 @@ namespace DuckovCustomModel.UI
                 TextAnchor.MiddleCenter);
             UIFactory.SetupButtonText(buttonText, 16, 24);
 
+            _updateIndicatorButton = UIFactory.CreateText("UpdateIndicator", _settingsButton.transform, "!", 16,
+                new Color(1f, 0.6f, 0f, 1), TextAnchor.MiddleCenter);
+            UIFactory.SetupRectTransform(_updateIndicatorButton, new(0.8f, 0.8f), new(1f, 1f), new(0, 0),
+                pivot: new Vector2(1f, 1f), anchoredPosition: new Vector2(-2, -2));
+            UIFactory.SetupContentSizeFitter(_updateIndicatorButton);
+            _updateIndicatorButton.SetActive(false);
+
             UIFactory.SetupButtonColors(_settingsButton.GetComponent<Button>(),
                 new(0.2f, 0.25f, 0.3f, 0.9f),
                 new(0.3f, 0.35f, 0.4f, 0.9f),
@@ -844,6 +871,45 @@ namespace DuckovCustomModel.UI
                 AnchorPosition.BottomRight => new(1f, 0f),
                 _ => new(0f, 1f),
             };
+        }
+
+        private void OnUpdateCheckCompleted(bool hasUpdate, string? latestVersion)
+        {
+            UpdateUpdateIndicators();
+        }
+
+        private void UpdateUpdateIndicators()
+        {
+            var updateChecker = UpdateChecker.Instance;
+            if (updateChecker == null) return;
+
+            var hasUpdate = updateChecker.HasUpdate();
+            var latestVersion = updateChecker.GetLatestVersion();
+
+            if (_updateIndicatorTitle != null)
+            {
+                if (hasUpdate && !string.IsNullOrEmpty(latestVersion))
+                {
+                    _updateIndicatorTitle.SetActive(true);
+                    var localizedText = _updateIndicatorTitle.GetComponent<LocalizedText>();
+                    if (localizedText != null)
+                    {
+                        localizedText.SetTextGetter(() => $"{Localization.UpdateAvailable}: {latestVersion}");
+                    }
+                    else
+                    {
+                        var text = _updateIndicatorTitle.GetComponent<Text>();
+                        if (text != null)
+                            text.text = $"{Localization.UpdateAvailable}: {latestVersion}";
+                    }
+                }
+                else
+                {
+                    _updateIndicatorTitle.SetActive(false);
+                }
+            }
+
+            if (_updateIndicatorButton != null) _updateIndicatorButton.SetActive(hasUpdate);
         }
     }
 }

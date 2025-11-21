@@ -81,6 +81,16 @@ namespace DuckovCustomModel.Localizations
             { "BottomRight", "Bottom-Right" },
             { "OffsetX", "Offset X" },
             { "OffsetY", "Offset Y" },
+            { "UpdateAvailable", "Update Available" },
+            { "CheckForUpdate", "Check for Update" },
+            { "LatestVersion", "Latest Version" },
+            { "LastCheckTime", "Last Check" },
+            { "UpdateCheckNotAvailable", "Update check not available" },
+            { "NeverChecked", "Never checked" },
+            { "JustNow", "Just now" },
+            { "MinutesAgo", "minutes ago" },
+            { "HoursAgo", "hours ago" },
+            { "DaysAgo", "days ago" },
         };
 
         public static string Title => GetText("Title");
@@ -138,6 +148,16 @@ namespace DuckovCustomModel.Localizations
         public static string BottomRight => GetText("BottomRight");
         public static string OffsetX => GetText("OffsetX");
         public static string OffsetY => GetText("OffsetY");
+        public static string UpdateAvailable => GetText("UpdateAvailable");
+        public static string CheckForUpdate => GetText("CheckForUpdate");
+        public static string LatestVersion => GetText("LatestVersion");
+        public static string LastCheckTime => GetText("LastCheckTime");
+        public static string UpdateCheckNotAvailable => GetText("UpdateCheckNotAvailable");
+        public static string NeverChecked => GetText("NeverChecked");
+        public static string JustNow => GetText("JustNow");
+        public static string MinutesAgo => GetText("MinutesAgo");
+        public static string HoursAgo => GetText("HoursAgo");
+        public static string DaysAgo => GetText("DaysAgo");
 
         public static event Action<SystemLanguage>? OnLanguageChangedEvent;
 

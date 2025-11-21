@@ -63,6 +63,7 @@ namespace DuckovCustomModel
             ModelListManager.RefreshModelList(priorityModelIDs);
 
             InitializeConfigWindow();
+            InitializeUpdateChecker();
 
             CustomDialogueManager.Initialize();
 
@@ -307,6 +308,16 @@ namespace DuckovCustomModel
             _configWindow = uiObject.AddComponent<ConfigWindow>();
             Object.DontDestroyOnLoad(uiObject);
             ModLogger.Log("ConfigWindow initialized.");
+        }
+
+        private static void InitializeUpdateChecker()
+        {
+            if (UpdateChecker.Instance != null) return;
+
+            var updateCheckerObject = new GameObject("UpdateChecker");
+            updateCheckerObject.AddComponent<UpdateChecker>();
+            Object.DontDestroyOnLoad(updateCheckerObject);
+            ModLogger.Log("UpdateChecker initialized.");
         }
 
         private static void InitializeModelHandlerToCharacter(CharacterMainControl characterMainControl,
