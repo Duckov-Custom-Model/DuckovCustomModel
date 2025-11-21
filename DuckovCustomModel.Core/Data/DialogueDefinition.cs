@@ -15,24 +15,51 @@ namespace DuckovCustomModel.Core.Data
 
     public class DialogueDefinition
     {
+        private readonly object _lock = new();
+        [JsonIgnore] private int _currentIndex;
         [JsonIgnore] private List<int>? _remainingIndices;
-
         public string Id { get; set; } = string.Empty;
         public string[] Texts { get; set; } = [];
         public DialoguePlayMode Mode { get; set; } = DialoguePlayMode.Sequential;
         public float Duration { get; set; } = 2f;
 
-        [JsonIgnore] public int CurrentIndex { get; set; }
+        [JsonIgnore]
+        public int CurrentIndex
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _currentIndex;
+                }
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    _currentIndex = value;
+                }
+            }
+        }
 
         [JsonIgnore]
         public List<int> RemainingIndices
         {
             get
             {
-                _remainingIndices ??= [];
-                return _remainingIndices;
+                lock (_lock)
+                {
+                    _remainingIndices ??= [];
+                    return _remainingIndices;
+                }
             }
-            set => _remainingIndices = value;
+            set
+            {
+                lock (_lock)
+                {
+                    _remainingIndices = value;
+                }
+            }
         }
     }
 }

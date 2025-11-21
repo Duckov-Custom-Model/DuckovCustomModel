@@ -1115,9 +1115,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
             if (!_soundsByTag.TryGetValue(soundTag, out var sounds) || sounds.Count == 0) return null;
 
-            if (_soundTagPlayChance.TryGetValue(soundTag, out var playChance))
-                if (Random.value > playChance)
-                    skippedByProbability = true;
+            if (_soundTagPlayChance.TryGetValue(soundTag, out var playChance) && Random.value > playChance)
+                skippedByProbability = true;
 
             var index = Random.Range(0, sounds.Count);
             return sounds[index];
