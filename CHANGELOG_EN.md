@@ -2,6 +2,13 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.8.6-fix1
+
+- Fixed random integer generation logic in AnimatorParameterDriverManager
+- Fixed random integer generation range in AnimatorParameterDriverManager to ensure maximum value is included
+- Fixed range conversion logic for copy parameter operation
+- Updated documentation comments for ModelParameterDriver and BlueprintID components to improve readability and understanding
+
 ## v1.8.6
 
 - Added `ModelParameterDriver` component, supporting custom parameter control in animation state machines

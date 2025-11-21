@@ -131,7 +131,7 @@ namespace DuckovCustomModel.Core.Managers
                     animator.SetFloat(targetParam.name, randomFloat);
                     break;
                 case AnimatorControllerParameterType.Int:
-                    var randomInt = Random.Range((int)parameter.valueMin, (int)parameter.valueMax);
+                    var randomInt = Random.Range((int)parameter.valueMin, (int)parameter.valueMax + 1);
                     animator.SetInteger(targetParam.name, randomInt);
                     break;
                 case AnimatorControllerParameterType.Bool:
@@ -169,10 +169,10 @@ namespace DuckovCustomModel.Core.Managers
             {
                 var sourceMin = parameter.sourceMin;
                 var sourceMax = parameter.sourceMax;
-                var targetMin = parameter.valueMin;
-                var targetMax = parameter.valueMax;
+                var targetMin = parameter.destMin;
+                var targetMax = parameter.destMax;
 
-                if (sourceMax - sourceMin != 0)
+                if (Mathf.Abs(sourceMax - sourceMin) > Mathf.Epsilon)
                     finalValue = targetMin + (sourceValue - sourceMin) * (targetMax - targetMin) /
                         (sourceMax - sourceMin);
             }
