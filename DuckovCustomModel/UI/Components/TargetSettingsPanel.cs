@@ -4,6 +4,7 @@ using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.UI.Base;
 using DuckovCustomModel.UI.Data;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -16,8 +17,8 @@ namespace DuckovCustomModel.UI.Components
         private Toggle? _enableIdleAudioToggle;
         private Toggle? _enableModelAudioToggle;
         private Toggle? _hideEquipmentToggle;
-        private InputField? _idleAudioMaxIntervalInput;
-        private InputField? _idleAudioMinIntervalInput;
+        private TMP_InputField? _idleAudioMaxIntervalInput;
+        private TMP_InputField? _idleAudioMinIntervalInput;
         private ScrollRect? _scrollRect;
         private int _settingRowIndex;
 
@@ -181,7 +182,11 @@ namespace DuckovCustomModel.UI.Components
                 UIFactory.CreateInputField("IdleAudioMinIntervalInput", minIntervalRow.transform);
             _idleAudioMinIntervalInput.text = interval.Min.ToString("F1");
             if (_idleAudioMinIntervalInput.textComponent != null)
-                _idleAudioMinIntervalInput.textComponent.fontSize += 4;
+            {
+                _idleAudioMinIntervalInput.textComponent.enableAutoSizing = false;
+                _idleAudioMinIntervalInput.textComponent.fontSize = 18;
+            }
+
             UIFactory.SetupRightControl(_idleAudioMinIntervalInput.gameObject, new(100, 30));
             _idleAudioMinIntervalInput.onEndEdit.AddListener(OnIdleAudioMinIntervalChanged);
 
@@ -197,7 +202,11 @@ namespace DuckovCustomModel.UI.Components
                 UIFactory.CreateInputField("IdleAudioMaxIntervalInput", maxIntervalRow.transform);
             _idleAudioMaxIntervalInput.text = interval.Max.ToString("F1");
             if (_idleAudioMaxIntervalInput.textComponent != null)
-                _idleAudioMaxIntervalInput.textComponent.fontSize += 4;
+            {
+                _idleAudioMaxIntervalInput.textComponent.enableAutoSizing = false;
+                _idleAudioMaxIntervalInput.textComponent.fontSize = 18;
+            }
+
             UIFactory.SetupRightControl(_idleAudioMaxIntervalInput.gameObject, new(100, 30));
             _idleAudioMaxIntervalInput.onEndEdit.AddListener(OnIdleAudioMaxIntervalChanged);
         }

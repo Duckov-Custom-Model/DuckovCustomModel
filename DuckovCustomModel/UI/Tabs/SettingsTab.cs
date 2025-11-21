@@ -4,6 +4,7 @@ using DuckovCustomModel.Configs;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.UI.Base;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,9 +14,9 @@ namespace DuckovCustomModel.UI.Tabs
     {
         private GameObject? _animatorParamsKeyButton;
         private Toggle? _animatorParamsToggle;
-        private Dropdown? _dcmButtonAnchorDropdown;
-        private InputField? _dcmButtonOffsetXInput;
-        private InputField? _dcmButtonOffsetYInput;
+        private TMP_Dropdown? _dcmButtonAnchorDropdown;
+        private TMP_InputField? _dcmButtonOffsetXInput;
+        private TMP_InputField? _dcmButtonOffsetYInput;
         private bool _isWaitingForAnimatorParamsKeyInput;
 
         private bool _isWaitingForUIKeyInput;
@@ -233,7 +234,7 @@ namespace DuckovCustomModel.UI.Tabs
 
             var offsetYInput = UIFactory.CreateInputField("OffsetYInput", offsetRow.transform);
             UIFactory.SetupRightControl(offsetYInput.gameObject, new(80, 25));
-            offsetYInput.contentType = InputField.ContentType.DecimalNumber;
+            offsetYInput.contentType = TMP_InputField.ContentType.DecimalNumber;
             offsetYInput.onValueChanged.AddListener(OnOffsetYValueChanged);
             offsetYInput.onEndEdit.AddListener(OnOffsetYEndEdit);
             _dcmButtonOffsetYInput = offsetYInput;
@@ -246,7 +247,7 @@ namespace DuckovCustomModel.UI.Tabs
 
             var offsetXInput = UIFactory.CreateInputField("OffsetXInput", offsetRow.transform);
             UIFactory.SetupRightControl(offsetXInput.gameObject, new(80, 25), -220f);
-            offsetXInput.contentType = InputField.ContentType.DecimalNumber;
+            offsetXInput.contentType = TMP_InputField.ContentType.DecimalNumber;
             offsetXInput.onValueChanged.AddListener(OnOffsetXValueChanged);
             offsetXInput.onEndEdit.AddListener(OnOffsetXEndEdit);
             _dcmButtonOffsetXInput = offsetXInput;
@@ -260,7 +261,7 @@ namespace DuckovCustomModel.UI.Tabs
             RefreshDCMButtonPositionDisplay();
         }
 
-        private static void RefreshAnchorDropdownOptions(Dropdown dropdown)
+        private static void RefreshAnchorDropdownOptions(TMP_Dropdown dropdown)
         {
             dropdown.options.Clear();
             dropdown.options.Add(new(GetAnchorPositionText(AnchorPosition.TopLeft)));
@@ -608,19 +609,13 @@ namespace DuckovCustomModel.UI.Tabs
 
             var updateInfoText = UIFactory.CreateText("UpdateInfo", updatePanel.transform, "", 18,
                 new Color(0.9f, 0.9f, 0.9f, 1), TextAnchor.UpperCenter);
-            var updateInfoRect = updateInfoText.GetComponent<RectTransform>();
-            updateInfoRect.sizeDelta = new Vector2(0f, 0f);
-            updateInfoRect.anchorMin = new Vector2(0f, 0.35f);
-            updateInfoRect.anchorMax = new Vector2(1f, 1f);
-            updateInfoRect.pivot = new Vector2(0.5f, 1f);
-            updateInfoRect.anchoredPosition = Vector2.zero;
 
-            var textComponent = updateInfoText.GetComponent<Text>();
+            var textComponent = updateInfoText.GetComponent<TextMeshProUGUI>();
             if (textComponent != null)
             {
-                textComponent.resizeTextForBestFit = true;
-                textComponent.resizeTextMinSize = 12;
-                textComponent.resizeTextMaxSize = 20;
+                textComponent.enableAutoSizing = true;
+                textComponent.fontSizeMin = 12;
+                textComponent.fontSizeMax = 20;
             }
 
             var updateInfoLayoutElement = updateInfoText.AddComponent<LayoutElement>();
@@ -635,17 +630,13 @@ namespace DuckovCustomModel.UI.Tabs
             var checkButton = UIFactory.CreateButton("UpdateCheckButton", updatePanel.transform,
                 OnUpdateCheckButtonClicked,
                 new Color(0.2f, 0.3f, 0.4f, 0.9f));
-            var checkButtonRect = checkButton.GetComponent<RectTransform>();
-            checkButtonRect.sizeDelta = new Vector2(120f, 30f);
-            checkButtonRect.anchorMin = new Vector2(0.5f, 0f);
-            checkButtonRect.anchorMax = new Vector2(0.5f, 0f);
-            checkButtonRect.pivot = new Vector2(0.5f, 0f);
-            checkButtonRect.anchoredPosition = new Vector2(0f, 10f);
 
             var checkButtonLayoutElement = checkButton.AddComponent<LayoutElement>();
-            checkButtonLayoutElement.ignoreLayout = true;
+            checkButtonLayoutElement.minHeight = 30f;
             checkButtonLayoutElement.preferredHeight = 30f;
             checkButtonLayoutElement.preferredWidth = 120f;
+            checkButtonLayoutElement.flexibleHeight = 0f;
+            checkButtonLayoutElement.flexibleWidth = 0f;
 
             var checkButtonText = UIFactory.CreateText("Text", checkButton.transform, Localization.CheckForUpdate, 16,
                 Color.white, TextAnchor.MiddleCenter);
@@ -704,8 +695,6 @@ namespace DuckovCustomModel.UI.Tabs
                         : timeAgo.TotalDays < 1
                             ? $"{(int)timeAgo.TotalHours} {Localization.HoursAgo}"
                             : $"{(int)timeAgo.TotalDays} {Localization.DaysAgo}";
-                if (info.Length > 0)
-                    info.AppendLine();
                 info.Append($"{Localization.LastCheckTime}: {timeText}");
             }
             else

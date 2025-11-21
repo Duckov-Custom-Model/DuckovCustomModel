@@ -1,20 +1,21 @@
 using System;
+using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace DuckovCustomModel.Localizations
 {
     public class LocalizedText : MonoBehaviour
     {
         private bool _isRegistered;
-        private Text? _text;
+        private TextMeshProUGUI? _text;
         private Func<string>? _textGetter;
 
         private void Awake()
         {
-            _text = GetComponent<Text>();
+            _text = GetComponent<TextMeshProUGUI>();
             if (_text == null)
-                ModLogger.LogWarning($"LocalizedText component on {gameObject.name} requires a Text component.");
+                ModLogger.LogWarning(
+                    $"LocalizedText component on {gameObject.name} requires a TextMeshProUGUI component.");
         }
 
         private void Start()

@@ -99,10 +99,8 @@ namespace DuckovCustomModel.UI.Tabs
             overlayCanvasGroup.interactable = true;
 
             var overlayText = UIFactory.CreateText("OverlayText", _overlayPanel.transform, Localization.Updating, 24,
-                Color.white, TextAnchor.MiddleCenter);
+                Color.white, TextAnchor.MiddleCenter, FontStyle.Bold);
             UIFactory.SetupRectTransform(overlayText, Vector2.zero, Vector2.one, Vector2.zero);
-            var overlayTextComponent = overlayText.GetComponent<Text>();
-            overlayTextComponent.fontStyle = FontStyle.Bold;
 
             UIFactory.SetLocalizedText(overlayText, () => Localization.Updating);
 

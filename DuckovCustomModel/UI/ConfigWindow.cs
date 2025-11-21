@@ -11,6 +11,7 @@ using DuckovCustomModel.MonoBehaviours;
 using DuckovCustomModel.UI.Base;
 using DuckovCustomModel.UI.Components;
 using DuckovCustomModel.UI.Tabs;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -313,7 +314,7 @@ namespace DuckovCustomModel.UI
             var current = EventSystem.current;
             if (current == null || current.currentSelectedGameObject == null) return false;
 
-            var inputField = current.currentSelectedGameObject.GetComponent<InputField>();
+            var inputField = current.currentSelectedGameObject.GetComponent<TMP_InputField>();
             return inputField != null && inputField.isFocused;
         }
 
@@ -898,7 +899,7 @@ namespace DuckovCustomModel.UI
                     }
                     else
                     {
-                        var text = _updateIndicatorTitle.GetComponent<Text>();
+                        var text = _updateIndicatorTitle.GetComponent<TextMeshProUGUI>();
                         if (text != null)
                             text.text = $"{Localization.UpdateAvailable}: {latestVersion}";
                     }

@@ -5,6 +5,7 @@ using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.UI.Base;
 using DuckovCustomModel.UI.Data;
 using SodaCraft.Localizations;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -158,7 +159,7 @@ namespace DuckovCustomModel.UI.Components
 
             var textObj = buttonObj.transform.Find("Text");
             if (textObj == null) return;
-            var text = textObj.GetComponent<Text>();
+            var text = textObj.GetComponent<TextMeshProUGUI>();
             if (text != null)
                 text.text = targetInfo.DisplayName;
         }

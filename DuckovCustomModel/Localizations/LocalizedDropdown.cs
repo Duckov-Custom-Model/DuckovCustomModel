@@ -1,12 +1,12 @@
 using System;
+using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace DuckovCustomModel.Localizations
 {
     public class LocalizedDropdown : MonoBehaviour
     {
-        private Dropdown? _dropdown;
+        private TMP_Dropdown? _dropdown;
         private bool _isRegistered;
         private Action? _refreshAction;
 
@@ -20,7 +20,7 @@ namespace DuckovCustomModel.Localizations
             Unregister();
         }
 
-        public void SetDropdown(Dropdown dropdown)
+        public void SetDropdown(TMP_Dropdown dropdown)
         {
             _dropdown = dropdown;
             if (_dropdown != null && _refreshAction != null && !_isRegistered) Register();
