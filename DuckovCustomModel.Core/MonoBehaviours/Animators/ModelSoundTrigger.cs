@@ -43,8 +43,8 @@ namespace DuckovCustomModel.Core.MonoBehaviours.Animators
             }
             else
             {
-                selectedTag = validTags[_sequentialIndex % validTags.Length];
-                _sequentialIndex++;
+                selectedTag = validTags[_sequentialIndex];
+                _sequentialIndex = (_sequentialIndex + 1) % validTags.Length;
             }
 
             selectedTag = selectedTag.ToLowerInvariant().Trim();

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -17,7 +18,7 @@ namespace DuckovCustomModel.Managers
 {
     public static class CustomDialogueManager
     {
-        private static readonly Dictionary<string, Dictionary<string, DialogueDefinition>> DialogueCache = [];
+        private static readonly ConcurrentDictionary<string, Dictionary<string, DialogueDefinition>> DialogueCache = [];
         private static bool _initialized;
 
         public static void Initialize()
@@ -48,11 +49,11 @@ namespace DuckovCustomModel.Managers
             if (animator == null) return;
 
             var modelHandler = animator.GetComponentInParent<ModelHandler>();
-            if (modelHandler == null || string.IsNullOrEmpty(modelHandler.CurrentModelDirectory)) return;
+            if (modelHandler == null || string.IsNullOrWhiteSpace(modelHandler.CurrentModelDirectory)) return;
 
             var defaultLanguageKey = GetLanguageKey(defaultLanguage);
             var definitions =
-                LoadDialogueDefinitions(modelHandler.CurrentModelDirectory!, fileName, defaultLanguageKey);
+                LoadDialogueDefinitions(modelHandler.CurrentModelDirectory, fileName, defaultLanguageKey);
             if (definitions == null || !definitions.TryGetValue(dialogueId, out var definition)) return;
 
             var targetTransform = animator.transform;
