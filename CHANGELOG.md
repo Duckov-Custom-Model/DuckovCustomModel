@@ -2,6 +2,13 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.8.6-fix1
+
+- 修复 AnimatorParameterDriverManager 中的随机整数生成逻辑
+- 修正 AnimatorParameterDriverManager 中随机整数生成的范围，确保包含最大值
+- 修正复制参数操作的范围转换逻辑
+- 更新 ModelParameterDriver 和 BlueprintID 组件的文档注释，增强可读性和理解性
+
 ## v1.8.6
 
 - 新增 `ModelParameterDriver` 组件，支持在动画状态机中自定义参数控制
