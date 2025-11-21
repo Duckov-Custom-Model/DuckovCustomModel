@@ -375,6 +375,10 @@ UI 界面相关配置。
   - 未指定标签时，默认为 `["normal"]`
   - 同一音效文件可以同时用于多个场景
   - 音效文件路径在 `Path` 中指定，相对于模型包文件夹
+- `SoundTagPlayChance`（可选）：音效标签播放概率配置
+  - 字典类型，键为音效标签（不区分大小写），值为播放概率（0-100）
+  - 当触发该标签的音效时，会根据配置的概率决定是否播放
+  - 如果未配置或概率为 0，则始终播放（默认行为）
 - `WalkSoundFrequency`（可选）：走路时每秒的脚步声触发频率
   - 用于控制角色走路时脚步声的播放频率
   - 如果未指定，将自动使用原始角色的走路脚步声频率设置
@@ -551,6 +555,14 @@ Animator Controller 可以使用以下参数：
 
 - `Attack`：攻击触发（用于触发近战攻击动画）
 - `Shoot`：射击触发（当持有 `ItemAgent_Gun` 时，由 `OnShootEvent` 事件触发）
+- `Hurt`：受伤触发（角色受到伤害时自动触发）
+- `Dead`：死亡触发（角色死亡时自动触发）
+- `HitTarget`：命中目标触发（角色命中目标时自动触发）
+- `KillTarget`：击杀目标触发（角色击杀目标时自动触发）
+- `CritHurt`：暴击受伤触发（角色受到暴击伤害时自动触发）
+- `CritDead`：暴击死亡触发（角色暴击死亡时自动触发）
+- `CritHitTarget`：暴击命中目标触发（角色暴击命中目标时自动触发）
+- `CritKillTarget`：暴击击杀目标触发（角色暴击击杀目标时自动触发）
 
 ### 可选动画层
 
@@ -559,6 +571,50 @@ Animator Controller 可以使用以下参数：
 - 层名称必须为 `"MeleeAttack"`
 - 该层用于播放近战攻击动画
 - 层的权重会根据攻击状态自动调整
+
+### 动画器状态机行为组件
+
+模组提供了三个状态机行为组件，可以在动画状态进入时触发音效、对话或控制参数：
+
+#### ModelParameterDriver
+
+在动画状态进入时自动控制 Animator 参数，类似于 Unity 内置的 Animator Parameter Driver。
+
+- `parameters`：参数操作数组，可配置多个参数操作
+  - `type`：操作类型
+    - `Set`：直接设置参数值
+    - `Add`：在现有值基础上增加指定值
+    - `Random`：随机设置参数值（支持范围随机和概率触发）
+    - `Copy`：从源参数复制值到目标参数（支持范围转换）
+  - `name`：目标参数名称（将被写入的参数）
+  - `source`：源参数名称（用于 Copy 操作，将被读取的参数）
+  - `value`：操作使用的值（用于 Set 和 Add 操作）
+  - `valueMin` / `valueMax`：随机值的最小值和最大值（用于 Random 操作）
+  - `chance`：触发概率（0.0 - 1.0），用于控制操作是否执行
+  - `convertRange`：是否进行范围转换（用于 Copy 操作）
+  - `sourceMin` / `sourceMax`：源参数的范围（用于 Copy 操作的范围转换）
+  - `destMin` / `destMax`：目标参数的范围（用于 Copy 操作的范围转换）
+- `debugString`：调试信息（可选），会在日志中输出，便于调试
+- 支持所有 Animator 参数类型（Float、Int、Bool、Trigger）
+- 在动画状态进入时自动应用参数驱动
+- 支持参数验证，确保目标参数和源参数存在后才应用驱动
+
+#### ModelSoundTrigger
+
+在动画状态进入时触发音效播放。
+
+- `soundTags`：音效标签数组，可配置多个标签
+- `playOrder`：标签选择方式（Random：随机选择，Sequential：顺序选择）
+- `playMode`：音效播放模式（Normal、StopPrevious、SkipIfPlaying、UseTempObject）
+- `eventName`：事件名称，用于音效播放管理（可选，为空时使用默认名称）
+
+#### ModelDialogueTrigger
+
+在动画状态进入时触发对话播放。
+
+- `fileName`：对话定义文件名（不含扩展名）
+- `dialogueId`：对话 ID，对应对话配置文件中的对话 ID
+- `defaultLanguage`：默认语言，当当前语言文件不存在时使用
 
 ### 动画器工作流程
 
@@ -570,6 +626,9 @@ Animator Controller 可以使用以下参数：
    - `OnShootEvent`：触发时设置 `Shoot` 触发器
    - `OnLoadedEvent`：触发时更新 `Loaded` 布尔值
 6. 当角色切换持有物品时（`OnHoldAgentChanged` 事件），会自动更新相关订阅
+7. 战斗相关触发器会在相应事件发生时自动触发：
+   - 受伤/死亡：角色受到伤害或死亡时自动触发 `Hurt`/`Dead` 或 `CritHurt`/`CritDead`（根据是否为暴击）
+   - 命中/击杀：角色命中或击杀目标时自动触发 `HitTarget`/`KillTarget` 或 `CritHitTarget`/`CritKillTarget`（根据是否为暴击）
 
 ## 自定义音效
 
@@ -613,6 +672,12 @@ Animator Controller 可以使用以下参数：
   - `"idle"`：待机音效，用于角色自动播放（可通过配置控制哪些角色类型允许自动播放）
   - `"trigger_on_hurt"`：受伤触发音效，用于角色受到伤害时自动播放（如果已有受伤音效正在播放则跳过）
   - `"trigger_on_death"`：死亡触发音效，用于角色死亡时自动播放（会打断所有正在播放的音效）
+  - `"trigger_on_hit_target"`：命中目标触发音效，用于角色命中目标时自动播放（如果已有命中音效正在播放则跳过）
+  - `"trigger_on_kill_target"`：击杀目标触发音效，用于角色击杀目标时自动播放（如果已有击杀音效正在播放则跳过）
+  - `"trigger_on_crit_hurt"`：暴击受伤触发音效，用于角色受到暴击伤害时自动播放（如果已有受伤音效正在播放则跳过）
+  - `"trigger_on_crit_dead"`：暴击死亡触发音效，用于角色暴击死亡时自动播放（会打断所有正在播放的音效）
+  - `"trigger_on_crit_hit_target"`：暴击命中目标触发音效，用于角色暴击命中目标时自动播放（如果已有命中音效正在播放则跳过）
+  - `"trigger_on_crit_kill_target"`：暴击击杀目标触发音效，用于角色暴击击杀目标时自动播放（如果已有击杀音效正在播放则跳过）
   - `"search_found_item_quality_xxx"`：搜索完成时发现指定品质物品会触发音效，`xxx` 可为 `none`、`white`、`green`、`blue`、`purple`、`orange`、`red`、`q7`、`q8`
   - `"footstep_organic_walk_light"`、`"footstep_organic_walk_heavy"`、`"footstep_organic_run_light"`、`"footstep_organic_run_heavy"`：有机材质脚步声（轻/重步行、轻/重跑步）
   - `"footstep_mech_walk_light"`、`"footstep_mech_walk_heavy"`、`"footstep_mech_run_light"`、`"footstep_mech_run_heavy"`：机械材质脚步声（轻/重步行、轻/重跑步）
@@ -641,6 +706,18 @@ Animator Controller 可以使用以下参数：
 - **音效打断机制**：AI 自动触发的音效（`"normal"` 和 `"surprise"` 标签）与玩家按键触发的音效共享同一打断组，新播放的音效会打断同组内正在播放的音效
 - `"trigger_on_hurt"`：角色受到伤害时自动播放（适用于所有角色类型）
   - **音效打断机制**：如果已有受伤音效正在播放，则跳过新的受伤音效播放，避免重复播放
+- `"trigger_on_hit_target"`：角色命中目标时自动播放（适用于所有角色类型）
+  - **音效打断机制**：如果已有命中音效正在播放，则跳过新的命中音效播放，避免重复播放
+- `"trigger_on_kill_target"`：角色击杀目标时自动播放（适用于所有角色类型）
+  - **音效打断机制**：如果已有击杀音效正在播放，则跳过新的击杀音效播放，避免重复播放
+- `"trigger_on_crit_hurt"`：角色受到暴击伤害时自动播放（适用于所有角色类型）
+  - **音效打断机制**：如果已有受伤音效正在播放，则跳过新的受伤音效播放，避免重复播放
+- `"trigger_on_crit_dead"`：角色暴击死亡时自动播放（适用于所有角色类型）
+  - **音效打断机制**：播放死亡音效前会先停止所有正在播放的音效，然后播放死亡音效
+- `"trigger_on_crit_hit_target"`：角色暴击命中目标时自动播放（适用于所有角色类型）
+  - **音效打断机制**：如果已有命中音效正在播放，则跳过新的命中音效播放，避免重复播放
+- `"trigger_on_crit_kill_target"`：角色暴击击杀目标时自动播放（适用于所有角色类型）
+  - **音效打断机制**：如果已有击杀音效正在播放，则跳过新的击杀音效播放，避免重复播放
 - `"idle"`：启用了自动播放的角色会在随机间隔时间自动播放待机音效
   - 播放间隔可在 `IdleAudioConfig.json` 中配置
   - 默认间隔为 30-45 秒（随机）
@@ -666,6 +743,13 @@ Animator Controller 可以使用以下参数：
 - 使用 `search_found_item_quality_xxx` 标签，`xxx` 与 `Tags` 描述相同：`none`、`white`、`green`、`blue`、`purple`、`orange`、`red`、`q7`、`q8`
 - 若模型未配置对应品质的音效，则不会播放，保持与原版一致
 
+#### 动画状态机触发
+
+- 可以在动画状态机中使用 `ModelSoundTrigger` 组件在状态进入时触发音效
+- 支持配置多个音效标签，可选择随机或顺序播放
+- 支持配置音效播放模式，提供更精细的音效控制
+- 音效标签可以是任意自定义标签，不再限制于预定义标签
+
 ### 音效文件要求
 
 - 音效文件应放置在模型包文件夹内
@@ -673,9 +757,104 @@ Animator Controller 可以使用以下参数：
 - 音效文件路径在 `Path` 中指定，相对于模型包文件夹
 - 例如：如果模型包文件夹为 `MyModel/`，音效文件为 `MyModel/sounds/voice.wav`，则 `Path` 应设置为 `"sounds/voice.wav"`
 
+### 音效播放概率配置
+
+在 `bundleinfo.json` 的 `ModelInfo` 中可以配置音效标签的播放概率：
+
+```json
+{
+  "ModelID": "unique_model_id",
+  "Name": "模型显示名称",
+  "SoundTagPlayChance": {
+    "trigger_on_hurt": 50.0,
+    "trigger_on_hit_target": 30.0
+  }
+}
+```
+
+- `SoundTagPlayChance`（可选）：字典类型，键为音效标签（不区分大小写），值为播放概率（0-100）
+  - 概率值会被自动转换为 0-1 之间的浮点数（除以 100）
+  - 当触发该标签的音效时，会根据配置的概率决定是否播放
+  - 如果未配置或概率为 0，则始终播放（默认行为）
+  - 如果概率小于 100，则有一定几率不播放该音效
+
 ### 注意事项
 
 - 如果模型没有配置音效，不会影响其他功能
+- 音效标签不再限制于预定义标签，可以使用任意自定义标签
+- 自定义标签可以通过 `ModelSoundTrigger` 组件在动画状态机中触发
+
+## 自定义对话
+
+模组支持为自定义模型配置对话，可以在动画状态机中触发对话气泡显示。
+
+### 对话配置
+
+对话配置文件应放置在模型包文件夹内，文件命名格式为：`{文件名}_{语言}.json`
+
+例如：
+- `dialogue_English.json`：英语对话文件
+- `dialogue_Chinese.json`：中文对话文件
+
+对话配置文件格式：
+
+```json
+[
+  {
+    "Id": "dialogue_id_1",
+    "Texts": [
+      "对话文本 1",
+      "对话文本 2",
+      "对话文本 3"
+    ],
+    "Mode": "Sequential",
+    "Duration": 2.0
+  },
+  {
+    "Id": "dialogue_id_2",
+    "Texts": [
+      "随机对话 1",
+      "随机对话 2"
+    ],
+    "Mode": "Random",
+    "Duration": 3.0
+  }
+]
+```
+
+#### DialogueDefinition 字段说明
+
+- `Id`（必需）：对话的唯一标识符，用于在 `ModelDialogueTrigger` 中引用
+- `Texts`（必需）：对话文本数组，包含该对话的所有可能文本
+- `Mode`（可选）：对话播放模式（默认：`Sequential`）
+  - `Sequential`：顺序播放，按数组顺序依次播放，播放完最后一个后重新开始
+  - `Random`：随机播放，每次从数组中随机选择一个文本
+  - `RandomNoRepeat`：随机不重复播放，随机选择文本，直到所有文本都播放过后重新开始
+  - `Continuous`：连续播放，按顺序连续播放所有文本
+- `Duration`（可选）：对话显示持续时间（秒，默认：`2.0`）
+
+### 对话触发方式
+
+#### 动画状态机触发
+
+- 在动画状态机中使用 `ModelDialogueTrigger` 组件在状态进入时触发对话
+- 配置 `fileName`（对话文件名，不含扩展名）和 `dialogueId`（对话 ID）
+- 配置 `defaultLanguage`（默认语言），当当前语言文件不存在时使用
+- 对话气泡会自动显示在角色上方，位置会根据角色模型自动调整
+
+### 多语言支持
+
+- 对话文件支持多语言，系统会根据当前游戏语言自动加载对应语言的对话文件
+- 如果当前语言的对话文件不存在，会回退到 `defaultLanguage` 指定的语言文件
+- 语言文件命名规则：`{文件名}_{语言}.json`
+  - 中文（简体/繁体）：`Chinese`
+  - 其他语言：使用 `SystemLanguage` 枚举值的字符串形式（如 `English`、`Japanese` 等）
+
+### 注意事项
+
+- 如果模型没有配置对话，不会影响其他功能
+- 对话文件必须包含有效的 JSON 格式和至少一个对话定义
+- 对话 ID 必须唯一，重复的 ID 会被覆盖（使用最后一个）
 
 ## AI 角色适配
 

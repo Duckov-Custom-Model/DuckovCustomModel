@@ -375,6 +375,16 @@ Model Bundle Folder/
   - Defaults to `["normal"]` when no tags are specified
   - The same sound file can be used for multiple scenarios
   - Sound file paths are specified in `Path`, relative to the model bundle folder
+- `SoundTagPlayChance` (optional): Sound tag playback probability configuration
+  - Dictionary type, where keys are sound tags (case-insensitive) and values are playback probabilities (0-100)
+  - When a sound with this tag is triggered, whether it plays is determined by the configured probability
+  - If not configured or probability is 0, always plays (default behavior)
+- `WalkSoundFrequency` (optional): Footstep trigger frequency per second when walking
+  - Used to control the playback frequency of footstep sounds when the character walks
+  - If not specified, will automatically use the original character's walk footstep frequency setting
+- `RunSoundFrequency` (optional): Footstep trigger frequency per second when running
+  - Used to control the playback frequency of footstep sounds when the character runs
+  - If not specified, will automatically use the original character's run footstep frequency setting
 
 ## Locator Points
 
@@ -545,6 +555,14 @@ The Animator Controller can use the following parameters:
 
 - `Attack`: Attack trigger (used to trigger melee attack animations)
 - `Shoot`: Shoot trigger (triggered by `OnShootEvent` when holding `ItemAgent_Gun`)
+- `Hurt`: Hurt trigger (automatically triggered when the character takes damage)
+- `Dead`: Death trigger (automatically triggered when the character dies)
+- `HitTarget`: Hit target trigger (automatically triggered when the character hits a target)
+- `KillTarget`: Kill target trigger (automatically triggered when the character kills a target)
+- `CritHurt`: Critical hurt trigger (automatically triggered when the character takes critical damage)
+- `CritDead`: Critical death trigger (automatically triggered when the character dies from critical damage)
+- `CritHitTarget`: Critical hit target trigger (automatically triggered when the character critically hits a target)
+- `CritKillTarget`: Critical kill target trigger (automatically triggered when the character critically kills a target)
 
 ### Optional Animation Layer
 
@@ -553,6 +571,50 @@ If the model contains melee attack animations, you can add an animation layer na
 - Layer name must be `"MeleeAttack"`
 - This layer is used to play melee attack animations
 - Layer weight will be automatically adjusted based on attack state
+
+### Animator State Machine Behaviour Components
+
+The mod provides three state machine behaviour components that can trigger sounds, dialogue, or control parameters when animation states are entered:
+
+#### ModelParameterDriver
+
+Automatically controls Animator parameters when animation states are entered, similar to Unity's built-in Animator Parameter Driver.
+
+- `parameters`: Array of parameter operations, can configure multiple parameter operations
+  - `type`: Operation type
+    - `Set`: Directly set parameter value
+    - `Add`: Add specified value to existing value
+    - `Random`: Randomly set parameter value (supports range randomization and probability triggering)
+    - `Copy`: Copy value from source parameter to target parameter (supports range conversion)
+  - `name`: Target parameter name (parameter to be written to)
+  - `source`: Source parameter name (for Copy operation, parameter to be read from)
+  - `value`: Value used for the operation (for Set and Add operations)
+  - `valueMin` / `valueMax`: Minimum and maximum values for randomization (for Random operation)
+  - `chance`: Trigger probability (0.0 - 1.0), controls whether the operation executes
+  - `convertRange`: Whether to perform range conversion (for Copy operation)
+  - `sourceMin` / `sourceMax`: Source parameter range (for Copy operation range conversion)
+  - `destMin` / `destMax`: Target parameter range (for Copy operation range conversion)
+- `debugString`: Debug message (optional), will be output in logs for debugging
+- Supports all Animator parameter types (Float, Int, Bool, Trigger)
+- Automatically applies parameter driver when animation state enters
+- Supports parameter validation, ensuring target and source parameters exist before applying driver
+
+#### ModelSoundTrigger
+
+Triggers sound effect playback when animation state enters.
+
+- `soundTags`: Array of sound tags, can configure multiple tags
+- `playOrder`: Tag selection method (Random: random selection, Sequential: sequential selection)
+- `playMode`: Sound playback mode (Normal, StopPrevious, SkipIfPlaying, UseTempObject)
+- `eventName`: Event name for sound playback management (optional, uses default name if empty)
+
+#### ModelDialogueTrigger
+
+Triggers dialogue playback when animation state enters.
+
+- `fileName`: Dialogue definition file name (without extension)
+- `dialogueId`: Dialogue ID, corresponding to the dialogue ID in the dialogue configuration file
+- `defaultLanguage`: Default language, used when the current language file is missing
 
 ### Animator Workflow
 
@@ -564,6 +626,9 @@ If the model contains melee attack animations, you can add an animation layer na
    - `OnShootEvent`: Sets the `Shoot` trigger when triggered
    - `OnLoadedEvent`: Updates the `Loaded` boolean value when triggered
 6. When the character switches held items (`OnHoldAgentChanged` event), related subscriptions are automatically updated
+7. Combat-related triggers are automatically triggered when corresponding events occur:
+   - Hurt/Death: Automatically triggers `Hurt`/`Dead` or `CritHurt`/`CritDead` when the character takes damage or dies (based on whether it's a critical hit)
+   - Hit/Kill: Automatically triggers `HitTarget`/`KillTarget` or `CritHitTarget`/`CritKillTarget` when the character hits or kills a target (based on whether it's a critical hit)
 
 ## Custom Sounds
 
@@ -607,6 +672,12 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
   - `"idle"`: Idle sound, used for automatic playback by characters (can be controlled through configuration to determine which character types are allowed to automatically play)
   - `"trigger_on_hurt"`: Hurt trigger sound, automatically plays when the character takes damage (skips if a hurt sound is already playing)
   - `"trigger_on_death"`: Death trigger sound, automatically plays when the character dies (stops all currently playing sounds before playing)
+  - `"trigger_on_hit_target"`: Hit target trigger sound, automatically plays when the character hits a target (skips if a hit sound is already playing)
+  - `"trigger_on_kill_target"`: Kill target trigger sound, automatically plays when the character kills a target (skips if a kill sound is already playing)
+  - `"trigger_on_crit_hurt"`: Critical hurt trigger sound, automatically plays when the character takes critical damage (skips if a hurt sound is already playing)
+  - `"trigger_on_crit_dead"`: Critical death trigger sound, automatically plays when the character dies from critical damage (stops all currently playing sounds before playing)
+  - `"trigger_on_crit_hit_target"`: Critical hit target trigger sound, automatically plays when the character critically hits a target (skips if a hit sound is already playing)
+  - `"trigger_on_crit_kill_target"`: Critical kill target trigger sound, automatically plays when the character critically kills a target (skips if a kill sound is already playing)
   - `"search_found_item_quality_xxx"`: Plays when a searched item of the specified quality is revealed; `xxx` can be `none`, `white`, `green`, `blue`, `purple`, `orange`, `red`, `q7`, or `q8`
   - `"footstep_organic_walk_light"`, `"footstep_organic_walk_heavy"`, `"footstep_organic_run_light"`, `"footstep_organic_run_heavy"`: Organic material footstep sounds (light/heavy walk, light/heavy run)
   - `"footstep_mech_walk_light"`, `"footstep_mech_walk_heavy"`, `"footstep_mech_run_light"`, `"footstep_mech_run_heavy"`: Mechanical material footstep sounds (light/heavy walk, light/heavy run)
@@ -635,6 +706,18 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
 - **Sound Interrupt Mechanism**: AI automatic triggered sounds (`"normal"` and `"surprise"` tags) share the same interrupt group with player key press triggered sounds, newly played sounds will interrupt sounds playing in the same group
 - `"trigger_on_hurt"`: Automatically plays when the character takes damage (applies to all character types)
   - **Sound Interrupt Mechanism**: If a hurt sound is already playing, the new hurt sound will be skipped to avoid duplicate playback
+- `"trigger_on_hit_target"`: Automatically plays when the character hits a target (applies to all character types)
+  - **Sound Interrupt Mechanism**: If a hit sound is already playing, the new hit sound will be skipped to avoid duplicate playback
+- `"trigger_on_kill_target"`: Automatically plays when the character kills a target (applies to all character types)
+  - **Sound Interrupt Mechanism**: If a kill sound is already playing, the new kill sound will be skipped to avoid duplicate playback
+- `"trigger_on_crit_hurt"`: Automatically plays when the character takes critical damage (applies to all character types)
+  - **Sound Interrupt Mechanism**: If a hurt sound is already playing, the new hurt sound will be skipped to avoid duplicate playback
+- `"trigger_on_crit_dead"`: Automatically plays when the character dies from critical damage (applies to all character types)
+  - **Sound Interrupt Mechanism**: Before playing the death sound, all currently playing sounds will be stopped, then the death sound will play
+- `"trigger_on_crit_hit_target"`: Automatically plays when the character critically hits a target (applies to all character types)
+  - **Sound Interrupt Mechanism**: If a hit sound is already playing, the new hit sound will be skipped to avoid duplicate playback
+- `"trigger_on_crit_kill_target"`: Automatically plays when the character critically kills a target (applies to all character types)
+  - **Sound Interrupt Mechanism**: If a kill sound is already playing, the new kill sound will be skipped to avoid duplicate playback
 - `"idle"`: Characters with automatic playback enabled will automatically play idle sounds at random intervals
   - Play interval can be configured in `IdleAudioConfig.json`
   - Default interval is 30-45 seconds (random)
@@ -660,6 +743,13 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
 - Use `search_found_item_quality_xxx`, where `xxx` matches the same quality suffix listed in `Tags`: `none`, `white`, `green`, `blue`, `purple`, `orange`, `red`, `q7`, `q8`
 - If no sound is configured for that quality, nothing plays and the vanilla behavior remains unchanged
 
+#### Animation State Machine Trigger
+
+- Can use `ModelSoundTrigger` component in animation state machines to trigger sounds when states are entered
+- Supports configuring multiple sound tags, can choose random or sequential playback
+- Supports configuring sound playback modes for finer audio control
+- Sound tags can be any custom tags, no longer restricted to predefined tags
+
 ### Sound File Requirements
 
 - Sound files should be placed inside the model bundle folder
@@ -667,9 +757,104 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
 - Sound file paths are specified in `Path`, relative to the model bundle folder
 - Example: If the model bundle folder is `MyModel/` and the sound file is `MyModel/sounds/voice.wav`, then `Path` should be set to `"sounds/voice.wav"`
 
+### Sound Playback Probability Configuration
+
+In `ModelInfo` within `bundleinfo.json`, you can configure playback probability for sound tags:
+
+```json
+{
+  "ModelID": "unique_model_id",
+  "Name": "Model Display Name",
+  "SoundTagPlayChance": {
+    "trigger_on_hurt": 50.0,
+    "trigger_on_hit_target": 30.0
+  }
+}
+```
+
+- `SoundTagPlayChance` (optional): Dictionary type, where keys are sound tags (case-insensitive) and values are playback probabilities (0-100)
+  - Probability values are automatically converted to floats between 0-1 (divided by 100)
+  - When a sound with this tag is triggered, whether it plays is determined by the configured probability
+  - If not configured or probability is 0, always plays (default behavior)
+  - If probability is less than 100, there's a chance the sound won't play
+
 ### Notes
 
 - If a model has no sounds configured, it will not affect other functionality
+- Sound tags are no longer restricted to predefined tags, any custom tags can be used
+- Custom tags can be triggered through the `ModelSoundTrigger` component in animation state machines
+
+## Custom Dialogue
+
+The mod supports configuring dialogue for custom models, allowing dialogue bubbles to be displayed when triggered in animation state machines.
+
+### Dialogue Configuration
+
+Dialogue configuration files should be placed inside the model bundle folder, with file naming format: `{filename}_{language}.json`
+
+Examples:
+- `dialogue_English.json`: English dialogue file
+- `dialogue_Chinese.json`: Chinese dialogue file
+
+Dialogue configuration file format:
+
+```json
+[
+  {
+    "Id": "dialogue_id_1",
+    "Texts": [
+      "Dialogue text 1",
+      "Dialogue text 2",
+      "Dialogue text 3"
+    ],
+    "Mode": "Sequential",
+    "Duration": 2.0
+  },
+  {
+    "Id": "dialogue_id_2",
+    "Texts": [
+      "Random dialogue 1",
+      "Random dialogue 2"
+    ],
+    "Mode": "Random",
+    "Duration": 3.0
+  }
+]
+```
+
+#### DialogueDefinition Field Descriptions
+
+- `Id` (required): Unique identifier for the dialogue, used to reference in `ModelDialogueTrigger`
+- `Texts` (required): Array of dialogue texts, containing all possible texts for this dialogue
+- `Mode` (optional): Dialogue playback mode (default: `Sequential`)
+  - `Sequential`: Sequential playback, plays in array order, restarts from the beginning after the last one
+  - `Random`: Random playback, randomly selects one text from the array each time
+  - `RandomNoRepeat`: Random no-repeat playback, randomly selects texts until all have been played, then restarts
+  - `Continuous`: Continuous playback, plays all texts sequentially in order
+- `Duration` (optional): Dialogue display duration in seconds (default: `2.0`)
+
+### Dialogue Trigger Methods
+
+#### Animation State Machine Trigger
+
+- Use `ModelDialogueTrigger` component in animation state machines to trigger dialogue when states are entered
+- Configure `fileName` (dialogue file name without extension) and `dialogueId` (dialogue ID)
+- Configure `defaultLanguage` (default language), used when the current language file is missing
+- Dialogue bubbles will automatically appear above the character, position automatically adjusts based on the character model
+
+### Multilingual Support
+
+- Dialogue files support multiple languages, the system automatically loads the corresponding language file based on the current game language
+- If the current language's dialogue file doesn't exist, it will fall back to the language file specified by `defaultLanguage`
+- Language file naming rules: `{filename}_{language}.json`
+  - Chinese (Simplified/Traditional): `Chinese`
+  - Other languages: Use the string form of `SystemLanguage` enum values (e.g., `English`, `Japanese`, etc.)
+
+### Notes
+
+- If a model has no dialogue configured, it will not affect other functionality
+- Dialogue files must contain valid JSON format and at least one dialogue definition
+- Dialogue IDs must be unique, duplicate IDs will be overwritten (uses the last one)
 
 ## AI Character Adaptation
 
