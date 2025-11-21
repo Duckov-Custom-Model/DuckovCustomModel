@@ -91,6 +91,8 @@ namespace DuckovCustomModel.MonoBehaviours
         public ModelTarget Target { get; private set; }
         public string? NameKey => CharacterMainControl?.characterPreset?.nameKey;
 
+        public string? CurrentModelDirectory => _currentModelBundleInfo?.DirectoryPath;
+
         public bool IsInitialized { get; private set; }
 
         public GameObject? CustomModelInstance { get; private set; }

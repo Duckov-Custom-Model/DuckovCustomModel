@@ -64,6 +64,8 @@ namespace DuckovCustomModel
 
             InitializeConfigWindow();
 
+            CustomDialogueManager.Initialize();
+
             ModLogger.Log($"{Constant.ModName} loaded (Version {Constant.ModVersion})");
         }
 
@@ -89,6 +91,7 @@ namespace DuckovCustomModel
             ModelListManager.CancelRefresh();
 
             Localization.Cleanup();
+            CustomDialogueManager.Cleanup();
 
             if (_configWindow != null)
             {
