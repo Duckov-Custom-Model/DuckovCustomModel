@@ -606,5 +606,45 @@ namespace DuckovCustomModel.MonoBehaviours
         {
             SetAnimatorBool(CustomAnimatorHash.Loaded, true);
         }
+
+        public void TriggerHurt()
+        {
+            SetAnimatorTrigger(CustomAnimatorHash.Hurt);
+        }
+
+        public void TriggerDead()
+        {
+            SetAnimatorTrigger(CustomAnimatorHash.Dead);
+        }
+
+        public void TriggerHitTarget()
+        {
+            SetAnimatorTrigger(CustomAnimatorHash.HitTarget);
+        }
+
+        public void TriggerKillTarget()
+        {
+            SetAnimatorTrigger(CustomAnimatorHash.KillTarget);
+        }
+
+        public void TriggerCritHurt()
+        {
+            SetAnimatorTrigger(CustomAnimatorHash.CritHurt);
+        }
+
+        public void TriggerCritDead()
+        {
+            SetAnimatorTrigger(CustomAnimatorHash.CritDead);
+        }
+
+        public void TriggerCritHitTarget()
+        {
+            SetAnimatorTrigger(CustomAnimatorHash.CritHitTarget);
+        }
+
+        public void TriggerCritKillTarget()
+        {
+            SetAnimatorTrigger(CustomAnimatorHash.CritKillTarget);
+        }
     }
 }

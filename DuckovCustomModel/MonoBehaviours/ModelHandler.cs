@@ -29,6 +29,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private readonly Dictionary<string, List<EventInstance>> _playingSoundInstances = [];
         private readonly Dictionary<string, List<string>> _soundsByTag = [];
+        private readonly Dictionary<string, float> _soundTagPlayChance = [];
         private Renderer[]? _cachedCustomModelRenderers;
 
         private ModelBundleInfo? _currentModelBundleInfo;
@@ -168,6 +169,9 @@ namespace DuckovCustomModel.MonoBehaviours
         {
             ModelSoundTrigger.OnSoundTriggered -= OnSoundTriggered;
 
+            Health.OnHurt -= OnGlobalHurt;
+            Health.OnDead -= OnGlobalDead;
+
             if (CharacterMainControl == null) return;
             if (CharacterMainControl.Health == null) return;
             CharacterMainControl.Health.OnHurtEvent.RemoveListener(OnHurt);
@@ -222,6 +226,9 @@ namespace DuckovCustomModel.MonoBehaviours
                 CharacterMainControl.Health.OnHurtEvent.AddListener(OnHurt);
                 CharacterMainControl.Health.OnDeadEvent.AddListener(OnDeath);
             }
+
+            Health.OnHurt += OnGlobalHurt;
+            Health.OnDead += OnGlobalDead;
 
             ModelSoundTrigger.OnSoundTriggered += OnSoundTriggered;
 
@@ -787,23 +794,135 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void OnHurt(DamageInfo damageInfo)
         {
+            var isCrit = damageInfo.crit > 0;
+
+            if (CustomAnimatorControl != null)
+            {
+                if (isCrit)
+                    CustomAnimatorControl.TriggerCritHurt();
+                else
+                    CustomAnimatorControl.TriggerHurt();
+            }
+
             if (!IsModelAudioEnabled) return;
 
-            var soundPath = GetRandomSoundByTag(SoundTags.TriggerOnHurt);
+            string soundTag;
+            string eventName;
+            if (isCrit)
+            {
+                soundTag = SoundTags.TriggerOnCritHurt;
+                eventName = "onCritHurt";
+            }
+            else
+            {
+                soundTag = SoundTags.TriggerOnHurt;
+                eventName = "onHurt";
+            }
+
+            var soundPath = GetRandomSoundByTag(soundTag);
             if (string.IsNullOrEmpty(soundPath)) return;
 
-            PlaySound("onHurt", soundPath, playMode: SoundPlayMode.SkipIfPlaying);
+            PlaySound(eventName, soundPath, playMode: SoundPlayMode.SkipIfPlaying);
         }
 
         private void OnDeath(DamageInfo damageInfo)
         {
+            var isCrit = damageInfo.crit > 0;
+
+            if (CustomAnimatorControl != null)
+            {
+                if (isCrit)
+                    CustomAnimatorControl.TriggerCritDead();
+                else
+                    CustomAnimatorControl.TriggerDead();
+            }
+
             if (!IsModelAudioEnabled) return;
 
-            var soundPath = GetRandomSoundByTag(SoundTags.TriggerOnDeath);
+            string soundTag;
+            string eventName;
+            if (isCrit)
+            {
+                soundTag = SoundTags.TriggerOnCritDead;
+                eventName = "onCritDead";
+            }
+            else
+            {
+                soundTag = SoundTags.TriggerOnDeath;
+                eventName = "onDeath";
+            }
+
+            var soundPath = GetRandomSoundByTag(soundTag);
             if (string.IsNullOrEmpty(soundPath)) return;
 
             StopAllSounds();
-            PlaySound("onDeath", soundPath, playMode: SoundPlayMode.UseTempObject);
+            PlaySound(eventName, soundPath, playMode: SoundPlayMode.UseTempObject);
+        }
+
+        private void OnGlobalHurt(Health health, DamageInfo damageInfo)
+        {
+            if (CharacterMainControl == null || CustomAnimatorControl == null) return;
+            if (damageInfo.fromCharacter != CharacterMainControl) return;
+
+            var isCrit = damageInfo.crit > 0;
+
+            if (isCrit)
+                CustomAnimatorControl.TriggerCritHitTarget();
+            else
+                CustomAnimatorControl.TriggerHitTarget();
+
+            if (!IsModelAudioEnabled) return;
+
+            string soundTag;
+            string eventName;
+            if (isCrit)
+            {
+                soundTag = SoundTags.TriggerOnCritHitTarget;
+                eventName = "onCritHitTarget";
+            }
+            else
+            {
+                soundTag = SoundTags.TriggerOnHitTarget;
+                eventName = "onHitTarget";
+            }
+
+            var soundPath = GetRandomSoundByTag(soundTag);
+            if (string.IsNullOrEmpty(soundPath)) return;
+
+            PlaySound(eventName, soundPath, playMode: SoundPlayMode.SkipIfPlaying);
+        }
+
+        private void OnGlobalDead(Health health, DamageInfo damageInfo)
+        {
+            if (CharacterMainControl == null || CustomAnimatorControl == null) return;
+            if (damageInfo.fromCharacter != CharacterMainControl) return;
+
+            var isCrit = damageInfo.crit > 0;
+
+            if (isCrit)
+                CustomAnimatorControl.TriggerCritKillTarget();
+            else
+                CustomAnimatorControl.TriggerKillTarget();
+
+            if (!IsModelAudioEnabled) return;
+
+            string soundTag;
+            string eventName;
+            if (isCrit)
+            {
+                soundTag = SoundTags.TriggerOnCritKillTarget;
+                eventName = "onCritKillTarget";
+            }
+            else
+            {
+                soundTag = SoundTags.TriggerOnKillTarget;
+                eventName = "onKillTarget";
+            }
+
+            var soundPath = GetRandomSoundByTag(soundTag);
+            if (string.IsNullOrEmpty(soundPath)) return;
+
+            PlaySound(eventName, soundPath, playMode: SoundPlayMode.SkipIfPlaying);
         }
 
         private void InitializeCustomCharacterSubVisuals()
@@ -932,8 +1051,20 @@ namespace DuckovCustomModel.MonoBehaviours
         private void InitSoundFilePath(ModelBundleInfo modelBundleInfo, ModelInfo modelInfo)
         {
             _soundsByTag.Clear();
+            _soundTagPlayChance.Clear();
 
             var bundleDirectory = modelBundleInfo.DirectoryPath;
+
+            if (modelInfo.SoundTagPlayChance != null)
+            {
+                foreach (var kvp in modelInfo.SoundTagPlayChance)
+                {
+                    var normalizedTag = kvp.Key.ToLowerInvariant().Trim();
+                    if (string.IsNullOrWhiteSpace(normalizedTag)) continue;
+                    var chance = Mathf.Clamp01(kvp.Value / 100f);
+                    _soundTagPlayChance[normalizedTag] = chance;
+                }
+            }
 
             if (modelInfo.CustomSounds is not { Length: > 0 }) return;
 
@@ -976,6 +1107,11 @@ namespace DuckovCustomModel.MonoBehaviours
             soundTag = soundTag.ToLowerInvariant().Trim();
 
             if (!_soundsByTag.TryGetValue(soundTag, out var sounds) || sounds.Count == 0) return null;
+
+            if (_soundTagPlayChance.TryGetValue(soundTag, out var playChance))
+            {
+                if (Random.value > playChance) return null;
+            }
 
             var index = Random.Range(0, sounds.Count);
             return sounds[index];

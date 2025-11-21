@@ -9,6 +9,12 @@ namespace DuckovCustomModel.Core.Data
         public const string Idle = "idle";
         public const string TriggerOnHurt = "trigger_on_hurt";
         public const string TriggerOnDeath = "trigger_on_death";
+        public const string TriggerOnHitTarget = "trigger_on_hit_target";
+        public const string TriggerOnKillTarget = "trigger_on_kill_target";
+        public const string TriggerOnCritHurt = "trigger_on_crit_hurt";
+        public const string TriggerOnCritDead = "trigger_on_crit_dead";
+        public const string TriggerOnCritHitTarget = "trigger_on_crit_hit_target";
+        public const string TriggerOnCritKillTarget = "trigger_on_crit_kill_target";
         public const string SearchFoundItemQualityNone = "search_found_item_quality_none";
         public const string SearchFoundItemQualityWhite = "search_found_item_quality_white";
         public const string SearchFoundItemQualityGreen = "search_found_item_quality_green";
@@ -43,6 +49,12 @@ namespace DuckovCustomModel.Core.Data
             Idle,
             TriggerOnHurt,
             TriggerOnDeath,
+            TriggerOnHitTarget,
+            TriggerOnKillTarget,
+            TriggerOnCritHurt,
+            TriggerOnCritDead,
+            TriggerOnCritHitTarget,
+            TriggerOnCritKillTarget,
             SearchFoundItemQualityNone,
             SearchFoundItemQualityWhite,
             SearchFoundItemQualityGreen,

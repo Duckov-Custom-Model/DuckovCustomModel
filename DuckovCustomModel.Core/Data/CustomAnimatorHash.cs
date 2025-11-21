@@ -27,6 +27,14 @@ namespace DuckovCustomModel.Core.Data
         public static readonly int Dashing = Animator.StringToHash("Dashing"); // bool
         public static readonly int Attack = Animator.StringToHash("Attack"); // trigger
         public static readonly int Shoot = Animator.StringToHash("Shoot"); // trigger
+        public static readonly int Hurt = Animator.StringToHash("Hurt"); // trigger
+        public static readonly int Dead = Animator.StringToHash("Dead"); // trigger
+        public static readonly int HitTarget = Animator.StringToHash("HitTarget"); // trigger
+        public static readonly int KillTarget = Animator.StringToHash("KillTarget"); // trigger
+        public static readonly int CritHurt = Animator.StringToHash("CritHurt"); // trigger
+        public static readonly int CritDead = Animator.StringToHash("CritDead"); // trigger
+        public static readonly int CritHitTarget = Animator.StringToHash("CritHitTarget"); // trigger
+        public static readonly int CritKillTarget = Animator.StringToHash("CritKillTarget"); // trigger
         public static readonly int HandState = Animator.StringToHash("HandState"); // int
         public static readonly int GunReady = Animator.StringToHash("GunReady"); // bool
         public static readonly int GunState = Animator.StringToHash("GunState"); // int
@@ -97,6 +105,14 @@ namespace DuckovCustomModel.Core.Data
                 new() { Name = "Dashing", Hash = Dashing, Type = "bool", InitialValue = false },
                 new() { Name = "Attack", Hash = Attack, Type = "trigger", InitialValue = null },
                 new() { Name = "Shoot", Hash = Shoot, Type = "trigger", InitialValue = null },
+                new() { Name = "Hurt", Hash = Hurt, Type = "trigger", InitialValue = null },
+                new() { Name = "Dead", Hash = Dead, Type = "trigger", InitialValue = null },
+                new() { Name = "HitTarget", Hash = HitTarget, Type = "trigger", InitialValue = null },
+                new() { Name = "KillTarget", Hash = KillTarget, Type = "trigger", InitialValue = null },
+                new() { Name = "CritHurt", Hash = CritHurt, Type = "trigger", InitialValue = null },
+                new() { Name = "CritDead", Hash = CritDead, Type = "trigger", InitialValue = null },
+                new() { Name = "CritHitTarget", Hash = CritHitTarget, Type = "trigger", InitialValue = null },
+                new() { Name = "CritKillTarget", Hash = CritKillTarget, Type = "trigger", InitialValue = null },
                 new() { Name = "HandState", Hash = HandState, Type = "int", InitialValue = 0 },
                 new() { Name = "GunReady", Hash = GunReady, Type = "bool", InitialValue = false },
                 new() { Name = "GunState", Hash = GunState, Type = "int", InitialValue = -1 },
