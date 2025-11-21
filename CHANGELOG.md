@@ -2,6 +2,24 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.8.6
+
+- 新增 `ModelParameterDriver` 组件，支持在动画状态机中自定义参数控制
+  - 支持多种参数操作类型：
+    - `Set`：直接设置参数值
+    - `Add`：在现有值基础上增加指定值
+    - `Random`：随机设置参数值（支持范围随机和概率触发）
+    - `Copy`：从源参数复制值到目标参数（支持范围转换）
+  - 支持所有 Animator 参数类型（Float、Int、Bool、Trigger）
+  - 在动画状态进入时自动应用参数驱动
+  - 支持参数验证，确保目标参数和源参数存在后才应用驱动
+- 新增 `AnimatorParameterDriverManager` 管理器，统一管理参数驱动的初始化和应用逻辑
+- 增强动画参数显示器功能：
+  - 添加参数缓存机制，优化参数获取性能，减少重复计算
+  - 支持显示 Animator 控制器中定义的外部参数，默认排列在列表末尾
+- 新增 `BlueprintID` 组件，用于为游戏对象分配唯一标识符（当前暂无实际功能）
+- 更新依赖版本：`DuckovGameLibs` 从 1.1.6-Steam 更新到 1.2.5-Steam
+
 ## v1.8.5
 
 - 改进音效播放系统，统一使用 `ModelHandler.PlaySound` 方法管理所有音效播放
