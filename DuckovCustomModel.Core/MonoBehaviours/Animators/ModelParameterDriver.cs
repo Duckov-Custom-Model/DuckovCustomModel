@@ -5,6 +5,13 @@ using UnityEngine;
 
 namespace DuckovCustomModel.Core.MonoBehaviours.Animators
 {
+    /// <summary>
+    ///     Drives animator parameters when animation states are entered, similar to Unity's built-in Animator Parameter
+    ///     Driver.
+    ///     Attach this component to animation state machine states to automatically set, add, randomize, or copy animator
+    ///     parameters
+    ///     when the state is entered. Useful for controlling complex animation logic and parameter changes in a modular way.
+    /// </summary>
     public class ModelParameterDriver : StateMachineBehaviour, ISerializationCallbackReceiver
     {
         public enum ChangeType
@@ -84,7 +91,18 @@ namespace DuckovCustomModel.Core.MonoBehaviours.Animators
             public float destMin;
             public float destMax;
 
+            /// <summary>
+            ///     Runtime-only cached reference to the destination parameter.
+            ///     Populated during initialization for performance optimization.
+            ///     Not intended to be set manually or serialized.
+            /// </summary>
             public object? DestParam;
+
+            /// <summary>
+            ///     Runtime-only cached reference to the source parameter.
+            ///     Populated during initialization for performance optimization.
+            ///     Not intended to be set manually or serialized.
+            /// </summary>
             public object? SourceParam;
         }
     }
