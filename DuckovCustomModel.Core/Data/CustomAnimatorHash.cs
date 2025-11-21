@@ -10,6 +10,7 @@ namespace DuckovCustomModel.Core.Data
         public int Hash { get; set; }
         public string Type { get; set; } = string.Empty;
         public object? InitialValue { get; set; }
+        public bool IsExternal { get; set; }
     }
 
     public static class CustomAnimatorHash

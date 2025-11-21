@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Duckov.UI;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Core.Data;
@@ -27,6 +28,8 @@ namespace DuckovCustomModel.UI
         private Vector2 _animatorParamsScrollPosition;
         private bool _animatorParamsViewingPet;
         private Rect _animatorParamsWindowRect = new(10, 10, 600, 1000);
+        private Animator? _cachedAnimator;
+        private List<AnimatorParamInfo>? _cachedParamInfos;
 
         private CharacterInputControl? _charInput;
         private bool _charInputWasEnabled;
@@ -415,6 +418,8 @@ namespace DuckovCustomModel.UI
                     _paramIsChanging.Clear();
                     _paramPreviousValues.Clear();
                     _animatorParamsViewingPet = false;
+                    _cachedAnimator = null;
+                    _cachedParamInfos = null;
                 }
 
             var petButtonStyle = _animatorParamsViewingPet ? GUI.skin.box : GUI.skin.button;
@@ -424,6 +429,8 @@ namespace DuckovCustomModel.UI
                     _paramIsChanging.Clear();
                     _paramPreviousValues.Clear();
                     _animatorParamsViewingPet = true;
+                    _cachedAnimator = null;
+                    _cachedParamInfos = null;
                 }
 
             GUILayout.FlexibleSpace();
@@ -435,15 +442,19 @@ namespace DuckovCustomModel.UI
                 _scrollViewStyle, GUILayout.Width(AnimatorParamsWindowWidth - 20),
                 GUILayout.Height(AnimatorParamsWindowHeight - 80));
 
-            var paramInfos = GetCustomAnimatorParams();
+            var animator = currentHandler.CustomAnimator;
+            if (animator != _cachedAnimator || _cachedParamInfos == null)
+                UpdateAnimatorParamsCache(currentHandler);
+
+            var paramInfos = _cachedParamInfos ?? [];
             for (var i = 0; i < paramInfos.Count; i += 2)
             {
                 GUILayout.BeginHorizontal();
 
                 var paramInfo1 = paramInfos[i];
                 var paramName1 = $"{paramInfo1.Name} ({paramInfo1.Type})";
-                var paramValue1 = GetParameterValue(customAnimatorControl, paramInfo1);
-                var paramValueObj1 = GetParameterValueObject(customAnimatorControl, paramInfo1);
+                var paramValue1 = GetParameterValue(customAnimatorControl, paramInfo1, animator);
+                var paramValueObj1 = GetParameterValueObject(customAnimatorControl, paramInfo1, animator);
                 var style1 = GetParamStyle(paramInfo1, paramValueObj1);
 
                 GUILayout.Label($"{paramName1}: {paramValue1}", style1,
@@ -455,8 +466,8 @@ namespace DuckovCustomModel.UI
                 {
                     var paramInfo2 = paramInfos[i + 1];
                     var paramName2 = $"{paramInfo2.Name} ({paramInfo2.Type})";
-                    var paramValue2 = GetParameterValue(customAnimatorControl, paramInfo2);
-                    var paramValueObj2 = GetParameterValueObject(customAnimatorControl, paramInfo2);
+                    var paramValue2 = GetParameterValue(customAnimatorControl, paramInfo2, animator);
+                    var paramValueObj2 = GetParameterValueObject(customAnimatorControl, paramInfo2, animator);
                     var style2 = GetParamStyle(paramInfo2, paramValueObj2);
 
                     GUILayout.Label($"{paramName2}: {paramValue2}", style2,
@@ -519,23 +530,84 @@ namespace DuckovCustomModel.UI
             return result;
         }
 
-        private static List<AnimatorParamInfo> GetCustomAnimatorParams()
+        private void UpdateAnimatorParamsCache(ModelHandler? modelHandler)
         {
-            return CustomAnimatorHash.GetAllParams();
+            var customParams = CustomAnimatorHash.GetAllParams();
+            var customParamHashes = new HashSet<int>(customParams.Select(p => p.Hash));
+
+            if (modelHandler?.CustomAnimator == null)
+            {
+                _cachedAnimator = null;
+                _cachedParamInfos = customParams;
+                return;
+            }
+
+            _cachedAnimator = modelHandler.CustomAnimator;
+            var customParamsList = customParams.OrderBy(p => p.Name).ToList();
+            var animatorParamsList = (from animatorParam in modelHandler.CustomAnimator.parameters
+                where !customParamHashes.Contains(animatorParam.nameHash)
+                let paramType = animatorParam.type switch
+                {
+                    AnimatorControllerParameterType.Float => "float",
+                    AnimatorControllerParameterType.Int => "int",
+                    AnimatorControllerParameterType.Bool => "bool",
+                    AnimatorControllerParameterType.Trigger => "trigger",
+                    _ => "unknown",
+                }
+                let initialValue = (object?)(animatorParam.type switch
+                {
+                    AnimatorControllerParameterType.Float => animatorParam.defaultFloat,
+                    AnimatorControllerParameterType.Int => animatorParam.defaultInt,
+                    AnimatorControllerParameterType.Bool => animatorParam.defaultBool,
+                    _ => null,
+                })
+                select new AnimatorParamInfo
+                {
+                    Name = animatorParam.name,
+                    Hash = animatorParam.nameHash,
+                    Type = paramType,
+                    InitialValue = initialValue,
+                    IsExternal = true,
+                }).ToList();
+
+            animatorParamsList = animatorParamsList.OrderBy(p => p.Name).ToList();
+            _cachedParamInfos = customParamsList.Concat(animatorParamsList).ToList();
         }
 
-        private static string GetParameterValue(CustomAnimatorControl customAnimatorControl,
-            AnimatorParamInfo paramInfo)
+
+        private static string GetParameterValue(CustomAnimatorControl? customAnimatorControl,
+            AnimatorParamInfo paramInfo, Animator? animator)
         {
-            if (customAnimatorControl == null) return "N/A";
+            if (!paramInfo.IsExternal)
+            {
+                if (customAnimatorControl == null) return "N/A";
+
+                try
+                {
+                    return paramInfo.Type switch
+                    {
+                        "float" => customAnimatorControl.GetParameterFloat(paramInfo.Hash).ToString("F3"),
+                        "int" => customAnimatorControl.GetParameterInteger(paramInfo.Hash).ToString(),
+                        "bool" => customAnimatorControl.GetParameterBool(paramInfo.Hash).ToString(),
+                        "trigger" => "Trigger",
+                        _ => "Unknown",
+                    };
+                }
+                catch
+                {
+                    return "N/A";
+                }
+            }
+
+            if (animator == null) return "N/A";
 
             try
             {
                 return paramInfo.Type switch
                 {
-                    "float" => customAnimatorControl.GetParameterFloat(paramInfo.Hash).ToString("F3"),
-                    "int" => customAnimatorControl.GetParameterInteger(paramInfo.Hash).ToString(),
-                    "bool" => customAnimatorControl.GetParameterBool(paramInfo.Hash).ToString(),
+                    "float" => animator.GetFloat(paramInfo.Hash).ToString("F3"),
+                    "int" => animator.GetInteger(paramInfo.Hash).ToString(),
+                    "bool" => animator.GetBool(paramInfo.Hash).ToString(),
                     "trigger" => "Trigger",
                     _ => "Unknown",
                 };
@@ -546,18 +618,38 @@ namespace DuckovCustomModel.UI
             }
         }
 
-        private static object? GetParameterValueObject(CustomAnimatorControl customAnimatorControl,
-            AnimatorParamInfo paramInfo)
+        private static object? GetParameterValueObject(CustomAnimatorControl? customAnimatorControl,
+            AnimatorParamInfo paramInfo, Animator? animator)
         {
-            if (customAnimatorControl == null) return null;
+            if (!paramInfo.IsExternal)
+            {
+                if (customAnimatorControl == null) return null;
+
+                try
+                {
+                    return paramInfo.Type switch
+                    {
+                        "float" => customAnimatorControl.GetParameterFloat(paramInfo.Hash),
+                        "int" => customAnimatorControl.GetParameterInteger(paramInfo.Hash),
+                        "bool" => customAnimatorControl.GetParameterBool(paramInfo.Hash),
+                        _ => null,
+                    };
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
+            if (animator == null) return null;
 
             try
             {
                 return paramInfo.Type switch
                 {
-                    "float" => customAnimatorControl.GetParameterFloat(paramInfo.Hash),
-                    "int" => customAnimatorControl.GetParameterInteger(paramInfo.Hash),
-                    "bool" => customAnimatorControl.GetParameterBool(paramInfo.Hash),
+                    "float" => animator.GetFloat(paramInfo.Hash),
+                    "int" => animator.GetInteger(paramInfo.Hash),
+                    "bool" => animator.GetBool(paramInfo.Hash),
                     _ => null,
                 };
             }
