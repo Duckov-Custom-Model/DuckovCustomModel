@@ -41,8 +41,10 @@ namespace DuckovCustomModel.HarmonyPatches
                     ? SoundTags.Normal
                     : soundKey.ToLowerInvariant().Trim();
 
-                var soundPath = modelHandler.GetRandomSoundByTag(normalizedSoundKey);
+                var soundPath = modelHandler.GetRandomSoundByTag(normalizedSoundKey, out var skippedByProbability);
                 if (string.IsNullOrEmpty(soundPath)) return true;
+
+                if (skippedByProbability) return false;
 
                 modelHandler.PlaySound("quack", soundPath, playMode: SoundPlayMode.StopPrevious);
                 __result = null;
@@ -112,8 +114,10 @@ namespace DuckovCustomModel.HarmonyPatches
                     },
                 };
 
-                var soundPath = modelHandler.GetRandomSoundByTag(soundTag);
+                var soundPath = modelHandler.GetRandomSoundByTag(soundTag, out var skippedByProbability);
                 if (string.IsNullOrEmpty(soundPath)) return true;
+
+                if (skippedByProbability) return false;
 
                 modelHandler.PlaySound("footstep", soundPath, playMode: SoundPlayMode.StopPrevious);
 
@@ -138,8 +142,10 @@ namespace DuckovCustomModel.HarmonyPatches
                 if (!modelHandler.HasAnySounds()) return true;
                 if (!modelHandler.IsModelAudioEnabled) return true;
 
-                var soundPath = modelHandler.GetRandomSoundByTag(SoundTags.Normal);
+                var soundPath = modelHandler.GetRandomSoundByTag(SoundTags.Normal, out var skippedByProbability);
                 if (string.IsNullOrEmpty(soundPath)) return true;
+
+                if (skippedByProbability) return false;
 
                 modelHandler.PlaySound("quack", soundPath, playMode: SoundPlayMode.StopPrevious);
                 AIMainBrain.MakeSound(new()

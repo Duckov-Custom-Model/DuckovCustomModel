@@ -819,8 +819,8 @@ namespace DuckovCustomModel.MonoBehaviours
                 eventName = "onHurt";
             }
 
-            var soundPath = GetRandomSoundByTag(soundTag);
-            if (string.IsNullOrEmpty(soundPath)) return;
+            var soundPath = GetRandomSoundByTag(soundTag, out var skippedByProbability);
+            if (string.IsNullOrEmpty(soundPath) || skippedByProbability) return;
 
             PlaySound(eventName, soundPath, playMode: SoundPlayMode.SkipIfPlaying);
         }
@@ -852,8 +852,8 @@ namespace DuckovCustomModel.MonoBehaviours
                 eventName = "onDeath";
             }
 
-            var soundPath = GetRandomSoundByTag(soundTag);
-            if (string.IsNullOrEmpty(soundPath)) return;
+            var soundPath = GetRandomSoundByTag(soundTag, out var skippedByProbability);
+            if (string.IsNullOrEmpty(soundPath) || skippedByProbability) return;
 
             StopAllSounds();
             PlaySound(eventName, soundPath, playMode: SoundPlayMode.UseTempObject);
@@ -886,8 +886,8 @@ namespace DuckovCustomModel.MonoBehaviours
                 eventName = "onHitTarget";
             }
 
-            var soundPath = GetRandomSoundByTag(soundTag);
-            if (string.IsNullOrEmpty(soundPath)) return;
+            var soundPath = GetRandomSoundByTag(soundTag, out var skippedByProbability);
+            if (string.IsNullOrEmpty(soundPath) || skippedByProbability) return;
 
             PlaySound(eventName, soundPath, playMode: SoundPlayMode.SkipIfPlaying);
         }
@@ -919,8 +919,8 @@ namespace DuckovCustomModel.MonoBehaviours
                 eventName = "onKillTarget";
             }
 
-            var soundPath = GetRandomSoundByTag(soundTag);
-            if (string.IsNullOrEmpty(soundPath)) return;
+            var soundPath = GetRandomSoundByTag(soundTag, out var skippedByProbability);
+            if (string.IsNullOrEmpty(soundPath) || skippedByProbability) return;
 
             PlaySound(eventName, soundPath, playMode: SoundPlayMode.SkipIfPlaying);
         }
@@ -1056,7 +1056,6 @@ namespace DuckovCustomModel.MonoBehaviours
             var bundleDirectory = modelBundleInfo.DirectoryPath;
 
             if (modelInfo.SoundTagPlayChance != null)
-            {
                 foreach (var kvp in modelInfo.SoundTagPlayChance)
                 {
                     var normalizedTag = kvp.Key.ToLowerInvariant().Trim();
@@ -1064,7 +1063,6 @@ namespace DuckovCustomModel.MonoBehaviours
                     var chance = Mathf.Clamp01(kvp.Value / 100f);
                     _soundTagPlayChance[normalizedTag] = chance;
                 }
-            }
 
             if (modelInfo.CustomSounds is not { Length: > 0 }) return;
 
@@ -1101,20 +1099,32 @@ namespace DuckovCustomModel.MonoBehaviours
             return _soundsByTag.Count > 0 && _soundsByTag.Values.Any(sounds => sounds.Count > 0);
         }
 
-        public string? GetRandomSoundByTag(string soundTag)
+        public bool HasSoundTag(string soundTag)
         {
+            if (string.IsNullOrWhiteSpace(soundTag)) soundTag = SoundTags.Normal;
+            soundTag = soundTag.ToLowerInvariant().Trim();
+            return _soundsByTag.TryGetValue(soundTag, out var sounds) && sounds.Count > 0;
+        }
+
+        public string? GetRandomSoundByTag(string soundTag, out bool skippedByProbability)
+        {
+            skippedByProbability = false;
             if (string.IsNullOrWhiteSpace(soundTag)) soundTag = SoundTags.Normal;
             soundTag = soundTag.ToLowerInvariant().Trim();
 
             if (!_soundsByTag.TryGetValue(soundTag, out var sounds) || sounds.Count == 0) return null;
 
             if (_soundTagPlayChance.TryGetValue(soundTag, out var playChance))
-            {
-                if (Random.value > playChance) return null;
-            }
+                if (Random.value > playChance)
+                    skippedByProbability = true;
 
             var index = Random.Range(0, sounds.Count);
             return sounds[index];
+        }
+
+        public string? GetRandomSoundByTag(string soundTag)
+        {
+            return GetRandomSoundByTag(soundTag, out _);
         }
 
         public EventInstance? PlaySound(
@@ -1221,8 +1231,8 @@ namespace DuckovCustomModel.MonoBehaviours
         {
             if (!IsModelAudioEnabled) return;
 
-            var soundPath = GetRandomSoundByTag(SoundTags.Idle);
-            if (string.IsNullOrEmpty(soundPath)) return;
+            var soundPath = GetRandomSoundByTag(SoundTags.Idle, out var skippedByProbability);
+            if (string.IsNullOrEmpty(soundPath) || skippedByProbability) return;
 
             PlaySound("idle", soundPath);
         }
@@ -1235,8 +1245,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
             if (!IsModelAudioEnabled) return;
 
-            var soundPath = GetRandomSoundByTag(soundTag);
-            if (string.IsNullOrEmpty(soundPath)) return;
+            var soundPath = GetRandomSoundByTag(soundTag, out var skippedByProbability);
+            if (string.IsNullOrEmpty(soundPath) || skippedByProbability) return;
 
             PlaySound($"CustomModelSoundTrigger:{eventName}", soundPath, playMode: playMode);
         }
