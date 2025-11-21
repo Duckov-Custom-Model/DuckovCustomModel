@@ -6,6 +6,7 @@ using Duckov;
 using Duckov.UI;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.Core.MonoBehaviours.Animators;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.Utils;
 using FMOD.Studio;
@@ -165,6 +166,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void OnDestroy()
         {
+            ModelSoundTrigger.OnSoundTriggered -= OnSoundTriggered;
+
             if (CharacterMainControl == null) return;
             if (CharacterMainControl.Health == null) return;
             CharacterMainControl.Health.OnHurtEvent.RemoveListener(OnHurt);
@@ -219,6 +222,8 @@ namespace DuckovCustomModel.MonoBehaviours
                 CharacterMainControl.Health.OnHurtEvent.AddListener(OnHurt);
                 CharacterMainControl.Health.OnDeadEvent.AddListener(OnDeath);
             }
+
+            ModelSoundTrigger.OnSoundTriggered += OnSoundTriggered;
 
             ModLogger.Log("ModelHandler initialized successfully.");
             IsInitialized = true;
@@ -945,9 +950,11 @@ namespace DuckovCustomModel.MonoBehaviours
 
                 foreach (var soundTag in soundInfo.Tags)
                 {
-                    if (!_soundsByTag.ContainsKey(soundTag))
-                        _soundsByTag[soundTag] = [];
-                    _soundsByTag[soundTag].Add(fullPath);
+                    var normalizedTag = soundTag.ToLowerInvariant().Trim();
+                    if (string.IsNullOrWhiteSpace(normalizedTag)) continue;
+                    if (!_soundsByTag.ContainsKey(normalizedTag))
+                        _soundsByTag[normalizedTag] = [];
+                    _soundsByTag[normalizedTag].Add(fullPath);
                 }
 
                 validSoundCount++;
@@ -1082,6 +1089,20 @@ namespace DuckovCustomModel.MonoBehaviours
             if (string.IsNullOrEmpty(soundPath)) return;
 
             PlaySound("idle", soundPath);
+        }
+
+        private void OnSoundTriggered(string soundTag, string eventName, SoundPlayMode playMode, Animator animator)
+        {
+            if (animator == null) return;
+            if (CustomModelInstance == null) return;
+            if (animator.gameObject != CustomModelInstance) return;
+
+            if (!IsModelAudioEnabled) return;
+
+            var soundPath = GetRandomSoundByTag(soundTag);
+            if (string.IsNullOrEmpty(soundPath)) return;
+
+            PlaySound($"CustomModelSoundTrigger:{eventName}", soundPath, playMode: playMode);
         }
 
         private void ScheduleNextIdleAudio()

@@ -15,13 +15,9 @@ namespace DuckovCustomModel.Core.Data
                 return;
             }
 
-            var validTags = SoundTags.ValidTags;
             var tagSet = (from tag in Tags
                 where !string.IsNullOrWhiteSpace(tag)
-                select tag.ToLowerInvariant().Trim()
-                into normalizedTag
-                where validTags.Contains(normalizedTag)
-                select normalizedTag).ToList();
+                select tag.ToLowerInvariant().Trim()).ToList();
 
             if (tagSet.Count == 0) tagSet.Add(SoundTags.Normal);
             Tags = tagSet.ToArray();
