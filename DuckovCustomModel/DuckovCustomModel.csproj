@@ -20,7 +20,7 @@
 
   <!-- CI 环境使用 NuGet 包 -->
   <ItemGroup Condition="'$(UseGameLibsFromNuGet)' == 'true'">
-    <PackageReference Include="DuckovGameLibs" Version="1.1.6-Steam"/>
+    <PackageReference Include="DuckovGameLibs" Version="1.2.5-Steam"/>
   </ItemGroup>
 
   <!-- 本地开发使用游戏目录 -->

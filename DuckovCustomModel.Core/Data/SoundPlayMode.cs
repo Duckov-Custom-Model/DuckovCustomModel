@@ -8,4 +8,3 @@ namespace DuckovCustomModel.Core.Data
         UseTempObject,
     }
 }
-
