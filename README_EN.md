@@ -608,6 +608,22 @@ Triggers sound effect playback when animation state enters.
 - `playMode`: Sound playback mode (Normal, StopPrevious, SkipIfPlaying, UseTempObject)
 - `eventName`: Event name for sound playback management (optional, uses default name if empty)
 
+#### ModelSoundStopTrigger
+
+Stops sound effect playback when animation state enters or exits.
+
+- `stopAllSounds`: Whether to stop all currently playing sounds (true: stop all, false: stop sound by specified event name)
+- `useBuiltInEventName`: Whether to use built-in event name (true: use built-in event name like `idle` directly, false: use custom trigger event name)
+- `eventName`: Event name
+  - When `stopAllSounds` is false and `useBuiltInEventName` is false: Custom trigger event name (optional, uses default name `CustomModelSoundTrigger` if empty)
+  - When `stopAllSounds` is false and `useBuiltInEventName` is true: Built-in event name (required, e.g., `idle`)
+- `stopOnEnter`: Whether to stop on state enter (true: stop on enter, false: stop on exit)
+
+**Notes**:
+- When `useBuiltInEventName` is true, `eventName` must be specified, otherwise a warning will be displayed
+- Custom trigger event names use the format `CustomModelSoundTrigger:{eventName}`, consistent with `ModelSoundTrigger`
+- Built-in event names (e.g., `idle`) are used directly without prefix
+
 #### ModelDialogueTrigger
 
 Triggers dialogue playback when animation state enters.
@@ -746,9 +762,14 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
 #### Animation State Machine Trigger
 
 - Can use `ModelSoundTrigger` component in animation state machines to trigger sounds when states are entered
-- Supports configuring multiple sound tags, can choose random or sequential playback
-- Supports configuring sound playback modes for finer audio control
-- Sound tags can be any custom tags, no longer restricted to predefined tags
+  - Supports configuring multiple sound tags, can choose random or sequential playback
+  - Supports configuring sound playback modes for finer audio control
+  - Sound tags can be any custom tags, no longer restricted to predefined tags
+- Can use `ModelSoundStopTrigger` component in animation state machines to stop sound playback
+  - Supports stopping sounds by specified event name (custom triggers or built-in event names like `idle`)
+  - Supports stopping all currently playing sounds
+  - Supports triggering stop operation on state enter or exit
+  - Provides user-friendly configuration interface in Unity editor with conditional display and warning prompts
 
 ### Sound File Requirements
 

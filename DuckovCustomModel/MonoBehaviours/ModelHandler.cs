@@ -168,6 +168,7 @@ namespace DuckovCustomModel.MonoBehaviours
         private void OnDestroy()
         {
             ModelSoundTrigger.OnSoundTriggered -= OnSoundTriggered;
+            ModelSoundStopTrigger.OnSoundStopTriggered -= OnSoundStopTriggered;
 
             Health.OnHurt -= OnGlobalHurt;
             Health.OnDead -= OnGlobalDead;
@@ -231,6 +232,7 @@ namespace DuckovCustomModel.MonoBehaviours
             Health.OnDead += OnGlobalDead;
 
             ModelSoundTrigger.OnSoundTriggered += OnSoundTriggered;
+            ModelSoundStopTrigger.OnSoundStopTriggered += OnSoundStopTriggered;
 
             ModLogger.Log("ModelHandler initialized successfully.");
             IsInitialized = true;
@@ -1248,7 +1250,19 @@ namespace DuckovCustomModel.MonoBehaviours
             var soundPath = GetRandomSoundByTag(soundTag, out var skippedByProbability);
             if (string.IsNullOrEmpty(soundPath) || skippedByProbability) return;
 
-            PlaySound($"CustomModelSoundTrigger:{eventName}", soundPath, playMode: playMode);
+            PlaySound(eventName, soundPath, playMode: playMode);
+        }
+
+        private void OnSoundStopTriggered(string eventName, Animator animator)
+        {
+            if (animator == null) return;
+            if (CustomModelInstance == null) return;
+            if (animator.gameObject != CustomModelInstance) return;
+
+            if (string.IsNullOrEmpty(eventName))
+                StopAllSounds();
+            else
+                StopSound(eventName);
         }
 
         private void ScheduleNextIdleAudio()
