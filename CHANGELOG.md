@@ -2,6 +2,14 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.8.10
+
+- 新增模型切换事件订阅功能
+  - 在 `ModelListManager` 中添加 `OnModelChanged` 静态事件，用于订阅模型切换通知
+  - 新增 `ModelChangedEventArgs` 事件参数类，包含目标类型、模型ID、模型名称、是否恢复、是否成功、处理器数量等信息
+  - 在模型切换、恢复等操作时自动触发事件，包括成功和失败的情况
+  - 支持为角色、宠物和AI角色分别监听模型切换事件
+
 ## v1.8.9
 
 - 新增 `ModelSoundStopTrigger` 组件，支持在动画状态机中停止音效播放

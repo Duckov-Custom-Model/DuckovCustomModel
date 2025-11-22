@@ -2,6 +2,14 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.8.10
+
+- Added model change event subscription functionality
+  - Added `OnModelChanged` static event in `ModelListManager` for subscribing to model change notifications
+  - Added `ModelChangedEventArgs` event argument class containing target type, model ID, model name, restoration status, success status, handler count, and other information
+  - Automatically triggers events during model switching, restoration, and other operations, including both success and failure cases
+  - Supports separately listening to model change events for characters, pets, and AI characters
+
 ## v1.8.9
 
 - Added `ModelSoundStopTrigger` component, supporting stopping sound playback in animation state machines
