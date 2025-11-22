@@ -775,7 +775,8 @@ In `ModelInfo` within `bundleinfo.json`, you can configure playback probability 
 - `SoundTagPlayChance` (optional): Dictionary type, where keys are sound tags (case-insensitive) and values are playback probabilities (0-100)
   - Probability values are automatically converted to floats between 0-1 (divided by 100)
   - When a sound with this tag is triggered, whether it plays is determined by the configured probability
-  - If not configured or probability is 0, always plays (default behavior)
+  - If not configured, always plays (default behavior)
+  - If probability is 0, never plays
   - If probability is less than 100, there's a chance the sound won't play
 
 ### Notes
