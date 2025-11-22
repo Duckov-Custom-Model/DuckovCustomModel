@@ -75,10 +75,57 @@ jobs:
         retention-days: 30
     
     - name: Create GitHub Release
+      id: create_release
       uses: softprops/action-gh-release@v1
       with:
         files: DuckovCustomModel/bin/Release/DuckovCustomModel.zip
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Get Release Info
+      id: release_info
+      if: success()
+      run: |
+        $tagName = "${{ github.ref_name }}"
+        
+        # 获取刚创建的 release 信息
+        $headers = @{
+          Authorization = "token ${{ secrets.GITHUB_TOKEN }}"
+          Accept = "application/vnd.github.v3+json"
+        }
+        
+        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases/tags/$tagName" -Headers $headers
+        
+        $version = $release.tag_name -replace '^v', ''
+        $releaseName = if ($release.name) { $release.name } else { "Release $version" }
+        $publishedAt = $release.published_at
+        
+        Write-Host "Release info: version=$version, name=$releaseName, published_at=$publishedAt"
+        
+        echo "version=$version" >> $env:GITHUB_OUTPUT
+        echo "release_name=$releaseName" >> $env:GITHUB_OUTPUT
+        echo "published_at=$publishedAt" >> $env:GITHUB_OUTPUT
+      shell: pwsh
+
+    - name: Trigger Pages Update
+      if: success()
+      run: |
+        $body = @{
+          event_type = "update-release"
+          client_payload = @{
+            version = "${{ steps.release_info.outputs.version }}"
+            release_name = "${{ steps.release_info.outputs.release_name }}"
+            published_at = "${{ steps.release_info.outputs.published_at }}"
+          }
+        } | ConvertTo-Json -Depth 10
+        
+        $headers = @{
+          Authorization = "token ${{ secrets.PAGES_REPO_TOKEN }}"
+          Accept = "application/vnd.github.v3+json"
+        }
+        
+        $response = Invoke-RestMethod -Uri "https://api.github.com/repos/${{ secrets.PAGES_REPO_OWNER }}/${{ secrets.PAGES_REPO_NAME }}/dispatches" -Method Post -Headers $headers -Body $body -ContentType "application/json"
+        Write-Host "Triggered Pages update successfully"
+      shell: pwsh
 
