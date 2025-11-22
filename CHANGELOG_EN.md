@@ -2,6 +2,15 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.8.9
+
+- Added `ModelSoundStopTrigger` component, supporting stopping sound playback in animation state machines
+  - Supports stopping sounds by specified event name
+  - Supports stopping all currently playing sounds
+  - Supports using built-in event names (e.g., `idle`) or custom trigger event names
+  - Supports triggering stop operation on state enter or exit
+  - Provides Unity editor custom interface with conditional display, warning prompts, and help information
+
 ## v1.8.8-fix1
 
 - Fixed ModelParameterDriver parameter recording logic to resolve editor data locking issues and improve data conciseness

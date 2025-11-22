@@ -48,10 +48,11 @@ namespace DuckovCustomModel.Core.MonoBehaviours.Animators
             }
 
             selectedTag = selectedTag.ToLowerInvariant().Trim();
-            var finalEventName = string.IsNullOrWhiteSpace(eventName)
+
+            var targetEvent = string.IsNullOrWhiteSpace(eventName)
                 ? "CustomModelSoundTrigger"
                 : eventName;
-
+            var finalEventName = $"CustomModelSoundTrigger:{targetEvent}";
             OnSoundTriggered?.Invoke(selectedTag, finalEventName, playMode, animator);
         }
 

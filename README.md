@@ -608,6 +608,22 @@ Animator Controller 可以使用以下参数：
 - `playMode`：音效播放模式（Normal、StopPrevious、SkipIfPlaying、UseTempObject）
 - `eventName`：事件名称，用于音效播放管理（可选，为空时使用默认名称）
 
+#### ModelSoundStopTrigger
+
+在动画状态进入或退出时停止音效播放。
+
+- `stopAllSounds`：是否停止所有正在播放的音效（true：停止所有，false：停止指定事件名称的音效）
+- `useBuiltInEventName`：是否使用内置事件名称（true：直接使用内置事件名称如 `idle`，false：使用自定义触发器事件名称）
+- `eventName`：事件名称
+  - 当 `stopAllSounds` 为 false 且 `useBuiltInEventName` 为 false 时：自定义触发器事件名称（可选，为空时使用默认名称 `CustomModelSoundTrigger`）
+  - 当 `stopAllSounds` 为 false 且 `useBuiltInEventName` 为 true 时：内置事件名称（必需，如 `idle`）
+- `stopOnEnter`：是否在状态进入时停止（true：进入时停止，false：退出时停止）
+
+**注意事项**：
+- 当 `useBuiltInEventName` 为 true 时，必须指定 `eventName`，否则会显示警告
+- 自定义触发器的事件名称格式为 `CustomModelSoundTrigger:{eventName}`，与 `ModelSoundTrigger` 保持一致
+- 内置事件名称（如 `idle`）直接使用，不添加前缀
+
 #### ModelDialogueTrigger
 
 在动画状态进入时触发对话播放。
@@ -746,9 +762,14 @@ Animator Controller 可以使用以下参数：
 #### 动画状态机触发
 
 - 可以在动画状态机中使用 `ModelSoundTrigger` 组件在状态进入时触发音效
-- 支持配置多个音效标签，可选择随机或顺序播放
-- 支持配置音效播放模式，提供更精细的音效控制
-- 音效标签可以是任意自定义标签，不再限制于预定义标签
+  - 支持配置多个音效标签，可选择随机或顺序播放
+  - 支持配置音效播放模式，提供更精细的音效控制
+  - 音效标签可以是任意自定义标签，不再限制于预定义标签
+- 可以在动画状态机中使用 `ModelSoundStopTrigger` 组件停止音效播放
+  - 支持停止指定事件名称的音效（自定义触发器或内置事件名称如 `idle`）
+  - 支持停止所有正在播放的音效
+  - 支持在状态进入或退出时触发停止操作
+  - 在 Unity 编辑器中提供友好的配置界面，包含条件显示和警告提示
 
 ### 音效文件要求
 
