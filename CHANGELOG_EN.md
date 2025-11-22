@@ -2,6 +2,10 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.8.8-fix1
+
+- Fixed ModelParameterDriver parameter recording logic to resolve editor data locking issues and improve data conciseness
+
 ## v1.8.8
 
 - Added version update checking functionality, automatically detects if a new version is available

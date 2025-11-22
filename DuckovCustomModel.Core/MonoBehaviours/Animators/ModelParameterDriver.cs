@@ -22,20 +22,28 @@ namespace DuckovCustomModel.Core.MonoBehaviours.Animators
             Copy,
         }
 
-        public Parameter[] parameters = [];
-
         [HideInInspector] [SerializeField] private string parametersData = string.Empty;
 
         [Tooltip(
             "Custom debug message that will be written to the client logs when the ParameterDriver is used.  Be careful to remove these before your final upload as this can spam your log files.")]
         public string debugString = string.Empty;
 
+        [NonSerialized] private bool _dataLoaded;
+
         [NonSerialized] public bool Initialized;
 
         [NonSerialized] public bool IsEnabled;
 
+        [NonSerialized] public Parameter[] Parameters = [];
+
         public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
         {
+            if (!_dataLoaded)
+            {
+                LoadParametersFromData();
+                _dataLoaded = true;
+            }
+
             if (!Initialized)
                 AnimatorParameterDriverManager.InitializeDriver(this, animator);
 
@@ -45,18 +53,23 @@ namespace DuckovCustomModel.Core.MonoBehaviours.Animators
             if (!string.IsNullOrEmpty(debugString))
                 ModLogger.Log($"[AnimatorParameterDriverManager] ParameterDriver Debug: {debugString}");
 
-            foreach (var parameter in parameters) AnimatorParameterDriverManager.ApplyParameter(parameter, animator);
+            foreach (var parameter in Parameters) AnimatorParameterDriverManager.ApplyParameter(parameter, animator);
         }
 
         public void OnBeforeSerialize()
         {
-            parametersData = JsonConvert.SerializeObject(parameters);
+            if (Parameters is { Length: > 0 }) parametersData = JsonConvert.SerializeObject(Parameters);
         }
 
         public void OnAfterDeserialize()
         {
-            if (!string.IsNullOrEmpty(parametersData))
-                parameters = JsonConvert.DeserializeObject<Parameter[]>(parametersData) ?? [];
+        }
+
+        private void LoadParametersFromData()
+        {
+            if (string.IsNullOrEmpty(parametersData)) return;
+            var deserialized = JsonConvert.DeserializeObject<Parameter[]>(parametersData);
+            if (deserialized is { Length: > 0 }) Parameters = deserialized;
         }
 
         [Serializable]
