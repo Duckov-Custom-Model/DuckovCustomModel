@@ -58,7 +58,7 @@ namespace DuckovCustomModel.Core.MonoBehaviours.Animators
 
         public void OnBeforeSerialize()
         {
-            parametersData = Parameters is { Length: > 0 } ? JsonConvert.SerializeObject(Parameters) : string.Empty;
+            if (Parameters is { Length: > 0 }) parametersData = JsonConvert.SerializeObject(Parameters);
         }
 
         public void OnAfterDeserialize()
