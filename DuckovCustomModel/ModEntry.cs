@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.HarmonyPatches;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.UI;
@@ -63,10 +64,19 @@ namespace DuckovCustomModel
             ModelListManager.RefreshModelList(priorityModelIDs);
 
             InitializeConfigWindow();
+            InitializeUpdateChecker();
+
+            UpdateChecker.OnUpdateCheckCompleted += OnUpdateCheckCompleted;
+            GameVersionDisplayPatches.Initialize();
 
             CustomDialogueManager.Initialize();
 
             ModLogger.Log($"{Constant.ModName} loaded (Version {Constant.ModVersion})");
+        }
+
+        private static void OnUpdateCheckCompleted(bool hasUpdate, string? latestVersion)
+        {
+            GameVersionDisplayPatches.RefreshUpdateVersionDisplay();
         }
 
         public static void Uninitialize()
@@ -90,8 +100,11 @@ namespace DuckovCustomModel
 
             ModelListManager.CancelRefresh();
 
+            UpdateChecker.OnUpdateCheckCompleted -= OnUpdateCheckCompleted;
+
             Localization.Cleanup();
             CustomDialogueManager.Cleanup();
+            GameVersionDisplayPatches.Cleanup();
 
             if (_configWindow != null)
             {
@@ -307,6 +320,16 @@ namespace DuckovCustomModel
             _configWindow = uiObject.AddComponent<ConfigWindow>();
             Object.DontDestroyOnLoad(uiObject);
             ModLogger.Log("ConfigWindow initialized.");
+        }
+
+        private static void InitializeUpdateChecker()
+        {
+            if (UpdateChecker.Instance != null) return;
+
+            var updateCheckerObject = new GameObject("UpdateChecker");
+            updateCheckerObject.AddComponent<UpdateChecker>();
+            Object.DontDestroyOnLoad(updateCheckerObject);
+            ModLogger.Log("UpdateChecker initialized.");
         }
 
         private static void InitializeModelHandlerToCharacter(CharacterMainControl characterMainControl,

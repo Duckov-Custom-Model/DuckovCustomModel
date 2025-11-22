@@ -2,6 +2,12 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.8.8
+
+- Added version update checking functionality, automatically detects if a new version is available
+- Added manual update check mechanism, can manually trigger update check in settings interface
+- Added new version notification feature, displays notification information at version display when a new version is detected
+
 ## v1.8.7
 
 - Added custom dialogue system, supporting dialogue triggering in animation state machines

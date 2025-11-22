@@ -53,6 +53,16 @@
   "BottomCenter": "下中",
   "BottomRight": "右下",
   "OffsetX": "偏移 X",
-  "OffsetY": "偏移 Y"
+  "OffsetY": "偏移 Y",
+  "UpdateAvailable": "有可用更新",
+  "CheckForUpdate": "检查更新",
+  "LatestVersion": "最新版本",
+  "LastCheckTime": "上次检查",
+  "UpdateCheckNotAvailable": "更新检查不可用",
+  "NeverChecked": "从未检查",
+  "JustNow": "刚刚",
+  "MinutesAgo": "分钟前",
+  "HoursAgo": "小时前",
+  "DaysAgo": "天前"
 }
 

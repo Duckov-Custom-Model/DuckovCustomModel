@@ -8,6 +8,7 @@ using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.UI.Base;
 using DuckovCustomModel.UI.Data;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -350,27 +351,27 @@ namespace DuckovCustomModel.UI.Components
                 hasError ? new(1f, 0.6f, 0.6f, 1) : Color.white, TextAnchor.UpperLeft, FontStyle.Bold);
             UIFactory.SetupRectTransform(nameText, new(0, 1), new(1, 1), new(0, 24), pivot: new(0, 1),
                 anchoredPosition: Vector2.zero);
-            var nameTextComponent = nameText.GetComponent<Text>();
-            nameTextComponent.horizontalOverflow = HorizontalWrapMode.Wrap;
-            nameTextComponent.verticalOverflow = VerticalWrapMode.Overflow;
+            var nameTextComponent = nameText.GetComponent<TextMeshProUGUI>();
+            nameTextComponent.enableWordWrapping = true;
+            nameTextComponent.overflowMode = TextOverflowModes.Overflow;
 
             var infoText = UIFactory.CreateText("Info", contentArea.transform,
                 Localization.GetModelInfo(model.ModelID, model.Author, model.Version, model.BundleName),
                 16,
                 hasError ? new(1f, 0.7f, 0.7f, 1) : new(0.8f, 0.8f, 0.8f, 1), TextAnchor.UpperLeft);
             UIFactory.SetupRectTransform(infoText, Vector2.zero, Vector2.one, new(0, 18));
-            var infoTextComponent = infoText.GetComponent<Text>();
-            infoTextComponent.horizontalOverflow = HorizontalWrapMode.Wrap;
-            infoTextComponent.verticalOverflow = VerticalWrapMode.Truncate;
+            var infoTextComponent = infoText.GetComponent<TextMeshProUGUI>();
+            infoTextComponent.enableWordWrapping = true;
+            infoTextComponent.overflowMode = TextOverflowModes.Truncate;
 
             if (hasError)
             {
                 var errorText = UIFactory.CreateText("Error", contentArea.transform,
                     $"⚠ {(!string.IsNullOrEmpty(errorMessage) ? errorMessage : "Unknown error")}", 15,
                     new(1f, 0.4f, 0.4f, 1), TextAnchor.UpperLeft, FontStyle.Bold);
-                var errorTextComponent = errorText.GetComponent<Text>();
-                errorTextComponent.horizontalOverflow = HorizontalWrapMode.Wrap;
-                errorTextComponent.verticalOverflow = VerticalWrapMode.Overflow;
+                var errorTextComponent = errorText.GetComponent<TextMeshProUGUI>();
+                errorTextComponent.enableWordWrapping = true;
+                errorTextComponent.overflowMode = TextOverflowModes.Overflow;
 
                 UIFactory.SetupRectTransform(errorText, Vector2.zero, Vector2.one, new(0, 20));
 
@@ -392,9 +393,9 @@ namespace DuckovCustomModel.UI.Components
 
                 var descText = UIFactory.CreateText("Description", contentArea.transform, model.Description, 15,
                     new(0.7f, 0.7f, 0.7f, 1), TextAnchor.UpperLeft);
-                var descTextComponent = descText.GetComponent<Text>();
-                descTextComponent.horizontalOverflow = HorizontalWrapMode.Wrap;
-                descTextComponent.verticalOverflow = VerticalWrapMode.Overflow;
+                var descTextComponent = descText.GetComponent<TextMeshProUGUI>();
+                descTextComponent.enableWordWrapping = true;
+                descTextComponent.overflowMode = TextOverflowModes.Overflow;
 
                 UIFactory.SetupContentSizeFitter(descText, ContentSizeFitter.FitMode.Unconstrained);
             }

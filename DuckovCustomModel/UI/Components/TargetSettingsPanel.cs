@@ -4,6 +4,7 @@ using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.UI.Base;
 using DuckovCustomModel.UI.Data;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -16,8 +17,8 @@ namespace DuckovCustomModel.UI.Components
         private Toggle? _enableIdleAudioToggle;
         private Toggle? _enableModelAudioToggle;
         private Toggle? _hideEquipmentToggle;
-        private InputField? _idleAudioMaxIntervalInput;
-        private InputField? _idleAudioMinIntervalInput;
+        private TMP_InputField? _idleAudioMaxIntervalInput;
+        private TMP_InputField? _idleAudioMinIntervalInput;
         private ScrollRect? _scrollRect;
         private int _settingRowIndex;
 
@@ -181,7 +182,8 @@ namespace DuckovCustomModel.UI.Components
                 UIFactory.CreateInputField("IdleAudioMinIntervalInput", minIntervalRow.transform);
             _idleAudioMinIntervalInput.text = interval.Min.ToString("F1");
             if (_idleAudioMinIntervalInput.textComponent != null)
-                _idleAudioMinIntervalInput.textComponent.fontSize += 4;
+                _idleAudioMinIntervalInput.textComponent.enableAutoSizing = false;
+
             UIFactory.SetupRightControl(_idleAudioMinIntervalInput.gameObject, new(100, 30));
             _idleAudioMinIntervalInput.onEndEdit.AddListener(OnIdleAudioMinIntervalChanged);
 
@@ -197,7 +199,8 @@ namespace DuckovCustomModel.UI.Components
                 UIFactory.CreateInputField("IdleAudioMaxIntervalInput", maxIntervalRow.transform);
             _idleAudioMaxIntervalInput.text = interval.Max.ToString("F1");
             if (_idleAudioMaxIntervalInput.textComponent != null)
-                _idleAudioMaxIntervalInput.textComponent.fontSize += 4;
+                _idleAudioMaxIntervalInput.textComponent.enableAutoSizing = false;
+
             UIFactory.SetupRightControl(_idleAudioMaxIntervalInput.gameObject, new(100, 30));
             _idleAudioMaxIntervalInput.onEndEdit.AddListener(OnIdleAudioMaxIntervalChanged);
         }
@@ -232,15 +235,11 @@ namespace DuckovCustomModel.UI.Components
             if (hideEquipmentConfig == null) return;
 
             if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
-            {
                 hideEquipmentConfig.SetHideAICharacterEquipment(_currentTarget.AICharacterNameKey, value);
-                ConfigManager.SaveConfigToFile(hideEquipmentConfig, "HideEquipmentConfig.json");
-            }
             else
-            {
                 hideEquipmentConfig.SetHideEquipment(_currentTarget.TargetType, value);
-                ConfigManager.SaveConfigToFile(hideEquipmentConfig, "HideEquipmentConfig.json");
-            }
+
+            ConfigManager.SaveConfigToFile(hideEquipmentConfig, "HideEquipmentConfig.json");
         }
 
         private void OnEnableModelAudioToggleChanged(bool value)
@@ -251,15 +250,11 @@ namespace DuckovCustomModel.UI.Components
             if (modelAudioConfig == null) return;
 
             if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
-            {
                 modelAudioConfig.SetAICharacterModelAudioEnabled(_currentTarget.AICharacterNameKey, value);
-                ConfigManager.SaveConfigToFile(modelAudioConfig, "ModelAudioConfig.json");
-            }
             else
-            {
                 modelAudioConfig.SetModelAudioEnabled(_currentTarget.TargetType, value);
-                ConfigManager.SaveConfigToFile(modelAudioConfig, "ModelAudioConfig.json");
-            }
+
+            ConfigManager.SaveConfigToFile(modelAudioConfig, "ModelAudioConfig.json");
         }
 
         private void OnEnableIdleAudioToggleChanged(bool value)
@@ -270,15 +265,11 @@ namespace DuckovCustomModel.UI.Components
             if (idleAudioConfig == null) return;
 
             if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
-            {
                 idleAudioConfig.SetAICharacterIdleAudioEnabled(_currentTarget.AICharacterNameKey, value);
-                ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
-            }
             else
-            {
                 idleAudioConfig.SetIdleAudioEnabled(_currentTarget.TargetType, value);
-                ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
-            }
+
+            ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
         }
 
         private void OnIdleAudioMinIntervalChanged(string value)
@@ -297,14 +288,14 @@ namespace DuckovCustomModel.UI.Components
                 interval = idleAudioConfig.GetAICharacterIdleAudioInterval(_currentTarget.AICharacterNameKey);
                 idleAudioConfig.SetAICharacterIdleAudioInterval(_currentTarget.AICharacterNameKey, minValue,
                     interval.Max);
-                ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
             }
             else
             {
                 interval = idleAudioConfig.GetIdleAudioInterval(_currentTarget.TargetType);
                 idleAudioConfig.SetIdleAudioInterval(_currentTarget.TargetType, minValue, interval.Max);
-                ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
             }
+
+            ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
         }
 
         private void OnIdleAudioMaxIntervalChanged(string value)
@@ -324,15 +315,15 @@ namespace DuckovCustomModel.UI.Components
                 if (maxValue < interval.Min) maxValue = interval.Min;
                 idleAudioConfig.SetAICharacterIdleAudioInterval(_currentTarget.AICharacterNameKey, interval.Min,
                     maxValue);
-                ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
             }
             else
             {
                 interval = idleAudioConfig.GetIdleAudioInterval(_currentTarget.TargetType);
                 if (maxValue < interval.Min) maxValue = interval.Min;
                 idleAudioConfig.SetIdleAudioInterval(_currentTarget.TargetType, interval.Min, maxValue);
-                ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
             }
+
+            ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
         }
     }
 }

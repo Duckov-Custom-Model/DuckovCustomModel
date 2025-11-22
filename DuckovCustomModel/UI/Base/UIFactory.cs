@@ -1,5 +1,6 @@
 using System;
 using DuckovCustomModel.Localizations;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -23,15 +24,14 @@ namespace DuckovCustomModel.UI.Base
         public static GameObject CreateText(string name, Transform parent, string text, int fontSize = 14,
             Color? color = null, TextAnchor alignment = TextAnchor.MiddleLeft, FontStyle fontStyle = FontStyle.Normal)
         {
-            var obj = new GameObject(name, typeof(Text));
+            var obj = new GameObject(name, typeof(TextMeshProUGUI));
             obj.transform.SetParent(parent, false);
-            var textComponent = obj.GetComponent<Text>();
+            var textComponent = obj.GetComponent<TextMeshProUGUI>();
             textComponent.text = text;
-            textComponent.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             textComponent.fontSize = fontSize;
             textComponent.color = color ?? Color.white;
-            textComponent.alignment = alignment;
-            textComponent.fontStyle = fontStyle;
+            textComponent.alignment = ConvertTextAnchor(alignment);
+            textComponent.fontStyle = ConvertFontStyle(fontStyle);
             return obj;
         }
 
@@ -58,14 +58,14 @@ namespace DuckovCustomModel.UI.Base
         public static void SetupButtonText(GameObject textObj, int minFontSize = 12, int maxFontSize = 18,
             float padding = 8f)
         {
-            var textComponent = textObj.GetComponent<Text>();
+            var textComponent = textObj.GetComponent<TextMeshProUGUI>();
             if (textComponent == null) return;
 
-            textComponent.horizontalOverflow = HorizontalWrapMode.Wrap;
-            textComponent.verticalOverflow = VerticalWrapMode.Overflow;
-            textComponent.resizeTextForBestFit = true;
-            textComponent.resizeTextMinSize = minFontSize;
-            textComponent.resizeTextMaxSize = maxFontSize;
+            textComponent.enableWordWrapping = true;
+            textComponent.overflowMode = TextOverflowModes.Overflow;
+            textComponent.enableAutoSizing = true;
+            textComponent.fontSizeMin = minFontSize;
+            textComponent.fontSizeMax = maxFontSize;
 
             var textRect = textObj.GetComponent<RectTransform>();
             textRect.offsetMin = new(padding, 0);
@@ -92,7 +92,7 @@ namespace DuckovCustomModel.UI.Base
             return obj;
         }
 
-        public static InputField CreateInputField(string name, Transform parent, string placeholder = "")
+        public static TMP_InputField CreateInputField(string name, Transform parent, string placeholder = "")
         {
             var inputObj = new GameObject(name, typeof(Image));
             var inputImage = inputObj.GetComponent<Image>();
@@ -102,32 +102,34 @@ namespace DuckovCustomModel.UI.Base
             outline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
             outline.effectDistance = new(1, -1);
 
-            var textObj = new GameObject("Text", typeof(Text));
+            var textObj = new GameObject("Text", typeof(TextMeshProUGUI));
             textObj.transform.SetParent(inputObj.transform, false);
-            var textComponent = textObj.GetComponent<Text>();
-            textComponent.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            var textComponent = textObj.GetComponent<TextMeshProUGUI>();
             textComponent.color = Color.white;
-            textComponent.alignment = TextAnchor.MiddleLeft;
+            textComponent.fontSize = 14;
+            textComponent.enableAutoSizing = false;
+            textComponent.alignment = TextAlignmentOptions.MidlineLeft;
             var textRect = textObj.GetComponent<RectTransform>();
             textRect.anchorMin = new(0, 0);
             textRect.anchorMax = new(1, 1);
-            textRect.offsetMin = new(8, 0);
-            textRect.offsetMax = new(-8, 0);
+            textRect.offsetMin = new(8, 4);
+            textRect.offsetMax = new(-8, -4);
 
-            var placeholderObj = new GameObject("Placeholder", typeof(Text));
+            var placeholderObj = new GameObject("Placeholder", typeof(TextMeshProUGUI));
             placeholderObj.transform.SetParent(inputObj.transform, false);
-            var placeholderComponent = placeholderObj.GetComponent<Text>();
+            var placeholderComponent = placeholderObj.GetComponent<TextMeshProUGUI>();
             placeholderComponent.text = placeholder;
-            placeholderComponent.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             placeholderComponent.color = new(1, 1, 1, 0.4f);
-            placeholderComponent.alignment = TextAnchor.MiddleLeft;
+            placeholderComponent.fontSize = 14;
+            placeholderComponent.enableAutoSizing = false;
+            placeholderComponent.alignment = TextAlignmentOptions.MidlineLeft;
             var placeholderRect = placeholderObj.GetComponent<RectTransform>();
             placeholderRect.anchorMin = new(0, 0);
             placeholderRect.anchorMax = new(1, 1);
-            placeholderRect.offsetMin = new(8, 0);
-            placeholderRect.offsetMax = new(-8, 0);
+            placeholderRect.offsetMin = new(8, 4);
+            placeholderRect.offsetMax = new(-8, -4);
 
-            var inputField = inputObj.AddComponent<InputField>();
+            var inputField = inputObj.AddComponent<TMP_InputField>();
             inputField.textComponent = textComponent;
             inputField.placeholder = placeholderComponent;
 
@@ -294,9 +296,10 @@ namespace DuckovCustomModel.UI.Base
             button.colors = colors;
         }
 
-        public static Dropdown CreateDropdown(string name, Transform parent, UnityAction<int>? onValueChanged = null)
+        public static TMP_Dropdown CreateDropdown(string name, Transform parent,
+            UnityAction<int>? onValueChanged = null)
         {
-            var dropdownObj = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Dropdown));
+            var dropdownObj = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(TMP_Dropdown));
             dropdownObj.transform.SetParent(parent, false);
 
             var dropdownImage = dropdownObj.GetComponent<Image>();
@@ -306,16 +309,15 @@ namespace DuckovCustomModel.UI.Base
             outline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
             outline.effectDistance = new(1, -1);
 
-            var dropdown = dropdownObj.GetComponent<Dropdown>();
+            var dropdown = dropdownObj.GetComponent<TMP_Dropdown>();
             if (onValueChanged != null) dropdown.onValueChanged.AddListener(onValueChanged);
 
-            var labelObj = new GameObject("Label", typeof(Text));
+            var labelObj = new GameObject("Label", typeof(TextMeshProUGUI));
             labelObj.transform.SetParent(dropdownObj.transform, false);
-            var labelText = labelObj.GetComponent<Text>();
-            labelText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            var labelText = labelObj.GetComponent<TextMeshProUGUI>();
             labelText.fontSize = 16;
             labelText.color = Color.white;
-            labelText.alignment = TextAnchor.MiddleLeft;
+            labelText.alignment = TextAlignmentOptions.MidlineLeft;
             var labelRect = labelObj.GetComponent<RectTransform>();
             labelRect.anchorMin = new(0, 0);
             labelRect.anchorMax = new(1, 1);
@@ -401,13 +403,12 @@ namespace DuckovCustomModel.UI.Base
             colors.disabledColor = new(0.05f, 0.06f, 0.08f, 0.5f);
             itemToggle.colors = colors;
 
-            var itemLabelObj = new GameObject("Item Label", typeof(Text));
+            var itemLabelObj = new GameObject("Item Label", typeof(TextMeshProUGUI));
             itemLabelObj.transform.SetParent(itemObj.transform, false);
-            var itemLabelText = itemLabelObj.GetComponent<Text>();
-            itemLabelText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            var itemLabelText = itemLabelObj.GetComponent<TextMeshProUGUI>();
             itemLabelText.fontSize = 16;
             itemLabelText.color = Color.white;
-            itemLabelText.alignment = TextAnchor.MiddleLeft;
+            itemLabelText.alignment = TextAlignmentOptions.MidlineLeft;
             var itemLabelRect = itemLabelObj.GetComponent<RectTransform>();
             itemLabelRect.anchorMin = new(0, 0);
             itemLabelRect.anchorMax = new(1, 1);
@@ -418,6 +419,35 @@ namespace DuckovCustomModel.UI.Base
             dropdown.itemText = itemLabelText;
 
             return dropdown;
+        }
+
+        private static TextAlignmentOptions ConvertTextAnchor(TextAnchor anchor)
+        {
+            return anchor switch
+            {
+                TextAnchor.UpperLeft => TextAlignmentOptions.TopLeft,
+                TextAnchor.UpperCenter => TextAlignmentOptions.Top,
+                TextAnchor.UpperRight => TextAlignmentOptions.TopRight,
+                TextAnchor.MiddleLeft => TextAlignmentOptions.MidlineLeft,
+                TextAnchor.MiddleCenter => TextAlignmentOptions.Midline,
+                TextAnchor.MiddleRight => TextAlignmentOptions.MidlineRight,
+                TextAnchor.LowerLeft => TextAlignmentOptions.BottomLeft,
+                TextAnchor.LowerCenter => TextAlignmentOptions.Bottom,
+                TextAnchor.LowerRight => TextAlignmentOptions.BottomRight,
+                _ => TextAlignmentOptions.MidlineLeft,
+            };
+        }
+
+        private static FontStyles ConvertFontStyle(FontStyle style)
+        {
+            return style switch
+            {
+                FontStyle.Normal => FontStyles.Normal,
+                FontStyle.Bold => FontStyles.Bold,
+                FontStyle.Italic => FontStyles.Italic,
+                FontStyle.BoldAndItalic => FontStyles.Bold | FontStyles.Italic,
+                _ => FontStyles.Normal,
+            };
         }
     }
 }

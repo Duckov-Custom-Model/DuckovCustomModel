@@ -53,6 +53,16 @@
   "BottomCenter": "Bottom-Center",
   "BottomRight": "Bottom-Right",
   "OffsetX": "Offset X",
-  "OffsetY": "Offset Y"
+  "OffsetY": "Offset Y",
+  "UpdateAvailable": "Update Available",
+  "CheckForUpdate": "Check for Update",
+  "LatestVersion": "Latest Version",
+  "LastCheckTime": "Last Check",
+  "UpdateCheckNotAvailable": "Update check not available",
+  "NeverChecked": "Never checked",
+  "JustNow": "Just now",
+  "MinutesAgo": "minutes ago",
+  "HoursAgo": "hours ago",
+  "DaysAgo": "days ago"
 }
 

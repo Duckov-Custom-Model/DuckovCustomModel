@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.UI.Base;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -38,7 +39,7 @@ namespace DuckovCustomModel.UI.Components
                 TextAnchor.MiddleCenter);
             UIFactory.SetupButtonText(text);
 
-            var textComponent = text.GetComponent<Text>();
+            var textComponent = text.GetComponent<TextMeshProUGUI>();
             var tabInfo = new TabInfo
             {
                 Name = tabName,
@@ -120,7 +121,7 @@ namespace DuckovCustomModel.UI.Components
             public Button Button { get; set; } = null!;
             public GameObject Panel { get; set; } = null!;
             public bool IsActive { get; set; }
-            public Text? Text { get; set; }
+            public TextMeshProUGUI? Text { get; set; }
         }
     }
 }
