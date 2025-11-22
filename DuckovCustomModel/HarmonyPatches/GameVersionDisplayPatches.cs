@@ -64,7 +64,7 @@ namespace DuckovCustomModel.HarmonyPatches
 
             cloneObject.name = VersionObjectName;
 
-            DeleteComponent(cloneObject, cloneObject.GetComponent<GameVersionDisplay>());
+            RemoveComponent(cloneObject.GetComponent<GameVersionDisplay>());
 
             var textComponent = cloneObject.GetComponent<TextMeshProUGUI>();
             if (textComponent == null)
@@ -119,7 +119,7 @@ namespace DuckovCustomModel.HarmonyPatches
             _versionTextComponent = null;
         }
 
-        private static void DeleteComponent(GameObject gameObject, Component? component)
+        private static void RemoveComponent(Component? component)
         {
             if (component != null) Object.Destroy(component);
         }

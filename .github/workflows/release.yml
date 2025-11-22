@@ -75,10 +75,203 @@ jobs:
         retention-days: 30
     
     - name: Create GitHub Release
+      id: create_release
       uses: softprops/action-gh-release@v1
       with:
         files: DuckovCustomModel/bin/Release/DuckovCustomModel.zip
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Get Release Info
+      id: release_info
+      if: success()
+      run: |
+        $tagName = "${{ github.ref_name }}"
+        $apiUrl = "https://api.github.com/repos/${{ github.repository }}/releases/tags/$tagName"
+        
+        Write-Host "获取 Release 信息..."
+        Write-Host "Tag: $tagName"
+        Write-Host "API URL: $apiUrl"
+        
+        # 准备请求头
+        $headers = @{
+          Authorization = "token ${{ secrets.GITHUB_TOKEN }}"
+          Accept = "application/vnd.github.v3+json"
+        }
+        
+        # 重试配置
+        $maxRetries = 5
+        $retryDelaySeconds = 3
+        $lastError = $null
+        $release = $null
+        
+        for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
+          try {
+            Write-Host "尝试 $attempt/$maxRetries..."
+            
+            $release = Invoke-RestMethod -Uri $apiUrl -Headers $headers -ErrorAction Stop
+            
+            # 验证获取到的数据
+            if (-not $release.tag_name) {
+              throw "Release 数据不完整：缺少 tag_name"
+            }
+            
+            Write-Host "✓ Release 信息获取成功"
+            break
+          }
+          catch {
+            $lastError = $_
+            $statusCode = $_.Exception.Response.StatusCode.value__
+            $errorMessage = $_.Exception.Message
+            
+            Write-Warning "尝试 $attempt/$maxRetries 失败"
+            Write-Warning "HTTP 状态码: $statusCode"
+            Write-Warning "错误信息: $errorMessage"
+            
+            # 如果是 404，可能是 release 还未同步，需要重试
+            if ($statusCode -eq 404) {
+              Write-Warning "Release 可能尚未同步到 API，等待后重试..."
+            }
+            elseif ($statusCode -eq 403) {
+              Write-Warning "API 访问被拒绝，可能是限流或权限问题"
+            }
+            
+            if ($_.Exception.Response) {
+              try {
+                $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+                $responseBody = $reader.ReadToEnd()
+                Write-Warning "响应内容: $responseBody"
+              }
+              catch {
+                Write-Warning "无法读取响应内容"
+              }
+            }
+            
+            # 如果不是最后一次尝试，等待后重试
+            if ($attempt -lt $maxRetries) {
+              Write-Host "等待 $retryDelaySeconds 秒后重试..."
+              Start-Sleep -Seconds $retryDelaySeconds
+            }
+          }
+        }
+        
+        # 检查是否成功获取
+        if (-not $release) {
+          Write-Error "获取 Release 信息失败，已重试 $maxRetries 次"
+          Write-Error "最后错误: $lastError"
+          exit 1
+        }
+        
+        # 解析 release 信息
+        $version = $release.tag_name -replace '^v', ''
+        $releaseName = if ($release.name) { $release.name } else { "Release $version" }
+        $publishedAt = $release.published_at
+        
+        Write-Host "Release 信息:"
+        Write-Host "  版本: $version"
+        Write-Host "  名称: $releaseName"
+        Write-Host "  发布时间: $publishedAt"
+        
+        echo "version=$version" >> $env:GITHUB_OUTPUT
+        echo "release_name=$releaseName" >> $env:GITHUB_OUTPUT
+        echo "published_at=$publishedAt" >> $env:GITHUB_OUTPUT
+      shell: pwsh
+
+    - name: Trigger Pages Update
+      if: success()
+      run: |
+        # 验证必要的配置
+        $pagesRepoOwner = "${{ secrets.PAGES_REPO_OWNER }}"
+        $pagesRepoName = "${{ secrets.PAGES_REPO_NAME }}"
+        $pagesRepoToken = "${{ secrets.PAGES_REPO_TOKEN }}"
+        
+        if ([string]::IsNullOrWhiteSpace($pagesRepoOwner)) {
+          Write-Error "PAGES_REPO_OWNER secret is not set"
+          exit 1
+        }
+        if ([string]::IsNullOrWhiteSpace($pagesRepoName)) {
+          Write-Error "PAGES_REPO_NAME secret is not set"
+          exit 1
+        }
+        if ([string]::IsNullOrWhiteSpace($pagesRepoToken)) {
+          Write-Error "PAGES_REPO_TOKEN secret is not set"
+          exit 1
+        }
+        
+        # 准备请求数据
+        $body = @{
+          event_type = "update-release"
+          client_payload = @{
+            version = "${{ steps.release_info.outputs.version }}"
+            release_name = "${{ steps.release_info.outputs.release_name }}"
+            published_at = "${{ steps.release_info.outputs.published_at }}"
+          }
+        } | ConvertTo-Json -Depth 10
+        
+        $headers = @{
+          Authorization = "token $pagesRepoToken"
+          Accept = "application/vnd.github.v3+json"
+        }
+        
+        $apiUrl = "https://api.github.com/repos/$pagesRepoOwner/$pagesRepoName/dispatches"
+        Write-Host "准备触发页面更新..."
+        Write-Host "目标仓库: $pagesRepoOwner/$pagesRepoName"
+        Write-Host "版本: ${{ steps.release_info.outputs.version }}"
+        Write-Host "API URL: $apiUrl"
+        
+        # 重试配置
+        $maxRetries = 3
+        $retryDelaySeconds = 5
+        $lastError = $null
+        $success = $false
+        
+        for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
+          try {
+            Write-Host "尝试 $attempt/$maxRetries..."
+            
+            $response = Invoke-RestMethod -Uri $apiUrl -Method Post -Headers $headers -Body $body -ContentType "application/json" -ErrorAction Stop
+            
+            Write-Host "✓ 页面更新触发成功"
+            if ($response) {
+              Write-Host "响应: $($response | ConvertTo-Json -Compress)"
+            }
+            $success = $true
+            break
+          }
+          catch {
+            $lastError = $_
+            $statusCode = $_.Exception.Response.StatusCode.value__
+            $errorMessage = $_.Exception.Message
+            
+            Write-Warning "尝试 $attempt/$maxRetries 失败"
+            Write-Warning "HTTP 状态码: $statusCode"
+            Write-Warning "错误信息: $errorMessage"
+            
+            if ($_.Exception.Response) {
+              try {
+                $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+                $responseBody = $reader.ReadToEnd()
+                Write-Warning "响应内容: $responseBody"
+              }
+              catch {
+                Write-Warning "无法读取响应内容"
+              }
+            }
+            
+            # 如果不是最后一次尝试，等待后重试
+            if ($attempt -lt $maxRetries) {
+              Write-Host "等待 $retryDelaySeconds 秒后重试..."
+              Start-Sleep -Seconds $retryDelaySeconds
+            }
+          }
+        }
+        
+        # 检查最终结果
+        if (-not $success) {
+          Write-Error "页面更新触发失败，已重试 $maxRetries 次"
+          Write-Error "最后错误: $lastError"
+          exit 1
+        }
+      shell: pwsh
 

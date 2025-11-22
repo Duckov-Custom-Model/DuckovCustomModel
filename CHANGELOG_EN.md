@@ -2,6 +2,13 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.8.11
+
+- Fixed cleanup logic when dropping carriable items
+  - Changed Harmony Patch for `Carriable.Drop` from Postfix to Prefix to ensure proper cleanup before dropping
+  - Automatically removes `CustomSocketMarker` and `DontHideAsEquipment` components when dropping items
+  - Added `restore` parameter to `UnregisterCustomSocketObject` method, allowing items to not restore position when dropped
+
 ## v1.8.10
 
 - Added model change event subscription functionality
