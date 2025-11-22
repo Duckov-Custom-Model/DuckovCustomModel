@@ -12,11 +12,11 @@ namespace DuckovCustomModel.Core.Managers
 
             parameterDriver.Initialized = true;
 
-            var enableParameters = parameterDriver.parameters
+            var enableParameters = parameterDriver.Parameters
                 .Where(parameter => InitializeParameter(parameter, animator)).ToArray();
 
-            parameterDriver.parameters = enableParameters;
-            parameterDriver.IsEnabled = parameterDriver.parameters.Length > 0;
+            parameterDriver.Parameters = enableParameters;
+            parameterDriver.IsEnabled = parameterDriver.Parameters.Length > 0;
         }
 
         public static void ApplyParameter(ModelParameterDriver.Parameter parameter, Animator animator)
