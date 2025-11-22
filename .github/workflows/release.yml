@@ -166,7 +166,44 @@ jobs:
         # 解析 release 信息
         $version = $release.tag_name -replace '^v', ''
         $releaseName = if ($release.name) { $release.name } else { "Release $version" }
+        
+        # 确保日期保持为 ISO 8601 格式字符串
+        # PowerShell 的 Invoke-RestMethod 可能会将日期转换为 DateTime 对象
+        # 需要确保输出时使用 ISO 8601 格式，而不是系统区域设置格式
         $publishedAt = $release.published_at
+        if ($publishedAt -is [DateTime]) {
+          # 如果被转换为 DateTime，强制使用 ISO 8601 格式
+          $publishedAt = $publishedAt.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.000Z", [System.Globalization.CultureInfo]::InvariantCulture)
+        }
+        elseif ($publishedAt -is [String]) {
+          # 如果是字符串，验证并规范化格式
+          # GitHub API 返回的格式应该是: yyyy-MM-ddTHH:mm:ssZ
+          if ($publishedAt -match '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}') {
+            # 确保格式统一为 yyyy-MM-ddTHH:mm:ss.000Z
+            try {
+              $dt = [DateTime]::ParseExact($publishedAt, "yyyy-MM-ddTHH:mm:ssZ", [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::AssumeUniversal -bor [System.Globalization.DateTimeStyles]::AdjustToUniversal)
+              $publishedAt = $dt.ToString("yyyy-MM-ddTHH:mm:ss.000Z", [System.Globalization.CultureInfo]::InvariantCulture)
+            }
+            catch {
+              # 尝试其他 ISO 8601 格式
+              try {
+                $dt = [DateTime]::ParseExact($publishedAt, "yyyy-MM-ddTHH:mm:ss.fffZ", [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::AssumeUniversal -bor [System.Globalization.DateTimeStyles]::AdjustToUniversal)
+                $publishedAt = $dt.ToString("yyyy-MM-ddTHH:mm:ss.000Z", [System.Globalization.CultureInfo]::InvariantCulture)
+              }
+              catch {
+                Write-Warning "无法解析日期格式: $publishedAt，使用原始值"
+              }
+            }
+          }
+          else {
+            Write-Error "日期格式不是 ISO 8601: $publishedAt"
+            exit 1
+          }
+        }
+        else {
+          Write-Error "无法识别的日期类型: $($publishedAt.GetType().Name)"
+          exit 1
+        }
         
         Write-Host "Release 信息:"
         Write-Host "  版本: $version"

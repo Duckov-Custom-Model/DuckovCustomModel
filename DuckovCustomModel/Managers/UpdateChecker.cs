@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -133,8 +134,9 @@ namespace DuckovCustomModel.Managers
                         _updateInfoConfig.LastCheckTime = DateTime.Now;
                         _updateInfoConfig.HasUpdate = hasUpdate;
 
-                        if (DateTime.TryParse(releaseInfo.PublishedAt, out var publishedAt))
-                            _updateInfoConfig.LatestPublishedAt = publishedAt;
+                        if (DateTimeOffset.TryParse(releaseInfo.PublishedAt, CultureInfo.InvariantCulture,
+                                DateTimeStyles.RoundtripKind, out var publishedAt))
+                            _updateInfoConfig.LatestPublishedAt = publishedAt.UtcDateTime;
 
                         SaveUpdateInfo();
 

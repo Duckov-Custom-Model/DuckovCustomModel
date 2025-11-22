@@ -9,6 +9,8 @@ namespace DuckovCustomModel.Core
         {
             TypeNameHandling = TypeNameHandling.Auto,
             Formatting = Formatting.Indented,
+            DateFormatHandling = DateFormatHandling.IsoDateFormat,
+            DateTimeZoneHandling = DateTimeZoneHandling.Utc,
             Converters = [new StringEnumConverter()],
         };
     }
