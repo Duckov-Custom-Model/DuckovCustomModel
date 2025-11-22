@@ -61,11 +61,11 @@ namespace DuckovCustomModel.HarmonyPatches
 
             var gameObject = ___rb.gameObject;
             modelHandler.UnregisterCustomSocketObject(gameObject, false);
-            RemoveComponent(gameObject, gameObject.GetComponent<CustomSocketMarker>());
-            RemoveComponent(gameObject, gameObject.GetComponent<DontHideAsEquipment>());
+            RemoveComponent(gameObject.GetComponent<CustomSocketMarker>());
+            RemoveComponent(gameObject.GetComponent<DontHideAsEquipment>());
         }
 
-        private static void RemoveComponent(GameObject gameObject, Component? component)
+        private static void RemoveComponent(Component? component)
         {
             if (component != null) Object.Destroy(component);
         }
