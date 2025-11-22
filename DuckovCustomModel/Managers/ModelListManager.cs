@@ -21,6 +21,7 @@ namespace DuckovCustomModel.Managers
         public static event Action? OnRefreshStarted;
         public static event Action? OnRefreshCompleted;
         public static event Action<string>? OnRefreshProgress;
+        public static event Action<ModelChangedEventArgs>? OnModelChanged;
 
         public static void RefreshModelList(IEnumerable<string>? priorityModelIDs = null)
         {
@@ -237,12 +238,30 @@ namespace DuckovCustomModel.Managers
             if (!ModelManager.FindModelByID(modelID, out var bundleInfo, out var modelInfo))
             {
                 ModLogger.LogWarning($"Model '{modelID}' not found for {target}");
+                OnModelChanged?.Invoke(new ModelChangedEventArgs
+                {
+                    Target = target,
+                    ModelID = modelID,
+                    ModelName = null,
+                    IsRestored = false,
+                    Success = false,
+                    HandlerCount = 0,
+                });
                 return;
             }
 
             if (!modelInfo.CompatibleWithType(target))
             {
                 ModLogger.LogWarning($"Model '{modelID}' is not compatible with {target}");
+                OnModelChanged?.Invoke(new ModelChangedEventArgs
+                {
+                    Target = target,
+                    ModelID = modelID,
+                    ModelName = modelInfo.Name,
+                    IsRestored = false,
+                    Success = false,
+                    HandlerCount = 0,
+                });
                 return;
             }
 
@@ -271,6 +290,16 @@ namespace DuckovCustomModel.Managers
             }
 
             ModLogger.Log($"Applied model '{modelInfo.Name}' ({modelID}) to {handlers.Count} {target} object(s)");
+
+            OnModelChanged?.Invoke(new ModelChangedEventArgs
+            {
+                Target = target,
+                ModelID = modelID,
+                ModelName = modelInfo.Name,
+                IsRestored = false,
+                Success = true,
+                HandlerCount = handlers.Count,
+            });
         }
 
         public static void RestoreOriginalModelForTarget(ModelTarget target)
@@ -278,6 +307,16 @@ namespace DuckovCustomModel.Managers
             var handlers = ModelManager.GetAllModelHandlers(target);
             foreach (var handler in handlers)
                 handler.RestoreOriginalModel();
+
+            OnModelChanged?.Invoke(new ModelChangedEventArgs
+            {
+                Target = target,
+                ModelID = null,
+                ModelName = null,
+                IsRestored = true,
+                Success = true,
+                HandlerCount = handlers.Count,
+            });
         }
 
         public static void ApplyAllModelsFromConfig(bool forceReapply = false)
@@ -322,12 +361,32 @@ namespace DuckovCustomModel.Managers
             if (!ModelManager.FindModelByID(modelID, out var bundleInfo, out var modelInfo))
             {
                 ModLogger.LogWarning($"Model '{modelID}' not found for AICharacter '{nameKey}'");
+                OnModelChanged?.Invoke(new ModelChangedEventArgs
+                {
+                    Target = ModelTarget.AICharacter,
+                    AICharacterNameKey = nameKey,
+                    ModelID = modelID,
+                    ModelName = null,
+                    IsRestored = false,
+                    Success = false,
+                    HandlerCount = 0,
+                });
                 return;
             }
 
             if (!modelInfo.CompatibleWithAICharacter(nameKey))
             {
                 ModLogger.LogWarning($"Model '{modelID}' is not compatible with AICharacter '{nameKey}'");
+                OnModelChanged?.Invoke(new ModelChangedEventArgs
+                {
+                    Target = ModelTarget.AICharacter,
+                    AICharacterNameKey = nameKey,
+                    ModelID = modelID,
+                    ModelName = modelInfo.Name,
+                    IsRestored = false,
+                    Success = false,
+                    HandlerCount = 0,
+                });
                 return;
             }
 
@@ -357,6 +416,17 @@ namespace DuckovCustomModel.Managers
 
             ModLogger.Log(
                 $"Applied model '{modelInfo.Name}' ({modelID}) to {handlers.Count} AICharacter '{nameKey}' object(s)");
+
+            OnModelChanged?.Invoke(new ModelChangedEventArgs
+            {
+                Target = ModelTarget.AICharacter,
+                AICharacterNameKey = nameKey,
+                ModelID = modelID,
+                ModelName = modelInfo.Name,
+                IsRestored = false,
+                Success = true,
+                HandlerCount = handlers.Count,
+            });
         }
 
         public static void ApplyModelToTargetAfterRefresh(ModelTarget target, string modelID,
