@@ -2,6 +2,13 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.8.11
+
+- 修复了可搬运物品放下时的清理逻辑
+  - 将 `Carriable.Drop` 的 Harmony Patch 从 Postfix 改为 Prefix，确保在放下前正确清理
+  - 在放下物品时自动移除 `CustomSocketMarker` 和 `DontHideAsEquipment` 组件
+  - 为 `UnregisterCustomSocketObject` 方法添加 `restore` 参数，允许在放下时不恢复物品位置
+
 ## v1.8.10
 
 - 新增模型切换事件订阅功能

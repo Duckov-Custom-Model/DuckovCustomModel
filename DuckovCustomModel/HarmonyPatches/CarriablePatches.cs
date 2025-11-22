@@ -43,9 +43,9 @@ namespace DuckovCustomModel.HarmonyPatches
         }
 
         [HarmonyPatch(typeof(Carriable), nameof(Carriable.Drop))]
-        [HarmonyPostfix]
+        [HarmonyPrefix]
         // ReSharper disable InconsistentNaming
-        private static void Carriable_Drop_Postfix(Rigidbody ___rb, CA_Carry ___carrier)
+        private static void Carriable_Drop_Prefix(Rigidbody ___rb, CA_Carry ___carrier)
             // ReSharper restore InconsistentNaming
         {
             if (___rb == null || ___carrier == null)
@@ -59,7 +59,15 @@ namespace DuckovCustomModel.HarmonyPatches
             if (modelHandler == null || !modelHandler.IsInitialized)
                 return;
 
-            modelHandler.UnregisterCustomSocketObject(___rb.gameObject);
+            var gameObject = ___rb.gameObject;
+            modelHandler.UnregisterCustomSocketObject(gameObject, false);
+            RemoveComponent(gameObject, gameObject.GetComponent<CustomSocketMarker>());
+            RemoveComponent(gameObject, gameObject.GetComponent<DontHideAsEquipment>());
+        }
+
+        private static void RemoveComponent(GameObject gameObject, Component? component)
+        {
+            if (component != null) Object.Destroy(component);
         }
     }
 }

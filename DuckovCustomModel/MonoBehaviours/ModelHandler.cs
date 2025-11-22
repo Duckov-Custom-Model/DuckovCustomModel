@@ -270,11 +270,12 @@ namespace DuckovCustomModel.MonoBehaviours
             UpdateToCustomSocket(customSocketObject);
         }
 
-        public void UnregisterCustomSocketObject(GameObject customSocketObject)
+        public void UnregisterCustomSocketObject(GameObject customSocketObject, bool restore = true)
         {
             if (customSocketObject == null) return;
             _currentUsingCustomSocketObjects.Remove(customSocketObject);
-            RestoreCustomSocketObject(customSocketObject);
+            if (restore)
+                RestoreCustomSocketObject(customSocketObject);
         }
 
         public void RegisterModifiedDeathLootBox(GameObject deathLootBox)
