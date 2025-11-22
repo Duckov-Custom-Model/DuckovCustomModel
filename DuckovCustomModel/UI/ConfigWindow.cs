@@ -172,6 +172,7 @@ namespace DuckovCustomModel.UI
 
             if (UpdateChecker.Instance != null)
             {
+                UpdateChecker.OnUpdateCheckCompleted -= OnUpdateCheckCompleted;
                 UpdateChecker.OnUpdateCheckCompleted += OnUpdateCheckCompleted;
                 UpdateChecker.Instance.CheckForUpdate();
             }

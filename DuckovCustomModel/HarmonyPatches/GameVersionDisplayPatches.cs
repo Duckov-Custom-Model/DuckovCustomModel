@@ -95,11 +95,9 @@ namespace DuckovCustomModel.HarmonyPatches
             var hasUpdate = updateChecker.HasUpdate();
             var latestVersion = updateChecker.GetLatestVersion();
 
-            if (hasUpdate && !string.IsNullOrEmpty(latestVersion))
-                _versionTextComponent.text =
-                    $"{Constant.ModName} v{Constant.ModVersion} - <color={UpdateColorHex}>{Localization.UpdateAvailable} v{latestVersion}</color>";
-            else
-                _versionTextComponent.text = $"{Constant.ModName} v{Constant.ModVersion}";
+            _versionTextComponent.text = hasUpdate && !string.IsNullOrEmpty(latestVersion)
+                ? $"{Constant.ModName} v{Constant.ModVersion} - <color={UpdateColorHex}>{Localization.UpdateAvailable} v{latestVersion}</color>"
+                : $"{Constant.ModName} v{Constant.ModVersion}";
         }
 
         public static void RefreshUpdateVersionDisplay()

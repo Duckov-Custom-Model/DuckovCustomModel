@@ -37,11 +37,9 @@ namespace DuckovCustomModel.UI.Tabs
         {
             if (_isWaitingForUIKeyInput || _isWaitingForAnimatorParamsKeyInput) HandleKeyInputCapture();
 
-            if (_updateInfoLocalizedText != null && Time.time - _lastUpdateInfoRefreshTime > 30f)
-            {
-                RefreshUpdateInfo();
-                _lastUpdateInfoRefreshTime = Time.time;
-            }
+            if (_updateInfoLocalizedText == null || !(Time.time - _lastUpdateInfoRefreshTime > 30f)) return;
+            _lastUpdateInfoRefreshTime = Time.time;
+            RefreshUpdateInfo();
         }
 
         protected override void OnDestroy()
@@ -690,13 +688,14 @@ namespace DuckovCustomModel.UI.Tabs
             if (lastCheckTime.HasValue)
             {
                 var timeAgo = DateTime.Now - lastCheckTime.Value;
-                var timeText = timeAgo.TotalMinutes < 1
-                    ? Localization.JustNow
-                    : timeAgo.TotalHours < 1
-                        ? $"{(int)timeAgo.TotalMinutes} {Localization.MinutesAgo}"
-                        : timeAgo.TotalDays < 1
-                            ? $"{(int)timeAgo.TotalHours} {Localization.HoursAgo}"
-                            : $"{(int)timeAgo.TotalDays} {Localization.DaysAgo}";
+                var timeText = timeAgo switch
+                {
+                    { TotalMinutes: < 1 } => Localization.JustNow,
+                    { TotalHours: < 1 } => $"{(int)timeAgo.TotalMinutes} {Localization.MinutesAgo}",
+                    { TotalDays: < 1 } => $"{(int)timeAgo.TotalHours} {Localization.HoursAgo}",
+                    _ => $"{(int)timeAgo.TotalDays} {Localization.DaysAgo}",
+                };
+
                 info.Append($"{Localization.LastCheckTime}: {timeText}");
             }
             else
@@ -711,12 +710,8 @@ namespace DuckovCustomModel.UI.Tabs
 
         private void RefreshUpdateInfo()
         {
-            if (_updateInfoPanel == null) return;
-
-            var updateInfoText = _updateInfoPanel.transform.Find("UpdateInfo");
-            if (updateInfoText == null) return;
-            var localizedText = updateInfoText.GetComponent<LocalizedText>();
-            localizedText?.RefreshText();
+            if (_updateInfoLocalizedText == null) return;
+            _updateInfoLocalizedText.RefreshText();
         }
     }
 }

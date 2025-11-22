@@ -20,11 +20,9 @@ namespace DuckovCustomModel.Localizations
 
         private void Start()
         {
-            if (_text != null && _textGetter != null)
-            {
-                Register();
-                RefreshText();
-            }
+            if (_text == null || _textGetter == null) return;
+            Register();
+            RefreshText();
         }
 
         private void OnDestroy()
