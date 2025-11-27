@@ -762,6 +762,10 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void SetShowBackMaterial()
         {
+            if (_currentModelInfo is { Features.Length: > 0 }
+                && _currentModelInfo.Features.Contains(ModelFeatures.SkipShowBackMaterial))
+                return;
+
             if (OriginalModelOcclusionBody == null) return;
 
             var originalSkinnedMeshRenderer =

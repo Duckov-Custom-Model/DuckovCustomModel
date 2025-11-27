@@ -2,6 +2,12 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.8.12
+
+- 新增模型特性 `SkipShowBackMaterial`，支持在模型定义中跳过 ShowBack 材质的附加逻辑
+  - 在 `ModelFeatures` 中添加 `SkipShowBackMaterial` 特性常量
+  - 在模型的 `bundleinfo.json` 的 `Features` 数组中添加 `"SkipShowBackMaterial"` 即可跳过 ShowBack 材质的附加逻辑
+
 ## v1.8.11
 
 - 修复了可搬运物品放下时的清理逻辑
