@@ -2,6 +2,12 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.8.12
+
+- Added model feature `SkipShowBackMaterial` to skip ShowBack material attachment logic in model definitions
+  - Added `SkipShowBackMaterial` feature constant in `ModelFeatures`
+  - Add `"SkipShowBackMaterial"` to the `Features` array in the model's `bundleinfo.json` to skip ShowBack material attachment logic
+
 ## v1.8.11
 
 - Fixed cleanup logic when dropping carriable items
