@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using Duckov;
+using Duckov.Buffs;
 using Duckov.UI;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Core.Data;
@@ -35,7 +37,6 @@ namespace DuckovCustomModel.MonoBehaviours
         private Renderer[]? _cachedCustomModelRenderers;
 
         private ModelBundleInfo? _currentModelBundleInfo;
-        private ModelInfo? _currentModelInfo;
         private CustomCharacterSoundMaker? _customCharacterSoundMaker;
         private CharacterSubVisuals? _customModelSubVisuals;
         private GameObject? _deathLootBoxPrefab;
@@ -43,8 +44,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private float _nextIdleAudioTime;
 
-        private bool ReplaceShader => _currentModelInfo is not { Features: { Length: > 0 } }
-                                      || !_currentModelInfo.Features.Contains(ModelFeatures.NoAutoShaderReplace);
+        private bool ReplaceShader => CurrentModelInfo is not { Features: { Length: > 0 } }
+                                      || !CurrentModelInfo.Features.Contains(ModelFeatures.NoAutoShaderReplace);
 
         public CharacterMainControl? CharacterMainControl { get; private set; }
         public CharacterModel? OriginalCharacterModel { get; private set; }
@@ -54,6 +55,12 @@ namespace DuckovCustomModel.MonoBehaviours
         public CharacterAnimationControl_MagicBlend? OriginalMagicBlendAnimationControl { get; private set; }
         public Movement? OriginalMovement { get; private set; }
         public bool IsHiddenOriginalModel { get; private set; }
+
+        public CharacterBuffManager? BuffManager =>
+            CharacterMainControl != null ? CharacterMainControl.GetBuffManager() : null;
+
+        public ReadOnlyCollection<Buff> Buffs =>
+            BuffManager != null ? BuffManager.Buffs : new ReadOnlyCollection<Buff>([]);
 
         public bool IsHiddenOriginalEquipment
         {
@@ -96,6 +103,8 @@ namespace DuckovCustomModel.MonoBehaviours
         public string? NameKey => CharacterMainControl?.characterPreset?.nameKey;
 
         public string? CurrentModelDirectory => _currentModelBundleInfo?.DirectoryPath;
+
+        public ModelInfo? CurrentModelInfo { get; private set; }
 
         public bool IsInitialized { get; private set; }
 
@@ -254,8 +263,8 @@ namespace DuckovCustomModel.MonoBehaviours
                 Initialize(characterMainControl, sourceHandler.Target);
                 if (!IsInitialized) return;
 
-                if (sourceHandler is not { _currentModelBundleInfo: not null, _currentModelInfo: not null }) return;
-                InitializeCustomModel(sourceHandler._currentModelBundleInfo, sourceHandler._currentModelInfo);
+                if (sourceHandler is not { _currentModelBundleInfo: not null, CurrentModelInfo: not null }) return;
+                InitializeCustomModel(sourceHandler._currentModelBundleInfo, sourceHandler.CurrentModelInfo);
                 if (CustomModelInstance != null) CustomModelInstance.SetActive(false);
 
                 return;
@@ -283,8 +292,8 @@ namespace DuckovCustomModel.MonoBehaviours
             if (!IsInitialized) return;
             if (CharacterMainControl == null || OriginalCharacterModel == null) return;
 
-            if (sourceHandler is not { _currentModelBundleInfo: not null, _currentModelInfo: not null }) return;
-            InitializeCustomModel(sourceHandler._currentModelBundleInfo, sourceHandler._currentModelInfo);
+            if (sourceHandler is not { _currentModelBundleInfo: not null, CurrentModelInfo: not null }) return;
+            InitializeCustomModel(sourceHandler._currentModelBundleInfo, sourceHandler.CurrentModelInfo);
             ChangeToCustomModel();
         }
 
@@ -549,7 +558,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
             if (CustomModelInstance != null) CleanupCustomModel();
             _currentModelBundleInfo = modelBundleInfo;
-            _currentModelInfo = modelInfo;
+            CurrentModelInfo = modelInfo;
             InitSoundFilePath(modelBundleInfo, modelInfo);
             InitializeDeathLootBoxPrefab(modelBundleInfo, modelInfo);
             InitializeCustomModelInternal(prefab, modelInfo);
@@ -866,8 +875,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void SetShowBackMaterial()
         {
-            if (_currentModelInfo is { Features.Length: > 0 }
-                && _currentModelInfo.Features.Contains(ModelFeatures.SkipShowBackMaterial))
+            if (CurrentModelInfo is { Features.Length: > 0 }
+                && CurrentModelInfo.Features.Contains(ModelFeatures.SkipShowBackMaterial))
                 return;
 
             if (OriginalModelOcclusionBody == null) return;

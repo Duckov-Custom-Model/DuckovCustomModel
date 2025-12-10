@@ -593,7 +593,26 @@ namespace DuckovCustomModel.UI
                 }).ToList();
 
             animatorParamsList = animatorParamsList.OrderBy(p => p.Name).ToList();
-            _cachedParamInfos = customParamsList.Concat(animatorParamsList).ToList();
+
+            var buffParamsList = new List<AnimatorParamInfo>();
+            if (modelHandler.CurrentModelInfo?.BuffAnimatorParams != null)
+                foreach (var (paramName, _) in modelHandler.CurrentModelInfo.BuffAnimatorParams)
+                {
+                    if (string.IsNullOrWhiteSpace(paramName)) continue;
+
+                    var paramHash = Animator.StringToHash(paramName);
+                    buffParamsList.Add(new AnimatorParamInfo
+                    {
+                        Name = paramName,
+                        Hash = paramHash,
+                        Type = "bool",
+                        InitialValue = false,
+                        IsExternal = false,
+                    });
+                }
+
+            buffParamsList = buffParamsList.OrderBy(p => p.Name).ToList();
+            _cachedParamInfos = customParamsList.Concat(animatorParamsList).Concat(buffParamsList).ToList();
         }
 
 

@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Duckov;
+using Duckov.Buffs;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Utils;
 using UnityEngine;
@@ -10,8 +12,13 @@ namespace DuckovCustomModel.MonoBehaviours
     {
         private readonly Dictionary<int, bool> _boolParams = new();
 
+        private readonly Dictionary<int, BuffCondition[]> _buffParamConditions = [];
+
         private readonly Dictionary<int, float> _floatParams = new();
         private readonly Dictionary<int, int> _intParams = new();
+        private readonly HashSet<int> _validBoolParamHashes = [];
+        private readonly HashSet<int> _validFloatParamHashes = [];
+        private readonly HashSet<int> _validIntParamHashes = [];
 
         private bool _attacking;
         private int _attackLayerIndex = -1;
@@ -82,6 +89,7 @@ namespace DuckovCustomModel.MonoBehaviours
             UpdateAttackLayerWeight();
             UpdateActionState();
             UpdateTimeAndWeather();
+            UpdateBuffParams();
         }
 
         private void OnDestroy()
@@ -122,6 +130,9 @@ namespace DuckovCustomModel.MonoBehaviours
 
             _initialized = true;
 
+            InitializeAnimatorParamCache();
+            InitializeBuffParamCache();
+
             OnHoldAgentChanged(_characterMainControl.CurrentHoldItemAgent);
         }
 
@@ -130,26 +141,51 @@ namespace DuckovCustomModel.MonoBehaviours
             _customAnimator = animator;
             _attackLayerIndex = -1;
             if (_customAnimator != null) FindMeleeAttackLayerIndex();
+            InitializeAnimatorParamCache();
+            InitializeBuffParamCache();
+        }
+
+        private void InitializeAnimatorParamCache()
+        {
+            _validBoolParamHashes.Clear();
+            _validIntParamHashes.Clear();
+            _validFloatParamHashes.Clear();
+
+            if (_customAnimator == null) return;
+
+            foreach (var param in _customAnimator.parameters)
+                switch (param.type)
+                {
+                    case AnimatorControllerParameterType.Bool:
+                        _validBoolParamHashes.Add(param.nameHash);
+                        break;
+                    case AnimatorControllerParameterType.Int:
+                        _validIntParamHashes.Add(param.nameHash);
+                        break;
+                    case AnimatorControllerParameterType.Float:
+                        _validFloatParamHashes.Add(param.nameHash);
+                        break;
+                }
         }
 
         private void SetAnimatorFloat(int hash, float value)
         {
             _floatParams[hash] = value;
-            if (_customAnimator != null)
+            if (_customAnimator != null && _validFloatParamHashes.Contains(hash))
                 _customAnimator.SetFloat(hash, value);
         }
 
         private void SetAnimatorInteger(int hash, int value)
         {
             _intParams[hash] = value;
-            if (_customAnimator != null)
+            if (_customAnimator != null && _validIntParamHashes.Contains(hash))
                 _customAnimator.SetInteger(hash, value);
         }
 
         private void SetAnimatorBool(int hash, bool value)
         {
             _boolParams[hash] = value;
-            if (_customAnimator != null)
+            if (_customAnimator != null && _validBoolParamHashes.Contains(hash))
                 _customAnimator.SetBool(hash, value);
         }
 
@@ -645,6 +681,73 @@ namespace DuckovCustomModel.MonoBehaviours
         public void TriggerCritKillTarget()
         {
             SetAnimatorTrigger(CustomAnimatorHash.CritKillTarget);
+        }
+
+        private void InitializeBuffParamCache()
+        {
+            _buffParamConditions.Clear();
+
+            if (_modelHandler == null) return;
+            if (_modelHandler.CurrentModelInfo?.BuffAnimatorParams == null) return;
+
+            foreach (var (paramName, conditions) in _modelHandler.CurrentModelInfo.BuffAnimatorParams)
+            {
+                if (string.IsNullOrWhiteSpace(paramName) || conditions == null || conditions.Length == 0) continue;
+
+                var paramHash = Animator.StringToHash(paramName);
+                var validConditions = conditions
+                    .Where(condition =>
+                        condition != null &&
+                        (condition.Id.HasValue || !string.IsNullOrWhiteSpace(condition.DisplayNameKey)))
+                    .ToArray();
+
+                if (validConditions.Length > 0)
+                    _buffParamConditions[paramHash] = validConditions;
+            }
+        }
+
+        private void UpdateBuffParams()
+        {
+            if (!_initialized) return;
+            if (_modelHandler == null || _customAnimator == null) return;
+            if (_buffParamConditions.Count == 0) return;
+
+            var buffs = _modelHandler.Buffs;
+            if (buffs is not { Count : > 0 })
+            {
+                foreach (var paramHash in _buffParamConditions.Keys)
+                    SetAnimatorBool(paramHash, false);
+                return;
+            }
+
+            foreach (var (paramHash, conditions) in _buffParamConditions)
+            {
+                var hasMatchingBuff = false;
+                foreach (var condition in conditions)
+                {
+                    var matched = false;
+                    if (condition.Id.HasValue) matched = buffs.Any(buff => GetBuffId(buff) == condition.Id.Value);
+
+                    if (!matched && !string.IsNullOrWhiteSpace(condition.DisplayNameKey))
+                        matched = buffs.Any(buff => GetBuffDisplayNameKey(buff) == condition.DisplayNameKey);
+
+                    if (!matched) continue;
+                    hasMatchingBuff = true;
+                    break;
+                }
+
+                SetAnimatorBool(paramHash, hasMatchingBuff);
+            }
+        }
+
+        private static int GetBuffId(Buff buff)
+        {
+            return buff.ID;
+        }
+
+        private static string? GetBuffDisplayNameKey(Buff buff)
+        {
+            return buff.DisplayNameKey;
         }
     }
 }

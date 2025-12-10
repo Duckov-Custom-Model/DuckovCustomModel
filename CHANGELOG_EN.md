@@ -2,6 +2,14 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.8.13
+
+- Added Buff-driven animator parameter configuration feature
+  - Added `BuffAnimatorParams` field in `ModelInfo` of `bundleinfo.json` to configure animator parameters based on Buff status
+  - Supports matching Buffs by Buff ID or DisplayNameKey, triggering parameters when any condition is met
+  - Configured Buff parameters will be displayed in the debug interface, after custom parameters and animator parameters
+  - Optimized animator parameter setting performance by caching valid parameter lists to avoid invalid calls for non-existent parameters
+
 ## v1.8.12
 
 - Added model feature `SkipShowBackMaterial` to skip ShowBack material attachment logic in model definitions

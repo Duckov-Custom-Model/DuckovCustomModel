@@ -33,6 +33,8 @@ namespace DuckovCustomModel.Core.Data
 
         public float? RunSoundFrequency { get; set; }
 
+        public Dictionary<string, BuffCondition[]>? BuffAnimatorParams { get; set; }
+
         public bool Validate()
         {
             if (string.IsNullOrWhiteSpace(ModelID)) return false;
