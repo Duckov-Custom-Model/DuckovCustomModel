@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using Duckov;
+using Duckov.Buffs;
 using Duckov.UI;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Core.Data;
@@ -17,6 +19,8 @@ namespace DuckovCustomModel.MonoBehaviours
 {
     public class ModelHandler : MonoBehaviour
     {
+        public const string CustomModelInstanceName = "CustomModelInstance";
+
         private static readonly IReadOnlyDictionary<string, FieldInfo> OriginalModelSocketFieldInfos =
             CharacterModelSocketUtils.AllSocketFields;
 
@@ -33,7 +37,6 @@ namespace DuckovCustomModel.MonoBehaviours
         private Renderer[]? _cachedCustomModelRenderers;
 
         private ModelBundleInfo? _currentModelBundleInfo;
-        private ModelInfo? _currentModelInfo;
         private CustomCharacterSoundMaker? _customCharacterSoundMaker;
         private CharacterSubVisuals? _customModelSubVisuals;
         private GameObject? _deathLootBoxPrefab;
@@ -41,8 +44,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private float _nextIdleAudioTime;
 
-        private bool ReplaceShader => _currentModelInfo is not { Features: { Length: > 0 } }
-                                      || !_currentModelInfo.Features.Contains(ModelFeatures.NoAutoShaderReplace);
+        private bool ReplaceShader => CurrentModelInfo is not { Features: { Length: > 0 } }
+                                      || !CurrentModelInfo.Features.Contains(ModelFeatures.NoAutoShaderReplace);
 
         public CharacterMainControl? CharacterMainControl { get; private set; }
         public CharacterModel? OriginalCharacterModel { get; private set; }
@@ -52,6 +55,12 @@ namespace DuckovCustomModel.MonoBehaviours
         public CharacterAnimationControl_MagicBlend? OriginalMagicBlendAnimationControl { get; private set; }
         public Movement? OriginalMovement { get; private set; }
         public bool IsHiddenOriginalModel { get; private set; }
+
+        public CharacterBuffManager? BuffManager =>
+            CharacterMainControl != null ? CharacterMainControl.GetBuffManager() : null;
+
+        public ReadOnlyCollection<Buff> Buffs =>
+            BuffManager != null ? BuffManager.Buffs : new ReadOnlyCollection<Buff>([]);
 
         public bool IsHiddenOriginalEquipment
         {
@@ -95,11 +104,14 @@ namespace DuckovCustomModel.MonoBehaviours
 
         public string? CurrentModelDirectory => _currentModelBundleInfo?.DirectoryPath;
 
+        public ModelInfo? CurrentModelInfo { get; private set; }
+
         public bool IsInitialized { get; private set; }
 
         public GameObject? CustomModelInstance { get; private set; }
         public Animator? CustomAnimator { get; private set; }
         public CustomAnimatorControl? CustomAnimatorControl { get; private set; }
+
 
         private void Update()
         {
@@ -236,6 +248,106 @@ namespace DuckovCustomModel.MonoBehaviours
 
             ModLogger.Log("ModelHandler initialized successfully.");
             IsInitialized = true;
+        }
+
+        public void InitializeFrom(ModelHandler sourceHandler, CharacterMainControl characterMainControl)
+        {
+            if (sourceHandler == null)
+            {
+                ModLogger.LogError("Source ModelHandler is null.");
+                return;
+            }
+
+            if (!sourceHandler.IsInitialized || !sourceHandler.IsHiddenOriginalModel)
+            {
+                Initialize(characterMainControl, sourceHandler.Target);
+                if (!IsInitialized) return;
+
+                if (sourceHandler is not { _currentModelBundleInfo: not null, CurrentModelInfo: not null }) return;
+                InitializeCustomModel(sourceHandler._currentModelBundleInfo, sourceHandler.CurrentModelInfo);
+                if (CustomModelInstance != null) CustomModelInstance.SetActive(false);
+
+                return;
+            }
+
+            if (characterMainControl == null)
+            {
+                ModLogger.LogError("CharacterMainControl component not found.");
+                return;
+            }
+
+            var newCharacterModel = characterMainControl.characterModel;
+            if (newCharacterModel == null)
+            {
+                ModLogger.LogError("No CharacterModel found on CharacterMainControl.");
+                return;
+            }
+
+            RestoreSocketsFromSource(sourceHandler, newCharacterModel);
+
+            var remnantCustomModel = newCharacterModel.transform.Find(CustomModelInstanceName);
+            if (remnantCustomModel != null) DestroyImmediate(remnantCustomModel.gameObject);
+
+            Initialize(characterMainControl, sourceHandler.Target);
+            if (!IsInitialized) return;
+            if (CharacterMainControl == null || OriginalCharacterModel == null) return;
+
+            if (sourceHandler is not { _currentModelBundleInfo: not null, CurrentModelInfo: not null }) return;
+            InitializeCustomModel(sourceHandler._currentModelBundleInfo, sourceHandler.CurrentModelInfo);
+            ChangeToCustomModel();
+        }
+
+        private static void RestoreSocketsFromSource(ModelHandler sourceHandler, CharacterModel newCharacterModel)
+        {
+            if (sourceHandler.OriginalCharacterModel == null) return;
+
+            var sourceRoot = sourceHandler.OriginalCharacterModel.transform;
+            var myRoot = newCharacterModel.transform;
+
+            foreach (var (socketField, originalSocketTransform) in sourceHandler._originalModelSockets)
+            {
+                if (originalSocketTransform == null) continue;
+
+                var path = GetTransformPath(sourceRoot, originalSocketTransform);
+                if (string.IsNullOrEmpty(path)) continue;
+
+                var myOriginalSocket = myRoot.Find(path);
+                if (myOriginalSocket == null)
+                {
+                    ModLogger.LogWarning($"[RestoreSocketsFromSource] Failed to find socket '{path}' in clone.");
+                    continue;
+                }
+
+                var currentSocket = socketField.GetValue(newCharacterModel) as Transform;
+                if (currentSocket == null || currentSocket == myOriginalSocket) continue;
+
+                var children = currentSocket.OfType<Transform>().ToList();
+
+                socketField.SetValue(newCharacterModel, myOriginalSocket);
+
+                foreach (var child in children)
+                {
+                    child.SetParent(myOriginalSocket, false);
+                    child.localRotation = Quaternion.identity;
+                    child.localPosition = Vector3.zero;
+                }
+            }
+        }
+
+        private static string GetTransformPath(Transform root, Transform target)
+        {
+            if (target == root) return "";
+
+            var path = target.name;
+            var current = target.parent;
+
+            while (current != null && current != root)
+            {
+                path = $"{current.name}/{path}";
+                current = current.parent;
+            }
+
+            return path;
         }
 
         public void SetTarget(ModelTarget target)
@@ -428,6 +540,7 @@ namespace DuckovCustomModel.MonoBehaviours
             CustomModelInstance.SetActive(true);
 
             ForceUpdateHealthBar();
+            OriginalCharacterModel.SyncHiddenToMainCharacter();
 
             if (!IsHiddenOriginalModel)
                 ModLogger.Log("Changed to custom model.");
@@ -445,7 +558,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
             if (CustomModelInstance != null) CleanupCustomModel();
             _currentModelBundleInfo = modelBundleInfo;
-            _currentModelInfo = modelInfo;
+            CurrentModelInfo = modelInfo;
             InitSoundFilePath(modelBundleInfo, modelInfo);
             InitializeDeathLootBoxPrefab(modelBundleInfo, modelInfo);
             InitializeCustomModelInternal(prefab, modelInfo);
@@ -504,7 +617,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
             // Instantiate the custom model prefab
             CustomModelInstance = Instantiate(customModelPrefab, OriginalCharacterModel.transform);
-            CustomModelInstance.name = "CustomModelInstance";
+            CustomModelInstance.name = CustomModelInstanceName;
 
             _cachedCustomModelRenderers = GetAllRenderers(CustomModelInstance);
             ReplaceRenderersLayer(_cachedCustomModelRenderers);
@@ -762,8 +875,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void SetShowBackMaterial()
         {
-            if (_currentModelInfo is { Features.Length: > 0 }
-                && _currentModelInfo.Features.Contains(ModelFeatures.SkipShowBackMaterial))
+            if (CurrentModelInfo is { Features.Length: > 0 }
+                && CurrentModelInfo.Features.Contains(ModelFeatures.SkipShowBackMaterial))
                 return;
 
             if (OriginalModelOcclusionBody == null) return;

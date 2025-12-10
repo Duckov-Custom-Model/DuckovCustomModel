@@ -336,7 +336,16 @@ UI 界面相关配置。
           "Path": "sounds/idle1.wav",
           "Tags": ["idle"]
         }
-      ]
+      ],
+      "BuffAnimatorParams": {
+        "HasBuff1": [
+          { "Id": 123 },
+          { "DisplayNameKey": "buff_key_1" }
+        ],
+        "HasBuff2": [
+          { "Id": 456 }
+        ]
+      }
     }
   ]
 }
@@ -385,6 +394,27 @@ UI 界面相关配置。
 - `RunSoundFrequency`（可选）：跑步时每秒的脚步声触发频率
   - 用于控制角色跑步时脚步声的播放频率
   - 如果未指定，将自动使用原始角色的跑步脚步声频率设置
+- `BuffAnimatorParams`（可选）：Buff 驱动的动画器参数配置
+  - 字典类型，键为动画器参数名称（bool 类型），值为 Buff 匹配条件数组
+  - 当角色拥有匹配的 Buff 时，对应的动画器参数会被设置为 `true`，否则为 `false`
+  - 每个条件可以指定 `Id`（Buff ID）或 `DisplayNameKey`（Buff 显示名称键），满足任意一个条件即可
+  - 示例配置：
+    ```json
+    "BuffAnimatorParams": {
+      "HasBuff1": [
+        { "Id": 123 },
+        { "DisplayNameKey": "buff_key_1" }
+      ],
+      "HasBuff2": [
+        { "Id": 456 }
+      ],
+      "HasAnyBuff": [
+        { "DisplayNameKey": "buff_key_1" },
+        { "DisplayNameKey": "buff_key_2" }
+      ]
+    }
+    ```
+  - 配置的 Buff 参数会在调试界面中显示，位于自定义参数和动画器参数之后
 
 ## 定位锚点
 

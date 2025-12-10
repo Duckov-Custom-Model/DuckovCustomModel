@@ -336,7 +336,16 @@ Model Bundle Folder/
           "Path": "sounds/idle1.wav",
           "Tags": ["idle"]
         }
-      ]
+      ],
+      "BuffAnimatorParams": {
+        "HasBuff1": [
+          { "Id": 123 },
+          { "DisplayNameKey": "buff_key_1" }
+        ],
+        "HasBuff2": [
+          { "Id": 456 }
+        ]
+      }
     }
   ]
 }
@@ -385,6 +394,27 @@ Model Bundle Folder/
 - `RunSoundFrequency` (optional): Footstep trigger frequency per second when running
   - Used to control the playback frequency of footstep sounds when the character runs
   - If not specified, will automatically use the original character's run footstep frequency setting
+- `BuffAnimatorParams` (optional): Buff-driven animator parameter configuration
+  - Dictionary type, key is animator parameter name (bool type), value is array of Buff matching conditions
+  - When the character has matching Buffs, the corresponding animator parameter will be set to `true`, otherwise `false`
+  - Each condition can specify `Id` (Buff ID) or `DisplayNameKey` (Buff display name key), satisfying any one condition is sufficient
+  - Example configuration:
+    ```json
+    "BuffAnimatorParams": {
+      "HasBuff1": [
+        { "Id": 123 },
+        { "DisplayNameKey": "buff_key_1" }
+      ],
+      "HasBuff2": [
+        { "Id": 456 }
+      ],
+      "HasAnyBuff": [
+        { "DisplayNameKey": "buff_key_1" },
+        { "DisplayNameKey": "buff_key_2" }
+      ]
+    }
+    ```
+  - Configured Buff parameters will be displayed in the debug interface, after custom parameters and animator parameters
 
 ## Locator Points
 

@@ -2,6 +2,14 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.8.13
+
+- 新增 Buff 驱动的动画器参数配置功能
+  - 在 `bundleinfo.json` 的 `ModelInfo` 中添加 `BuffAnimatorParams` 字段，支持配置基于 Buff 状态的动画器参数
+  - 支持通过 Buff ID 或 DisplayNameKey 匹配 Buff，满足任意条件即可触发参数
+  - 配置的 Buff 参数会在调试界面中显示，位于自定义参数和动画器参数之后
+  - 优化了动画器参数设置性能，缓存有效参数列表，避免对不存在参数的无效调用
+
 ## v1.8.12
 
 - 新增模型特性 `SkipShowBackMaterial`，支持在模型定义中跳过 ShowBack 材质的附加逻辑

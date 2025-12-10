@@ -78,5 +78,19 @@ namespace DuckovCustomModel.Utils
         {
             return PopTextSocket.GetValue(characterModel) as Transform;
         }
+
+        public static string? FieldInfoToSocketName(FieldInfo fieldInfo)
+        {
+            foreach (var (socketName, socketField) in AllSocketFields)
+                if (socketField == fieldInfo)
+                    return socketName;
+
+            return null;
+        }
+
+        public static FieldInfo? SocketNameToFieldInfo(string socketName)
+        {
+            return AllSocketFields.GetValueOrDefault(socketName);
+        }
     }
 }
