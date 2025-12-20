@@ -578,7 +578,7 @@ Animator Controller 可以使用以下参数：
   - `4`：风暴 II（Stormy_II）
 - `TimePhase`：当前时间阶段（由 `TimeOfDayController.Instance.CurrentPhase.timePhaseTag` 获取，不可用时为 -1）
   - `0`：白天（day）
-  - `1`：黎明（dawn）
+  - `1`：黄昏（dawn）
   - `2`：夜晚（night）
 
 #### Trigger 类型参数
