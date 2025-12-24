@@ -2,6 +2,15 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.9.0
+
+- Refactored animator parameter update system using registration mechanism
+  - Created `IAnimatorParameterUpdater` interface and `AnimatorParameterUpdaterManager` manager to unify animator parameter updater management
+  - Split all updaters into independent classes, separated from `CustomAnimatorControl` for better code maintainability
+  - Created `AnimatorUpdateContext` context class to unify data management for updates
+- Added ShoulderSurfing mod extension support
+  - Added `Mod:ShoulderSurfing:CameraPitch` animator parameter providing camera pitch value from ShoulderSurfing mod
+
 ## v1.8.13
 
 - Added Buff-driven animator parameter configuration feature

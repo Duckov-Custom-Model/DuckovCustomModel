@@ -513,6 +513,7 @@ Animator Controller 可以使用以下参数：
 - `WeightRate`：重量比率（当前总重量 / 最大负重，可能大于 1.0）
 - `ActionProgress`：动作进度百分比（0.0 - 1.0，当前动作的进度，由 `IProgress.GetProgress().progress` 获取）
 - `Time`：当前 24 小时时间（0.0 - 24.0，由 `TimeOfDayController.Instance.Time` 获取，不可用时为 -1.0）
+- `Mod:ShoulderSurfing:CameraPitch`：ShoulderSurfing mod 的相机俯仰角值（需要安装 ShoulderSurfing mod 才能使用，未安装时为 0.0）
 
 #### Int 类型参数
 
@@ -580,6 +581,15 @@ Animator Controller 可以使用以下参数：
   - `0`：白天（day）
   - `1`：黄昏（dawn）
   - `2`：夜晚（night）
+
+#### Mod 扩展参数
+
+模组支持通过扩展模块添加额外的动画参数。这些参数使用 `Mod:扩展名:参数名` 的命名格式，使用冒号分隔以明确标识为 mod 扩展参数：
+
+- `Mod:ShoulderSurfing:CameraPitch`：ShoulderSurfing mod 的相机俯仰角值（float 类型）
+  - 需要安装 ShoulderSurfing mod 才能使用
+  - 当 ShoulderSurfing mod 未安装或未激活时，该参数值为 `0.0`
+  - 参数值实时反映当前相机的俯仰角度
 
 #### Trigger 类型参数
 

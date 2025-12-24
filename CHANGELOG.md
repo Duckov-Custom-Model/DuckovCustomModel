@@ -2,6 +2,15 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.9.0
+
+- 重构动画参数更新系统，使用注册机制替代直接调用
+  - 创建 `IAnimatorParameterUpdater` 接口和 `AnimatorParameterUpdaterManager` 管理器，统一管理动画参数更新器
+  - 将所有更新器拆分为独立类，从 `CustomAnimatorControl` 中分离，提高代码可维护性
+  - 创建 `AnimatorUpdateContext` 上下文类，统一管理更新所需的数据
+- 新增 ShoulderSurfing mod 扩展支持
+  - 添加 `Mod:ShoulderSurfing:CameraPitch` 动画参数，提供 ShoulderSurfing mod 的相机俯仰角值
+
 ## v1.8.13
 
 - 新增 Buff 驱动的动画器参数配置功能
