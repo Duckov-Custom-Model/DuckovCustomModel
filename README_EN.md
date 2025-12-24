@@ -513,6 +513,7 @@ The Animator Controller can use the following parameters:
 - `WeightRate`: Weight ratio (current total weight / max carrying capacity, may exceed 1.0)
 - `ActionProgress`: Action progress percentage (0.0 - 1.0, current action progress, obtained from `IProgress.GetProgress().progress`)
 - `Time`: Current 24-hour time (0.0 - 24.0, obtained from `TimeOfDayController.Instance.Time`, -1.0 when unavailable)
+- `Mod:ShoulderSurfing:CameraPitch`: Camera pitch value from ShoulderSurfing mod (requires ShoulderSurfing mod to be installed, defaults to 0.0 when not installed)
 
 #### Int Type Parameters
 
@@ -580,6 +581,15 @@ The Animator Controller can use the following parameters:
   - `0`: Day
   - `1`: Dawn
   - `2`: Night
+
+#### Mod Extension Parameters
+
+The mod supports adding additional animator parameters through extension modules. These parameters use the `Mod:ExtensionName:ParameterName` naming format with colon separators to clearly identify them as mod extension parameters:
+
+- `Mod:ShoulderSurfing:CameraPitch`: Camera pitch value from ShoulderSurfing mod (float type)
+  - Requires ShoulderSurfing mod to be installed
+  - When ShoulderSurfing mod is not installed or not active, the parameter value is `0.0`
+  - Parameter value reflects the current camera pitch angle in real-time
 
 #### Trigger Type Parameters
 

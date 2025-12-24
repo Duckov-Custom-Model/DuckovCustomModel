@@ -4,6 +4,8 @@ using System.Linq;
 using System.Reflection;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.Core.Managers;
+using DuckovCustomModel.Extensions.ShoulderSurfing;
 using DuckovCustomModel.HarmonyPatches;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
@@ -70,6 +72,8 @@ namespace DuckovCustomModel
             GameVersionDisplayPatches.Initialize();
 
             CustomDialogueManager.Initialize();
+
+            InitializeExtensions();
 
             ModLogger.Log($"{Constant.ModName} loaded (Version {Constant.ModVersion})");
         }
@@ -330,6 +334,11 @@ namespace DuckovCustomModel
             updateCheckerObject.AddComponent<UpdateChecker>();
             Object.DontDestroyOnLoad(updateCheckerObject);
             ModLogger.Log("UpdateChecker initialized.");
+        }
+
+        private static void InitializeExtensions()
+        {
+            AnimatorParameterUpdaterManager.Register(new ShoulderCameraParameterUpdater());
         }
 
         private static void InitializeModelHandlerToCharacter(CharacterMainControl characterMainControl,

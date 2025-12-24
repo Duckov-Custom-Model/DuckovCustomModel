@@ -90,6 +90,9 @@ namespace DuckovCustomModel.Core.Data
         public static readonly int Time = Animator.StringToHash("Time"); // float
         public static readonly int TimePhase = Animator.StringToHash("TimePhase"); // int
 
+        public static readonly int ModShoulderSurfingCameraPitch =
+            Animator.StringToHash("Mod:ShoulderSurfing:CameraPitch"); // float
+
         public static List<AnimatorParamInfo> GetAllParams()
         {
             return new List<AnimatorParamInfo>
@@ -165,6 +168,11 @@ namespace DuckovCustomModel.Core.Data
                 new() { Name = "Weather", Hash = Weather, Type = "int", InitialValue = -1 },
                 new() { Name = "Time", Hash = Time, Type = "float", InitialValue = -1f },
                 new() { Name = "TimePhase", Hash = TimePhase, Type = "int", InitialValue = -1 },
+                new()
+                {
+                    Name = "Mod:ShoulderSurfing:CameraPitch", Hash = ModShoulderSurfingCameraPitch, Type = "float",
+                    InitialValue = 0f,
+                },
             }.OrderBy(p => p.Name).ToList();
         }
     }
