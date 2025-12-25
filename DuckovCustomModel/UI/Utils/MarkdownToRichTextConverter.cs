@@ -4,6 +4,8 @@ namespace DuckovCustomModel.UI.Utils
 {
     public static class MarkdownToRichTextConverter
     {
+        private static readonly string[] BulletSymbols = { "•", "◦", "▪", "▫" }; // 实心圆、空心圆、实心方块、空心方块
+
         public static string Convert(string markdown, int baseFontSize = 14, int separatorWidth = 10)
         {
             if (string.IsNullOrEmpty(markdown))
@@ -55,15 +57,72 @@ namespace DuckovCustomModel.UI.Utils
             result = Regex.Replace(result, @"^[\s\t]*[-*_]{3,}[\s\t]*(\r?\n|$)",
                 $"\n<color=#888888>{separator}</color>\n", RegexOptions.Multiline);
 
-            // 转换列表项 - -> •
-            result = Regex.Replace(result, @"^\s*[-*+]\s+", "• ", RegexOptions.Multiline);
-            result = Regex.Replace(result, @"^\s*\d+\.\s+", "", RegexOptions.Multiline);
+            // 转换多级列表项
+            // 按行处理，保留缩进级别
+            var lines = result.Split('\n');
+            for (var i = 0; i < lines.Length; i++)
+            {
+                var line = lines[i];
+
+                // 匹配无序列表项：-、*、+ 开头，前面可能有缩进
+                var unorderedMatch = Regex.Match(line, @"^(\s*)([-*+])\s+(.+)$");
+                if (unorderedMatch.Success)
+                {
+                    var indent = unorderedMatch.Groups[1].Value;
+                    var content = unorderedMatch.Groups[3].Value;
+                    // 根据缩进级别选择不同的符号和统一缩进
+                    var indentLevel = GetIndentLevel(indent);
+                    var bullet = GetBulletForLevel(indentLevel);
+                    var uniformIndent = GetUniformIndent(indentLevel);
+                    lines[i] = $"{uniformIndent}{bullet} {content}";
+                    continue;
+                }
+
+                // 匹配有序列表项：数字. 开头，前面可能有缩进
+                var orderedMatch = Regex.Match(line, @"^(\s*)(\d+)\.\s+(.+)$");
+                if (orderedMatch.Success)
+                {
+                    var indent = orderedMatch.Groups[1].Value;
+                    var number = orderedMatch.Groups[2].Value;
+                    var content = orderedMatch.Groups[3].Value;
+                    // 统一缩进格式
+                    var indentLevel = GetIndentLevel(indent);
+                    var uniformIndent = GetUniformIndent(indentLevel);
+                    lines[i] = $"{uniformIndent}{number}. {content}";
+                }
+            }
+
+            result = string.Join("\n", lines);
 
             // 清理多余的空白行
             result = Regex.Replace(result, @"\n{3,}", "\n\n", RegexOptions.Multiline);
 
             // 包裹基础字号标签
             return $"<size={baseFontSize}>{result.Trim()}</size>";
+        }
+
+        private static int GetIndentLevel(string indent)
+        {
+            // 计算缩进级别：每 2 个空格或 1 个制表符为一级
+            var level = 0;
+            foreach (var c in indent)
+                if (c == '\t')
+                    level += 2;
+                else if (c == ' ')
+                    level += 1;
+            return level / 2;
+        }
+
+        private static string GetBulletForLevel(int level)
+        {
+            // 根据级别返回不同的符号，循环使用
+            return BulletSymbols[level % BulletSymbols.Length];
+        }
+
+        private static string GetUniformIndent(int level)
+        {
+            // 每个级别使用 2 个空格缩进
+            return new string(' ', level * 2);
         }
     }
 }
