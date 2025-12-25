@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DuckovCustomModel.MonoBehaviours;
 
@@ -26,6 +27,15 @@ namespace DuckovCustomModel.Managers
 
             foreach (var updater in RegisteredUpdaters)
                 updater.UpdateParameters(control);
+        }
+
+        public static void Cleanup()
+        {
+            foreach (var updater in RegisteredUpdaters)
+                if (updater is IDisposable disposable)
+                    disposable.Dispose();
+
+            RegisteredUpdaters.Clear();
         }
     }
 }

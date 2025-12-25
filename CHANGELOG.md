@@ -2,6 +2,17 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.9.5
+
+- 优化 ShoulderSurfing mod 扩展支持
+  - 重构状态更新逻辑，使用 UniTask 每帧主动更新状态，而不是被动获取
+  - 优化判定逻辑，在每帧更新时检查对象有效性，支持对象销毁后自动重新初始化
+  - 实现 IDisposable 接口，支持资源回收和清理
+  - 优化性能，避免每次访问时重复检查，改为每帧统一更新
+- 优化 AnimatorParameterUpdaterManager
+  - 新增 `Cleanup()` 方法，自动清理所有实现了 IDisposable 接口的 updater
+  - 统一管理 updater 的生命周期，无需针对单个类型单独处理
+
 ## v1.9.4
 
 - 重构动画参数更新系统，优化性能和代码结构
