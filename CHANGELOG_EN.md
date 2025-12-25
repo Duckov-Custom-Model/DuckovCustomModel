@@ -2,6 +2,17 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.9.5
+
+- Optimized ShoulderSurfing mod extension support
+  - Refactored state update logic to use UniTask for active per-frame state updates instead of passive retrieval
+  - Optimized validation logic to check object validity during per-frame updates, supporting automatic re-initialization after object destruction
+  - Implemented IDisposable interface for resource cleanup and disposal
+  - Optimized performance by avoiding repeated checks on each access, changed to unified per-frame updates
+- Optimized AnimatorParameterUpdaterManager
+  - Added `Cleanup()` method to automatically dispose all updaters implementing IDisposable interface
+  - Unified lifecycle management of updaters, no need for individual handling of specific types
+
 ## v1.9.4
 
 - Refactored animator parameter update system to optimize performance and code structure

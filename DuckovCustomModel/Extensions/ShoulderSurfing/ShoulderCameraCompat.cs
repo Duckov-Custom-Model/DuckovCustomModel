@@ -4,62 +4,85 @@ using UnityEngine;
 
 namespace DuckovCustomModel.Extensions.ShoulderSurfing
 {
-    public class ShoulderCameraCompat
+    public static class ShoulderCameraCompat
     {
-        private static Transform _shoulderCameraTransform = null!;
-        private static Component _shoulderCamera = null!;
-        private static FieldInfo? _cameraPitchFieldInfoField;
+        private static Transform? _shoulderCameraTransform;
+        private static Component? _shoulderCamera;
+        private static FieldInfo? _cameraPitchFieldInfo;
         private static FieldInfo? _shoulderCameraToggledFieldInfo;
-        private static float _cachedCameraPitch;
-        private static int _lastUpdateFrame = -1;
+        private static bool _isInitialized;
 
-        public static bool CheckShoulderCameraInstalled()
+        public static float CameraPitch { get; private set; }
+
+        public static bool IsActive { get; private set; }
+
+        public static bool Initialize()
         {
-            if (_shoulderCameraTransform != null) return true;
+            if (_isInitialized && IsActive) return true;
+
+            _isInitialized = true;
+            _shoulderCameraTransform = null;
+            _shoulderCamera = null;
+            _cameraPitchFieldInfo = null;
+            _shoulderCameraToggledFieldInfo = null;
+            CameraPitch = 0f;
+            IsActive = false;
 
             if (ModManager.Instance == null) return false;
+
             var shoulderSurfing = ModManager.Instance.transform.Find("ShoulderSurfing");
             if (shoulderSurfing == null) return false;
+
             _shoulderCameraTransform = shoulderSurfing.transform;
-            return true;
-        }
-
-        public static bool CheckShoulderCameraActive()
-        {
-            if (!CheckShoulderCameraInstalled()) return false;
-
-            if (_shoulderCamera != null) return true;
 
             // ReSharper disable once Unity.UnresolvedComponentOrScriptableObject
             _shoulderCamera = _shoulderCameraTransform.GetComponent("ShoulderSurfing.ShoulderCamera");
-            return _shoulderCamera != null;
+            if (_shoulderCamera == null) return false;
+
+            var cameraType = _shoulderCamera.GetType();
+            _shoulderCameraToggledFieldInfo = cameraType.GetField("shoulderCameraToggled",
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            _cameraPitchFieldInfo = cameraType.GetField("cameraPitch",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+
+            IsActive = _shoulderCameraToggledFieldInfo != null && _cameraPitchFieldInfo != null;
+            return IsActive;
         }
 
-        public static float GetCameraPitch()
+        public static void UpdateState()
         {
-            if (!CheckShoulderCameraActive()) return 0f;
+            if (!_isInitialized || !IsActive)
+                if (!Initialize())
+                {
+                    CameraPitch = 0f;
+                    return;
+                }
 
-            if (_shoulderCameraToggledFieldInfo == null)
-                _shoulderCameraToggledFieldInfo = _shoulderCamera.GetType()
-                    .GetField("shoulderCameraToggled",
-                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-
-            if (_shoulderCameraToggledFieldInfo == null) return 0f;
+            if (_shoulderCamera == null || _shoulderCameraToggledFieldInfo == null || _cameraPitchFieldInfo == null)
+            {
+                IsActive = false;
+                CameraPitch = 0f;
+                return;
+            }
 
             var toggled = (bool)_shoulderCameraToggledFieldInfo.GetValue(null)!;
-            if (!toggled) return 0f;
+            if (!toggled)
+            {
+                CameraPitch = 0f;
+                return;
+            }
 
-            var currentFrame = Time.frameCount;
-            if (_lastUpdateFrame == currentFrame)
-                return _cachedCameraPitch;
+            CameraPitch = (float)_cameraPitchFieldInfo.GetValue(_shoulderCamera)!;
+        }
 
-            if (_cameraPitchFieldInfoField == null)
-                _cameraPitchFieldInfoField = _shoulderCamera.GetType()
-                    .GetField("cameraPitch", BindingFlags.NonPublic | BindingFlags.Instance)!;
-
-            _cachedCameraPitch = (float)_cameraPitchFieldInfoField.GetValue(_shoulderCamera)!;
-            _lastUpdateFrame = currentFrame;
-            return _cachedCameraPitch;
+        public static void Cleanup()
+        {
+            _isInitialized = false;
+            _shoulderCameraTransform = null;
+            _shoulderCamera = null;
+            _cameraPitchFieldInfo = null;
+            _shoulderCameraToggledFieldInfo = null;
+            CameraPitch = 0f;
         }
     }
 }

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Core.Data;
-using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.Extensions.ShoulderSurfing;
 using DuckovCustomModel.HarmonyPatches;
 using DuckovCustomModel.Localizations;
@@ -117,6 +116,8 @@ namespace DuckovCustomModel
                 Object.Destroy(_configWindow.gameObject);
                 _configWindow = null;
             }
+
+            AnimatorParameterUpdaterManager.Cleanup();
 
             _initialized = false;
 
