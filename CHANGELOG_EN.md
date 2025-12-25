@@ -10,8 +10,8 @@ English | [中文](CHANGELOG.md)
   - Added `Contains` method to check if a character is in the supported list
   - Created `AICharactersManager` manager on non-Core side to dynamically collect all AI characters from game's preset system
   - Retrieves all character presets from `GameplayDataSettings.CharacterRandomPresetData.presets` and automatically adds them to the supported list
-  - Updated static list by extracting all character names from Characters category in localization files and adding them to the static list (70 characters total)
-  - All characters are sorted alphabetically for easier maintenance
+- Added AI character model replacement warning
+  - When selecting an AI character starting with `Character_` or the "All AI Characters" option in the target settings panel, a warning message is displayed
 
 ## v1.9.2
 

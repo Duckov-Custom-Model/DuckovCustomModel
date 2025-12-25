@@ -10,8 +10,8 @@
   - 新增 `Contains` 方法，用于检查角色是否在支持列表中
   - 在非 Core 侧创建 `AICharactersManager` 管理器，从游戏的预设系统动态收集所有 AI 角色
   - 从 `GameplayDataSettings.CharacterRandomPresetData.presets` 获取所有角色预设，自动补充到支持列表中
-  - 更新静态列表，从本地化文件中提取所有 Characters 分类的角色名，补充到静态列表中（共 70 个角色）
-  - 所有角色按字母顺序排序，便于维护
+- 新增 AI 角色模型替换警告提示
+  - 在目标设置面板中，当选择以 `Character_` 开头的 AI 角色或"所有 AI 角色"选项时，会显示警告信息
 
 ## v1.9.2
 
