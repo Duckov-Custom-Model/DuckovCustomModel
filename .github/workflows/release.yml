@@ -80,13 +80,21 @@ jobs:
         
         if (Test-Path $changelogFile) {
           $content = Get-Content $changelogFile -Raw -Encoding UTF8
-          $pattern = "(?s)##\s+v?$([regex]::Escape($version))(?:\s+|$)(.*?)(?=##\s+v?\d+\.\d+\.\d+|$)"
+          # 转义版本号中的点号
+          $escapedVersion = [regex]::Escape($version)
+          # 匹配格式: ## v1.9.1 或 ## 1.9.1，后面跟换行符或空格，然后匹配内容直到下一个版本号或文件结尾
+          $pattern = "(?s)##\s+v?$escapedVersion\s*\r?\n(.*?)(?=\r?\n##\s+v?\d+\.\d+\.\d+|$)"
           $match = [regex]::Match($content, $pattern)
           
           if ($match.Success) {
-            $manualChangelog = $match.Groups[2].Value.Trim()
-            $manualChangelog = $manualChangelog -replace '^\s+', ''
+            $manualChangelog = $match.Groups[1].Value.Trim()
             Write-Host "✓ 从 CHANGELOG.md 提取到 changelog ($($manualChangelog.Length) 字符)"
+            if ($manualChangelog.Length -gt 0) {
+              Write-Host "预览前100字符: $($manualChangelog.Substring(0, [Math]::Min(100, $manualChangelog.Length)))"
+            }
+          } else {
+            Write-Host "⚠ 未在 CHANGELOG.md 中找到版本 $version 的内容"
+            Write-Host "尝试的正则表达式: $pattern"
           }
         }
         
@@ -124,10 +132,9 @@ jobs:
           $releaseBody = "Release $tagName"
         }
         
-        $delimiter = "RELEASE_BODY_EOF_$(New-Guid)"
-        echo "${delimiter}" >> $env:GITHUB_OUTPUT
+        echo "release_body<<EOF" >> $env:GITHUB_OUTPUT
         echo "$releaseBody" >> $env:GITHUB_OUTPUT
-        echo "${delimiter}" >> $env:GITHUB_OUTPUT
+        echo "EOF" >> $env:GITHUB_OUTPUT
         
         Write-Host "✓ Release body 准备完成 ($($releaseBody.Length) 字符)"
       shell: pwsh
