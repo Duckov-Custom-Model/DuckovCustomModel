@@ -10,12 +10,6 @@ namespace DuckovCustomModel.Managers.Updaters
             if (!control.Initialized || control.CharacterMainControl == null) return;
 
             var gunAgent = control.GunAgent;
-            if (control.HoldAgent != null && gunAgent == null)
-            {
-                gunAgent = control.HoldAgent as ItemAgent_Gun;
-                control.SetHoldAgent(control.HoldAgent);
-            }
-
             var isGunReady = false;
             var isReloading = false;
             var ammoRate = 0.0f;

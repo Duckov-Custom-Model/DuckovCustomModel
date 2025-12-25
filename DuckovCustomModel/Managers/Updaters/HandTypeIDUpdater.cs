@@ -16,7 +16,7 @@ namespace DuckovCustomModel.Managers.Updaters
             var meleeWeaponTypeID = 0;
             var weaponInLocator = 0;
 
-            var currentHoldItemAgent = control.CharacterMainControl?.CurrentHoldItemAgent;
+            var currentHoldItemAgent = control.CharacterMainControl.CurrentHoldItemAgent;
             if (currentHoldItemAgent != null)
                 switch (currentHoldItemAgent.handheldSocket)
                 {

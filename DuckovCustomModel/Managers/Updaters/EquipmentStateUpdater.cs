@@ -19,7 +19,7 @@ namespace DuckovCustomModel.Managers.Updaters
             {
                 if (control.ModelHandler.Target == ModelTarget.AICharacter)
                 {
-                    var nameKey = control.CharacterMainControl?.characterPreset?.nameKey;
+                    var nameKey = control.CharacterMainControl.characterPreset?.nameKey;
                     if (!string.IsNullOrEmpty(nameKey))
                         hideOriginalEquipment = ModEntry.HideEquipmentConfig
                             .GetHideAICharacterEquipment(nameKey);

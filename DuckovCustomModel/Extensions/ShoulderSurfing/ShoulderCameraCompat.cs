@@ -42,7 +42,9 @@ namespace DuckovCustomModel.Extensions.ShoulderSurfing
             if (_shoulderCameraToggledFieldInfo == null)
                 _shoulderCameraToggledFieldInfo = _shoulderCamera.GetType()
                     .GetField("shoulderCameraToggled",
-                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)!;
+                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+
+            if (_shoulderCameraToggledFieldInfo == null) return 0f;
 
             var toggled = (bool)_shoulderCameraToggledFieldInfo.GetValue(null)!;
             if (!toggled) return 0f;

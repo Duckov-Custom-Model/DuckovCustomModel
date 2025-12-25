@@ -10,6 +10,7 @@ namespace DuckovCustomModel.MonoBehaviours
 {
     public class CustomAnimatorControl : MonoBehaviour
     {
+        private static bool _coreUpdatersRegistered;
         private readonly Dictionary<int, bool> _boolParams = new();
 
         private readonly Dictionary<int, BuffCondition[]> _buffParamConditions = [];
@@ -129,6 +130,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private static void RegisterCoreUpdaters()
         {
+            if (_coreUpdatersRegistered) return;
+
             AnimatorParameterUpdaterManager.Register(new DeadStateUpdater());
             AnimatorParameterUpdaterManager.Register(new MovementUpdater());
             AnimatorParameterUpdaterManager.Register(new VelocityAndAimUpdater());
@@ -142,6 +145,8 @@ namespace DuckovCustomModel.MonoBehaviours
             AnimatorParameterUpdaterManager.Register(new AttackLayerWeightUpdater());
             AnimatorParameterUpdaterManager.Register(new ActionStateUpdater());
             AnimatorParameterUpdaterManager.Register(new TimeAndWeatherUpdater());
+
+            _coreUpdatersRegistered = true;
         }
 
         public void SetCustomAnimator(Animator? animator)
@@ -268,12 +273,6 @@ namespace DuckovCustomModel.MonoBehaviours
             if (GunAgent == null) return;
             GunAgent.OnShootEvent += OnShoot;
             GunAgent.OnLoadedEvent += OnLoaded;
-        }
-
-        public void SetHoldAgent(DuckovItemAgent? agent)
-        {
-            HoldAgent = agent;
-            GunAgent = agent as ItemAgent_Gun;
         }
 
         private void UnsubscribeGunEvents()

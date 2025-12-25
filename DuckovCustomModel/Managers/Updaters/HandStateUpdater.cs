@@ -14,14 +14,10 @@ namespace DuckovCustomModel.Managers.Updaters
 
             var holdAgent = control.HoldAgent;
             if (holdAgent == null || !holdAgent.isActiveAndEnabled)
-            {
                 holdAgent = control.CharacterMainControl.CurrentHoldItemAgent;
-                control.SetHoldAgent(holdAgent);
-            }
-            else
-            {
+
+            if (holdAgent != null && holdAgent.isActiveAndEnabled)
                 handState = (int)holdAgent.handAnimationType;
-            }
 
             if (control.CharacterMainControl.carryAction.Running)
                 handState = -1;
