@@ -2,6 +2,17 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.9.3
+
+- Refactored AI character list management to support dynamic addition and replacement
+  - Modified Core-side `AICharacters` class, changed static readonly collection to mutable `HashSet` to support dynamic character addition
+  - Added `AddAICharacter` and `AddAICharacters` methods to support adding single or multiple characters dynamically
+  - Added `Contains` method to check if a character is in the supported list
+  - Created `AICharactersManager` manager on non-Core side to dynamically collect all AI characters from game's preset system
+  - Retrieves all character presets from `GameplayDataSettings.CharacterRandomPresetData.presets` and automatically adds them to the supported list
+  - Updated static list by extracting all character names from Characters category in localization files and adding them to the static list (70 characters total)
+  - All characters are sorted alphabetically for easier maintenance
+
 ## v1.9.2
 
 - Optimized UI scrollbar implementation

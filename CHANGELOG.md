@@ -2,6 +2,17 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.9.3
+
+- 重构 AI 角色列表管理，支持动态补充和替换
+  - 修改 Core 侧的 `AICharacters` 类，将静态只读集合改为可变的 `HashSet`，支持动态添加角色
+  - 新增 `AddAICharacter` 和 `AddAICharacters` 方法，支持动态添加单个或批量角色
+  - 新增 `Contains` 方法，用于检查角色是否在支持列表中
+  - 在非 Core 侧创建 `AICharactersManager` 管理器，从游戏的预设系统动态收集所有 AI 角色
+  - 从 `GameplayDataSettings.CharacterRandomPresetData.presets` 获取所有角色预设，自动补充到支持列表中
+  - 更新静态列表，从本地化文件中提取所有 Characters 分类的角色名，补充到静态列表中（共 70 个角色）
+  - 所有角色按字母顺序排序，便于维护
+
 ## v1.9.2
 
 - 优化 UI 滚动条实现
