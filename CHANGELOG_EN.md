@@ -12,6 +12,8 @@ English | [中文](CHANGELOG.md)
   - Retrieves all character presets from `GameplayDataSettings.CharacterRandomPresetData.presets` and automatically adds them to the supported list
 - Added AI character model replacement warning
   - When selecting an AI character starting with `Character_` or the "All AI Characters" option in the target settings panel, a warning message is displayed
+- Added multilingual translation support
+  - New languages: Korean, French, German, Spanish, Russian, Italian, Portuguese, Polish, Turkish, Thai, Vietnamese
 
 ## v1.9.2
 
