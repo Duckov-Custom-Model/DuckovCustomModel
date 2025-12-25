@@ -74,12 +74,79 @@ jobs:
           DuckovCustomModel/bin/Release/DuckovCustomModel.zip
         retention-days: 30
     
+    - name: Prepare Release Body
+      id: prepare_release_body
+      run: |
+        $tagName = "${{ github.ref_name }}"
+        $version = $tagName -replace '^v', ''
+        $changelogFile = "CHANGELOG.md"
+        $manualChangelog = ""
+        
+        # 从 CHANGELOG.md 提取手动编写的 changelog
+        if (Test-Path $changelogFile) {
+          $content = Get-Content $changelogFile -Raw -Encoding UTF8
+          $pattern = "(?s)##\s+v?$([regex]::Escape($version))(?:\s+|$)(.*?)(?=##\s+v?\d+\.\d+\.\d+|$)"
+          $match = [regex]::Match($content, $pattern)
+          
+          if ($match.Success) {
+            $manualChangelog = $match.Groups[2].Value.Trim()
+            $manualChangelog = $manualChangelog -replace '^\s+', ''
+            Write-Host "✓ 从 CHANGELOG.md 提取到 changelog ($($manualChangelog.Length) 字符)"
+          }
+        }
+        
+        # 获取自动生成的 release notes
+        $headers = @{
+          Authorization = "token ${{ secrets.GITHUB_TOKEN }}"
+          Accept = "application/vnd.github.v3+json"
+        }
+        
+        $generateNotesUrl = "https://api.github.com/repos/${{ github.repository }}/releases/generate-notes"
+        $generateNotesBody = @{
+          tag_name = $tagName
+        } | ConvertTo-Json
+        
+        $autoNotes = ""
+        try {
+          $notesResponse = Invoke-RestMethod -Uri $generateNotesUrl -Method Post -Headers $headers -Body $generateNotesBody -ContentType "application/json"
+          $autoNotes = $notesResponse.body
+          Write-Host "✓ 获取到自动生成的 release notes"
+        } catch {
+          Write-Host "⚠ 无法获取自动生成的 release notes: $_"
+        }
+        
+        # 合并内容：手动 changelog + 分隔线 + 自动生成的 notes
+        $releaseBody = ""
+        if ($manualChangelog) {
+          $releaseBody = $manualChangelog
+          if ($autoNotes) {
+            $releaseBody += "`n`n---`n`n"
+          }
+        }
+        if ($autoNotes) {
+          $releaseBody += $autoNotes
+        }
+        
+        # 如果没有内容，使用默认
+        if (-not $releaseBody) {
+          $releaseBody = "Release $tagName"
+        }
+        
+        # 输出到 GitHub Actions outputs
+        echo "release_body<<EOF" >> $env:GITHUB_OUTPUT
+        echo $releaseBody >> $env:GITHUB_OUTPUT
+        echo "EOF" >> $env:GITHUB_OUTPUT
+        
+        Write-Host "✓ Release body 准备完成 ($($releaseBody.Length) 字符)"
+      shell: pwsh
+
     - name: Create GitHub Release
       id: create_release
       uses: softprops/action-gh-release@v1
       with:
         files: DuckovCustomModel/bin/Release/DuckovCustomModel.zip
-        generate_release_notes: true
+        body: ${{ steps.prepare_release_body.outputs.release_body }}
+        generate_release_notes: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
