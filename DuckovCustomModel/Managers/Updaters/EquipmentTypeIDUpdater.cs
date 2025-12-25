@@ -1,20 +1,16 @@
 using DuckovCustomModel.Core.Data;
-using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.MonoBehaviours;
 
 namespace DuckovCustomModel.Managers.Updaters
 {
     public class EquipmentTypeIDUpdater : IAnimatorParameterUpdater
     {
-        public void UpdateParameters(object control, object context)
+        public void UpdateParameters(CustomAnimatorControl control)
         {
-            if (control is not CustomAnimatorControl customControl) return;
-            if (context is not AnimatorUpdateContext ctx) return;
-
-            if (!ctx.Initialized || ctx.CharacterMainControl == null || ctx.CharacterModel == null)
+            if (!control.Initialized || control.CharacterMainControl == null || control.CharacterModel == null)
                 return;
 
-            var characterItemSlots = ctx.CharacterMainControl.CharacterItem.Slots;
+            var characterItemSlots = control.CharacterMainControl.CharacterItem.Slots;
             var armorSlot = characterItemSlots.GetSlot(CharacterEquipmentController.armorHash);
             var helmetSlot = characterItemSlots.GetSlot(CharacterEquipmentController.helmatHash);
             var faceSlot = characterItemSlots.GetSlot(CharacterEquipmentController.faceMaskHash);
@@ -27,20 +23,20 @@ namespace DuckovCustomModel.Managers.Updaters
             var backpackTypeID = backpackSlot?.Content != null ? backpackSlot.Content.TypeID : 0;
             var headsetTypeID = headsetSlot?.Content != null ? headsetSlot.Content.TypeID : 0;
 
-            customControl.SetParameterInteger(CustomAnimatorHash.ArmorTypeID, armorTypeID);
-            customControl.SetParameterBool(CustomAnimatorHash.ArmorEquip, armorTypeID > 0);
+            control.SetParameterInteger(CustomAnimatorHash.ArmorTypeID, armorTypeID);
+            control.SetParameterBool(CustomAnimatorHash.ArmorEquip, armorTypeID > 0);
 
-            customControl.SetParameterInteger(CustomAnimatorHash.HelmetTypeID, helmetTypeID);
-            customControl.SetParameterBool(CustomAnimatorHash.HelmetEquip, helmetTypeID > 0);
+            control.SetParameterInteger(CustomAnimatorHash.HelmetTypeID, helmetTypeID);
+            control.SetParameterBool(CustomAnimatorHash.HelmetEquip, helmetTypeID > 0);
 
-            customControl.SetParameterInteger(CustomAnimatorHash.FaceTypeID, faceTypeID);
-            customControl.SetParameterBool(CustomAnimatorHash.FaceEquip, faceTypeID > 0);
+            control.SetParameterInteger(CustomAnimatorHash.FaceTypeID, faceTypeID);
+            control.SetParameterBool(CustomAnimatorHash.FaceEquip, faceTypeID > 0);
 
-            customControl.SetParameterInteger(CustomAnimatorHash.BackpackTypeID, backpackTypeID);
-            customControl.SetParameterBool(CustomAnimatorHash.BackpackEquip, backpackTypeID > 0);
+            control.SetParameterInteger(CustomAnimatorHash.BackpackTypeID, backpackTypeID);
+            control.SetParameterBool(CustomAnimatorHash.BackpackEquip, backpackTypeID > 0);
 
-            customControl.SetParameterInteger(CustomAnimatorHash.HeadsetTypeID, headsetTypeID);
-            customControl.SetParameterBool(CustomAnimatorHash.HeadsetEquip, headsetTypeID > 0);
+            control.SetParameterInteger(CustomAnimatorHash.HeadsetTypeID, headsetTypeID);
+            control.SetParameterBool(CustomAnimatorHash.HeadsetEquip, headsetTypeID > 0);
         }
     }
 }

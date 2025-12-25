@@ -1,20 +1,16 @@
 using Duckov;
 using DuckovCustomModel.Core.Data;
-using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.MonoBehaviours;
 
 namespace DuckovCustomModel.Managers.Updaters
 {
     public class ActionStateUpdater : IAnimatorParameterUpdater
     {
-        public void UpdateParameters(object control, object context)
+        public void UpdateParameters(CustomAnimatorControl control)
         {
-            if (control is not CustomAnimatorControl customControl) return;
-            if (context is not AnimatorUpdateContext ctx) return;
+            if (!control.Initialized || control.CharacterMainControl == null) return;
 
-            if (!ctx.Initialized || ctx.CharacterMainControl == null) return;
-
-            var currentAction = ctx.CharacterMainControl.CurrentAction;
+            var currentAction = control.CharacterMainControl.CurrentAction;
             var isActionRunning = false;
             var actionProgress = 0.0f;
             var actionPriority = 0;
@@ -26,9 +22,9 @@ namespace DuckovCustomModel.Managers.Updaters
                 actionPriority = (int)currentAction.ActionPriority();
             }
 
-            customControl.SetParameterBool(CustomAnimatorHash.ActionRunning, isActionRunning);
-            customControl.SetParameterFloat(CustomAnimatorHash.ActionProgress, actionProgress);
-            customControl.SetParameterInteger(CustomAnimatorHash.ActionPriority, actionPriority);
+            control.SetParameterBool(CustomAnimatorHash.ActionRunning, isActionRunning);
+            control.SetParameterFloat(CustomAnimatorHash.ActionProgress, actionProgress);
+            control.SetParameterInteger(CustomAnimatorHash.ActionPriority, actionPriority);
         }
     }
 }

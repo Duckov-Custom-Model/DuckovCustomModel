@@ -1,37 +1,33 @@
 using DuckovCustomModel.Core.Data;
-using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.MonoBehaviours;
 
 namespace DuckovCustomModel.Managers.Updaters
 {
     public class TimeAndWeatherUpdater : IAnimatorParameterUpdater
     {
-        public void UpdateParameters(object control, object context)
+        public void UpdateParameters(CustomAnimatorControl control)
         {
-            if (control is not CustomAnimatorControl customControl) return;
-            if (context is not AnimatorUpdateContext ctx) return;
-
-            if (!ctx.Initialized) return;
+            if (!control.Initialized) return;
 
             var timeOfDayController = TimeOfDayController.Instance;
             if (timeOfDayController == null)
             {
-                customControl.SetParameterFloat(CustomAnimatorHash.Time, -1f);
-                customControl.SetParameterInteger(CustomAnimatorHash.Weather, -1);
-                customControl.SetParameterInteger(CustomAnimatorHash.TimePhase, -1);
+                control.SetParameterFloat(CustomAnimatorHash.Time, -1f);
+                control.SetParameterInteger(CustomAnimatorHash.Weather, -1);
+                control.SetParameterInteger(CustomAnimatorHash.TimePhase, -1);
                 return;
             }
 
             var time = timeOfDayController.Time;
-            customControl.SetParameterFloat(CustomAnimatorHash.Time, time);
+            control.SetParameterFloat(CustomAnimatorHash.Time, time);
 
             var currentWeather = timeOfDayController.CurrentWeather;
             var weatherValue = (int)currentWeather;
-            customControl.SetParameterInteger(CustomAnimatorHash.Weather, weatherValue);
+            control.SetParameterInteger(CustomAnimatorHash.Weather, weatherValue);
 
             var currentPhase = timeOfDayController.CurrentPhase.timePhaseTag;
             var timePhaseValue = (int)currentPhase;
-            customControl.SetParameterInteger(CustomAnimatorHash.TimePhase, timePhaseValue);
+            control.SetParameterInteger(CustomAnimatorHash.TimePhase, timePhaseValue);
         }
     }
 }

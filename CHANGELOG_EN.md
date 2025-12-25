@@ -2,6 +2,18 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.9.4
+
+- Refactored animator parameter update system to optimize performance and code structure
+  - Moved `IAnimatorParameterUpdater` interface and `AnimatorParameterUpdaterManager` manager from Core to non-Core project to avoid unnecessary dependencies
+  - Removed `AnimatorUpdateContext` context class, directly using `CustomAnimatorControl` property access to avoid creating objects every frame
+  - Changed interface to directly accept `CustomAnimatorControl` type, avoiding boxing/unboxing operations
+  - Added public property accessors in `CustomAnimatorControl` to expose data needed for updates
+- Optimized ShoulderSurfing mod extension support
+  - `Mod:ShoulderSurfing:CameraPitch` parameter only works for main character, other character types will not update this parameter
+  - Added third-person mode check, directly returns 0 when `shoulderCameraToggled` is false to avoid unnecessary reflection calls
+  - Optimized performance with frame caching mechanism, only executes reflection once per frame for multiple calls
+
 ## v1.9.3
 
 - Refactored AI character list management to support dynamic addition and replacement

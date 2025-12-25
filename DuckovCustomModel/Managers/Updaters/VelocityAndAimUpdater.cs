@@ -1,37 +1,33 @@
 using DuckovCustomModel.Core.Data;
-using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.MonoBehaviours;
 
 namespace DuckovCustomModel.Managers.Updaters
 {
     public class VelocityAndAimUpdater : IAnimatorParameterUpdater
     {
-        public void UpdateParameters(object control, object context)
+        public void UpdateParameters(CustomAnimatorControl control)
         {
-            if (control is not CustomAnimatorControl customControl) return;
-            if (context is not AnimatorUpdateContext ctx) return;
+            if (!control.Initialized || control.CharacterMainControl == null) return;
 
-            if (!ctx.Initialized || ctx.CharacterMainControl == null) return;
+            var velocity = control.CharacterMainControl.Velocity;
+            control.SetParameterFloat(CustomAnimatorHash.VelocityMagnitude, velocity.magnitude);
+            control.SetParameterFloat(CustomAnimatorHash.VelocityX, velocity.x);
+            control.SetParameterFloat(CustomAnimatorHash.VelocityY, velocity.y);
+            control.SetParameterFloat(CustomAnimatorHash.VelocityZ, velocity.z);
 
-            var velocity = ctx.CharacterMainControl.Velocity;
-            customControl.SetParameterFloat(CustomAnimatorHash.VelocityMagnitude, velocity.magnitude);
-            customControl.SetParameterFloat(CustomAnimatorHash.VelocityX, velocity.x);
-            customControl.SetParameterFloat(CustomAnimatorHash.VelocityY, velocity.y);
-            customControl.SetParameterFloat(CustomAnimatorHash.VelocityZ, velocity.z);
+            var aimDir = control.CharacterMainControl.CurrentAimDirection;
+            control.SetParameterFloat(CustomAnimatorHash.AimDirX, aimDir.x);
+            control.SetParameterFloat(CustomAnimatorHash.AimDirY, aimDir.y);
+            control.SetParameterFloat(CustomAnimatorHash.AimDirZ, aimDir.z);
 
-            var aimDir = ctx.CharacterMainControl.CurrentAimDirection;
-            customControl.SetParameterFloat(CustomAnimatorHash.AimDirX, aimDir.x);
-            customControl.SetParameterFloat(CustomAnimatorHash.AimDirY, aimDir.y);
-            customControl.SetParameterFloat(CustomAnimatorHash.AimDirZ, aimDir.z);
+            var inAds = control.CharacterMainControl.IsInAdsInput;
+            control.SetParameterBool(CustomAnimatorHash.InAds, inAds);
 
-            var inAds = ctx.CharacterMainControl.IsInAdsInput;
-            customControl.SetParameterBool(CustomAnimatorHash.InAds, inAds);
+            var adsValue = control.CharacterMainControl.AdsValue;
+            control.SetParameterFloat(CustomAnimatorHash.AdsValue, adsValue);
 
-            var adsValue = ctx.CharacterMainControl.AdsValue;
-            customControl.SetParameterFloat(CustomAnimatorHash.AdsValue, adsValue);
-
-            var aimType = (int)ctx.CharacterMainControl.AimType;
-            customControl.SetParameterInteger(CustomAnimatorHash.AimType, aimType);
+            var aimType = (int)control.CharacterMainControl.AimType;
+            control.SetParameterInteger(CustomAnimatorHash.AimType, aimType);
         }
     }
 }

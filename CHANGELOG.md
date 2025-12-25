@@ -2,6 +2,18 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.9.4
+
+- 重构动画参数更新系统，优化性能和代码结构
+  - 将 `IAnimatorParameterUpdater` 接口和 `AnimatorParameterUpdaterManager` 管理器从 Core 移到非 Core 项目，避免不必要的依赖
+  - 移除 `AnimatorUpdateContext` 上下文类，直接使用 `CustomAnimatorControl` 的属性访问，避免每帧创建对象
+  - 接口改为直接接受 `CustomAnimatorControl` 类型，避免装箱拆箱操作
+  - 在 `CustomAnimatorControl` 中添加公共属性访问器，暴露更新所需的数据
+- 优化 ShoulderSurfing mod 扩展支持
+  - `Mod:ShoulderSurfing:CameraPitch` 参数仅对主角色有效，其他角色类型不会更新该参数
+  - 添加第三人称模式检查，当 `shoulderCameraToggled` 为 false 时直接返回 0，避免不必要的反射调用
+  - 优化性能，使用帧缓存机制，同一帧内多次调用只执行一次反射操作
+
 ## v1.9.3
 
 - 重构 AI 角色列表管理，支持动态补充和替换

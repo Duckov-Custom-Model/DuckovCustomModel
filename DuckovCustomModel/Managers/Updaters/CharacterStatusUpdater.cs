@@ -1,51 +1,47 @@
 using DuckovCustomModel.Core.Data;
-using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.MonoBehaviours;
 
 namespace DuckovCustomModel.Managers.Updaters
 {
     public class CharacterStatusUpdater : IAnimatorParameterUpdater
     {
-        public void UpdateParameters(object control, object context)
+        public void UpdateParameters(CustomAnimatorControl control)
         {
-            if (control is not CustomAnimatorControl customControl) return;
-            if (context is not AnimatorUpdateContext ctx) return;
+            if (!control.Initialized || control.CharacterMainControl == null) return;
 
-            if (!ctx.Initialized || ctx.CharacterMainControl == null) return;
+            var hidden = control.CharacterMainControl.Hidden;
+            control.SetParameterBool(CustomAnimatorHash.Hidden, hidden);
 
-            var hidden = ctx.CharacterMainControl.Hidden;
-            customControl.SetParameterBool(CustomAnimatorHash.Hidden, hidden);
-
-            if (ctx.CharacterMainControl.Health != null)
+            if (control.CharacterMainControl.Health != null)
             {
-                var currentHealth = ctx.CharacterMainControl.Health.CurrentHealth;
-                var maxHealth = ctx.CharacterMainControl.Health.MaxHealth;
+                var currentHealth = control.CharacterMainControl.Health.CurrentHealth;
+                var maxHealth = control.CharacterMainControl.Health.MaxHealth;
                 var healthRate = maxHealth > 0 ? currentHealth / maxHealth : 0.0f;
-                customControl.SetParameterFloat(CustomAnimatorHash.HealthRate, healthRate);
+                control.SetParameterFloat(CustomAnimatorHash.HealthRate, healthRate);
             }
             else
             {
-                customControl.SetParameterFloat(CustomAnimatorHash.HealthRate, 1.0f);
+                control.SetParameterFloat(CustomAnimatorHash.HealthRate, 1.0f);
             }
 
-            var currentWater = ctx.CharacterMainControl.CurrentWater;
-            var maxWater = ctx.CharacterMainControl.MaxWater;
+            var currentWater = control.CharacterMainControl.CurrentWater;
+            var maxWater = control.CharacterMainControl.MaxWater;
             if (maxWater > 0)
             {
                 var waterRate = currentWater / maxWater;
-                customControl.SetParameterFloat(CustomAnimatorHash.WaterRate, waterRate);
+                control.SetParameterFloat(CustomAnimatorHash.WaterRate, waterRate);
             }
             else
             {
-                customControl.SetParameterFloat(CustomAnimatorHash.WaterRate, 1.0f);
+                control.SetParameterFloat(CustomAnimatorHash.WaterRate, 1.0f);
             }
 
-            var totalWeight = ctx.CharacterMainControl.CharacterItem.TotalWeight;
-            if (ctx.CharacterMainControl.carryAction.Running)
-                totalWeight += ctx.CharacterMainControl.carryAction.GetWeight();
+            var totalWeight = control.CharacterMainControl.CharacterItem.TotalWeight;
+            if (control.CharacterMainControl.carryAction.Running)
+                totalWeight += control.CharacterMainControl.carryAction.GetWeight();
 
-            var weightRate = totalWeight / ctx.CharacterMainControl.MaxWeight;
-            customControl.SetParameterFloat(CustomAnimatorHash.WeightRate, weightRate);
+            var weightRate = totalWeight / control.CharacterMainControl.MaxWeight;
+            control.SetParameterFloat(CustomAnimatorHash.WeightRate, weightRate);
 
             int weightState;
             if (!LevelManager.Instance.IsRaidMap)
@@ -58,7 +54,7 @@ namespace DuckovCustomModel.Managers.Updaters
                     > 0.25f => (int)CharacterMainControl.WeightStates.normal,
                     _ => (int)CharacterMainControl.WeightStates.light,
                 };
-            customControl.SetParameterInteger(CustomAnimatorHash.WeightState, weightState);
+            control.SetParameterInteger(CustomAnimatorHash.WeightState, weightState);
         }
     }
 }

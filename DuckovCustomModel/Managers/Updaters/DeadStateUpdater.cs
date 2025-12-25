@@ -1,21 +1,17 @@
 using DuckovCustomModel.Core.Data;
-using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.MonoBehaviours;
 
 namespace DuckovCustomModel.Managers.Updaters
 {
     public class DeadStateUpdater : IAnimatorParameterUpdater
     {
-        public void UpdateParameters(object control, object context)
+        public void UpdateParameters(CustomAnimatorControl control)
         {
-            if (control is not CustomAnimatorControl customControl) return;
-            if (context is not AnimatorUpdateContext ctx) return;
+            if (!control.Initialized || control.CharacterMainControl == null) return;
+            if (control.CharacterMainControl.Health == null) return;
 
-            if (!ctx.Initialized || ctx.CharacterMainControl == null) return;
-            if (ctx.CharacterMainControl.Health == null) return;
-
-            var isDead = ctx.CharacterMainControl.Health.IsDead;
-            customControl.SetParameterBool(CustomAnimatorHash.Die, isDead);
+            var isDead = control.CharacterMainControl.Health.IsDead;
+            control.SetParameterBool(CustomAnimatorHash.Die, isDead);
         }
     }
 }

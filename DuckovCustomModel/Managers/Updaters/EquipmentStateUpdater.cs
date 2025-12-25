@@ -1,5 +1,4 @@
 using DuckovCustomModel.Core.Data;
-using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.MonoBehaviours;
 using DuckovCustomModel.Utils;
 
@@ -7,23 +6,20 @@ namespace DuckovCustomModel.Managers.Updaters
 {
     public class EquipmentStateUpdater : IAnimatorParameterUpdater
     {
-        public void UpdateParameters(object control, object context)
+        public void UpdateParameters(CustomAnimatorControl control)
         {
-            if (control is not CustomAnimatorControl customControl) return;
-            if (context is not AnimatorUpdateContext ctx) return;
-
-            if (!ctx.Initialized || ctx.CharacterMainControl == null || ctx.CharacterModel == null)
+            if (!control.Initialized || control.CharacterMainControl == null || control.CharacterModel == null)
                 return;
 
-            var thermalOn = ctx.CharacterMainControl.ThermalOn;
-            customControl.SetParameterBool(CustomAnimatorHash.ThermalOn, thermalOn);
+            var thermalOn = control.CharacterMainControl.ThermalOn;
+            control.SetParameterBool(CustomAnimatorHash.ThermalOn, thermalOn);
 
             var hideOriginalEquipment = false;
-            if (ModEntry.HideEquipmentConfig != null && ctx.ModelHandler != null)
+            if (ModEntry.HideEquipmentConfig != null && control.ModelHandler != null)
             {
-                if (ctx.ModelHandler.Target == ModelTarget.AICharacter)
+                if (control.ModelHandler.Target == ModelTarget.AICharacter)
                 {
-                    var nameKey = ctx.CharacterMainControl?.characterPreset?.nameKey;
+                    var nameKey = control.CharacterMainControl?.characterPreset?.nameKey;
                     if (!string.IsNullOrEmpty(nameKey))
                         hideOriginalEquipment = ModEntry.HideEquipmentConfig
                             .GetHideAICharacterEquipment(nameKey);
@@ -31,15 +27,15 @@ namespace DuckovCustomModel.Managers.Updaters
                 else
                 {
                     hideOriginalEquipment =
-                        ModEntry.HideEquipmentConfig.GetHideEquipment(ctx.ModelHandler.Target);
+                        ModEntry.HideEquipmentConfig.GetHideEquipment(control.ModelHandler.Target);
                 }
             }
 
-            customControl.SetParameterBool(CustomAnimatorHash.HideOriginalEquipment, hideOriginalEquipment);
+            control.SetParameterBool(CustomAnimatorHash.HideOriginalEquipment, hideOriginalEquipment);
 
-            var popTextSocket = CharacterModelSocketUtils.GetPopTextSocket(ctx.CharacterModel);
+            var popTextSocket = CharacterModelSocketUtils.GetPopTextSocket(control.CharacterModel);
             var havePopText = popTextSocket != null && popTextSocket.childCount > 0;
-            customControl.SetParameterBool(CustomAnimatorHash.HavePopText, havePopText);
+            control.SetParameterBool(CustomAnimatorHash.HavePopText, havePopText);
         }
     }
 }

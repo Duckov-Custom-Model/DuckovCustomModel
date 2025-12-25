@@ -1,42 +1,42 @@
 using DuckovCustomModel.Core.Data;
-using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.MonoBehaviours;
 
 namespace DuckovCustomModel.Managers.Updaters
 {
     public class GunStateUpdater : IAnimatorParameterUpdater
     {
-        public void UpdateParameters(object control, object context)
+        public void UpdateParameters(CustomAnimatorControl control)
         {
-            if (control is not CustomAnimatorControl customControl) return;
-            if (context is not AnimatorUpdateContext ctx) return;
+            if (!control.Initialized || control.CharacterMainControl == null) return;
 
-            if (!ctx.Initialized || ctx.CharacterMainControl == null) return;
-
-            if (ctx.HoldAgent != null && ctx.GunAgent == null)
-                ctx.GunAgent = ctx.HoldAgent as ItemAgent_Gun;
+            var gunAgent = control.GunAgent;
+            if (control.HoldAgent != null && gunAgent == null)
+            {
+                gunAgent = control.HoldAgent as ItemAgent_Gun;
+                control.SetHoldAgent(control.HoldAgent);
+            }
 
             var isGunReady = false;
             var isReloading = false;
             var ammoRate = 0.0f;
             var shootMode = -1;
             var gunState = -1;
-            if (ctx.GunAgent != null)
+            if (gunAgent != null)
             {
-                isReloading = ctx.GunAgent.IsReloading();
-                isGunReady = ctx.GunAgent.BulletCount > 0 && !isReloading;
-                shootMode = (int)ctx.GunAgent.GunItemSetting.triggerMode;
-                gunState = (int)ctx.GunAgent.GunState;
-                var maxAmmo = ctx.GunAgent.Capacity;
+                isReloading = gunAgent.IsReloading();
+                isGunReady = gunAgent.BulletCount > 0 && !isReloading;
+                shootMode = (int)gunAgent.GunItemSetting.triggerMode;
+                gunState = (int)gunAgent.GunState;
+                var maxAmmo = gunAgent.Capacity;
                 if (maxAmmo > 0)
-                    ammoRate = (float)ctx.GunAgent.BulletCount / maxAmmo;
+                    ammoRate = (float)gunAgent.BulletCount / maxAmmo;
             }
 
-            customControl.SetParameterInteger(CustomAnimatorHash.GunState, gunState);
-            customControl.SetParameterInteger(CustomAnimatorHash.ShootMode, shootMode);
-            customControl.SetParameterFloat(CustomAnimatorHash.AmmoRate, ammoRate);
-            customControl.SetParameterBool(CustomAnimatorHash.Reloading, isReloading);
-            customControl.SetParameterBool(CustomAnimatorHash.GunReady, isGunReady);
+            control.SetParameterInteger(CustomAnimatorHash.GunState, gunState);
+            control.SetParameterInteger(CustomAnimatorHash.ShootMode, shootMode);
+            control.SetParameterFloat(CustomAnimatorHash.AmmoRate, ammoRate);
+            control.SetParameterBool(CustomAnimatorHash.Reloading, isReloading);
+            control.SetParameterBool(CustomAnimatorHash.GunReady, isGunReady);
         }
     }
 }

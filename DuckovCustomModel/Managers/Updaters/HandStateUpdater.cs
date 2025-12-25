@@ -1,34 +1,37 @@
 using DuckovCustomModel.Core.Data;
-using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.MonoBehaviours;
 
 namespace DuckovCustomModel.Managers.Updaters
 {
     public class HandStateUpdater : IAnimatorParameterUpdater
     {
-        public void UpdateParameters(object control, object context)
+        public void UpdateParameters(CustomAnimatorControl control)
         {
-            if (control is not CustomAnimatorControl customControl) return;
-            if (context is not AnimatorUpdateContext ctx) return;
-
-            if (!ctx.Initialized || ctx.CharacterMainControl == null) return;
+            if (!control.Initialized || control.CharacterMainControl == null) return;
 
             var handState = 0;
             var rightHandOut = true;
 
-            if (ctx.HoldAgent == null || !ctx.HoldAgent.isActiveAndEnabled)
-                ctx.HoldAgent = ctx.CharacterMainControl.CurrentHoldItemAgent;
+            var holdAgent = control.HoldAgent;
+            if (holdAgent == null || !holdAgent.isActiveAndEnabled)
+            {
+                holdAgent = control.CharacterMainControl.CurrentHoldItemAgent;
+                control.SetHoldAgent(holdAgent);
+            }
             else
-                handState = (int)ctx.HoldAgent.handAnimationType;
-            if (ctx.CharacterMainControl.carryAction.Running)
+            {
+                handState = (int)holdAgent.handAnimationType;
+            }
+
+            if (control.CharacterMainControl.carryAction.Running)
                 handState = -1;
 
-            if (ctx.HoldAgent == null || !ctx.HoldAgent.gameObject.activeSelf ||
-                ctx.CharacterMainControl.reloadAction.Running)
+            if (holdAgent == null || !holdAgent.gameObject.activeSelf ||
+                control.CharacterMainControl.reloadAction.Running)
                 rightHandOut = false;
 
-            customControl.SetParameterInteger(CustomAnimatorHash.HandState, handState);
-            customControl.SetParameterBool(CustomAnimatorHash.RightHandOut, rightHandOut);
+            control.SetParameterInteger(CustomAnimatorHash.HandState, handState);
+            control.SetParameterBool(CustomAnimatorHash.RightHandOut, rightHandOut);
         }
     }
 }

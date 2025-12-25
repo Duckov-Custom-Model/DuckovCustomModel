@@ -2,7 +2,7 @@
 using System.Linq;
 using Duckov.Buffs;
 using DuckovCustomModel.Core.Data;
-using DuckovCustomModel.Core.Managers;
+using DuckovCustomModel.Managers;
 using DuckovCustomModel.Managers.Updaters;
 using UnityEngine;
 
@@ -20,94 +20,72 @@ namespace DuckovCustomModel.MonoBehaviours
         private readonly HashSet<int> _validFloatParamHashes = [];
         private readonly HashSet<int> _validIntParamHashes = [];
 
-        private bool _attacking;
         private int _attackLayerIndex = -1;
-        private float _attackTimer;
-        private float _attackWeight;
-        private CharacterMainControl? _characterMainControl;
-        private CharacterModel? _characterModel;
         private Animator? _customAnimator;
-        private ItemAgent_Gun? _gunAgent;
-        private DuckovItemAgent? _holdAgent;
-        private bool _initialized;
-        private ModelHandler? _modelHandler;
 
-        private bool HasAnimationIfDashCanControl
+        public bool Initialized { get; private set; }
+
+        public CharacterMainControl? CharacterMainControl { get; private set; }
+
+        public CharacterModel? CharacterModel { get; private set; }
+
+        public ModelHandler? ModelHandler { get; private set; }
+
+        public DuckovItemAgent? HoldAgent { get; private set; }
+
+        public ItemAgent_Gun? GunAgent { get; private set; }
+
+        public bool Attacking { get; set; }
+
+        public float AttackTimer { get; set; }
+
+        public float AttackWeight { get; set; }
+
+        public bool HasAnimationIfDashCanControl => ModelHandler != null &&
+                                                    ModelHandler.OriginalAnimationControl != null &&
+                                                    ModelHandler.OriginalAnimationControl.hasAnimationIfDashCanControl;
+
+        public AnimationCurve? AttackLayerWeightCurve
         {
             get
             {
-                if (_modelHandler == null)
-                    return false;
-                return _modelHandler.OriginalAnimationControl != null &&
-                       _modelHandler.OriginalAnimationControl.hasAnimationIfDashCanControl;
-            }
-        }
-
-        private AnimationCurve? AttackLayerWeightCurve
-        {
-            get
-            {
-                if (_modelHandler == null)
-                    return null;
-                if (_modelHandler.OriginalAnimationControl != null)
-                    return _modelHandler.OriginalAnimationControl.attackLayerWeightCurve;
-                return _modelHandler.OriginalMagicBlendAnimationControl != null
-                    ? _modelHandler.OriginalMagicBlendAnimationControl.attackLayerWeightCurve
+                if (ModelHandler == null) return null;
+                if (ModelHandler.OriginalAnimationControl != null)
+                    return ModelHandler.OriginalAnimationControl.attackLayerWeightCurve;
+                return ModelHandler.OriginalMagicBlendAnimationControl != null
+                    ? ModelHandler.OriginalMagicBlendAnimationControl.attackLayerWeightCurve
                     : null;
             }
         }
 
-        private float AttackTime
+        public float AttackTime
         {
             get
             {
-                if (_modelHandler == null)
-                    return 0.3f;
-                if (_modelHandler.OriginalAnimationControl != null)
-                    return _modelHandler.OriginalAnimationControl.attackTime;
-                return _modelHandler.OriginalMagicBlendAnimationControl != null
-                    ? _modelHandler.OriginalMagicBlendAnimationControl.attackTime
+                if (ModelHandler == null) return 0.3f;
+                if (ModelHandler.OriginalAnimationControl != null)
+                    return ModelHandler.OriginalAnimationControl.attackTime;
+                return ModelHandler.OriginalMagicBlendAnimationControl != null
+                    ? ModelHandler.OriginalMagicBlendAnimationControl.attackTime
                     : 0.3f;
             }
         }
 
         private void Update()
         {
-            if (!_initialized) return;
-            if (_characterMainControl == null)
+            if (!Initialized) return;
+            if (CharacterMainControl == null)
                 return;
 
-            var context = new AnimatorUpdateContext
-            {
-                Initialized = _initialized,
-                CharacterMainControl = _characterMainControl,
-                CharacterModel = _characterModel,
-                ModelHandler = _modelHandler,
-                HoldAgent = _holdAgent,
-                GunAgent = _gunAgent,
-                Attacking = _attacking,
-                AttackTimer = _attackTimer,
-                AttackWeight = _attackWeight,
-                HasAnimationIfDashCanControl = HasAnimationIfDashCanControl,
-                AttackLayerWeightCurve = AttackLayerWeightCurve,
-                AttackTime = AttackTime,
-            };
-
-            AnimatorParameterUpdaterManager.UpdateAll(this, context);
-
-            _attacking = context.Attacking;
-            _attackTimer = context.AttackTimer;
-            _attackWeight = context.AttackWeight;
-            _holdAgent = context.HoldAgent;
-            _gunAgent = context.GunAgent;
+            AnimatorParameterUpdaterManager.UpdateAll(this);
 
             UpdateBuffParams();
         }
 
         private void OnDestroy()
         {
-            if (_characterModel != null) _characterModel.OnAttackOrShootEvent -= OnAttack;
-            if (_characterMainControl != null) _characterMainControl.OnHoldAgentChanged -= OnHoldAgentChanged;
+            if (CharacterModel != null) CharacterModel.OnAttackOrShootEvent -= OnAttack;
+            if (CharacterMainControl != null) CharacterMainControl.OnHoldAgentChanged -= OnHoldAgentChanged;
             UnsubscribeGunEvents();
         }
 
@@ -115,38 +93,38 @@ namespace DuckovCustomModel.MonoBehaviours
         {
             if (modelHandler == null) return;
 
-            switch (_initialized)
+            switch (Initialized)
             {
-                case true when _modelHandler == modelHandler:
+                case true when ModelHandler == modelHandler:
                     return;
                 case true:
                 {
-                    if (_characterModel != null) _characterModel.OnAttackOrShootEvent -= OnAttack;
-                    if (_characterMainControl != null) _characterMainControl.OnHoldAgentChanged -= OnHoldAgentChanged;
+                    if (CharacterModel != null) CharacterModel.OnAttackOrShootEvent -= OnAttack;
+                    if (CharacterMainControl != null) CharacterMainControl.OnHoldAgentChanged -= OnHoldAgentChanged;
                     UnsubscribeGunEvents();
                     break;
                 }
             }
 
-            _modelHandler = modelHandler;
-            _characterMainControl = modelHandler.CharacterMainControl;
-            _characterModel = modelHandler.OriginalCharacterModel;
-            if (_characterMainControl == null || _characterModel == null)
+            ModelHandler = modelHandler;
+            CharacterMainControl = modelHandler.CharacterMainControl;
+            CharacterModel = modelHandler.OriginalCharacterModel;
+            if (CharacterMainControl == null || CharacterModel == null)
                 return;
 
-            _characterModel.OnAttackOrShootEvent += OnAttack;
-            _characterMainControl.OnHoldAgentChanged += OnHoldAgentChanged;
+            CharacterModel.OnAttackOrShootEvent += OnAttack;
+            CharacterMainControl.OnHoldAgentChanged += OnHoldAgentChanged;
 
             _customAnimator = modelHandler.CustomAnimator;
             FindMeleeAttackLayerIndex();
 
-            _initialized = true;
+            Initialized = true;
 
             InitializeAnimatorParamCache();
             InitializeBuffParamCache();
             RegisterCoreUpdaters();
 
-            OnHoldAgentChanged(_characterMainControl.CurrentHoldItemAgent);
+            OnHoldAgentChanged(CharacterMainControl.CurrentHoldItemAgent);
         }
 
         private static void RegisterCoreUpdaters()
@@ -274,8 +252,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void OnAttack()
         {
-            _attacking = true;
-            _attackTimer = 0.0f;
+            Attacking = true;
+            AttackTimer = 0.0f;
             FindMeleeAttackLayerIndex();
             SetAnimatorTrigger(CustomAnimatorHash.Attack);
         }
@@ -284,25 +262,31 @@ namespace DuckovCustomModel.MonoBehaviours
         {
             UnsubscribeGunEvents();
 
-            _holdAgent = agent;
-            _gunAgent = agent as ItemAgent_Gun;
+            HoldAgent = agent;
+            GunAgent = agent as ItemAgent_Gun;
 
-            if (_gunAgent == null) return;
-            _gunAgent.OnShootEvent += OnShoot;
-            _gunAgent.OnLoadedEvent += OnLoaded;
+            if (GunAgent == null) return;
+            GunAgent.OnShootEvent += OnShoot;
+            GunAgent.OnLoadedEvent += OnLoaded;
+        }
+
+        public void SetHoldAgent(DuckovItemAgent? agent)
+        {
+            HoldAgent = agent;
+            GunAgent = agent as ItemAgent_Gun;
         }
 
         private void UnsubscribeGunEvents()
         {
-            if (_gunAgent == null) return;
-            _gunAgent.OnShootEvent -= OnShoot;
-            _gunAgent.OnLoadedEvent -= OnLoaded;
+            if (GunAgent == null) return;
+            GunAgent.OnShootEvent -= OnShoot;
+            GunAgent.OnLoadedEvent -= OnLoaded;
         }
 
         private void OnShoot()
         {
             SetAnimatorTrigger(CustomAnimatorHash.Shoot);
-            if (_gunAgent != null && _gunAgent.BulletCount > 0)
+            if (GunAgent != null && GunAgent.BulletCount > 0)
                 return;
             SetAnimatorBool(CustomAnimatorHash.Loaded, false);
         }
@@ -356,10 +340,10 @@ namespace DuckovCustomModel.MonoBehaviours
         {
             _buffParamConditions.Clear();
 
-            if (_modelHandler == null) return;
-            if (_modelHandler.CurrentModelInfo?.BuffAnimatorParams == null) return;
+            if (ModelHandler == null) return;
+            if (ModelHandler.CurrentModelInfo?.BuffAnimatorParams == null) return;
 
-            foreach (var (paramName, conditions) in _modelHandler.CurrentModelInfo.BuffAnimatorParams)
+            foreach (var (paramName, conditions) in ModelHandler.CurrentModelInfo.BuffAnimatorParams)
             {
                 if (string.IsNullOrWhiteSpace(paramName) || conditions == null || conditions.Length == 0) continue;
 
@@ -377,11 +361,11 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void UpdateBuffParams()
         {
-            if (!_initialized) return;
-            if (_modelHandler == null || _customAnimator == null) return;
+            if (!Initialized) return;
+            if (ModelHandler == null || _customAnimator == null) return;
             if (_buffParamConditions.Count == 0) return;
 
-            var buffs = _modelHandler.Buffs;
+            var buffs = ModelHandler.Buffs;
             if (buffs is not { Count : > 0 })
             {
                 foreach (var paramHash in _buffParamConditions.Keys)

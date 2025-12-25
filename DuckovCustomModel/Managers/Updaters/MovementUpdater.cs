@@ -1,35 +1,31 @@
 using DuckovCustomModel.Core.Data;
-using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.MonoBehaviours;
 
 namespace DuckovCustomModel.Managers.Updaters
 {
     public class MovementUpdater : IAnimatorParameterUpdater
     {
-        public void UpdateParameters(object control, object context)
+        public void UpdateParameters(CustomAnimatorControl control)
         {
-            if (control is not CustomAnimatorControl customControl) return;
-            if (context is not AnimatorUpdateContext ctx) return;
+            if (!control.Initialized || control.CharacterMainControl == null) return;
 
-            if (!ctx.Initialized || ctx.CharacterMainControl == null) return;
+            control.SetParameterFloat(CustomAnimatorHash.MoveSpeed,
+                control.CharacterMainControl.AnimationMoveSpeedValue);
 
-            customControl.SetParameterFloat(CustomAnimatorHash.MoveSpeed,
-                ctx.CharacterMainControl.AnimationMoveSpeedValue);
+            var moveDirectionValue = control.CharacterMainControl.AnimationLocalMoveDirectionValue;
+            control.SetParameterFloat(CustomAnimatorHash.MoveDirX, moveDirectionValue.x);
+            control.SetParameterFloat(CustomAnimatorHash.MoveDirY, moveDirectionValue.y);
 
-            var moveDirectionValue = ctx.CharacterMainControl.AnimationLocalMoveDirectionValue;
-            customControl.SetParameterFloat(CustomAnimatorHash.MoveDirX, moveDirectionValue.x);
-            customControl.SetParameterFloat(CustomAnimatorHash.MoveDirY, moveDirectionValue.y);
+            control.SetParameterBool(CustomAnimatorHash.Grounded, control.CharacterMainControl.IsOnGround);
 
-            customControl.SetParameterBool(CustomAnimatorHash.Grounded, ctx.CharacterMainControl.IsOnGround);
+            var movementControl = control.CharacterMainControl.movementControl;
+            control.SetParameterBool(CustomAnimatorHash.IsMoving, movementControl.Moving);
+            control.SetParameterBool(CustomAnimatorHash.IsRunning, movementControl.Running);
 
-            var movementControl = ctx.CharacterMainControl.movementControl;
-            customControl.SetParameterBool(CustomAnimatorHash.IsMoving, movementControl.Moving);
-            customControl.SetParameterBool(CustomAnimatorHash.IsRunning, movementControl.Running);
-
-            var dashing = ctx.CharacterMainControl.Dashing;
-            if (dashing && !ctx.HasAnimationIfDashCanControl && ctx.CharacterMainControl.DashCanControl)
+            var dashing = control.CharacterMainControl.Dashing;
+            if (dashing && !control.HasAnimationIfDashCanControl && control.CharacterMainControl.DashCanControl)
                 dashing = false;
-            customControl.SetParameterBool(CustomAnimatorHash.Dashing, dashing);
+            control.SetParameterBool(CustomAnimatorHash.Dashing, dashing);
         }
     }
 }
