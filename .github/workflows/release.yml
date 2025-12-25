@@ -45,7 +45,7 @@ jobs:
         
         New-Item -ItemType Directory -Path $packageDir -Force | Out-Null
         
-        Get-ChildItem -Path $outputPath -Recurse -File | Where-Object { $_.Name -ne 'preview.png' } | ForEach-Object {
+        Get-ChildItem -Path $outputPath -Recurse -File | ForEach-Object {
           $relativePath = $_.FullName.Substring((Resolve-Path $outputPath).Path.Length).TrimStart('\', '/')
           $destPath = Join-Path $packageDir $relativePath
           $destDir = Split-Path $destPath -Parent
