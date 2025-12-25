@@ -1,12 +1,15 @@
 using System;
 using System.Text;
+using System.Text.RegularExpressions;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.UI.Base;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
 namespace DuckovCustomModel.UI.Tabs
 {
@@ -14,9 +17,11 @@ namespace DuckovCustomModel.UI.Tabs
     {
         private GameObject? _animatorParamsKeyButton;
         private Toggle? _animatorParamsToggle;
+        private GameObject? _changelogText;
         private TMP_Dropdown? _dcmButtonAnchorDropdown;
         private TMP_InputField? _dcmButtonOffsetXInput;
         private TMP_InputField? _dcmButtonOffsetYInput;
+        private GameObject? _downloadButtonsContainer;
         private bool _isWaitingForAnimatorParamsKeyInput;
 
         private bool _isWaitingForUIKeyInput;
@@ -26,6 +31,7 @@ namespace DuckovCustomModel.UI.Tabs
         private int _settingRowIndex;
         private Toggle? _showDCMButtonToggle;
         private GameObject? _updateCheckButton;
+        private LocalizedText? _updateCheckButtonText;
         private LocalizedText? _updateInfoLocalizedText;
         private GameObject? _updateInfoPanel;
 
@@ -79,20 +85,14 @@ namespace DuckovCustomModel.UI.Tabs
             if (PanelRoot == null) return;
 
             var scrollView = UIFactory.CreateScrollView("SettingsScrollView", PanelRoot.transform, out var contentArea);
-            UIFactory.SetupRectTransform(scrollView.gameObject, new(0, 0), new(1, 1), Vector2.zero);
-            scrollView.GetComponent<RectTransform>().offsetMin = new(10, 10);
-            scrollView.GetComponent<RectTransform>().offsetMax = new(-10, -10);
+            UIFactory.SetupRectTransform(scrollView.gameObject, new(0, 0), new(1, 1), offsetMin: new(10, 10),
+                offsetMax: new(-10, -10));
 
-            contentArea.AddComponent<VerticalLayoutGroup>();
-            contentArea.AddComponent<ContentSizeFitter>();
+            UIFactory.SetupVerticalLayoutGroup(contentArea, 10f, new(10, 10, 10, 10));
+            UIFactory.SetupContentSizeFitter(contentArea);
 
             var contentRect = contentArea.GetComponent<RectTransform>();
             contentRect.sizeDelta = new(800, 0);
-            UIFactory.SetupVerticalLayoutGroup(contentArea, 10f, new(10, 10, 10, 10));
-
-            var sizeFitter = contentArea.GetComponent<ContentSizeFitter>();
-            sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            sizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             BuildKeySetting(contentArea);
             BuildAnimatorParamsKeySetting(contentArea);
@@ -572,12 +572,8 @@ namespace DuckovCustomModel.UI.Tabs
 
             var updatePanel = new GameObject("UpdateCheckPanel", typeof(RectTransform));
             updatePanel.transform.SetParent(PanelRoot.transform, false);
-            var updatePanelRect = updatePanel.GetComponent<RectTransform>();
-            updatePanelRect.anchorMin = new Vector2(1f, 0f);
-            updatePanelRect.anchorMax = new Vector2(1f, 0f);
-            updatePanelRect.pivot = new Vector2(1f, 0f);
-            updatePanelRect.anchoredPosition = new Vector2(-20f, 20f);
-            updatePanelRect.sizeDelta = new Vector2(300f, 120f);
+            UIFactory.SetupRectTransform(updatePanel, new Vector2(1f, 0f), new Vector2(1f, 0f),
+                new Vector2(400f, 120f), pivot: new Vector2(1f, 0f), anchoredPosition: new Vector2(-20f, 20f));
 
             var updatePanelImage = updatePanel.AddComponent<Image>();
             updatePanelImage.color = new Color(0.1f, 0.12f, 0.14f, 0.9f);
@@ -586,22 +582,18 @@ namespace DuckovCustomModel.UI.Tabs
             outline.effectColor = new Color(0.3f, 0.35f, 0.4f, 0.7f);
             outline.effectDistance = new Vector2(1, -1);
 
-            var verticalLayout = updatePanel.AddComponent<VerticalLayoutGroup>();
-            verticalLayout.spacing = 8f;
-            verticalLayout.padding = new RectOffset(10, 10, 10, 10);
-            verticalLayout.childAlignment = TextAnchor.UpperCenter;
-            verticalLayout.childControlHeight = true;
-            verticalLayout.childControlWidth = true;
-            verticalLayout.childForceExpandHeight = true;
-            verticalLayout.childForceExpandWidth = true;
+            UIFactory.SetupVerticalLayoutGroup(updatePanel, 8f, new RectOffset(10, 10, 10, 10),
+                childControlHeight: true, childControlWidth: true, childForceExpandHeight: false,
+                childForceExpandWidth: true);
 
             var layoutElement = updatePanel.AddComponent<LayoutElement>();
-            layoutElement.minWidth = 300f;
+            layoutElement.minWidth = 400f;
             layoutElement.minHeight = 120f;
-            layoutElement.preferredWidth = 340f;
-            layoutElement.preferredHeight = 160f;
+            layoutElement.preferredWidth = 400f;
             layoutElement.flexibleWidth = 0f;
             layoutElement.flexibleHeight = 0f;
+
+            UIFactory.SetupContentSizeFitter(updatePanel, ContentSizeFitter.FitMode.Unconstrained);
 
             _updateInfoPanel = updatePanel;
 
@@ -617,13 +609,80 @@ namespace DuckovCustomModel.UI.Tabs
             }
 
             var updateInfoLayoutElement = updateInfoText.AddComponent<LayoutElement>();
-            updateInfoLayoutElement.flexibleHeight = 1f;
+            updateInfoLayoutElement.flexibleHeight = 0f;
             updateInfoLayoutElement.flexibleWidth = 1f;
-            updateInfoLayoutElement.minHeight = 50f;
+
+            UIFactory.SetupContentSizeFitter(updateInfoText);
 
             var localizedUpdateInfo = updateInfoText.AddComponent<LocalizedText>();
             localizedUpdateInfo.SetTextGetter(GetUpdateInfoText);
             _updateInfoLocalizedText = localizedUpdateInfo;
+
+            var changelogScrollView = UIFactory.CreateScrollView("ChangelogScrollView", updatePanel.transform,
+                out var changelogContent);
+            changelogScrollView.gameObject.SetActive(false);
+
+            var scrollViewLayout = changelogScrollView.gameObject.AddComponent<LayoutElement>();
+            scrollViewLayout.minHeight = 0f;
+            scrollViewLayout.preferredHeight = 200f;
+            scrollViewLayout.flexibleHeight = 0f;
+            scrollViewLayout.flexibleWidth = 1f;
+
+            var changelogText = UIFactory.CreateText("ChangelogText", changelogContent.transform, "", 14,
+                new Color(0.9f, 0.9f, 0.9f, 1), TextAnchor.UpperLeft);
+
+            UIFactory.SetupRectTransform(changelogText, new Vector2(0, 1), new Vector2(1, 1), Vector2.zero,
+                pivot: new Vector2(0.5f, 1));
+
+            var changelogTextComponent = changelogText.GetComponent<TextMeshProUGUI>();
+            if (changelogTextComponent != null)
+            {
+                changelogTextComponent.enableWordWrapping = true;
+                changelogTextComponent.overflowMode = TextOverflowModes.Overflow;
+                changelogTextComponent.richText = true;
+            }
+
+            changelogText.AddComponent<LinkHandler>();
+
+            UIFactory.SetupContentSizeFitter(changelogText, ContentSizeFitter.FitMode.Unconstrained);
+
+            var scrollViewHeightAdjuster = changelogScrollView.gameObject.AddComponent<ScrollViewHeightAdjuster>();
+            scrollViewHeightAdjuster.Initialize(changelogScrollView, changelogContent, 0f, 200f);
+
+            _changelogText = changelogScrollView.gameObject;
+
+            var downloadSection = new GameObject("DownloadSection", typeof(RectTransform));
+            downloadSection.transform.SetParent(updatePanel.transform, false);
+            downloadSection.SetActive(false);
+
+            UIFactory.SetupVerticalLayoutGroup(downloadSection, 6f, new RectOffset(0, 0, 0, 0),
+                childControlHeight: false, childControlWidth: true, childForceExpandHeight: false,
+                childForceExpandWidth: true);
+
+            var downloadLabel = UIFactory.CreateText("DownloadLabel", downloadSection.transform, "", 18,
+                new Color(0.9f, 0.9f, 0.9f, 1), TextAnchor.UpperCenter);
+            var downloadLabelTextComponent = downloadLabel.GetComponent<TextMeshProUGUI>();
+            if (downloadLabelTextComponent != null)
+            {
+                downloadLabelTextComponent.enableAutoSizing = true;
+                downloadLabelTextComponent.fontSizeMin = 12;
+                downloadLabelTextComponent.fontSizeMax = 20;
+            }
+
+            UIFactory.SetLocalizedText(downloadLabel, () => Localization.DownloadLinks);
+            UIFactory.SetupContentSizeFitter(downloadLabel);
+
+            var downloadButtonsContainer = new GameObject("DownloadButtonsContainer", typeof(RectTransform));
+            downloadButtonsContainer.transform.SetParent(downloadSection.transform, false);
+
+            UIFactory.SetupHorizontalLayoutGroup(downloadButtonsContainer, 8f, new RectOffset(0, 0, 0, 0),
+                TextAnchor.MiddleCenter,
+                childControlHeight: false, childControlWidth: false, childForceExpandHeight: false,
+                childForceExpandWidth: false);
+
+            UIFactory.SetupContentSizeFitter(downloadButtonsContainer);
+
+            _downloadButtonsContainer = downloadSection;
 
             var checkButton = UIFactory.CreateButton("UpdateCheckButton", updatePanel.transform,
                 OnUpdateCheckButtonClicked,
@@ -636,10 +695,12 @@ namespace DuckovCustomModel.UI.Tabs
             checkButtonLayoutElement.flexibleHeight = 0f;
             checkButtonLayoutElement.flexibleWidth = 0f;
 
-            var checkButtonText = UIFactory.CreateText("Text", checkButton.transform, Localization.CheckForUpdate, 16,
+            var checkButtonText = UIFactory.CreateText("Text", checkButton.transform, "", 16,
                 Color.white, TextAnchor.MiddleCenter);
             UIFactory.SetupButtonText(checkButtonText);
-            UIFactory.SetLocalizedText(checkButtonText, () => Localization.CheckForUpdate);
+            var localizedCheckButtonText = checkButtonText.AddComponent<LocalizedText>();
+            localizedCheckButtonText.SetTextGetter(GetCheckButtonText);
+            _updateCheckButtonText = localizedCheckButtonText;
 
             _updateCheckButton = checkButton;
 
@@ -659,6 +720,60 @@ namespace DuckovCustomModel.UI.Tabs
             RefreshUpdateInfo();
         }
 
+        private static string ConvertMarkdownToRichText(string markdown)
+        {
+            if (string.IsNullOrEmpty(markdown))
+                return string.Empty;
+
+            var result = markdown;
+
+            // 移除代码块
+            result = Regex.Replace(result, @"```[\s\S]*?```", "", RegexOptions.Multiline);
+            result = Regex.Replace(result, @"`([^`]+)`", "$1", RegexOptions.Multiline);
+
+            // 转换链接 [text](url) -> <link="url"><color=#4A9EFF><u>text</u></color></link>
+            result = Regex.Replace(result, @"\[([^\]]+)\]\(([^\)]+)\)",
+                "<link=\"$2\"><color=#4A9EFF><u>$1</u></color></link>");
+
+            // 转换纯 URL 为链接（匹配 http:// 或 https:// 开头的 URL）
+            result = Regex.Replace(result, @"(https?://[^\s\)]+)",
+                "<link=\"$1\"><color=#4A9EFF><u>$1</u></color></link>");
+
+            // 转换粗体 **text** -> <b>text</b>
+            result = Regex.Replace(result, @"\*\*([^\*]+)\*\*", "<b>$1</b>");
+            result = Regex.Replace(result, @"__([^_]+)__", "<b>$1</b>");
+
+            // 转换斜体 *text* -> <i>text</i>
+            result = Regex.Replace(result, @"(?<!\*)\*([^\*]+)\*(?!\*)", "<i>$1</i>");
+            result = Regex.Replace(result, @"(?<!_)_([^_]+)_(?!_)", "<i>$1</i>");
+
+            // 转换标题为字号（# 对应 size=24, ## 对应 size=20, ### 对应 size=18, 等等）
+            result = Regex.Replace(result, @"^######\s+(.+)$", "<size=14><b>$1</b></size>", RegexOptions.Multiline);
+            result = Regex.Replace(result, @"^#####\s+(.+)$", "<size=16><b>$1</b></size>", RegexOptions.Multiline);
+            result = Regex.Replace(result, @"^####\s+(.+)$", "<size=18><b>$1</b></size>", RegexOptions.Multiline);
+            result = Regex.Replace(result, @"^###\s+(.+)$", "<size=20><b>$1</b></size>", RegexOptions.Multiline);
+            result = Regex.Replace(result, @"^##\s+(.+)$", "<size=22><b>$1</b></size>", RegexOptions.Multiline);
+            result = Regex.Replace(result, @"^#\s+(.+)$", "<size=24><b>$1</b></size>", RegexOptions.Multiline);
+
+            // 转换列表项 - -> •
+            result = Regex.Replace(result, @"^\s*[-*+]\s+", "• ", RegexOptions.Multiline);
+            result = Regex.Replace(result, @"^\s*\d+\.\s+", "", RegexOptions.Multiline);
+
+            // 移除水平线
+            result = Regex.Replace(result, @"^---+$", "", RegexOptions.Multiline);
+
+            // 清理多余的空白行
+            result = Regex.Replace(result, @"\n{3,}", "\n\n", RegexOptions.Multiline);
+
+            return result.Trim();
+        }
+
+        private static void OpenURL(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return;
+            Application.OpenURL(url);
+        }
+
         private static string GetUpdateInfoText()
         {
             var updateChecker = UpdateChecker.Instance;
@@ -668,50 +783,198 @@ namespace DuckovCustomModel.UI.Tabs
             var hasUpdate = updateChecker.HasUpdate();
             var latestVersion = updateChecker.GetLatestVersion();
             var latestReleaseName = updateChecker.GetLatestReleaseName();
-            var lastCheckTime = updateChecker.GetLastCheckTime();
+            var latestPublishedAt = updateChecker.GetLatestPublishedAt();
 
             var info = new StringBuilder();
 
             if (hasUpdate && !string.IsNullOrEmpty(latestVersion))
             {
-                info.AppendLine($"{Localization.UpdateAvailable}:");
                 var displayVersion = !string.IsNullOrEmpty(latestReleaseName) ? latestReleaseName : $"v{latestVersion}";
-                info.AppendLine(displayVersion);
+                info.AppendLine($"{Localization.UpdateAvailable}: {displayVersion}");
             }
             else if (!string.IsNullOrEmpty(latestVersion))
             {
-                info.AppendLine($"{Localization.LatestVersion}:");
                 var displayVersion = !string.IsNullOrEmpty(latestReleaseName) ? latestReleaseName : $"v{latestVersion}";
-                info.AppendLine(displayVersion);
+                info.AppendLine($"{Localization.LatestVersion}: {displayVersion}");
             }
 
-            if (lastCheckTime.HasValue)
-            {
-                var timeAgo = DateTime.Now - lastCheckTime.Value;
-                var timeText = timeAgo switch
-                {
-                    { TotalMinutes: < 1 } => Localization.JustNow,
-                    { TotalHours: < 1 } => $"{(int)timeAgo.TotalMinutes} {Localization.MinutesAgo}",
-                    { TotalDays: < 1 } => $"{(int)timeAgo.TotalHours} {Localization.HoursAgo}",
-                    _ => $"{(int)timeAgo.TotalDays} {Localization.DaysAgo}",
-                };
-
-                info.Append($"{Localization.LastCheckTime}: {timeText}");
-            }
-            else
-            {
-                if (info.Length > 0)
-                    info.AppendLine();
-                info.Append(Localization.NeverChecked);
-            }
+            if (!latestPublishedAt.HasValue) return info.ToString();
+            var localTime = latestPublishedAt.Value.ToLocalTime();
+            info.AppendLine($"{Localization.PublishedAt}: {localTime:yyyy-MM-dd HH:mm}");
 
             return info.ToString();
+        }
+
+        private static string GetCheckButtonText()
+        {
+            var updateChecker = UpdateChecker.Instance;
+            if (updateChecker == null)
+                return Localization.CheckForUpdate;
+
+            var lastCheckTime = updateChecker.GetLastCheckTime();
+            var buttonText = Localization.CheckForUpdate;
+
+            if (!lastCheckTime.HasValue) return buttonText;
+            var timeAgo = DateTime.Now - lastCheckTime.Value;
+            var timeText = timeAgo switch
+            {
+                { TotalMinutes: < 1 } => Localization.JustNow,
+                { TotalHours: < 1 } => $"{(int)timeAgo.TotalMinutes} {Localization.MinutesAgo}",
+                { TotalDays: < 1 } => $"{(int)timeAgo.TotalHours} {Localization.HoursAgo}",
+                _ => $"{(int)timeAgo.TotalDays} {Localization.DaysAgo}",
+            };
+
+            buttonText = $"{Localization.CheckForUpdate} ({Localization.LastCheckTime}: {timeText})";
+
+            return buttonText;
         }
 
         private void RefreshUpdateInfo()
         {
             if (_updateInfoLocalizedText == null) return;
             _updateInfoLocalizedText.RefreshText();
+
+            if (_updateCheckButtonText != null)
+                _updateCheckButtonText.RefreshText();
+
+            var updateChecker = UpdateChecker.Instance;
+            if (updateChecker == null) return;
+
+            var changelog = updateChecker.GetLatestChangelog();
+            var downloadLinks = updateChecker.GetLatestDownloadLinks();
+
+            if (_changelogText != null)
+            {
+                var hasChangelog = !string.IsNullOrEmpty(changelog);
+                _changelogText.SetActive(hasChangelog);
+
+                if (hasChangelog)
+                {
+                    var scrollView = _changelogText.GetComponent<ScrollRect>();
+                    if (scrollView != null && scrollView.content != null)
+                    {
+                        var textComponent = scrollView.content.GetComponentInChildren<TextMeshProUGUI>();
+                        if (textComponent != null) textComponent.text = ConvertMarkdownToRichText(changelog!);
+                    }
+                }
+            }
+
+            if (_downloadButtonsContainer == null) return;
+
+            var buttonsContainer = _downloadButtonsContainer.transform.Find("DownloadButtonsContainer");
+            if (buttonsContainer != null)
+                foreach (Transform child in buttonsContainer)
+                    Destroy(child.gameObject);
+
+            var hasDownloadLinks = downloadLinks is { Count: > 0 };
+            _downloadButtonsContainer.SetActive(hasDownloadLinks);
+
+            if (!hasDownloadLinks || buttonsContainer == null) return;
+            foreach (var link in downloadLinks)
+            {
+                var downloadButton = UIFactory.CreateButton($"DownloadButton_{link.Name}",
+                    buttonsContainer,
+                    () => OpenURL(link.Url),
+                    new Color(0.2f, 0.5f, 0.8f, 0.9f));
+
+                var buttonRect = downloadButton.GetComponent<RectTransform>();
+                buttonRect.anchorMin = new Vector2(0f, 0.5f);
+                buttonRect.anchorMax = new Vector2(0f, 0.5f);
+                buttonRect.pivot = new Vector2(0.5f, 0.5f);
+                buttonRect.sizeDelta = new Vector2(130f, 28f);
+
+                var buttonLayout = downloadButton.AddComponent<LayoutElement>();
+                buttonLayout.preferredHeight = 28f;
+                buttonLayout.preferredWidth = 130f;
+                buttonLayout.flexibleHeight = 0f;
+                buttonLayout.flexibleWidth = 0f;
+
+                var buttonText = UIFactory.CreateText("Text", downloadButton.transform, link.Name, 12,
+                    Color.white, TextAnchor.MiddleCenter);
+                UIFactory.SetupButtonText(buttonText, 10, 14, 10f);
+            }
+        }
+    }
+
+    internal class LinkHandler : MonoBehaviour, IPointerClickHandler
+    {
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            var textMeshPro = GetComponent<TextMeshProUGUI>();
+            if (textMeshPro == null) return;
+
+            var linkIndex = TMP_TextUtilities.FindIntersectingLink(textMeshPro, eventData.position, null);
+            if (linkIndex == -1) return;
+
+            var linkInfo = textMeshPro.textInfo.linkInfo[linkIndex];
+            var url = linkInfo.GetLinkID();
+
+            if (!string.IsNullOrEmpty(url)) Application.OpenURL(url);
+        }
+    }
+
+    internal class ScrollViewHeightAdjuster : MonoBehaviour
+    {
+        private RectTransform? _contentRect;
+        private bool _isUpdating;
+        private LayoutElement? _layoutElement;
+        private float _maxHeight;
+        private float _minHeight;
+        private ScrollRect? _scrollRect;
+        private TextMeshProUGUI? _textComponent;
+
+        private void OnDestroy()
+        {
+            TMPro_EventManager.TEXT_CHANGED_EVENT.Remove(OnTextChanged);
+            Canvas.willRenderCanvases -= OnCanvasWillRender;
+        }
+
+        public void Initialize(ScrollRect scrollRect, GameObject content, float minHeight, float maxHeight)
+        {
+            _scrollRect = scrollRect;
+            _contentRect = content.GetComponent<RectTransform>();
+            _textComponent = content.GetComponentInChildren<TextMeshProUGUI>();
+            _minHeight = minHeight;
+            _maxHeight = maxHeight;
+            _layoutElement = GetComponent<LayoutElement>();
+
+            if (_textComponent != null) TMPro_EventManager.TEXT_CHANGED_EVENT.Add(OnTextChanged);
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_contentRect);
+            Canvas.willRenderCanvases += OnCanvasWillRender;
+        }
+
+        private void OnTextChanged(Object obj)
+        {
+            if (obj == _textComponent && !_isUpdating) UpdateHeight();
+        }
+
+        private void OnCanvasWillRender()
+        {
+            if (!_isUpdating && _contentRect != null && _contentRect.rect.height > 0) UpdateHeight();
+        }
+
+        public void UpdateHeight()
+        {
+            if (_contentRect == null || _layoutElement == null) return;
+            if (_isUpdating) return;
+
+            _isUpdating = true;
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_contentRect);
+
+            var contentHeight = _contentRect.rect.height;
+
+            if (contentHeight <= 0.1f && _textComponent != null)
+            {
+                _textComponent.ForceMeshUpdate();
+                var preferredHeight = _textComponent.preferredHeight;
+                contentHeight = preferredHeight;
+            }
+
+            _layoutElement.preferredHeight = Mathf.Min(contentHeight, _maxHeight);
+
+            _isUpdating = false;
         }
     }
 }

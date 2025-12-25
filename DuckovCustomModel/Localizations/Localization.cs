@@ -91,6 +91,8 @@ namespace DuckovCustomModel.Localizations
             { "MinutesAgo", "minutes ago" },
             { "HoursAgo", "hours ago" },
             { "DaysAgo", "days ago" },
+            { "DownloadLinks", "Download Links" },
+            { "PublishedAt", "Published At" },
         };
 
         public static string Title => GetText("Title");
@@ -158,6 +160,8 @@ namespace DuckovCustomModel.Localizations
         public static string MinutesAgo => GetText("MinutesAgo");
         public static string HoursAgo => GetText("HoursAgo");
         public static string DaysAgo => GetText("DaysAgo");
+        public static string DownloadLinks => GetText("DownloadLinks");
+        public static string PublishedAt => GetText("PublishedAt");
 
         public static event Action<SystemLanguage>? OnLanguageChangedEvent;
 
