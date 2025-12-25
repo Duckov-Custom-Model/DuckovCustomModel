@@ -1,15 +1,13 @@
 using System;
 using System.Text;
-using System.Text.RegularExpressions;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.UI.Base;
+using DuckovCustomModel.UI.Utils;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using Object = UnityEngine.Object;
 
 namespace DuckovCustomModel.UI.Tabs
 {
@@ -720,54 +718,6 @@ namespace DuckovCustomModel.UI.Tabs
             RefreshUpdateInfo();
         }
 
-        private static string ConvertMarkdownToRichText(string markdown)
-        {
-            if (string.IsNullOrEmpty(markdown))
-                return string.Empty;
-
-            var result = markdown;
-
-            // 移除代码块
-            result = Regex.Replace(result, @"```[\s\S]*?```", "", RegexOptions.Multiline);
-            result = Regex.Replace(result, @"`([^`]+)`", "$1", RegexOptions.Multiline);
-
-            // 转换链接 [text](url) -> <link="url"><color=#4A9EFF><u>text</u></color></link>
-            result = Regex.Replace(result, @"\[([^\]]+)\]\(([^\)]+)\)",
-                "<link=\"$2\"><color=#4A9EFF><u>$1</u></color></link>");
-
-            // 转换纯 URL 为链接（匹配 http:// 或 https:// 开头的 URL）
-            result = Regex.Replace(result, @"(https?://[^\s\)]+)",
-                "<link=\"$1\"><color=#4A9EFF><u>$1</u></color></link>");
-
-            // 转换粗体 **text** -> <b>text</b>
-            result = Regex.Replace(result, @"\*\*([^\*]+)\*\*", "<b>$1</b>");
-            result = Regex.Replace(result, @"__([^_]+)__", "<b>$1</b>");
-
-            // 转换斜体 *text* -> <i>text</i>
-            result = Regex.Replace(result, @"(?<!\*)\*([^\*]+)\*(?!\*)", "<i>$1</i>");
-            result = Regex.Replace(result, @"(?<!_)_([^_]+)_(?!_)", "<i>$1</i>");
-
-            // 转换标题为字号（# 对应 size=24, ## 对应 size=20, ### 对应 size=18, 等等）
-            result = Regex.Replace(result, @"^######\s+(.+)$", "<size=14><b>$1</b></size>", RegexOptions.Multiline);
-            result = Regex.Replace(result, @"^#####\s+(.+)$", "<size=16><b>$1</b></size>", RegexOptions.Multiline);
-            result = Regex.Replace(result, @"^####\s+(.+)$", "<size=18><b>$1</b></size>", RegexOptions.Multiline);
-            result = Regex.Replace(result, @"^###\s+(.+)$", "<size=20><b>$1</b></size>", RegexOptions.Multiline);
-            result = Regex.Replace(result, @"^##\s+(.+)$", "<size=22><b>$1</b></size>", RegexOptions.Multiline);
-            result = Regex.Replace(result, @"^#\s+(.+)$", "<size=24><b>$1</b></size>", RegexOptions.Multiline);
-
-            // 转换列表项 - -> •
-            result = Regex.Replace(result, @"^\s*[-*+]\s+", "• ", RegexOptions.Multiline);
-            result = Regex.Replace(result, @"^\s*\d+\.\s+", "", RegexOptions.Multiline);
-
-            // 移除水平线
-            result = Regex.Replace(result, @"^---+$", "", RegexOptions.Multiline);
-
-            // 清理多余的空白行
-            result = Regex.Replace(result, @"\n{3,}", "\n\n", RegexOptions.Multiline);
-
-            return result.Trim();
-        }
-
         private static void OpenURL(string url)
         {
             if (string.IsNullOrEmpty(url)) return;
@@ -854,7 +804,7 @@ namespace DuckovCustomModel.UI.Tabs
                     if (scrollView != null && scrollView.content != null)
                     {
                         var textComponent = scrollView.content.GetComponentInChildren<TextMeshProUGUI>();
-                        if (textComponent != null) textComponent.text = ConvertMarkdownToRichText(changelog!);
+                        if (textComponent != null) textComponent.text = MarkdownToRichTextConverter.Convert(changelog!);
                     }
                 }
             }
@@ -893,88 +843,6 @@ namespace DuckovCustomModel.UI.Tabs
                     Color.white, TextAnchor.MiddleCenter);
                 UIFactory.SetupButtonText(buttonText, 10, 14, 10f);
             }
-        }
-    }
-
-    internal class LinkHandler : MonoBehaviour, IPointerClickHandler
-    {
-        public void OnPointerClick(PointerEventData eventData)
-        {
-            var textMeshPro = GetComponent<TextMeshProUGUI>();
-            if (textMeshPro == null) return;
-
-            var linkIndex = TMP_TextUtilities.FindIntersectingLink(textMeshPro, eventData.position, null);
-            if (linkIndex == -1) return;
-
-            var linkInfo = textMeshPro.textInfo.linkInfo[linkIndex];
-            var url = linkInfo.GetLinkID();
-
-            if (!string.IsNullOrEmpty(url)) Application.OpenURL(url);
-        }
-    }
-
-    internal class ScrollViewHeightAdjuster : MonoBehaviour
-    {
-        private RectTransform? _contentRect;
-        private bool _isUpdating;
-        private LayoutElement? _layoutElement;
-        private float _maxHeight;
-        private float _minHeight;
-        private ScrollRect? _scrollRect;
-        private TextMeshProUGUI? _textComponent;
-
-        private void OnDestroy()
-        {
-            TMPro_EventManager.TEXT_CHANGED_EVENT.Remove(OnTextChanged);
-            Canvas.willRenderCanvases -= OnCanvasWillRender;
-        }
-
-        public void Initialize(ScrollRect scrollRect, GameObject content, float minHeight, float maxHeight)
-        {
-            _scrollRect = scrollRect;
-            _contentRect = content.GetComponent<RectTransform>();
-            _textComponent = content.GetComponentInChildren<TextMeshProUGUI>();
-            _minHeight = minHeight;
-            _maxHeight = maxHeight;
-            _layoutElement = GetComponent<LayoutElement>();
-
-            if (_textComponent != null) TMPro_EventManager.TEXT_CHANGED_EVENT.Add(OnTextChanged);
-
-            LayoutRebuilder.ForceRebuildLayoutImmediate(_contentRect);
-            Canvas.willRenderCanvases += OnCanvasWillRender;
-        }
-
-        private void OnTextChanged(Object obj)
-        {
-            if (obj == _textComponent && !_isUpdating) UpdateHeight();
-        }
-
-        private void OnCanvasWillRender()
-        {
-            if (!_isUpdating && _contentRect != null && _contentRect.rect.height > 0) UpdateHeight();
-        }
-
-        public void UpdateHeight()
-        {
-            if (_contentRect == null || _layoutElement == null) return;
-            if (_isUpdating) return;
-
-            _isUpdating = true;
-
-            LayoutRebuilder.ForceRebuildLayoutImmediate(_contentRect);
-
-            var contentHeight = _contentRect.rect.height;
-
-            if (contentHeight <= 0.1f && _textComponent != null)
-            {
-                _textComponent.ForceMeshUpdate();
-                var preferredHeight = _textComponent.preferredHeight;
-                contentHeight = preferredHeight;
-            }
-
-            _layoutElement.preferredHeight = Mathf.Min(contentHeight, _maxHeight);
-
-            _isUpdating = false;
         }
     }
 }
