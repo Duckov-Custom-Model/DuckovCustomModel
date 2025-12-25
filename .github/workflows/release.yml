@@ -406,12 +406,26 @@ jobs:
                     
                     req = urllib.request.Request(api_url, data=body_bytes, headers=headers, method='POST')
                     with urllib.request.urlopen(req) as response:
-                        response_data = json.load(response)
-                    
-                    print("✓ 页面更新触发成功")
-                    if response_data:
-                        print(f"响应: {json.dumps(response_data, ensure_ascii=False)}")
-                    return True
+                        status_code = response.getcode()
+                        # GitHub API returns 204 No Content on success for repository_dispatch
+                        if status_code == 204:
+                            print("✓ 页面更新触发成功 (204 No Content)")
+                            return True
+                        
+                        # Try to read response body if available
+                        try:
+                            response_body = response.read().decode('utf-8')
+                            if response_body:
+                                response_data = json.loads(response_body)
+                                print("✓ 页面更新触发成功")
+                                print(f"响应: {json.dumps(response_data, ensure_ascii=False)}")
+                            else:
+                                print(f"✓ 页面更新触发成功 (状态码: {status_code}, 无响应体)")
+                            return True
+                        except json.JSONDecodeError:
+                            # Response is not JSON, but status code indicates success
+                            print(f"✓ 页面更新触发成功 (状态码: {status_code}, 非 JSON 响应)")
+                            return True
                 except urllib.error.HTTPError as e:
                     last_error = e
                     status_code = e.code
