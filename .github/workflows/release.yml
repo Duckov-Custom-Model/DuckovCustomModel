@@ -158,12 +158,19 @@ jobs:
         TAG_NAME: ${{ github.ref_name }}
       run: |
         $scriptContent = @'
+        # -*- coding: utf-8 -*-
         import json
         import os
         import sys
         import time
         import urllib.request
         from datetime import datetime
+        
+        # Fix encoding for Windows console
+        if sys.platform == 'win32':
+            import io
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
         
         def get_release_with_retry(api_url, headers, package_file_name="DuckovCustomModel.zip", max_retries=15, retry_delay=3):
             last_error = None
@@ -335,11 +342,18 @@ jobs:
         RELEASE_DOWNLOAD_LINKS: ${{ steps.release_info.outputs.download_links }}
       run: |
         $scriptContent = @'
+        # -*- coding: utf-8 -*-
         import json
         import os
         import sys
         import time
         import urllib.request
+        
+        # Fix encoding for Windows console
+        if sys.platform == 'win32':
+            import io
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
         
         def parse_download_links_from_json(json_str):
             if not json_str or not json_str.strip():
