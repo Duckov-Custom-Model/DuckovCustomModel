@@ -93,6 +93,10 @@ namespace DuckovCustomModel.Localizations
             { "DaysAgo", "days ago" },
             { "DownloadLinks", "Download Links" },
             { "PublishedAt", "Published At" },
+            {
+                "CharacterModelWarning",
+                "Some characters use building models, so not all instances of this character may be correctly replaced with the set model"
+            },
         };
 
         public static string Title => GetText("Title");
@@ -162,6 +166,7 @@ namespace DuckovCustomModel.Localizations
         public static string DaysAgo => GetText("DaysAgo");
         public static string DownloadLinks => GetText("DownloadLinks");
         public static string PublishedAt => GetText("PublishedAt");
+        public static string CharacterModelWarning => GetText("CharacterModelWarning");
 
         public static event Action<SystemLanguage>? OnLanguageChangedEvent;
 

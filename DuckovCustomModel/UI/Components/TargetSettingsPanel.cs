@@ -34,7 +34,7 @@ namespace DuckovCustomModel.UI.Components
             _content = content;
 
             UIFactory.SetupVerticalLayoutGroup(_content, 10f, new(10, 10, 10, 10), TextAnchor.UpperCenter,
-                true, false, true);
+                true, true, true);
             UIFactory.SetupContentSizeFitter(_content, ContentSizeFitter.FitMode.Unconstrained);
         }
 
@@ -53,10 +53,23 @@ namespace DuckovCustomModel.UI.Components
             if (_currentTarget == null) return;
 
             _settingRowIndex = 0;
+            BuildCharacterModelWarning();
             BuildHideEquipmentSetting();
             BuildEnableModelAudioSetting();
             BuildEnableIdleAudioSetting();
             BuildIdleAudioIntervalSettings();
+        }
+
+        private void BuildCharacterModelWarning()
+        {
+            if (_content == null || _currentTarget == null) return;
+
+            if (_currentTarget.TargetType != ModelTarget.AICharacter || _currentTarget.AICharacterNameKey == null)
+                return;
+
+            if (_currentTarget.AICharacterNameKey == AICharacters.AllAICharactersKey ||
+                _currentTarget.AICharacterNameKey.StartsWith("Character_"))
+                CreateWarningRow();
         }
 
         private void BuildHideEquipmentSetting()
@@ -206,6 +219,70 @@ namespace DuckovCustomModel.UI.Components
 
             UIFactory.SetupRightControl(_idleAudioMaxIntervalInput.gameObject, new(100, 30));
             _idleAudioMaxIntervalInput.onEndEdit.AddListener(OnIdleAudioMaxIntervalChanged);
+        }
+
+        private GameObject CreateWarningText(Transform parent)
+        {
+            var warningText = UIFactory.CreateText("WarningText", parent,
+                Localization.CharacterModelWarning, 16, new Color(1f, 0.8f, 0.4f, 1f), TextAnchor.UpperLeft);
+
+            UIFactory.SetupRectTransform(warningText, new Vector2(0, 1), new Vector2(1, 1),
+                offsetMin: new Vector2(20, 10), offsetMax: new Vector2(-20, -10),
+                pivot: new Vector2(0.5f, 1));
+
+            var warningTextComponent = warningText.GetComponent<TextMeshProUGUI>();
+            if (warningTextComponent != null)
+            {
+                warningTextComponent.enableWordWrapping = true;
+                warningTextComponent.overflowMode = TextOverflowModes.Overflow;
+            }
+
+            UIFactory.SetLocalizedText(warningText, () => Localization.CharacterModelWarning);
+
+            var warningLayoutElement = warningText.AddComponent<LayoutElement>();
+            warningLayoutElement.flexibleWidth = 1;
+
+            UIFactory.SetupContentSizeFitter(warningText, ContentSizeFitter.FitMode.Unconstrained);
+
+            return warningText;
+        }
+
+        private void CreateWarningRow()
+        {
+            if (_content == null) return;
+
+            var row = new GameObject("WarningRow", typeof(RectTransform), typeof(Image));
+            row.transform.SetParent(_content.transform, false);
+
+            var rowImage = row.GetComponent<Image>();
+            rowImage.color = new(0.3f, 0.2f, 0.05f, 0.9f);
+
+            var outline = row.AddComponent<Outline>();
+            outline.effectColor = new(0.8f, 0.6f, 0.2f, 0.8f);
+            outline.effectDistance = new(2, -2);
+
+            UIFactory.SetupRectTransform(row, new Vector2(0, 1), new Vector2(1, 1), Vector2.zero,
+                pivot: new Vector2(0.5f, 1));
+
+            UIFactory.SetupVerticalLayoutGroup(row, 0f, new RectOffset(20, 20, 10, 10),
+                TextAnchor.UpperLeft, true, true, true);
+
+            var warningText = UIFactory.CreateText("WarningText", row.transform,
+                Localization.CharacterModelWarning, 16, new Color(1f, 0.8f, 0.4f, 1f), TextAnchor.UpperLeft);
+
+            UIFactory.SetupRectTransform(warningText, Vector2.zero, Vector2.one, Vector2.zero);
+
+            var warningTextComponent = warningText.GetComponent<TextMeshProUGUI>();
+            if (warningTextComponent != null) warningTextComponent.enableWordWrapping = true;
+
+            UIFactory.SetLocalizedText(warningText, () => Localization.CharacterModelWarning);
+
+            var warningLayoutElement = warningText.AddComponent<LayoutElement>();
+            warningLayoutElement.flexibleWidth = 1;
+            warningLayoutElement.flexibleHeight = 1;
+
+            UIFactory.SetupContentSizeFitter(warningText, ContentSizeFitter.FitMode.Unconstrained);
+            UIFactory.SetupContentSizeFitter(row, ContentSizeFitter.FitMode.Unconstrained);
         }
 
         private GameObject CreateSettingRow()

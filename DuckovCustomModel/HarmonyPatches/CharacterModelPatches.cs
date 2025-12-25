@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using DuckovCustomModel.Core.Data;
+﻿using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Managers;
 using HarmonyLib;
 
@@ -20,7 +19,7 @@ namespace DuckovCustomModel.HarmonyPatches
             var preset = characterMainControl.characterPreset;
             if (preset == null) return;
             if (string.IsNullOrEmpty(preset.nameKey)) return;
-            if (!AICharacters.SupportedAICharacters.Contains(preset.nameKey)) return;
+            if (!AICharacters.Contains(preset.nameKey)) return;
 
             var modelHandler = ModelManager.InitializeModelHandler(characterMainControl, ModelTarget.AICharacter);
             if (modelHandler == null) return;

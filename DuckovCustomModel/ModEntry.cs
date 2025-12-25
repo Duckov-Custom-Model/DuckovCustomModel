@@ -75,6 +75,8 @@ namespace DuckovCustomModel
 
             InitializeExtensions();
 
+            AICharactersManager.Initialize();
+
             ModLogger.Log($"{Constant.ModName} loaded (Version {Constant.ModVersion})");
         }
 

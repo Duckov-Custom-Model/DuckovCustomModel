@@ -65,6 +65,7 @@
   "HoursAgo": "時間前",
   "DaysAgo": "日前",
   "DownloadLinks": "ダウンロードリンク",
-  "PublishedAt": "公開日時"
+  "PublishedAt": "公開日時",
+  "CharacterModelWarning": "一部のキャラクターは建築モデルを使用しているため、このキャラクターのすべてのインスタンスが設定されたモデルに正しく置き換えられるとは限りません"
 }
 
