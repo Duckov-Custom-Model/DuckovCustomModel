@@ -205,14 +205,41 @@ jobs:
           exit 1
         }
         
+        # 获取 changelog（release body）
+        $changelog = if ($release.body) { $release.body } else { "" }
+        
+        # 获取打包文件的下载链接（只传递 DuckovCustomModel.zip）
+        $downloadLinks = @()
+        $packageFileName = "DuckovCustomModel.zip"
+        if ($release.assets) {
+          $packageAsset = $release.assets | Where-Object { $_.name -eq $packageFileName } | Select-Object -First 1
+          if ($packageAsset) {
+            $downloadLinks += @{
+              name = "Github Release"
+              url = $packageAsset.browser_download_url
+            }
+          }
+        }
+        $downloadLinksJson = $downloadLinks | ConvertTo-Json -Depth 10 -Compress
+        
         Write-Host "Release 信息:"
         Write-Host "  版本: $version"
         Write-Host "  名称: $releaseName"
         Write-Host "  发布时间: $publishedAt"
+        Write-Host "  更新日志: $(if ($changelog) { "已设置 ($($changelog.Length) 字符)" } else { "未设置" })"
+        if ($downloadLinks.Count -gt 0) {
+          Write-Host "  打包文件下载链接: 已找到 ($packageFileName)"
+        } else {
+          Write-Host "  打包文件下载链接: 未找到 ($packageFileName)"
+        }
         
         echo "version=$version" >> $env:GITHUB_OUTPUT
         echo "release_name=$releaseName" >> $env:GITHUB_OUTPUT
         echo "published_at=$publishedAt" >> $env:GITHUB_OUTPUT
+        echo "changelog<<EOF" >> $env:GITHUB_OUTPUT
+        echo "$changelog" >> $env:GITHUB_OUTPUT
+        echo "EOF" >> $env:GITHUB_OUTPUT
+        echo "download_links=$downloadLinksJson" >> $env:GITHUB_OUTPUT
       shell: pwsh
 
     - name: Trigger Pages Update
@@ -237,13 +264,35 @@ jobs:
         }
         
         # 准备请求数据
+        $clientPayload = @{
+          version = "${{ steps.release_info.outputs.version }}"
+          release_name = "${{ steps.release_info.outputs.release_name }}"
+          published_at = "${{ steps.release_info.outputs.published_at }}"
+        }
+        
+        # 添加可选的 changelog
+        $changelog = "${{ steps.release_info.outputs.changelog }}"
+        if ($changelog) {
+          $clientPayload.changelog = $changelog
+        }
+        
+        # 添加可选的 download_links
+        $downloadLinksStr = "${{ steps.release_info.outputs.download_links }}"
+        if ($downloadLinksStr -and $downloadLinksStr -ne "[]") {
+          try {
+            # 解析 JSON 字符串为对象，然后作为对象传递
+            # GitHub Actions 会将 client_payload 中的对象序列化为 JSON
+            $downloadLinksObj = $downloadLinksStr | ConvertFrom-Json
+            $clientPayload.download_links = $downloadLinksObj
+          }
+          catch {
+            Write-Warning "download_links 不是有效的 JSON，跳过: $_"
+          }
+        }
+        
         $body = @{
           event_type = "update-release"
-          client_payload = @{
-            version = "${{ steps.release_info.outputs.version }}"
-            release_name = "${{ steps.release_info.outputs.release_name }}"
-            published_at = "${{ steps.release_info.outputs.published_at }}"
-          }
+          client_payload = $clientPayload
         } | ConvertTo-Json -Depth 10
         
         $headers = @{
@@ -255,6 +304,8 @@ jobs:
         Write-Host "准备触发页面更新..."
         Write-Host "目标仓库: $pagesRepoOwner/$pagesRepoName"
         Write-Host "版本: ${{ steps.release_info.outputs.version }}"
+        Write-Host "更新日志: $(if ($changelog) { "已包含 ($($changelog.Length) 字符)" } else { "未包含" })"
+        Write-Host "下载链接: $(if ($clientPayload.download_links) { "已包含 ($($clientPayload.download_links.Count) 项)" } else { "未包含" })"
         Write-Host "API URL: $apiUrl"
         
         # 重试配置
