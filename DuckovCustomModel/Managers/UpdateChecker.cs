@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -133,10 +134,21 @@ namespace DuckovCustomModel.Managers
                         _updateInfoConfig.LatestReleaseName = releaseInfo.ReleaseName ?? latestVersion;
                         _updateInfoConfig.LastCheckTime = DateTime.Now;
                         _updateInfoConfig.HasUpdate = hasUpdate;
+                        _updateInfoConfig.LatestChangelog = releaseInfo.Changelog;
+
+                        // 转换下载链接
+                        _updateInfoConfig.LatestDownloadLinks = [];
+                        if (releaseInfo.DownloadLinks != null)
+                            foreach (var link in releaseInfo.DownloadLinks)
+                                _updateInfoConfig.LatestDownloadLinks.Add(new DownloadLinkInfo
+                                {
+                                    Name = link.Name,
+                                    Url = link.Url,
+                                });
 
                         if (DateTimeOffset.TryParse(releaseInfo.PublishedAt, CultureInfo.InvariantCulture,
                                 DateTimeStyles.RoundtripKind, out var publishedAt))
-                            _updateInfoConfig.LatestPublishedAt = publishedAt.UtcDateTime;
+                            _updateInfoConfig.LatestPublishedAt = publishedAt;
 
                         SaveUpdateInfo();
 
@@ -290,9 +302,19 @@ namespace DuckovCustomModel.Managers
             return _updateInfoConfig?.LastCheckTime;
         }
 
-        public DateTime? GetLatestPublishedAt()
+        public DateTimeOffset? GetLatestPublishedAt()
         {
             return _updateInfoConfig?.LatestPublishedAt;
+        }
+
+        public string? GetLatestChangelog()
+        {
+            return _updateInfoConfig?.LatestChangelog;
+        }
+
+        public List<DownloadLinkInfo> GetLatestDownloadLinks()
+        {
+            return _updateInfoConfig?.LatestDownloadLinks ?? [];
         }
 
         private class ReleaseInfo
@@ -302,6 +324,17 @@ namespace DuckovCustomModel.Managers
             [JsonProperty("release_name")] public string? ReleaseName { get; set; }
 
             [JsonProperty("published_at")] public string? PublishedAt { get; set; }
+
+            [JsonProperty("changelog")] public string? Changelog { get; set; }
+
+            [JsonProperty("download_links")] public List<DownloadLink>? DownloadLinks { get; set; }
+        }
+
+        private class DownloadLink
+        {
+            [JsonProperty("name")] public string Name { get; set; } = string.Empty;
+
+            [JsonProperty("url")] public string Url { get; set; } = string.Empty;
         }
     }
 }

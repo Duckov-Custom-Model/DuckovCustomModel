@@ -1,14 +1,23 @@
 using System;
+using System.Collections.Generic;
 
 namespace DuckovCustomModel.Configs
 {
+    public class DownloadLinkInfo
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Url { get; set; } = string.Empty;
+    }
+
     public class UpdateInfoConfig : ConfigBase
     {
         public string LatestVersion { get; set; } = string.Empty;
         public string LatestReleaseName { get; set; } = string.Empty;
         public DateTime? LastCheckTime { get; set; }
-        public DateTime? LatestPublishedAt { get; set; }
+        public DateTimeOffset? LatestPublishedAt { get; set; }
         public bool HasUpdate { get; set; }
+        public string? LatestChangelog { get; set; }
+        public List<DownloadLinkInfo> LatestDownloadLinks { get; set; } = [];
 
         public override void LoadDefault()
         {
@@ -17,6 +26,8 @@ namespace DuckovCustomModel.Configs
             LastCheckTime = null;
             LatestPublishedAt = null;
             HasUpdate = false;
+            LatestChangelog = null;
+            LatestDownloadLinks = [];
         }
 
         public override bool Validate()
@@ -32,6 +43,8 @@ namespace DuckovCustomModel.Configs
             LastCheckTime = otherConfig.LastCheckTime;
             LatestPublishedAt = otherConfig.LatestPublishedAt;
             HasUpdate = otherConfig.HasUpdate;
+            LatestChangelog = otherConfig.LatestChangelog;
+            LatestDownloadLinks = otherConfig.LatestDownloadLinks ?? [];
         }
     }
 }

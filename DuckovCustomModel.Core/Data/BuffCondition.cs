@@ -1,5 +1,3 @@
-using Newtonsoft.Json;
-
 namespace DuckovCustomModel.Core.Data
 {
     public class BuffCondition
@@ -9,4 +7,3 @@ namespace DuckovCustomModel.Core.Data
         public string? DisplayNameKey { get; set; }
     }
 }
-
