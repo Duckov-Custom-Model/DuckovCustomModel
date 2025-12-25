@@ -1,5 +1,4 @@
 using DuckovCustomModel.Core.Data;
-using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.MonoBehaviours;
 using DuckovCustomModel.Utils;
 
@@ -7,12 +6,9 @@ namespace DuckovCustomModel.Managers.Updaters
 {
     public class HandTypeIDUpdater : IAnimatorParameterUpdater
     {
-        public void UpdateParameters(object control, object context)
+        public void UpdateParameters(CustomAnimatorControl control)
         {
-            if (control is not CustomAnimatorControl customControl) return;
-            if (context is not AnimatorUpdateContext ctx) return;
-
-            if (!ctx.Initialized || ctx.CharacterMainControl == null || ctx.CharacterModel == null)
+            if (!control.Initialized || control.CharacterMainControl == null || control.CharacterModel == null)
                 return;
 
             var leftHandTypeID = 0;
@@ -20,12 +16,12 @@ namespace DuckovCustomModel.Managers.Updaters
             var meleeWeaponTypeID = 0;
             var weaponInLocator = 0;
 
-            var currentHoldItemAgent = ctx.CharacterMainControl?.CurrentHoldItemAgent;
+            var currentHoldItemAgent = control.CharacterMainControl.CurrentHoldItemAgent;
             if (currentHoldItemAgent != null)
                 switch (currentHoldItemAgent.handheldSocket)
                 {
                     case HandheldSocketTypes.leftHandSocket:
-                        var leftHandSocket = CharacterModelSocketUtils.GetLeftHandSocket(ctx.CharacterModel);
+                        var leftHandSocket = CharacterModelSocketUtils.GetLeftHandSocket(control.CharacterModel);
                         if (leftHandSocket != null)
                         {
                             leftHandTypeID = currentHoldItemAgent.Item.TypeID;
@@ -49,13 +45,13 @@ namespace DuckovCustomModel.Managers.Updaters
                         break;
                 }
 
-            customControl.SetParameterInteger(CustomAnimatorHash.WeaponInLocator, weaponInLocator);
-            customControl.SetParameterInteger(CustomAnimatorHash.LeftHandTypeID, leftHandTypeID);
-            customControl.SetParameterBool(CustomAnimatorHash.LeftHandEquip, leftHandTypeID > 0);
-            customControl.SetParameterInteger(CustomAnimatorHash.RightHandTypeID, rightHandTypeID);
-            customControl.SetParameterBool(CustomAnimatorHash.RightHandEquip, rightHandTypeID > 0);
-            customControl.SetParameterInteger(CustomAnimatorHash.MeleeWeaponTypeID, meleeWeaponTypeID);
-            customControl.SetParameterBool(CustomAnimatorHash.MeleeWeaponEquip, meleeWeaponTypeID > 0);
+            control.SetParameterInteger(CustomAnimatorHash.WeaponInLocator, weaponInLocator);
+            control.SetParameterInteger(CustomAnimatorHash.LeftHandTypeID, leftHandTypeID);
+            control.SetParameterBool(CustomAnimatorHash.LeftHandEquip, leftHandTypeID > 0);
+            control.SetParameterInteger(CustomAnimatorHash.RightHandTypeID, rightHandTypeID);
+            control.SetParameterBool(CustomAnimatorHash.RightHandEquip, rightHandTypeID > 0);
+            control.SetParameterInteger(CustomAnimatorHash.MeleeWeaponTypeID, meleeWeaponTypeID);
+            control.SetParameterBool(CustomAnimatorHash.MeleeWeaponEquip, meleeWeaponTypeID > 0);
         }
     }
 }

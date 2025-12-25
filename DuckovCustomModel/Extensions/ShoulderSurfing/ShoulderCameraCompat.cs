@@ -9,6 +9,9 @@ namespace DuckovCustomModel.Extensions.ShoulderSurfing
         private static Transform _shoulderCameraTransform = null!;
         private static Component _shoulderCamera = null!;
         private static FieldInfo? _cameraPitchFieldInfoField;
+        private static FieldInfo? _shoulderCameraToggledFieldInfo;
+        private static float _cachedCameraPitch;
+        private static int _lastUpdateFrame = -1;
 
         public static bool CheckShoulderCameraInstalled()
         {
@@ -36,11 +39,27 @@ namespace DuckovCustomModel.Extensions.ShoulderSurfing
         {
             if (!CheckShoulderCameraActive()) return 0f;
 
+            if (_shoulderCameraToggledFieldInfo == null)
+                _shoulderCameraToggledFieldInfo = _shoulderCamera.GetType()
+                    .GetField("shoulderCameraToggled",
+                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+
+            if (_shoulderCameraToggledFieldInfo == null) return 0f;
+
+            var toggled = (bool)_shoulderCameraToggledFieldInfo.GetValue(null)!;
+            if (!toggled) return 0f;
+
+            var currentFrame = Time.frameCount;
+            if (_lastUpdateFrame == currentFrame)
+                return _cachedCameraPitch;
+
             if (_cameraPitchFieldInfoField == null)
                 _cameraPitchFieldInfoField = _shoulderCamera.GetType()
                     .GetField("cameraPitch", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
-            return (float)_cameraPitchFieldInfoField.GetValue(_shoulderCamera)!;
+            _cachedCameraPitch = (float)_cameraPitchFieldInfoField.GetValue(_shoulderCamera)!;
+            _lastUpdateFrame = currentFrame;
+            return _cachedCameraPitch;
         }
     }
 }

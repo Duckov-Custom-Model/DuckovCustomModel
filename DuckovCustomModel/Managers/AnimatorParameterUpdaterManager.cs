@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using System.Linq;
+using DuckovCustomModel.MonoBehaviours;
 
-namespace DuckovCustomModel.Core.Managers
+namespace DuckovCustomModel.Managers
 {
     public static class AnimatorParameterUpdaterManager
     {
@@ -20,12 +20,12 @@ namespace DuckovCustomModel.Core.Managers
             RegisteredUpdaters.Remove(updater);
         }
 
-        public static void UpdateAll(object? control, object? context)
+        public static void UpdateAll(CustomAnimatorControl? control)
         {
-            if (control == null || context == null) return;
+            if (control == null) return;
 
-            foreach (var updater in RegisteredUpdaters.OfType<IAnimatorParameterUpdater>())
-                updater.UpdateParameters(control, context);
+            foreach (var updater in RegisteredUpdaters)
+                updater.UpdateParameters(control);
         }
     }
 }

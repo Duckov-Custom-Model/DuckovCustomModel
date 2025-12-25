@@ -1,4 +1,3 @@
-using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.MonoBehaviours;
 using UnityEngine;
 
@@ -6,30 +5,27 @@ namespace DuckovCustomModel.Managers.Updaters
 {
     public class AttackLayerWeightUpdater : IAnimatorParameterUpdater
     {
-        public void UpdateParameters(object control, object context)
+        public void UpdateParameters(CustomAnimatorControl control)
         {
-            if (control is not CustomAnimatorControl customControl) return;
-            if (context is not AnimatorUpdateContext ctx) return;
-
-            if (!ctx.Attacking)
+            if (!control.Attacking)
             {
-                if (ctx.AttackWeight <= 0) return;
-                ctx.AttackWeight = 0;
-                customControl.SetMeleeAttackLayerWeight(ctx.AttackWeight);
+                if (control.AttackWeight <= 0) return;
+                control.AttackWeight = 0;
+                control.SetMeleeAttackLayerWeight(control.AttackWeight);
                 return;
             }
 
-            ctx.AttackTimer += Time.deltaTime;
-            var attackTime = ctx.AttackTime;
-            var attackProgress = attackTime > 0 ? Mathf.Clamp01(ctx.AttackTimer / attackTime) : 0.0f;
-            ctx.AttackWeight = ctx.AttackLayerWeightCurve?.Evaluate(attackProgress) ?? 0.0f;
-            if (ctx.AttackTimer >= attackTime)
+            control.AttackTimer += Time.deltaTime;
+            var attackTime = control.AttackTime;
+            var attackProgress = attackTime > 0 ? Mathf.Clamp01(control.AttackTimer / attackTime) : 0.0f;
+            control.AttackWeight = control.AttackLayerWeightCurve?.Evaluate(attackProgress) ?? 0.0f;
+            if (control.AttackTimer >= attackTime)
             {
-                ctx.Attacking = false;
-                ctx.AttackWeight = 0.0f;
+                control.Attacking = false;
+                control.AttackWeight = 0.0f;
             }
 
-            customControl.SetMeleeAttackLayerWeight(ctx.AttackWeight);
+            control.SetMeleeAttackLayerWeight(control.AttackWeight);
         }
     }
 }

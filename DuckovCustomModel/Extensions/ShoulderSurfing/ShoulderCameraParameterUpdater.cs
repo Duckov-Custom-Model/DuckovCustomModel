@@ -1,17 +1,18 @@
 using DuckovCustomModel.Core.Data;
-using DuckovCustomModel.Core.Managers;
+using DuckovCustomModel.Managers;
 using DuckovCustomModel.MonoBehaviours;
 
 namespace DuckovCustomModel.Extensions.ShoulderSurfing
 {
     public class ShoulderCameraParameterUpdater : IAnimatorParameterUpdater
     {
-        public void UpdateParameters(object control, object context)
+        public void UpdateParameters(CustomAnimatorControl control)
         {
-            if (control is not CustomAnimatorControl customControl) return;
+            if (control.CharacterMainControl == null || !control.CharacterMainControl.IsMainCharacter)
+                return;
 
             var cameraPitch = ShoulderCameraCompat.GetCameraPitch();
-            customControl.SetParameterFloat(CustomAnimatorHash.ModShoulderSurfingCameraPitch, cameraPitch);
+            control.SetParameterFloat(CustomAnimatorHash.ModShoulderSurfingCameraPitch, cameraPitch);
         }
     }
 }
