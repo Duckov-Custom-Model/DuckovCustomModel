@@ -182,6 +182,7 @@ namespace DuckovCustomModel.UI.Tabs
             UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
 
             var layoutElement = container.GetComponent<LayoutElement>();
+            layoutElement.minWidth = 200;
             layoutElement.preferredWidth = 200;
             layoutElement.flexibleWidth = 0;
             layoutElement.flexibleHeight = 1;
@@ -235,9 +236,16 @@ namespace DuckovCustomModel.UI.Tabs
 
         private static GameObject CreateTargetListContainer(GameObject parent)
         {
-            var container = new GameObject("TargetListContainer", typeof(RectTransform));
+            var container = new GameObject("TargetListContainer", typeof(RectTransform), typeof(LayoutElement));
             container.transform.SetParent(parent.transform, false);
             UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
+
+            var layoutElement = container.GetComponent<LayoutElement>();
+            layoutElement.minWidth = 0;
+            layoutElement.preferredWidth = 0;
+            layoutElement.flexibleWidth = 0;
+            layoutElement.flexibleHeight = 1;
+
             return container;
         }
 

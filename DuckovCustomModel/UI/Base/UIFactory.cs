@@ -67,11 +67,8 @@ namespace DuckovCustomModel.UI.Base
             textComponent.fontSizeMin = minFontSize;
             textComponent.fontSizeMax = maxFontSize;
 
-            var textRect = textObj.GetComponent<RectTransform>();
-            textRect.offsetMin = new(padding, 0);
-            textRect.offsetMax = new(-padding, 0);
-            textRect.anchorMin = new(0, 0);
-            textRect.anchorMax = new(1, 1);
+            SetupRectTransform(textObj, new(0, 0), new(1, 1),
+                offsetMin: new(padding, 0), offsetMax: new(-padding, 0));
         }
 
         public static GameObject CreateButton(string name, Transform parent, UnityAction? onClick = null,
@@ -109,11 +106,8 @@ namespace DuckovCustomModel.UI.Base
             textComponent.fontSize = 14;
             textComponent.enableAutoSizing = false;
             textComponent.alignment = TextAlignmentOptions.MidlineLeft;
-            var textRect = textObj.GetComponent<RectTransform>();
-            textRect.anchorMin = new(0, 0);
-            textRect.anchorMax = new(1, 1);
-            textRect.offsetMin = new(8, 4);
-            textRect.offsetMax = new(-8, -4);
+            SetupRectTransform(textObj, new(0, 0), new(1, 1),
+                offsetMin: new(8, 4), offsetMax: new(-8, -4));
 
             var placeholderObj = new GameObject("Placeholder", typeof(TextMeshProUGUI));
             placeholderObj.transform.SetParent(inputObj.transform, false);
@@ -123,11 +117,8 @@ namespace DuckovCustomModel.UI.Base
             placeholderComponent.fontSize = 14;
             placeholderComponent.enableAutoSizing = false;
             placeholderComponent.alignment = TextAlignmentOptions.MidlineLeft;
-            var placeholderRect = placeholderObj.GetComponent<RectTransform>();
-            placeholderRect.anchorMin = new(0, 0);
-            placeholderRect.anchorMax = new(1, 1);
-            placeholderRect.offsetMin = new(8, 4);
-            placeholderRect.offsetMax = new(-8, -4);
+            SetupRectTransform(placeholderObj, new(0, 0), new(1, 1),
+                offsetMin: new(8, 4), offsetMax: new(-8, -4));
 
             var inputField = inputObj.AddComponent<TMP_InputField>();
             inputField.textComponent = textComponent;
@@ -146,21 +137,14 @@ namespace DuckovCustomModel.UI.Base
             toggle.isOn = isOn;
             if (onValueChanged != null) toggle.onValueChanged.AddListener(onValueChanged);
 
-            var toggleRect = toggleObj.GetComponent<RectTransform>();
-            toggleRect.anchorMin = Vector2.zero;
-            toggleRect.anchorMax = Vector2.zero;
-            toggleRect.pivot = new(0.5f, 0.5f);
-            toggleRect.sizeDelta = new(20, 20);
-            toggleRect.anchoredPosition = Vector2.zero;
+            SetupRectTransform(toggleObj, Vector2.zero, Vector2.zero,
+                new(20, 20), pivot: new(0.5f, 0.5f));
 
             var toggleImage = toggleObj.AddComponent<Image>();
             toggleImage.color = new(0.2f, 0.2f, 0.2f, 1);
 
             var checkmark = CreateImage("Checkmark", toggleObj.transform, new(0.2f, 0.8f, 0.2f, 1));
-            var checkmarkRect = checkmark.GetComponent<RectTransform>();
-            checkmarkRect.anchorMin = new(0.2f, 0.2f);
-            checkmarkRect.anchorMax = new(0.8f, 0.8f);
-            checkmarkRect.sizeDelta = Vector2.zero;
+            SetupRectTransform(checkmark, new(0.2f, 0.2f), new(0.8f, 0.8f), Vector2.zero);
             toggle.graphic = checkmark.GetComponent<Image>();
 
             return toggle;
@@ -318,34 +302,23 @@ namespace DuckovCustomModel.UI.Base
             labelText.fontSize = 16;
             labelText.color = Color.white;
             labelText.alignment = TextAlignmentOptions.MidlineLeft;
-            var labelRect = labelObj.GetComponent<RectTransform>();
-            labelRect.anchorMin = new(0, 0);
-            labelRect.anchorMax = new(1, 1);
-            labelRect.offsetMin = new(10, 2);
-            labelRect.offsetMax = new(-25, -2);
+            SetupRectTransform(labelObj, new(0, 0), new(1, 1),
+                offsetMin: new(10, 2), offsetMax: new(-25, -2));
             dropdown.captionText = labelText;
 
             var arrowObj = new GameObject("Arrow", typeof(Image));
             arrowObj.transform.SetParent(dropdownObj.transform, false);
             var arrowImage = arrowObj.GetComponent<Image>();
             arrowImage.color = Color.white;
-            var arrowRect = arrowObj.GetComponent<RectTransform>();
-            arrowRect.anchorMin = new(1, 0.5f);
-            arrowRect.anchorMax = new(1, 0.5f);
-            arrowRect.pivot = new(1, 0.5f);
-            arrowRect.sizeDelta = new(20, 20);
-            arrowRect.anchoredPosition = new(-5, 0);
+            SetupRectTransform(arrowObj, new(1, 0.5f), new(1, 0.5f),
+                new(20, 20), pivot: new(1, 0.5f), anchoredPosition: new(-5, 0));
             dropdown.captionImage = arrowImage;
 
             var templateObj = new GameObject("Template", typeof(RectTransform), typeof(Image), typeof(ScrollRect));
             templateObj.transform.SetParent(dropdownObj.transform, false);
             templateObj.SetActive(false);
-            var templateRect = templateObj.GetComponent<RectTransform>();
-            templateRect.anchorMin = new(0, 0);
-            templateRect.anchorMax = new(1, 0);
-            templateRect.pivot = new(0.5f, 1);
-            templateRect.sizeDelta = new(0, 150);
-            templateRect.anchoredPosition = new(0, 2);
+            SetupRectTransform(templateObj, new(0, 0), new(1, 0),
+                new(0, 150), pivot: new(0.5f, 1), anchoredPosition: new(0, 2));
 
             var templateImage = templateObj.GetComponent<Image>();
             templateImage.color = new(0.1f, 0.12f, 0.15f, 0.95f);
@@ -356,39 +329,23 @@ namespace DuckovCustomModel.UI.Base
 
             var viewportObj = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(Mask));
             viewportObj.transform.SetParent(templateObj.transform, false);
-            var viewportRect = viewportObj.GetComponent<RectTransform>();
-            viewportRect.anchorMin = Vector2.zero;
-            viewportRect.anchorMax = Vector2.one;
-            viewportRect.sizeDelta = Vector2.zero;
-            viewportRect.anchoredPosition = Vector2.zero;
-            templateScrollRect.viewport = viewportRect;
+            SetupRectTransform(viewportObj, Vector2.zero, Vector2.one, Vector2.zero);
+            templateScrollRect.viewport = viewportObj.GetComponent<RectTransform>();
 
             var contentObj = new GameObject("Content", typeof(RectTransform), typeof(ToggleGroup));
             contentObj.transform.SetParent(viewportObj.transform, false);
-            var contentRect = contentObj.GetComponent<RectTransform>();
-            contentRect.anchorMin = new(0, 1);
-            contentRect.anchorMax = new(1, 1);
-            contentRect.pivot = new(0.5f, 1);
-            contentRect.sizeDelta = new(0, 36);
-            contentRect.anchoredPosition = Vector2.zero;
-            templateScrollRect.content = contentRect;
+            SetupRectTransform(contentObj, new(0, 1), new(1, 1),
+                new(0, 36), pivot: new(0.5f, 1));
+            templateScrollRect.content = contentObj.GetComponent<RectTransform>();
 
             var itemObj = new GameObject("Item", typeof(RectTransform), typeof(Toggle));
             itemObj.transform.SetParent(contentObj.transform, false);
-            var itemRect = itemObj.GetComponent<RectTransform>();
-            itemRect.anchorMin = new(0, 1);
-            itemRect.anchorMax = new(1, 1);
-            itemRect.pivot = new(0.5f, 1);
-            itemRect.sizeDelta = new(0, 28);
-            itemRect.anchoredPosition = Vector2.zero;
+            SetupRectTransform(itemObj, new(0, 1), new(1, 1),
+                new(0, 28), pivot: new(0.5f, 1));
 
             var itemBackgroundObj = new GameObject("Item Background", typeof(Image));
             itemBackgroundObj.transform.SetParent(itemObj.transform, false);
-            var itemBackgroundRect = itemBackgroundObj.GetComponent<RectTransform>();
-            itemBackgroundRect.anchorMin = new(0, 0.1f);
-            itemBackgroundRect.anchorMax = new(1, 0.9f);
-            itemBackgroundRect.sizeDelta = Vector2.zero;
-            itemBackgroundRect.anchoredPosition = Vector2.zero;
+            SetupRectTransform(itemBackgroundObj, new(0, 0.1f), new(1, 0.9f), Vector2.zero);
             var itemBackgroundImage = itemBackgroundObj.GetComponent<Image>();
             itemBackgroundImage.color = new(0.05f, 0.06f, 0.08f, 0.95f);
 
@@ -409,13 +366,10 @@ namespace DuckovCustomModel.UI.Base
             itemLabelText.fontSize = 16;
             itemLabelText.color = Color.white;
             itemLabelText.alignment = TextAlignmentOptions.MidlineLeft;
-            var itemLabelRect = itemLabelObj.GetComponent<RectTransform>();
-            itemLabelRect.anchorMin = new(0, 0);
-            itemLabelRect.anchorMax = new(1, 1);
-            itemLabelRect.offsetMin = new(10, 2);
-            itemLabelRect.offsetMax = new(-10, -2);
+            SetupRectTransform(itemLabelObj, new(0, 0), new(1, 1),
+                offsetMin: new(10, 2), offsetMax: new(-10, -2));
 
-            dropdown.template = templateRect;
+            dropdown.template = templateObj.GetComponent<RectTransform>();
             dropdown.itemText = itemLabelText;
 
             return dropdown;
@@ -448,6 +402,46 @@ namespace DuckovCustomModel.UI.Base
                 FontStyle.BoldAndItalic => FontStyles.Bold | FontStyles.Italic,
                 _ => FontStyles.Normal,
             };
+        }
+
+        public static Scrollbar CreateScrollbar(ScrollRect scrollRect, float width = 6f)
+        {
+            return CreateScrollbar(scrollRect, width, true);
+        }
+
+        public static Scrollbar CreateScrollbar(ScrollRect scrollRect, float width, bool onRight)
+        {
+            var scrollbarObj = new GameObject("Scrollbar", typeof(RectTransform), typeof(Image), typeof(Scrollbar));
+
+            if (onRight)
+                SetupRectTransform(scrollbarObj, new Vector2(1, 0), new Vector2(1, 1),
+                    new Vector2(width, 0), pivot: new Vector2(1, 0.5f));
+            else
+                SetupRectTransform(scrollbarObj, new Vector2(0, 0), new Vector2(0, 1),
+                    new Vector2(width, 0), pivot: new Vector2(0, 0.5f));
+
+            var scrollbarImage = scrollbarObj.GetComponent<Image>();
+            scrollbarImage.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+
+            var scrollbar = scrollbarObj.GetComponent<Scrollbar>();
+            scrollbar.direction = Scrollbar.Direction.BottomToTop;
+            scrollRect.verticalScrollbar = scrollbar;
+
+            var scrollbarBackground = new GameObject("Background", typeof(RectTransform), typeof(Image));
+            scrollbarBackground.transform.SetParent(scrollbarObj.transform, false);
+            SetupRectTransform(scrollbarBackground, Vector2.zero, Vector2.one, Vector2.zero);
+            var backgroundImage = scrollbarBackground.GetComponent<Image>();
+            backgroundImage.color = new Color(0.1f, 0.1f, 0.1f, 0.5f);
+            scrollbar.targetGraphic = backgroundImage;
+
+            var scrollbarHandle = new GameObject("Handle", typeof(RectTransform), typeof(Image));
+            scrollbarHandle.transform.SetParent(scrollbarBackground.transform, false);
+            SetupRectTransform(scrollbarHandle, new Vector2(0.2f, 0), new Vector2(0.8f, 1), Vector2.zero);
+            var handleImage = scrollbarHandle.GetComponent<Image>();
+            handleImage.color = new Color(0.5f, 0.5f, 0.5f, 0.8f);
+            scrollbar.handleRect = scrollbarHandle.GetComponent<RectTransform>();
+
+            return scrollbar;
         }
     }
 }

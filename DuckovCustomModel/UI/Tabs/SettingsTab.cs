@@ -86,11 +86,12 @@ namespace DuckovCustomModel.UI.Tabs
             UIFactory.SetupRectTransform(scrollView.gameObject, new(0, 0), new(1, 1), offsetMin: new(10, 10),
                 offsetMax: new(-10, -10));
 
-            UIFactory.SetupVerticalLayoutGroup(contentArea, 10f, new(10, 10, 10, 10));
-            UIFactory.SetupContentSizeFitter(contentArea);
+            var scrollbar = UIFactory.CreateScrollbar(scrollView, 6f, false);
+            scrollbar.transform.SetParent(scrollView.transform, false);
 
-            var contentRect = contentArea.GetComponent<RectTransform>();
-            contentRect.sizeDelta = new(800, 0);
+            UIFactory.SetupVerticalLayoutGroup(contentArea, 10f, new(10, 10, 10, 10));
+            UIFactory.SetupContentSizeFitter(contentArea, ContentSizeFitter.FitMode.PreferredSize,
+                ContentSizeFitter.FitMode.Unconstrained);
 
             BuildKeySetting(contentArea);
             BuildAnimatorParamsKeySetting(contentArea);
@@ -618,13 +619,24 @@ namespace DuckovCustomModel.UI.Tabs
 
             var changelogScrollView = UIFactory.CreateScrollView("ChangelogScrollView", updatePanel.transform,
                 out var changelogContent);
-            changelogScrollView.gameObject.SetActive(false);
+            UIFactory.SetupRectTransform(changelogScrollView.gameObject, Vector2.zero, Vector2.one,
+                offsetMax: new(-10, 0));
 
             var scrollViewLayout = changelogScrollView.gameObject.AddComponent<LayoutElement>();
             scrollViewLayout.minHeight = 0f;
             scrollViewLayout.preferredHeight = 200f;
             scrollViewLayout.flexibleHeight = 0f;
             scrollViewLayout.flexibleWidth = 1f;
+
+            var changelogScrollbar = UIFactory.CreateScrollbar(changelogScrollView);
+            changelogScrollbar.transform.SetParent(changelogScrollView.transform, false);
+
+            changelogScrollView.gameObject.SetActive(false);
+
+            UIFactory.SetupRectTransform(changelogContent, new Vector2(0, 0), new Vector2(1, 1), Vector2.zero);
+
+            UIFactory.SetupVerticalLayoutGroup(changelogContent, 0f, new RectOffset(0, 10, 0, 0),
+                TextAnchor.UpperLeft, childForceExpandWidth: true);
 
             var changelogText = UIFactory.CreateText("ChangelogText", changelogContent.transform, "", 14,
                 new Color(0.9f, 0.9f, 0.9f, 1), TextAnchor.UpperLeft);
@@ -643,6 +655,7 @@ namespace DuckovCustomModel.UI.Tabs
             changelogText.AddComponent<LinkHandler>();
 
             UIFactory.SetupContentSizeFitter(changelogText, ContentSizeFitter.FitMode.Unconstrained);
+            UIFactory.SetupContentSizeFitter(changelogContent, ContentSizeFitter.FitMode.Unconstrained);
 
             var scrollViewHeightAdjuster = changelogScrollView.gameObject.AddComponent<ScrollViewHeightAdjuster>();
             scrollViewHeightAdjuster.Initialize(changelogScrollView, changelogContent, 0f, 200f);
@@ -804,7 +817,11 @@ namespace DuckovCustomModel.UI.Tabs
                     if (scrollView != null && scrollView.content != null)
                     {
                         var textComponent = scrollView.content.GetComponentInChildren<TextMeshProUGUI>();
-                        if (textComponent != null) textComponent.text = MarkdownToRichTextConverter.Convert(changelog!);
+                        if (textComponent != null)
+                        {
+                            var baseFontSize = (int)textComponent.fontSize;
+                            textComponent.text = MarkdownToRichTextConverter.Convert(changelog!, baseFontSize, 20);
+                        }
                     }
                 }
             }
@@ -827,11 +844,8 @@ namespace DuckovCustomModel.UI.Tabs
                     () => OpenURL(link.Url),
                     new Color(0.2f, 0.5f, 0.8f, 0.9f));
 
-                var buttonRect = downloadButton.GetComponent<RectTransform>();
-                buttonRect.anchorMin = new Vector2(0f, 0.5f);
-                buttonRect.anchorMax = new Vector2(0f, 0.5f);
-                buttonRect.pivot = new Vector2(0.5f, 0.5f);
-                buttonRect.sizeDelta = new Vector2(130f, 28f);
+                UIFactory.SetupRectTransform(downloadButton, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
+                    new Vector2(130f, 28f), pivot: new Vector2(0.5f, 0.5f));
 
                 var buttonLayout = downloadButton.AddComponent<LayoutElement>();
                 buttonLayout.preferredHeight = 28f;

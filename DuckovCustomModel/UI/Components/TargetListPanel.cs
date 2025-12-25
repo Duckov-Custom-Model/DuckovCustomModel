@@ -29,10 +29,14 @@ namespace DuckovCustomModel.UI.Components
             if (scrollViewImage != null)
                 scrollViewImage.color = new(0.05f, 0.08f, 0.12f, 0.8f);
 
+            var scrollbar = UIFactory.CreateScrollbar(scrollView, 6f, true);
+            scrollbar.transform.SetParent(scrollView.transform, false);
+
             _scrollRect = scrollView;
             _content = content;
 
-            UIFactory.SetupVerticalLayoutGroup(_content, 10f, new(10, 10, 10, 10), TextAnchor.UpperLeft, false);
+            UIFactory.SetupVerticalLayoutGroup(_content, 10f, new(10, 20, 10, 10), TextAnchor.UpperLeft, true, false,
+                true);
             UIFactory.SetupContentSizeFitter(_content, ContentSizeFitter.FitMode.Unconstrained);
         }
 
@@ -113,13 +117,12 @@ namespace DuckovCustomModel.UI.Components
 
             var buttonObj = UIFactory.CreateButton($"TargetButton_{targetInfo.Id}", _content.transform,
                 () => OnTargetButtonClicked(targetInfo)).gameObject;
-            UIFactory.SetupRectTransform(buttonObj, Vector2.zero, Vector2.zero, new(180, 50));
+            UIFactory.SetupRectTransform(buttonObj, new(0, 0), new(1, 0), new(0, 50));
 
             var layoutElement = buttonObj.AddComponent<LayoutElement>();
             layoutElement.minHeight = 50;
             layoutElement.preferredHeight = 50;
-            layoutElement.preferredWidth = 180;
-            layoutElement.flexibleWidth = 0;
+            layoutElement.flexibleWidth = 1;
 
             var text = UIFactory.CreateText("Text", buttonObj.transform, targetInfo.DisplayName, 18, Color.white,
                 TextAnchor.MiddleCenter);
