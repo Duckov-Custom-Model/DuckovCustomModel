@@ -27,6 +27,9 @@ namespace DuckovCustomModel.UI.Components
             var scrollView = UIFactory.CreateScrollView("TargetSettingsScrollView", parent, out var content);
             UIFactory.SetupRectTransform(scrollView.gameObject, Vector2.zero, Vector2.one, Vector2.zero);
 
+            var scrollbar = UIFactory.CreateScrollbar(scrollView, 6f, true);
+            scrollbar.transform.SetParent(scrollView.transform, false);
+
             _scrollRect = scrollView;
             _content = content;
 

@@ -2,6 +2,18 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.9.2
+
+- 优化 UI 滚动条实现
+  - 统一使用 UIFactory 工具类方法创建和配置滚动条，提升代码一致性
+  - 为 TargetListScrollView、ModelListScrollView、TargetSettingsScrollView 添加右侧滚动条
+  - 为 SettingsScrollView 添加左侧滚动条
+  - 为更新日志滚动视图添加滚动条
+- 修复 UI 布局问题
+  - 修复 TargetListPanel 中按钮宽度问题，通过调整内容区域 padding 为滚动条留出空间
+  - 优化滚动条父对象设置逻辑，确保滚动条正确显示在滚动视图内部
+  - 统一所有 RectTransform 操作使用 UIFactory 工具类方法，避免直接操作
+
 ## v1.9.1
 
 - 优化更新检查界面功能

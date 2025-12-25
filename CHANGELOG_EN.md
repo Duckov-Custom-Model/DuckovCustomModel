@@ -2,7 +2,19 @@
 
 English | [中文](CHANGELOG.md)
 
-## v1.9.0
+## v1.9.2
+
+- Optimized UI scrollbar implementation
+  - Unified use of UIFactory utility methods for creating and configuring scrollbars, improving code consistency
+  - Added right-side scrollbars to TargetListScrollView, ModelListScrollView, and TargetSettingsScrollView
+  - Added left-side scrollbar to SettingsScrollView
+  - Added scrollbar to changelog scroll view
+- Fixed UI layout issues
+  - Fixed button width issue in TargetListPanel by adjusting content area padding to make room for scrollbar
+  - Optimized scrollbar parent object setup logic to ensure scrollbars display correctly inside scroll views
+  - Unified all RectTransform operations to use UIFactory utility methods, avoiding direct manipulation
+
+## v1.9.1
 
 - Refactored animator parameter update system using registration mechanism
   - Created `IAnimatorParameterUpdater` interface and `AnimatorParameterUpdaterManager` manager to unify animator parameter updater management
