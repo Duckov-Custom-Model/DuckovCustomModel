@@ -2,6 +2,10 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.9.5-fix2
+
+- Optimized ShoulderSurfing mod extension lookup mechanism
+
 ## v1.9.5-fix1
 
 - Fixed multi-level list processing issue in Markdown to Unity rich text converter
