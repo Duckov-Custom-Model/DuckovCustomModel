@@ -2,6 +2,10 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.9.5-fix2
+
+- 优化 ShoulderSurfing mod 扩展查找机制
+
 ## v1.9.5-fix1
 
 - 修复 Markdown 转 Unity 富文本转换器中多级列表处理问题
