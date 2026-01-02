@@ -335,8 +335,7 @@ Model Bundle Folder/
       "ThumbnailPath": "thumbnail.png",
       "PrefabPath": "Assets/Model.prefab",
       "DeathLootBoxPrefabPath": "Assets/DeathLootBox.prefab",
-      "Target": ["Character", "AICharacter"],
-      "SupportedAICharacters": ["Cname_Wolf", "Cname_Scav", "*"],
+      "TargetTypes": ["built-in:Character", "built-in:AICharacter_*", "built-in:AICharacter_Cname_Wolf", "built-in:AICharacter_Cname_Scav"],
       "CustomSounds": [
         {
           "Path": "sounds/normal1.wav",
@@ -389,14 +388,29 @@ Model Bundle Folder/
 - `DeathLootBoxPrefabPath` (optional): Death loot box Prefab resource path inside the AssetBundle (e.g., `"Assets/DeathLootBox.prefab"`)
   - When a character using this model dies, if this field is configured, the death loot box will use the custom Prefab to replace the default model
   - If this field is not configured, the death loot box will use the default model
-- `Target` (optional): Array of target types the model applies to (default: `["Character"]`)
-  - Valid values: `"Character"`, `"Pet"`, `"AICharacter"`
+- `TargetTypes` (optional): Array of target type IDs the model applies to (default: `["built-in:Character"]`)
+  - Uses string-format target type IDs, supporting built-in types and extension types
+  - Built-in type examples: `"built-in:Character"` (character), `"built-in:Pet"` (pet), `"built-in:AICharacter_*"` (all AI characters), `"built-in:AICharacter_<character name>"` (specific AI character)
+  - Extension type examples: `"extension:CustomType"` (custom type registered by third-party extensions)
   - Can contain multiple values, indicating the model is compatible with multiple target types
   - The model selection interface will filter and display compatible models based on the currently selected target type
-- `SupportedAICharacters` (optional): Array of supported AI character name keys (only effective when `Target` contains `"AICharacter"`)
+  - **Examples**:
+    - For character and all AI characters: `["built-in:Character", "built-in:AICharacter_*"]`
+    - For specific AI characters: `["built-in:AICharacter_Cname_Wolf", "built-in:AICharacter_Cname_Scav"]`
+    - For character, pet, and all AI characters: `["built-in:Character", "built-in:Pet", "built-in:AICharacter_*"]`
+
+**⚠️ Obsolete Fields (obsolete since v1.10.0, but still supported for backward compatibility)**:
+- `Target` (optional): Array of target types the model applies to (obsolete, use `TargetTypes` instead)
+  - Valid values: `"Character"` (character), `"Pet"` (pet), `"AICharacter"` (AI character marker)
+  - System will automatically migrate from `Target` and `SupportedAICharacters` to `TargetTypes`
+  - **Note**: `"AICharacter"` is just a marker indicating that `SupportedAICharacters` needs to be processed, it is not converted to a target type itself
+- `SupportedAICharacters` (optional): Array of supported AI character name keys (obsolete, use `TargetTypes` instead)
+  - Only effective when `Target` contains `"AICharacter"`
   - Can specify which AI characters this model applies to
   - Special value `"*"`: Indicates the model applies to all AI characters
   - If empty array and `Target` contains `"AICharacter"`, the model will not be applied to any AI character
+  - **Important**: If `Target` does not contain the `"AICharacter"` marker, even if `SupportedAICharacters` has values, they will not be processed
+  - System will automatically convert `Target` and `SupportedAICharacters` to `TargetTypes` format (e.g., `"built-in:AICharacter_*"` or `"built-in:AICharacter_<character name>"`)
 - `CustomSounds` (optional): Array of custom sound information, supports configuring tags for sounds
   - Each sound can be configured with multiple tags (`normal`, `surprise`, `death`)
   - Defaults to `["normal"]` when no tags are specified
@@ -973,6 +987,21 @@ Example:
 
 In `UsingModel.json`, you can configure models for each AI character individually:
 
+**Recommended Method (v1.10.0+)**:
+
+```json
+{
+  "Version": 2,
+  "TargetTypeModelIDs": {
+    "built-in:AICharacter_Cname_Wolf": "wolf_model_id",
+    "built-in:AICharacter_Cname_Scav": "scav_model_id",
+    "built-in:AICharacter_*": "default_ai_model_id"
+  }
+}
+```
+
+**Obsolete Method (Backward Compatible)**:
+
 ```json
 {
   "AICharacterModelIDs": {
@@ -985,8 +1014,8 @@ In `UsingModel.json`, you can configure models for each AI character individuall
 
 Configuration priority:
 
-1. First check if the AI character has an individually configured model
-2. If not, check the default model corresponding to `"*"`
+1. First check if the AI character has an individually configured model (`built-in:AICharacter_<character name>` or obsolete `AICharacterModelIDs[<character name>]`)
+2. If not, check the default model corresponding to `"built-in:AICharacter_*"` or obsolete `AICharacterModelIDs["*"]`
 3. If neither exists, use the original model
 
 #### Finding AI Character Name Keys
@@ -1021,7 +1050,8 @@ You can configure whether to hide original equipment for each AI character indiv
 ### Notes
 
 - AI character models need to meet the same requirements as character models (locator points, Animator configuration, etc.)
-- Models must explicitly declare support for AI characters in their `bundleinfo.json` (`Target` contains `"AICharacter"`)
-- Models must declare support for the AI character in their `SupportedAICharacters`, or include `"*"` to indicate support for all AI characters
+- Models must explicitly declare support for AI characters in their `bundleinfo.json`
+  - **Recommended method (v1.10.0+)**: Include `"built-in:AICharacter_*"` or `"built-in:AICharacter_<character name>"` in `TargetTypes`
+  - **Obsolete method (backward compatible)**: Include `"AICharacter"` in `Target` and declare supported AI characters in `SupportedAICharacters`
 - If the model is not properly configured, AI characters will use the original model
 
