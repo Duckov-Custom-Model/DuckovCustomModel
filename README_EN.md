@@ -13,12 +13,14 @@ A custom player model mod for Duckov game.
 - **Model Search**: Supports searching models by name, ID, and other keywords
 - **Model Management**: Automatically scans and loads model bundles, supports multiple model bundles simultaneously
 - **Incremental Updates**: Uses hash caching mechanism to only update changed model bundles, improving refresh efficiency
-- **Multi-Object Support**: Each model target type (ModelTarget) can correspond to multiple game objects, applying changes uniformly to all objects when switching
+- **Multi-Object Support**: Each model target type can correspond to multiple game objects, applying changes uniformly to all objects when switching
 - **Quick Switch**: Supports quick model switching in-game without restarting
 
 ## Configuration Files
 
 Configuration files are located at: `<Game Installation Path>/ModConfigs/DuckovCustomModel`
+
+**⚠️ Important Note**: Starting from v1.10.0, all configuration files have been upgraded to v2, and many old format APIs have been marked as obsolete. The system will automatically migrate from old format to new format, but it is recommended that developers migrate to new APIs as soon as possible. For detailed obsolete API list and migration guide, please refer to [docs/OBSOLETE_APIS_v1.10.0_EN.md](docs/OBSOLETE_APIS_v1.10.0_EN.md)
 
 **Note**: If the game installation directory is read-only (such as certain installation methods on macOS), the mod will automatically switch the configuration file path to ModConfigs in the parent directory of the game save directory (Windows: `AppData\LocalLow\TeamSoda\Duckov\ModConfigs\DuckovCustomModel`, macOS/Linux: corresponding user data directory). The mod will automatically detect and handle this situation without manual configuration.
 
@@ -58,160 +60,176 @@ UI interface related configuration.
 
 ### HideEquipmentConfig.json
 
-Hide equipment configuration. Uses `ModelTarget` as the key, making it easy to extend with new model target types in the future.
+Hide equipment configuration. **⚠️ Upgraded to v2, old format is obsolete.**
 
 ```json
 {
-  "HideEquipment": {
-    "Character": false,
-    "Pet": false
+  "Version": 2,
+  "TargetTypeHideEquipment": {
+    "built-in:Character": false,
+    "built-in:Pet": false,
+    "built-in:AICharacter_*": false
   }
 }
 ```
 
-- `HideEquipment`: Dictionary type, where keys are `ModelTarget` enum values (e.g., `"Character"`, `"Pet"`), and values are boolean
-  - `Character`: Whether to hide character's original equipment (default: `false`)
+- `Version`: Configuration file version (currently `2`)
+- `TargetTypeHideEquipment`: Dictionary type, where keys are target type IDs (string format, such as `"built-in:Character"`, `"built-in:Pet"`, `"built-in:AICharacter_*"` or `"built-in:AICharacter_<character name>"`), and values are boolean
+  - `built-in:Character`: Whether to hide character's original equipment (default: `false`)
     - When set to `true`, the character model's Animator's `HideOriginalEquipment` parameter will be set to `true`
     - Can be toggled in the settings area of the model selection interface
-  - `Pet`: Whether to hide pet's original equipment (default: `false`)
+  - `built-in:Pet`: Whether to hide pet's original equipment (default: `false`)
     - When set to `true`, the pet model's Animator's `HideOriginalEquipment` parameter will be set to `true`
     - Can be toggled in the settings area of the model selection interface
-  - When new `ModelTarget` types are added, the configuration will automatically include that type (default value: `false`)
+  - `built-in:AICharacter_*`: Default hide equipment setting for all AI characters
+  - `built-in:AICharacter_<character name>`: Hide equipment setting for specific AI characters
 
-**Compatibility Note**: If old `HideCharacterEquipment` or `HidePetEquipment` configurations exist in `UIConfig.json`, the system will automatically migrate them to the new `HideEquipmentConfig.json` file.
+**⚠️ Obsolete Format (v1)**:
+- `HideEquipment` (Dictionary<ModelTarget, bool>) - Obsolete, use `TargetTypeHideEquipment` instead
+- `HideAICharacterEquipment` (Dictionary<string, bool>) - Obsolete, use `TargetTypeHideEquipment` instead
+
+**Compatibility Note**:
+- The system will automatically migrate from v1 format to v2 format
+- If old `HideCharacterEquipment` or `HidePetEquipment` configurations exist in `UIConfig.json`, the system will automatically migrate them to the new `HideEquipmentConfig.json` file
 
 ### UsingModel.json
 
-Current model configuration in use. Uses `ModelTarget` as the key, making it easy to extend with new model target types in the future.
+Current model configuration in use. **⚠️ Upgraded to v2, old format is obsolete.**
 
 ```json
 {
-  "ModelIDs": {
-    "Character": "",
-    "Pet": ""
-  },
-  "AICharacterModelIDs": {
-    "Cname_Wolf": "",
-    "Cname_Scav": "",
-    "*": ""
+  "Version": 2,
+  "TargetTypeModelIDs": {
+    "built-in:Character": "",
+    "built-in:Pet": "",
+    "built-in:AICharacter_*": "",
+    "built-in:AICharacter_Cname_Wolf": "",
+    "built-in:AICharacter_Cname_Scav": ""
   }
 }
 ```
 
-- `ModelIDs`: Dictionary type, where keys are `ModelTarget` enum values (e.g., `"Character"`, `"Pet"`), and values are model IDs (string, uses original model when empty)
-  - `Character`: Currently used character model ID
+- `Version`: Configuration file version (currently `2`)
+- `TargetTypeModelIDs`: Dictionary type, where keys are target type IDs (string format, such as `"built-in:Character"`, `"built-in:Pet"`, `"built-in:AICharacter_*"` or `"built-in:AICharacter_<character name>"`), and values are model IDs (string, uses original model when empty)
+  - `built-in:Character`: Currently used character model ID
     - After setting, the game will automatically apply this model to all character objects when loading levels
     - Can be modified through the model selection interface, changes will be automatically saved to this file
-  - `Pet`: Currently used pet model ID
+  - `built-in:Pet`: Currently used pet model ID
     - After setting, the game will automatically apply this model to all pet objects when loading levels
     - Can be modified through the model selection interface, changes will be automatically saved to this file
-  - When new `ModelTarget` types are added, the configuration will automatically support that type
+  - `built-in:AICharacter_*`: Default model for all AI characters
+    - When an AI character doesn't have an individual model configured, this default model will be used
+    - If this key is also not configured, the original model will be used
+  - `built-in:AICharacter_<character name>`: Model configuration for specific AI characters
+    - Can configure models for each AI character individually
+    - Can be modified through the model selection interface, changes will be automatically saved to this file
 
-- `AICharacterModelIDs`: Dictionary type, where keys are AI character name keys (e.g., `"Cname_Wolf"`, `"Cname_Scav"`), and values are model IDs (string, uses original model when empty)
-  - Can configure models for each AI character individually
-  - Special key `"*"`: Sets default model for all AI characters
-    - When an AI character doesn't have an individual model configured, the model corresponding to `"*"` will be used
-    - If `"*"` is also not configured, the original model will be used
-  - Can be modified through the model selection interface, changes will be automatically saved to this file
+**⚠️ Obsolete Format (v1)**:
+- `ModelIDs` (Dictionary<ModelTarget, string>) - Obsolete, use `TargetTypeModelIDs` instead
+- `AICharacterModelIDs` (Dictionary<string, string>) - Obsolete, use `TargetTypeModelIDs` instead
 
-**Compatibility Note**: If old `ModelID` or `PetModelID` fields exist in the configuration file, the system will automatically migrate them to the new `ModelIDs` dictionary format. After migration, the configuration file will only contain the `ModelIDs` dictionary.
+**Compatibility Note**:
+- The system will automatically migrate from v1 format to v2 format
+- If old `ModelID` or `PetModelID` fields exist in the configuration file, the system will automatically migrate them to the new `TargetTypeModelIDs` dictionary format
 
 ### IdleAudioConfig.json
 
-Idle audio automatic playback interval configuration. Used to configure automatic playback intervals (minimum and maximum values) for different characters.
+Idle audio automatic playback interval configuration. **⚠️ Upgraded to v2, old format is obsolete.**
 
 ```json
 {
-  "IdleAudioIntervals": {
-    "Pet": {
-      "Min": 30.0,
-      "Max": 45.0
-    }
+  "Version": 2,
+  "TargetTypeIdleAudioIntervals": {
+    "built-in:Character": { "Min": 30.0, "Max": 45.0 },
+    "built-in:Pet": { "Min": 30.0, "Max": 45.0 },
+    "built-in:AICharacter_*": { "Min": 30.0, "Max": 45.0 },
+    "built-in:AICharacter_Cname_Wolf": { "Min": 20.0, "Max": 30.0 }
   },
-  "AICharacterIdleAudioIntervals": {
-    "Cname_Wolf": {
-      "Min": 20.0,
-      "Max": 30.0
-    },
-    "*": {
-      "Min": 30.0,
-      "Max": 45.0
-    }
-  },
-  "EnableIdleAudio": {
-    "Character": false,
-    "Pet": true
-  },
-  "AICharacterEnableIdleAudio": {
-    "*": true
+  "TargetTypeEnableIdleAudio": {
+    "built-in:Character": false,
+    "built-in:Pet": true,
+    "built-in:AICharacter_*": true
   }
 }
 ```
 
-- `IdleAudioIntervals`: Dictionary type, where keys are `ModelTarget` enum values (e.g., `"Character"`, `"Pet"`), and values are objects containing `Min` and `Max`
-  - `Pet`: Idle audio playback interval for pet characters (in seconds)
-    - `Min`: Minimum interval time (default: `30.0`)
-    - `Max`: Maximum interval time (default: `45.0`)
-    - The system will randomly select an interval time between the minimum and maximum values
-  - When new `ModelTarget` types are added, the configuration will automatically include that type (default values: `Min: 30.0, Max: 45.0`)
-
-- `AICharacterIdleAudioIntervals`: Dictionary type, where keys are AI character name keys (e.g., `"Cname_Wolf"`, `"Cname_Scav"`), and values are objects containing `Min` and `Max`
-  - Can configure idle audio playback interval for each AI character individually
-  - Special key `"*"`: Sets default interval for all AI characters
-    - When an AI character doesn't have an individual interval configured, the interval corresponding to `"*"` will be used
-    - If `"*"` is also not configured, default values will be used (`Min: 30.0, Max: 45.0`)
-  - `Min`: Minimum interval time (default: `30.0`)
-  - `Max`: Maximum interval time (default: `45.0`)
+- `Version`: Configuration file version (currently `2`)
+- `TargetTypeIdleAudioIntervals`: Dictionary type, where keys are target type IDs (string format), and values are objects containing `Min` and `Max`
+  - `built-in:Character`: Idle audio playback interval for player characters (in seconds, default: `Min: 30.0, Max: 45.0`)
+  - `built-in:Pet`: Idle audio playback interval for pet characters (in seconds, default: `Min: 30.0, Max: 45.0`)
+  - `built-in:AICharacter_*`: Default interval for all AI characters
+  - `built-in:AICharacter_<character name>`: Interval configuration for specific AI characters
+    - Can configure idle audio playback interval for each AI character individually
+    - If not configured, the interval for `built-in:AICharacter_*` will be used
+  - `Min`: Minimum interval time (default: `30.0`, cannot be less than `0.1`)
+  - `Max`: Maximum interval time (default: `45.0`, cannot be less than `Min`)
   - The system will randomly select an interval time between the minimum and maximum values
 
-- `EnableIdleAudio`: Dictionary type, where keys are `ModelTarget` enum values (e.g., `"Character"`, `"Pet"`), and values are boolean values that control whether the character type is allowed to automatically play idle audio
-  - `Character`: Whether player characters are allowed to automatically play idle audio (default: `false`)
-  - `Pet`: Whether pet characters are allowed to automatically play idle audio (default: `true`)
-  - When new `ModelTarget` types are added, the configuration will automatically include that type (default: `Character` is `false`, others are `true`)
+- `TargetTypeEnableIdleAudio`: Dictionary type, where keys are target type IDs (string format), and values are boolean values that control whether the target type is allowed to automatically play idle audio
+  - `built-in:Character`: Whether player characters are allowed to automatically play idle audio (default: `false`)
+  - `built-in:Pet`: Whether pet characters are allowed to automatically play idle audio (default: `true`)
+  - `built-in:AICharacter_*`: Default value for all AI characters (default: `true`)
+  - `built-in:AICharacter_<character name>`: Configuration for specific AI characters
+    - Can configure whether each AI character is allowed to automatically play idle audio individually
+    - If not configured, the value for `built-in:AICharacter_*` will be used
 
-- `AICharacterEnableIdleAudio`: Dictionary type, where keys are AI character name keys (e.g., `"Cname_Wolf"`, `"Cname_Scav"`), and values are boolean values that control whether the AI character is allowed to automatically play idle audio
-  - Can configure whether each AI character is allowed to automatically play idle audio individually
-  - Special key `"*"`: Sets default value for all AI characters
-    - When an AI character doesn't have an individual configuration, the value corresponding to `"*"` will be used
-    - If `"*"` is also not configured, default value will be used (`true`)
-  - Default value: `true` (allowed to automatically play)
+**⚠️ Obsolete Format (v1)**:
+- `IdleAudioIntervals` (Dictionary<ModelTarget, IdleAudioInterval>) - Obsolete, use `TargetTypeIdleAudioIntervals` instead
+- `AICharacterIdleAudioIntervals` (Dictionary<string, IdleAudioInterval>) - Obsolete, use `TargetTypeIdleAudioIntervals` instead
+- `EnableIdleAudio` (Dictionary<ModelTarget, bool>) - Obsolete, use `TargetTypeEnableIdleAudio` instead
+- `AICharacterEnableIdleAudio` (Dictionary<string, bool>) - Obsolete, use `TargetTypeEnableIdleAudio` instead
 
 **Notes**:
 - Minimum interval time cannot be less than 0.1 seconds
 - Maximum interval time cannot be less than minimum interval time
 - Only models with `"idle"` tagged sounds will automatically play idle sounds
-- Only character types with automatic playback enabled will automatically play idle sounds (controlled by `EnableIdleAudio` and `AICharacterEnableIdleAudio` configurations)
+- Only target types with automatic playback enabled will automatically play idle sounds (controlled by `TargetTypeEnableIdleAudio` configuration)
 - Player characters are not allowed to automatically play idle sounds by default, but can be enabled through configuration
 
 ### ModelAudioConfig.json
 
-Model audio toggle configuration. Used to control whether to use model-provided audio (including key press triggers, AI automatic triggers, and idle audio).
+Model audio toggle configuration. **⚠️ Upgraded to v2, old format is obsolete.**
 
 ```json
 {
-  "EnableModelAudio": {
-    "Character": true,
-    "Pet": true
-  },
-  "AICharacterEnableModelAudio": {
-    "*": true
+  "Version": 2,
+  "TargetTypeEnableModelAudio": {
+    "built-in:Character": true,
+    "built-in:Pet": true,
+    "built-in:AICharacter_*": true
   }
 }
 ```
 
-- `EnableModelAudio`: Dictionary type, where keys are `ModelTarget` enum values (e.g., `"Character"`, `"Pet"`), and values are boolean values that control whether the character type uses model audio
-  - `Character`: Whether player characters use model audio (default: `true`)
+- `Version`: Configuration file version (currently `2`)
+- `TargetTypeEnableModelAudio`: Dictionary type, where keys are target type IDs (string format, such as `"built-in:Character"`, `"built-in:Pet"`, `"built-in:AICharacter_*"` or `"built-in:AICharacter_<character name>"`), and values are boolean values that control whether the target type uses model audio
+  - `built-in:Character`: Whether player characters use model audio (default: `true`)
     - When set to `false`, all model audio for player characters will not play (including key press triggers and idle audio)
     - Can be toggled in the target settings area of the model selection interface
-  - `Pet`: Whether pet characters use model audio (default: `true`)
+  - `built-in:Pet`: Whether pet characters use model audio (default: `true`)
     - When set to `false`, all model audio for pet characters will not play (including AI automatic triggers and idle audio)
     - Can be toggled in the target settings area of the model selection interface
-  - When new `ModelTarget` types are added, the configuration will automatically include that type (default value: `true`)
+  - `built-in:AICharacter_*`: Default value for all AI characters (default: `true`)
+  - `built-in:AICharacter_<character name>`: Configuration for specific AI characters
+    - Can configure whether each AI character uses model audio individually
+    - **Configuration Selection Logic**: Audio settings will be selected based on the actually used model
+      - If the AI character uses its own model configuration (a model is individually configured for that AI character in `UsingModel.json`), the audio setting for that AI character will be used
+      - If the AI character uses the fallback model (`*`, i.e., the default model for "all AI characters"), the audio setting for `*` will be used
+    - Can be toggled in the target settings area of the model selection interface
 
-- `AICharacterEnableModelAudio`: Dictionary type, where keys are AI character name keys (e.g., `"Cname_Wolf"`, `"Cname_Scav"`), and values are boolean values that control whether the AI character uses model audio
-  - Can configure whether each AI character uses model audio individually
-  - Special key `"*"`: Sets default value for all AI characters
-    - When an AI character doesn't have an individual configuration, the value corresponding to `"*"` will be used
+**⚠️ Obsolete Format (v1)**:
+- `EnableModelAudio` (Dictionary<ModelTarget, bool>) - Obsolete, use `TargetTypeEnableModelAudio` instead
+- `AICharacterEnableModelAudio` (Dictionary<string, bool>) - Obsolete, use `TargetTypeEnableModelAudio` instead
+
+**Notes**:
+- When model audio is disabled, all model audio for the corresponding character will not play, including:
+  - Player key press triggered audio (`"normal"` tag)
+  - AI automatically triggered audio (`"normal"`, `"surprise"`, `"death"` tags)
+  - Idle audio (`"idle"` tag)
+- This configuration is independent from the `EnableIdleAudio` configuration in `IdleAudioConfig.json`:
+  - `ModelAudioConfig.json` controls whether to use model audio (master switch)
+  - `EnableIdleAudio` in `IdleAudioConfig.json` controls whether to allow automatic playback of idle audio (only affects automatic playback of idle audio)
+  - If model audio is disabled in `ModelAudioConfig.json`, idle audio will not play even if `EnableIdleAudio` is `true`
     - If `"*"` is also not configured, default value will be used (`true`)
   - **Configuration Selection Logic**: Audio settings will select configuration based on the actually used model
     - If an AI character uses its own model configuration (a model is individually configured for that AI character in `UsingModel.json`), it will use that AI character's audio settings
@@ -483,7 +501,7 @@ The Animator Controller can use the following parameters:
 - `Hidden`: Whether the character is in hidden state
 - `ThermalOn`: Whether thermal imaging is enabled
 - `InAds`: Whether aiming down sights (ADS)
-- `HideOriginalEquipment`: Whether to hide original equipment (controlled by the corresponding `ModelTarget` configuration in `HideEquipmentConfig.json`)
+- `HideOriginalEquipment`: Whether to hide original equipment (controlled by the corresponding target type ID configuration in `HideEquipmentConfig.json`)
 - `LeftHandEquip`: Whether there is equipment in the left hand slot (determined by equipment TypeID, `true` when TypeID > 0)
 - `RightHandEquip`: Whether there is equipment in the right hand slot (determined by equipment TypeID, `true` when TypeID > 0)
 - `ArmorEquip`: Whether there is equipment in the armor slot (determined by equipment TypeID, `true` when TypeID > 0)
@@ -520,6 +538,11 @@ The Animator Controller can use the following parameters:
 - `CurrentCharacterType`: Current character type
   - `0`: Character
   - `1`: Pet
+  - `2`: AI Character (AICharacter)
+  - `-1`: Custom type (Extension, target types registered by third-party extensions)
+- `CustomCharacterTypeID`: Custom type ID (only effective when `CurrentCharacterType` is `-1`)
+  - Hash value generated from `targetTypeId` string, used to uniquely identify custom target types
+  - When `CurrentCharacterType` is not `-1`, this parameter value is `0`
 - `HandState`: Hand state
   - `0`: Default state
   - `1`: Normal

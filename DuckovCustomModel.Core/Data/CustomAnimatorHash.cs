@@ -16,6 +16,7 @@ namespace DuckovCustomModel.Core.Data
     public static class CustomAnimatorHash
     {
         public static readonly int CurrentCharacterType = Animator.StringToHash("CurrentCharacterType"); // int
+        public static readonly int CustomCharacterTypeID = Animator.StringToHash("CustomCharacterTypeID"); // int
 
         public static readonly int Grounded = Animator.StringToHash("Grounded"); // bool
         public static readonly int Die = Animator.StringToHash("Die"); // bool
@@ -98,6 +99,7 @@ namespace DuckovCustomModel.Core.Data
             return new List<AnimatorParamInfo>
             {
                 new() { Name = "CurrentCharacterType", Hash = CurrentCharacterType, Type = "int", InitialValue = 0 },
+                new() { Name = "CustomCharacterTypeID", Hash = CustomCharacterTypeID, Type = "int", InitialValue = 0 },
                 new() { Name = "Grounded", Hash = Grounded, Type = "bool", InitialValue = false },
                 new() { Name = "Die", Hash = Die, Type = "bool", InitialValue = false },
                 new() { Name = "MoveSpeed", Hash = MoveSpeed, Type = "float", InitialValue = 0f },

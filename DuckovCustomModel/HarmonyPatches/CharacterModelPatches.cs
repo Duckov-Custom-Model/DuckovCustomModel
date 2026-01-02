@@ -21,21 +21,24 @@ namespace DuckovCustomModel.HarmonyPatches
             if (string.IsNullOrEmpty(preset.nameKey)) return;
             if (!AICharacters.Contains(preset.nameKey)) return;
 
-            var modelHandler = ModelManager.InitializeModelHandler(characterMainControl, ModelTarget.AICharacter);
+            var targetTypeId = ModelTargetType.CreateAICharacterTargetType(preset.nameKey);
+            var modelHandler = ModelManager.InitializeModelHandler(characterMainControl, targetTypeId);
             if (modelHandler == null) return;
 
             var usingModel = ModEntry.UsingModel;
             if (usingModel == null) return;
 
-            var modelID = usingModel.GetAICharacterModelIDWithFallback(preset.nameKey);
+            var modelID = usingModel.GetModelID(targetTypeId);
+            if (string.IsNullOrEmpty(modelID))
+                modelID = usingModel.GetModelID(ModelTargetType.AllAICharacters);
             if (string.IsNullOrEmpty(modelID)) return;
 
             if (!ModelManager.FindModelByID(modelID, out var bundleInfo, out var modelInfo)) return;
 
-            if (!modelInfo.CompatibleWithAICharacter(preset.nameKey)) return;
+            if (!modelInfo.CompatibleWithTargetType(targetTypeId) &&
+                !modelInfo.CompatibleWithTargetType(ModelTargetType.AllAICharacters)) return;
 
             modelHandler.InitializeCustomModel(bundleInfo, modelInfo);
-            modelHandler.ChangeToCustomModel();
         }
     }
 }

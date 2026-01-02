@@ -17,17 +17,26 @@ namespace DuckovCustomModel.Managers.Updaters
             var hideOriginalEquipment = false;
             if (ModEntry.HideEquipmentConfig != null && control.ModelHandler != null)
             {
-                if (control.ModelHandler.Target == ModelTarget.AICharacter)
+                var targetTypeId = control.ModelHandler.GetTargetTypeId();
+                if (ModelTargetType.IsAICharacterTargetType(targetTypeId))
                 {
                     var nameKey = control.CharacterMainControl.characterPreset?.nameKey;
                     if (!string.IsNullOrEmpty(nameKey))
-                        hideOriginalEquipment = ModEntry.HideEquipmentConfig
-                            .GetHideAICharacterEquipment(nameKey);
+                    {
+                        var effectiveTargetTypeId = ModelTargetType.CreateAICharacterTargetType(nameKey);
+                        hideOriginalEquipment = ModEntry.HideEquipmentConfig.GetHideEquipment(effectiveTargetTypeId) ||
+                                                ModEntry.HideEquipmentConfig.GetHideEquipment(
+                                                    ModelTargetType.AllAICharacters);
+                    }
+                    else
+                    {
+                        hideOriginalEquipment = ModEntry.HideEquipmentConfig.GetHideEquipment(
+                            ModelTargetType.AllAICharacters);
+                    }
                 }
                 else
                 {
-                    hideOriginalEquipment =
-                        ModEntry.HideEquipmentConfig.GetHideEquipment(control.ModelHandler.Target);
+                    hideOriginalEquipment = ModEntry.HideEquipmentConfig.GetHideEquipment(targetTypeId);
                 }
             }
 

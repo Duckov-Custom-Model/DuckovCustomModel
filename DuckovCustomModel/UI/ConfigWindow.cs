@@ -756,14 +756,15 @@ namespace DuckovCustomModel.UI
             {
                 _modelHandler = mainCharacterControl.GetComponent<ModelHandler>();
                 if (_modelHandler == null)
-                    _modelHandler = ModelManager.InitializeModelHandler(mainCharacterControl);
+                    _modelHandler =
+                        ModelManager.InitializeModelHandler(mainCharacterControl, ModelTargetType.Character);
             }
 
             var petCharacterControl = LevelManager.Instance.PetCharacter;
             if (petCharacterControl == null) return;
             _petModelHandler = petCharacterControl.GetComponent<ModelHandler>();
             if (_petModelHandler == null)
-                _petModelHandler = ModelManager.InitializeModelHandler(petCharacterControl, ModelTarget.Pet);
+                _petModelHandler = ModelManager.InitializeModelHandler(petCharacterControl, ModelTargetType.Pet);
         }
 
         public void SetAnimatorParamsWindowVisible(bool visible)

@@ -124,9 +124,12 @@ namespace DuckovCustomModel.UI.Components
                     return;
                 }
 
-                if (_currentTarget.TargetType == ModelTarget.AICharacter)
+                var targetTypeId = _currentTarget.GetTargetTypeId();
+
+                if (ModelTargetType.IsAICharacterTargetType(targetTypeId))
                 {
-                    if (string.IsNullOrEmpty(_currentTarget.AICharacterNameKey))
+                    var nameKey = ModelTargetType.ExtractAICharacterName(targetTypeId);
+                    if (string.IsNullOrEmpty(nameKey))
                     {
                         linkedCts?.Dispose();
                         _currentRefreshTask?.TrySetResult();
@@ -134,7 +137,7 @@ namespace DuckovCustomModel.UI.Components
                         return;
                     }
 
-                    await BuildAICharacterModelListAsync(_currentTarget.AICharacterNameKey, cancellationToken);
+                    await BuildAICharacterModelListAsync(nameKey, targetTypeId, cancellationToken);
                 }
                 else
                 {
@@ -148,7 +151,7 @@ namespace DuckovCustomModel.UI.Components
                                                                                 .Contains(searchLower))))
                     {
                         var compatibleModels = bundle.Models
-                            .Where(m => m.CompatibleWithType(_currentTarget.TargetType)).ToArray();
+                            .Where(m => m.CompatibleWithTargetType(targetTypeId)).ToArray();
                         if (compatibleModels.Length <= 0) continue;
                         var filteredBundle = bundle.CreateFilteredCopy(compatibleModels);
                         _filteredModelBundles.Add(filteredBundle);
@@ -190,7 +193,8 @@ namespace DuckovCustomModel.UI.Components
             }
         }
 
-        private async UniTask BuildAICharacterModelListAsync(string nameKey, CancellationToken cancellationToken)
+        private async UniTask BuildAICharacterModelListAsync(string nameKey, string targetTypeId,
+            CancellationToken cancellationToken)
         {
             if (_content == null) return;
 
@@ -208,10 +212,11 @@ namespace DuckovCustomModel.UI.Components
                 ModelInfo[] compatibleModels;
                 if (nameKey == AICharacters.AllAICharactersKey)
                     compatibleModels = bundle.Models
-                        .Where(m => m.CompatibleWithType(ModelTarget.AICharacter)).ToArray();
+                        .Where(m => m.CompatibleWithTargetType(targetTypeId)).ToArray();
                 else
                     compatibleModels = bundle.Models
-                        .Where(m => m.CompatibleWithAICharacter(nameKey)).ToArray();
+                        .Where(m => m.CompatibleWithTargetType(targetTypeId) || m.CompatibleWithAICharacter(nameKey))
+                        .ToArray();
 
                 if (compatibleModels.Length <= 0) continue;
                 var filteredBundle = bundle.CreateFilteredCopy(compatibleModels);
@@ -278,10 +283,9 @@ namespace DuckovCustomModel.UI.Components
             var isInUse = false;
             if (_currentTarget != null && usingModel != null)
             {
-                if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
-                    isInUse = usingModel.GetAICharacterModelID(_currentTarget.AICharacterNameKey) == model.ModelID;
-                else
-                    isInUse = usingModel.GetModelID(_currentTarget.TargetType) == model.ModelID;
+                var targetTypeId = _currentTarget.GetTargetTypeId();
+
+                isInUse = usingModel.GetModelID(targetTypeId) == model.ModelID;
             }
 
             Color baseColor = hasError ? new(0.22f, 0.15f, 0.15f, 0.8f) : new(0.15f, 0.18f, 0.22f, 0.8f);
@@ -424,21 +428,8 @@ namespace DuckovCustomModel.UI.Components
             var usingModel = ModEntry.UsingModel;
             if (usingModel == null) return;
 
-            if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
-            {
-                usingModel.SetAICharacterModelID(_currentTarget.AICharacterNameKey, model.ModelID);
-                ConfigManager.SaveConfigToFile(usingModel, "UsingModel.json");
-                if (_currentTarget.AICharacterNameKey == AICharacters.AllAICharactersKey)
-                    ModelListManager.ApplyAllAICharacterModelsFromConfig(true);
-                else
-                    ModelListManager.ApplyModelToAICharacter(_currentTarget.AICharacterNameKey, model.ModelID, true);
-            }
-            else
-            {
-                usingModel.SetModelID(_currentTarget.TargetType, model.ModelID);
-                ConfigManager.SaveConfigToFile(usingModel, "UsingModel.json");
-                ModelListManager.ApplyModelToTarget(_currentTarget.TargetType, model.ModelID, true);
-            }
+            var targetTypeId = _currentTarget.GetTargetTypeId();
+            ModelListManager.SetModelInConfig(targetTypeId, model.ModelID, true);
 
             OnModelSelected?.Invoke();
             Refresh();
@@ -451,46 +442,8 @@ namespace DuckovCustomModel.UI.Components
             var usingModel = ModEntry.UsingModel;
             if (usingModel == null) return;
 
-            if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
-            {
-                if (_currentTarget.AICharacterNameKey == AICharacters.AllAICharactersKey)
-                {
-                    usingModel.SetAICharacterModelID(AICharacters.AllAICharactersKey, string.Empty);
-                    ConfigManager.SaveConfigToFile(usingModel, "UsingModel.json");
-                    foreach (var nameKey in AICharacters.SupportedAICharacters)
-                    {
-                        var modelID = usingModel.GetAICharacterModelID(nameKey);
-                        if (string.IsNullOrEmpty(modelID))
-                        {
-                            var handlers = ModelManager.GetAICharacterModelHandlers(nameKey);
-                            foreach (var handler in handlers)
-                                handler.RestoreOriginalModel();
-                        }
-                    }
-                }
-                else
-                {
-                    usingModel.SetAICharacterModelID(_currentTarget.AICharacterNameKey, string.Empty);
-                    ConfigManager.SaveConfigToFile(usingModel, "UsingModel.json");
-                    var modelID = usingModel.GetAICharacterModelIDWithFallback(_currentTarget.AICharacterNameKey);
-                    if (string.IsNullOrEmpty(modelID))
-                    {
-                        var handlers = ModelManager.GetAICharacterModelHandlers(_currentTarget.AICharacterNameKey);
-                        foreach (var handler in handlers)
-                            handler.RestoreOriginalModel();
-                    }
-                    else
-                    {
-                        ModelListManager.ApplyModelToAICharacter(_currentTarget.AICharacterNameKey, modelID, true);
-                    }
-                }
-            }
-            else
-            {
-                usingModel.SetModelID(_currentTarget.TargetType, string.Empty);
-                ConfigManager.SaveConfigToFile(usingModel, "UsingModel.json");
-                ModelListManager.RestoreOriginalModelForTarget(_currentTarget.TargetType);
-            }
+            var targetTypeId = _currentTarget.GetTargetTypeId();
+            ModelListManager.SetModelInConfig(targetTypeId, string.Empty, true);
 
             OnModelSelected?.Invoke();
             Refresh();

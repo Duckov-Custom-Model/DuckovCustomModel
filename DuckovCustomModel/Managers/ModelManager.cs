@@ -5,9 +5,8 @@ using System.IO;
 using System.Linq;
 using DuckovCustomModel.Core;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.MonoBehaviours;
-using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace DuckovCustomModel.Managers
 {
@@ -16,6 +15,7 @@ namespace DuckovCustomModel.Managers
         public static readonly List<ModelBundleInfo> ModelBundles = [];
 
         private static readonly Dictionary<string, BundleHashInfo> BundleHashCache = [];
+        private static readonly HashSet<ModelHandler> RegisteredHandlers = [];
 
         public static string ModelsDirectory => Path.Combine(ConfigManager.ConfigBaseDirectory, "Models");
 
@@ -105,13 +105,15 @@ namespace DuckovCustomModel.Managers
             {
                 var bundleToUnload = ModelBundles.FirstOrDefault(b => b.BundleName == bundleKey);
                 if (bundleToUnload == null) continue;
-                foreach (ModelTarget target in Enum.GetValues(typeof(ModelTarget)))
+
+                var targetTypeIds = ModelTargetTypeRegistry.GetAllAvailableTargetTypes();
+                foreach (var targetTypeId in targetTypeIds)
                 {
-                    var handlers = GetAllModelHandlers(target);
+                    var handlers = GetAllModelHandlersByTargetType(targetTypeId);
                     foreach (var handler in handlers)
                     {
                         if (!handler.IsHiddenOriginalModel) continue;
-                        var modelID = ModEntry.UsingModel?.GetModelID(target) ?? string.Empty;
+                        var modelID = ModEntry.UsingModel?.GetModelID(targetTypeId) ?? string.Empty;
                         if (string.IsNullOrEmpty(modelID)) continue;
                         if (!FindModelByID(modelID, out var currentBundleInfo, out _)) continue;
                         if (currentBundleInfo.BundleName == bundleKey)
@@ -204,7 +206,7 @@ namespace DuckovCustomModel.Managers
         }
 
         public static ModelHandler? InitializeModelHandler(CharacterMainControl characterMainControl,
-            ModelTarget target = ModelTarget.Character)
+            string targetTypeId)
         {
             if (characterMainControl == null)
             {
@@ -212,45 +214,52 @@ namespace DuckovCustomModel.Managers
                 return null;
             }
 
+            if (string.IsNullOrWhiteSpace(targetTypeId))
+            {
+                ModLogger.LogError("Target type ID is null or empty.");
+                return null;
+            }
+
             var modelHandler = characterMainControl.GetComponent<ModelHandler>();
             if (modelHandler == null)
                 modelHandler = characterMainControl.gameObject.AddComponent<ModelHandler>();
 
-            modelHandler.Initialize(characterMainControl, target);
+            modelHandler.Initialize(characterMainControl, targetTypeId);
 
             return modelHandler;
         }
 
-        public static List<ModelHandler> GetAllModelHandlers(ModelTarget target)
+        internal static void RegisterHandler(ModelHandler handler)
+        {
+            if (handler != null)
+                RegisteredHandlers.Add(handler);
+        }
+
+        internal static void UnregisterHandler(ModelHandler handler)
+        {
+            if (handler != null)
+                RegisteredHandlers.Remove(handler);
+        }
+
+        public static IReadOnlyCollection<ModelHandler> GetAllHandlers()
+        {
+            return RegisteredHandlers.Where(h => h != null && h.IsInitialized).ToList();
+        }
+
+        public static List<ModelHandler> GetAllModelHandlersByTargetType(string targetTypeId)
         {
             var handlers = new List<ModelHandler>();
 
-            if (LevelManager.Instance == null) return handlers;
+            if (string.IsNullOrWhiteSpace(targetTypeId)) return handlers;
 
-            var allHandlers = Object.FindObjectsByType<ModelHandler>(FindObjectsSortMode.None);
-            handlers.AddRange(allHandlers.Where(handler => handler.Target == target && handler.IsInitialized));
-
-            return handlers;
-        }
-
-        public static List<ModelHandler> GetAICharacterModelHandlers(string nameKey)
-        {
-            var handlers = new List<ModelHandler>();
-
-            if (LevelManager.Instance == null) return handlers;
-            if (string.IsNullOrEmpty(nameKey)) return handlers;
-
-            var allHandlers = Object.FindObjectsByType<ModelHandler>(FindObjectsSortMode.None);
-            foreach (var handler in allHandlers)
-            {
-                if (handler.Target != ModelTarget.AICharacter || !handler.IsInitialized) continue;
-                if (handler.CharacterMainControl?.characterPreset?.nameKey != nameKey) continue;
-                handlers.Add(handler);
-            }
+            handlers.AddRange(from handler in RegisteredHandlers
+                where handler != null && handler.IsInitialized
+                let handlerTargetTypeId = handler.GetTargetTypeId()
+                where handlerTargetTypeId == targetTypeId
+                select handler);
 
             return handlers;
         }
-
 
         private static void CheckDuplicateModelIDs()
         {
@@ -261,5 +270,47 @@ namespace DuckovCustomModel.Managers
                 ModLogger.LogWarning($"Duplicate ModelID '{modelID}' found in bundles: {bundleNames}");
             }
         }
+
+        #region 过时成员（向后兼容）
+
+        [Obsolete(
+            "Use InitializeModelHandler(CharacterMainControl characterMainControl, string targetTypeId) instead.")]
+        public static ModelHandler? InitializeModelHandler(CharacterMainControl characterMainControl,
+            ModelTarget target = ModelTarget.Character)
+        {
+            var targetTypeId = target.ToTargetTypeId();
+            return InitializeModelHandler(characterMainControl, targetTypeId);
+        }
+
+        [Obsolete("Use GetAllModelHandlersByTargetType(string targetTypeId) instead.")]
+        public static List<ModelHandler> GetAllModelHandlers(ModelTarget target)
+        {
+            var handlers = new List<ModelHandler>();
+            var targetTypeId = target.ToTargetTypeId();
+            handlers.AddRange(from handler in RegisteredHandlers
+                where handler != null && handler.IsInitialized
+                where handler.GetTargetTypeId() == targetTypeId
+                select handler);
+            return handlers;
+        }
+
+        [Obsolete(
+            "Use GetAllModelHandlersByTargetType(string targetTypeId) with ModelTargetType.CreateAICharacterTargetType instead.")]
+        public static List<ModelHandler> GetAICharacterModelHandlers(string nameKey)
+        {
+            var handlers = new List<ModelHandler>();
+
+            if (string.IsNullOrEmpty(nameKey)) return handlers;
+
+            var targetTypeId = ModelTargetType.CreateAICharacterTargetType(nameKey);
+            handlers.AddRange(from handler in RegisteredHandlers
+                where handler != null && handler.IsInitialized
+                where handler.GetTargetTypeId() == targetTypeId
+                select handler);
+
+            return handlers;
+        }
+
+        #endregion
     }
 }

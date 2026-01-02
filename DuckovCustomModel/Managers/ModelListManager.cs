@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.MonoBehaviours;
 
 namespace DuckovCustomModel.Managers
 {
@@ -12,39 +13,41 @@ namespace DuckovCustomModel.Managers
         private static CancellationTokenSource? _refreshCancellationTokenSource;
         private static UniTaskCompletionSource? _refreshCompletionSource;
 
-        private static Dictionary<ModelTarget, string>? _refreshStartModelIDs;
         private static HashSet<string>? _currentRefreshingBundles;
 
         public static bool IsRefreshing { get; private set; }
-        public static IReadOnlyCollection<string>? CurrentRefreshingBundles => _currentRefreshingBundles;
 
         public static event Action? OnRefreshStarted;
         public static event Action? OnRefreshCompleted;
-        public static event Action<string>? OnRefreshProgress;
         public static event Action<ModelChangedEventArgs>? OnModelChanged;
 
-        public static void RefreshModelList(IEnumerable<string>? priorityModelIDs = null)
+        #region 事件通知
+
+        public static void NotifyModelChanged(ModelHandler handler, bool isRestored)
         {
-            if (IsRefreshing)
+            if (handler == null) return;
+
+            OnModelChanged?.Invoke(new ModelChangedEventArgs
             {
-                _refreshCancellationTokenSource?.Cancel();
-                _refreshCancellationTokenSource?.Dispose();
-            }
-
-            _refreshCancellationTokenSource = new();
-            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
-                _refreshCancellationTokenSource.Token,
-                CancellationToken.None
-            );
-
-            _refreshCompletionSource = new();
-            RefreshModelListAsync(linkedCts.Token, linkedCts, _refreshCompletionSource, priorityModelIDs).Forget();
+                Handler = handler,
+                TargetTypeId = handler.GetTargetTypeId(),
+                ModelID = handler.CurrentModelInfo?.ModelID,
+                ModelName = handler.CurrentModelInfo?.Name,
+                IsRestored = isRestored,
+#pragma warning disable CS0618
+                Target = ModelTargetExtensions.FromTargetTypeId(handler.GetTargetTypeId()) ?? ModelTarget.Character,
+                AICharacterNameKey = ModelTargetType.IsAICharacterTargetType(handler.GetTargetTypeId())
+                    ? ModelTargetType.ExtractAICharacterName(handler.GetTargetTypeId())
+                    : null,
+                HandlerCount = 0,
+                Success = true,
+#pragma warning restore CS0618
+            });
         }
 
-        public static async UniTask WaitForRefreshCompletion()
-        {
-            if (_refreshCompletionSource != null) await _refreshCompletionSource.Task;
-        }
+        #endregion
+
+        #region 私有方法
 
         private static async UniTaskVoid RefreshModelListAsync(CancellationToken cancellationToken,
             CancellationTokenSource? linkedCts, UniTaskCompletionSource? completionSource,
@@ -52,14 +55,9 @@ namespace DuckovCustomModel.Managers
         {
             IsRefreshing = true;
 
-            _refreshStartModelIDs = new();
-            if (ModEntry.UsingModel != null)
-                foreach (ModelTarget target in Enum.GetValues(typeof(ModelTarget)))
-                {
-                    var modelID = ModEntry.UsingModel.GetModelID(target);
-                    if (!string.IsNullOrEmpty(modelID))
-                        _refreshStartModelIDs[target] = modelID;
-                }
+            foreach (var handler in ModelManager.GetAllHandlers())
+                if (handler.IsHiddenOriginalModel)
+                    handler.CleanupCustomModel();
 
             OnRefreshStarted?.Invoke();
 
@@ -73,54 +71,22 @@ namespace DuckovCustomModel.Managers
                         priorityModels.Add((bundleInfo, modelInfo));
                 }
 
-            var needsTemporaryRestore = false;
-            var targetsToRestore = new Dictionary<ModelTarget, bool>();
-
             try
             {
                 var bundlesToReload = ModelManager.UpdateModelBundles();
                 _currentRefreshingBundles = bundlesToReload;
 
-                foreach (ModelTarget target in Enum.GetValues(typeof(ModelTarget)))
-                {
-                    var handlers = ModelManager.GetAllModelHandlers(target);
-                    if (handlers.Count == 0) continue;
-
-                    var modelID = ModEntry.UsingModel?.GetModelID(target) ?? string.Empty;
-                    if (string.IsNullOrEmpty(modelID)) continue;
-
-                    if (!ModelManager.FindModelByID(modelID, out var bundleInfo, out _)) continue;
-
-                    var bundleName = bundleInfo.BundleName;
-                    if (!bundlesToReload.Contains(bundleName)) continue;
-
-                    var needsRestore = false;
-                    foreach (var handler in handlers.Where(handler => handler.IsHiddenOriginalModel))
-                    {
-                        needsRestore = true;
-                        handler.CleanupCustomModel();
-                    }
-
-                    if (!needsRestore) continue;
-                    needsTemporaryRestore = true;
-                    targetsToRestore[target] = true;
-                    ModLogger.Log(
-                        $"Temporarily cleaned up {target} custom model for bundle update: {bundleName}");
-                }
-
                 if (bundlesToReload.Count > 0)
                 {
                     if (priorityModels.Count > 0)
-                        foreach (var (priorityBundle, priorityModel) in priorityModels)
+                        foreach (var (priorityBundle, _) in priorityModels)
                         {
                             cancellationToken.ThrowIfCancellationRequested();
-                            OnRefreshProgress?.Invoke($"Loading priority model: {priorityModel.Name}");
                             await AssetBundleManager.GetOrLoadAssetBundleAsync(priorityBundle, false,
                                 cancellationToken);
                             await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
                         }
 
-                    var totalCount = ModelManager.ModelBundles.Sum(b => b.Models.Length);
                     var count = 0;
 
                     if (priorityModels.Count > 0)
@@ -151,40 +117,13 @@ namespace DuckovCustomModel.Managers
                         count++;
 
                         if (count % 10 != 0) continue;
-                        OnRefreshProgress?.Invoke($"Loading... ({count}/{totalCount})");
                         await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
                     }
                 }
 
                 await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
 
-                if (needsTemporaryRestore)
-                {
-                    await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
-
-                    foreach (var target in targetsToRestore.Keys)
-                    {
-                        if (!targetsToRestore[target]) continue;
-
-                        var currentModelID = ModEntry.UsingModel?.GetModelID(target) ?? string.Empty;
-                        if (string.IsNullOrEmpty(currentModelID)) continue;
-
-                        var refreshStartModelID = _refreshStartModelIDs?.GetValueOrDefault(target);
-                        if (currentModelID != refreshStartModelID)
-                        {
-                            ModLogger.Log(
-                                $"Model for {target} was changed during refresh (from {refreshStartModelID} to {currentModelID}), skipping auto-restore");
-                            continue;
-                        }
-
-                        if (!ModelManager.FindModelByID(currentModelID, out _, out var modelInfo))
-                            continue;
-
-                        if (!modelInfo.CompatibleWithType(target)) continue;
-
-                        ApplyModelToTarget(target, currentModelID, true);
-                    }
-                }
+                RefreshAndApplyAllModels();
             }
             catch (OperationCanceledException)
             {
@@ -197,7 +136,6 @@ namespace DuckovCustomModel.Managers
             finally
             {
                 IsRefreshing = false;
-                _refreshStartModelIDs = null;
                 _currentRefreshingBundles = null;
                 completionSource?.TrySetResult();
                 _refreshCompletionSource = null;
@@ -206,238 +144,132 @@ namespace DuckovCustomModel.Managers
             }
         }
 
+        #endregion
+
+        #region 模型加载和应用
+
+        public static void RefreshAndApplyAllModels()
+        {
+            if (ModEntry.UsingModel == null) return;
+
+            foreach (var handler in ModelManager.GetAllHandlers())
+                handler.UpdateModelPriorityList();
+        }
+
+        #endregion
+
+        #region 配置管理
+
+        public static void SetModelInConfig(string targetTypeId, string modelID, bool saveConfig = true)
+        {
+            if (ModEntry.UsingModel == null) return;
+            if (string.IsNullOrWhiteSpace(targetTypeId)) return;
+
+            ModEntry.UsingModel.SetModelID(targetTypeId, modelID);
+
+            if (saveConfig)
+                ConfigManager.SaveConfigToFile(ModEntry.UsingModel, "UsingModel.json");
+
+            RefreshAndApplyAllModels();
+        }
+
+        public static void SetModelInConfigForAICharacter(string nameKey, string modelID, bool saveConfig = true)
+        {
+            if (ModEntry.UsingModel == null) return;
+            if (string.IsNullOrEmpty(nameKey)) return;
+
+            var targetTypeId = ModelTargetType.CreateAICharacterTargetType(nameKey);
+            SetModelInConfig(targetTypeId, modelID, saveConfig);
+        }
+
+        #endregion
+
+        #region 刷新模型列表
+
+        public static void RefreshModelList(IEnumerable<string>? priorityModelIDs = null)
+        {
+            if (IsRefreshing) return;
+
+            _refreshCancellationTokenSource = new();
+            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+                _refreshCancellationTokenSource.Token,
+                CancellationToken.None
+            );
+
+            _refreshCompletionSource = new();
+            RefreshModelListAsync(linkedCts.Token, linkedCts, _refreshCompletionSource, priorityModelIDs).Forget();
+        }
+
         public static void CancelRefresh()
         {
             _refreshCancellationTokenSource?.Cancel();
             _refreshCancellationTokenSource?.Dispose();
         }
 
-        public static async UniTask WaitForModelBundleReady(string modelID,
-            CancellationToken cancellationToken = default)
+        #endregion
+
+        #region 过时成员（向后兼容）
+
+        [Obsolete("Use SetModelInConfig(string targetTypeId, string modelID, bool saveConfig) instead.")]
+        public static void ApplyModelToTargetType(string targetTypeId, string modelID, bool forceReapply = false)
         {
-            if (!IsRefreshing) return;
-
-            if (string.IsNullOrEmpty(modelID)) return;
-
-            if (!ModelManager.FindModelByID(modelID, out var bundleInfo, out _)) return;
-
-            if (_currentRefreshingBundles == null || !_currentRefreshingBundles.Contains(bundleInfo.BundleName)) return;
-
-            await WaitForRefreshCompletion();
-            await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
+            SetModelInConfig(targetTypeId, modelID);
         }
 
-        public static void ApplyModelToTarget(ModelTarget target, string modelID, bool forceReapply = false)
-        {
-            if (ModEntry.UsingModel == null) return;
-            if (string.IsNullOrEmpty(modelID)) return;
-
-            var handlers = ModelManager.GetAllModelHandlers(target);
-            if (handlers.Count == 0) return;
-
-            if (!ModelManager.FindModelByID(modelID, out var bundleInfo, out var modelInfo))
-            {
-                ModLogger.LogWarning($"Model '{modelID}' not found for {target}");
-                OnModelChanged?.Invoke(new ModelChangedEventArgs
-                {
-                    Target = target,
-                    ModelID = modelID,
-                    ModelName = null,
-                    IsRestored = false,
-                    Success = false,
-                    HandlerCount = 0,
-                });
-                return;
-            }
-
-            if (!modelInfo.CompatibleWithType(target))
-            {
-                ModLogger.LogWarning($"Model '{modelID}' is not compatible with {target}");
-                OnModelChanged?.Invoke(new ModelChangedEventArgs
-                {
-                    Target = target,
-                    ModelID = modelID,
-                    ModelName = modelInfo.Name,
-                    IsRestored = false,
-                    Success = false,
-                    HandlerCount = 0,
-                });
-                return;
-            }
-
-            if (!forceReapply)
-            {
-                var allApplied = true;
-                var needsAudioRestore = false;
-                foreach (var handler in handlers)
-                {
-                    if (!handler.IsHiddenOriginalModel)
-                    {
-                        allApplied = false;
-                        break;
-                    }
-
-                    if (!handler.HasAnySounds() && modelInfo.CustomSounds is { Length: > 0 }) needsAudioRestore = true;
-                }
-
-                if (allApplied && !needsAudioRestore) return;
-            }
-
-            foreach (var handler in handlers)
-            {
-                handler.InitializeCustomModel(bundleInfo, modelInfo);
-                handler.ChangeToCustomModel();
-            }
-
-            ModLogger.Log($"Applied model '{modelInfo.Name}' ({modelID}) to {handlers.Count} {target} object(s)");
-
-            OnModelChanged?.Invoke(new ModelChangedEventArgs
-            {
-                Target = target,
-                ModelID = modelID,
-                ModelName = modelInfo.Name,
-                IsRestored = false,
-                Success = true,
-                HandlerCount = handlers.Count,
-            });
-        }
-
-        public static void RestoreOriginalModelForTarget(ModelTarget target)
-        {
-            var handlers = ModelManager.GetAllModelHandlers(target);
-            foreach (var handler in handlers)
-                handler.RestoreOriginalModel();
-
-            OnModelChanged?.Invoke(new ModelChangedEventArgs
-            {
-                Target = target,
-                ModelID = null,
-                ModelName = null,
-                IsRestored = true,
-                Success = true,
-                HandlerCount = handlers.Count,
-            });
-        }
-
+        [Obsolete("Use RefreshAndApplyAllModels() instead.")]
         public static void ApplyAllModelsFromConfig(bool forceReapply = false)
         {
-            if (ModEntry.UsingModel == null) return;
-
-            foreach (ModelTarget target in Enum.GetValues(typeof(ModelTarget)))
-            {
-                if (target == ModelTarget.AICharacter) continue;
-
-                var modelID = ModEntry.UsingModel.GetModelID(target);
-                if (string.IsNullOrEmpty(modelID)) continue;
-
-                ApplyModelToTarget(target, modelID, forceReapply);
-            }
-
-            ApplyAllAICharacterModelsFromConfig(forceReapply);
+            RefreshAndApplyAllModels();
         }
 
-        public static void ApplyAllAICharacterModelsFromConfig(bool forceReapply = false)
-        {
-            if (ModEntry.UsingModel == null) return;
-
-            foreach (var nameKey in AICharacters.SupportedAICharacters)
-            {
-                var modelID = ModEntry.UsingModel.GetAICharacterModelIDWithFallback(nameKey);
-                if (string.IsNullOrEmpty(modelID)) continue;
-
-                ApplyModelToAICharacter(nameKey, modelID, forceReapply);
-            }
-        }
-
+        [Obsolete("Use SetModelInConfigForAICharacter(string nameKey, string modelID, bool saveConfig) instead.")]
         public static void ApplyModelToAICharacter(string nameKey, string modelID, bool forceReapply = false)
         {
-            if (ModEntry.UsingModel == null) return;
-            if (string.IsNullOrEmpty(modelID)) return;
-            if (string.IsNullOrEmpty(nameKey)) return;
-
-            var handlers = ModelManager.GetAICharacterModelHandlers(nameKey);
-            if (handlers.Count == 0) return;
-
-            if (!ModelManager.FindModelByID(modelID, out var bundleInfo, out var modelInfo))
-            {
-                ModLogger.LogWarning($"Model '{modelID}' not found for AICharacter '{nameKey}'");
-                OnModelChanged?.Invoke(new ModelChangedEventArgs
-                {
-                    Target = ModelTarget.AICharacter,
-                    AICharacterNameKey = nameKey,
-                    ModelID = modelID,
-                    ModelName = null,
-                    IsRestored = false,
-                    Success = false,
-                    HandlerCount = 0,
-                });
-                return;
-            }
-
-            if (!modelInfo.CompatibleWithAICharacter(nameKey))
-            {
-                ModLogger.LogWarning($"Model '{modelID}' is not compatible with AICharacter '{nameKey}'");
-                OnModelChanged?.Invoke(new ModelChangedEventArgs
-                {
-                    Target = ModelTarget.AICharacter,
-                    AICharacterNameKey = nameKey,
-                    ModelID = modelID,
-                    ModelName = modelInfo.Name,
-                    IsRestored = false,
-                    Success = false,
-                    HandlerCount = 0,
-                });
-                return;
-            }
-
-            if (!forceReapply)
-            {
-                var allApplied = true;
-                var needsAudioRestore = false;
-                foreach (var handler in handlers)
-                {
-                    if (!handler.IsHiddenOriginalModel)
-                    {
-                        allApplied = false;
-                        break;
-                    }
-
-                    if (!handler.HasAnySounds() && modelInfo.CustomSounds is { Length: > 0 }) needsAudioRestore = true;
-                }
-
-                if (allApplied && !needsAudioRestore) return;
-            }
-
-            foreach (var handler in handlers)
-            {
-                handler.InitializeCustomModel(bundleInfo, modelInfo);
-                handler.ChangeToCustomModel();
-            }
-
-            ModLogger.Log(
-                $"Applied model '{modelInfo.Name}' ({modelID}) to {handlers.Count} AICharacter '{nameKey}' object(s)");
-
-            OnModelChanged?.Invoke(new ModelChangedEventArgs
-            {
-                Target = ModelTarget.AICharacter,
-                AICharacterNameKey = nameKey,
-                ModelID = modelID,
-                ModelName = modelInfo.Name,
-                IsRestored = false,
-                Success = true,
-                HandlerCount = handlers.Count,
-            });
+            SetModelInConfigForAICharacter(nameKey, modelID);
         }
 
+        [Obsolete("Use RefreshAndApplyAllModels() or directly call ModelHandler.UpdateModelPriorityList() instead. This method is kept for backward compatibility.")]
+        public static void RestoreOriginalModelForTargetType(string targetTypeId)
+        {
+            if (string.IsNullOrWhiteSpace(targetTypeId)) return;
+
+            if (targetTypeId == ModelTargetType.AllAICharacters)
+                foreach (var handler in ModelManager.GetAllHandlers())
+                {
+                    if (!ModelTargetType.IsAICharacterTargetType(handler.TargetTypeId)) continue;
+                    handler.UpdateModelPriorityList();
+                }
+            else
+                foreach (var handler in ModelManager.GetAllModelHandlersByTargetType(targetTypeId))
+                    handler.UpdateModelPriorityList();
+        }
+
+        [Obsolete("Use ApplyModelToTargetType(string targetTypeId, string modelID, bool forceReapply) instead.")]
+        public static void ApplyModelToTarget(ModelTarget target, string modelID, bool forceReapply = false)
+        {
+            var targetTypeId = target.ToTargetTypeId();
+            ApplyModelToTargetType(targetTypeId, modelID, forceReapply);
+        }
+
+        [Obsolete("Use RestoreOriginalModelForTargetType(string targetTypeId) instead.")]
+        public static void RestoreOriginalModelForTarget(ModelTarget target)
+        {
+            var targetTypeId = target.ToTargetTypeId();
+            RestoreOriginalModelForTargetType(targetTypeId);
+        }
+
+        [Obsolete(
+            "Use ApplyModelToTargetType(string targetTypeId, string modelID, bool forceReapply) with ModelTargetType.CreateAICharacterTargetType instead.")]
         public static void ApplyModelToTargetAfterRefresh(ModelTarget target, string modelID,
             IReadOnlyCollection<string>? bundlesToReload = null)
         {
             if (ModEntry.UsingModel == null) return;
             if (string.IsNullOrEmpty(modelID)) return;
 
+            var targetTypeId = target.ToTargetTypeId();
             if (!ModelManager.FindModelByID(modelID, out var bundleInfo, out var modelInfo))
             {
-                ModLogger.LogWarning($"Model '{modelID}' not found for {target}");
+                ModLogger.LogWarning($"Model '{modelID}' not found for {targetTypeId}");
                 return;
             }
 
@@ -448,7 +280,7 @@ namespace DuckovCustomModel.Managers
 
             if (!needsReapply)
             {
-                var handlers = ModelManager.GetAllModelHandlers(target);
+                var handlers = ModelManager.GetAllModelHandlersByTargetType(targetTypeId);
                 var allApplied = handlers.All(handler => handler.IsHiddenOriginalModel);
                 var needsAudioRestore = handlers.Any(handler =>
                     !handler.HasAnySounds() && modelInfo.CustomSounds is { Length: > 0 });
@@ -456,7 +288,9 @@ namespace DuckovCustomModel.Managers
                 if (allApplied && !needsAudioRestore) return;
             }
 
-            ApplyModelToTarget(target, modelID, true);
+            ApplyModelToTargetType(targetTypeId, modelID, true);
         }
+
+        #endregion
     }
 }

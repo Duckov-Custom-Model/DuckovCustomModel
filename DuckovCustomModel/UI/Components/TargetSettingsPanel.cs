@@ -1,4 +1,3 @@
-using DuckovCustomModel.Configs;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
@@ -64,11 +63,12 @@ namespace DuckovCustomModel.UI.Components
         {
             if (_content == null || _currentTarget == null) return;
 
-            if (_currentTarget.TargetType != ModelTarget.AICharacter || _currentTarget.AICharacterNameKey == null)
+            var aiCharacterNameKey = _currentTarget.GetAICharacterNameKey();
+            if (!_currentTarget.IsAICharacter() || aiCharacterNameKey == null)
                 return;
 
-            if (_currentTarget.AICharacterNameKey == AICharacters.AllAICharactersKey ||
-                _currentTarget.AICharacterNameKey.StartsWith("Character_"))
+            if (aiCharacterNameKey == AICharacters.AllAICharactersKey ||
+                aiCharacterNameKey.StartsWith("Character_"))
                 CreateWarningRow();
         }
 
@@ -79,33 +79,41 @@ namespace DuckovCustomModel.UI.Components
             var settingRow = CreateSettingRow();
             var hideEquipmentConfig = ModEntry.HideEquipmentConfig;
 
+            var displayName = _currentTarget.DisplayName;
+            var targetTypeId = _currentTarget.GetTargetTypeId();
+            var aiCharacterNameKey = _currentTarget.GetAICharacterNameKey();
+            var isAICharacter = _currentTarget.IsAICharacter();
+
             var label = UIFactory.CreateText("Label", settingRow.transform,
-                _currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null
-                    ? string.Format(Localization.HideAICharacterEquipment, _currentTarget.DisplayName)
-                    : _currentTarget.TargetType == ModelTarget.Character
+                isAICharacter && aiCharacterNameKey != null
+                    ? string.Format(Localization.HideAICharacterEquipment, displayName)
+                    : targetTypeId == ModelTargetType.Character
                         ? Localization.HideCharacterEquipment
                         : Localization.HidePetEquipment,
                 18, Color.white);
             UIFactory.SetupLeftLabel(label);
             UIFactory.SetupContentSizeFitter(label);
 
-            var displayName = _currentTarget.DisplayName;
-            var targetType = _currentTarget.TargetType;
-            var aiCharacterNameKey = _currentTarget.AICharacterNameKey;
             UIFactory.SetLocalizedText(label, () =>
-                targetType == ModelTarget.AICharacter && aiCharacterNameKey != null
+                isAICharacter && aiCharacterNameKey != null
                     ? string.Format(Localization.HideAICharacterEquipment, displayName)
-                    : targetType == ModelTarget.Character
+                    : targetTypeId == ModelTargetType.Character
                         ? Localization.HideCharacterEquipment
                         : Localization.HidePetEquipment);
 
             var isOn = false;
             if (hideEquipmentConfig != null)
             {
-                if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
-                    isOn = hideEquipmentConfig.GetHideAICharacterEquipment(_currentTarget.AICharacterNameKey);
+                if (isAICharacter && aiCharacterNameKey != null)
+                {
+                    var aiTargetTypeId = ModelTargetType.CreateAICharacterTargetType(aiCharacterNameKey);
+                    isOn = hideEquipmentConfig.GetHideEquipment(aiTargetTypeId) ||
+                           hideEquipmentConfig.GetHideEquipment(ModelTargetType.AllAICharacters);
+                }
                 else
-                    isOn = hideEquipmentConfig.GetHideEquipment(_currentTarget.TargetType);
+                {
+                    isOn = hideEquipmentConfig.GetHideEquipment(targetTypeId);
+                }
             }
 
             var toggle = UIFactory.CreateToggle("HideEquipmentToggle", settingRow.transform, isOn,
@@ -131,10 +139,8 @@ namespace DuckovCustomModel.UI.Components
             var isOn = true;
             if (modelAudioConfig != null)
             {
-                if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
-                    isOn = modelAudioConfig.IsAICharacterModelAudioEnabled(_currentTarget.AICharacterNameKey);
-                else
-                    isOn = modelAudioConfig.IsModelAudioEnabled(_currentTarget.TargetType);
+                var targetTypeId = _currentTarget.GetTargetTypeId();
+                isOn = modelAudioConfig.IsModelAudioEnabled(targetTypeId);
             }
 
             var toggle = UIFactory.CreateToggle("EnableModelAudioToggle", settingRow.transform, isOn,
@@ -160,10 +166,8 @@ namespace DuckovCustomModel.UI.Components
             var isOn = false;
             if (idleAudioConfig != null)
             {
-                if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
-                    isOn = idleAudioConfig.IsAICharacterIdleAudioEnabled(_currentTarget.AICharacterNameKey);
-                else
-                    isOn = idleAudioConfig.IsIdleAudioEnabled(_currentTarget.TargetType);
+                var targetTypeId = _currentTarget.GetTargetTypeId();
+                isOn = idleAudioConfig.IsIdleAudioEnabled(targetTypeId);
             }
 
             var toggle = UIFactory.CreateToggle("EnableIdleAudioToggle", settingRow.transform, isOn,
@@ -180,11 +184,8 @@ namespace DuckovCustomModel.UI.Components
             var idleAudioConfig = ModEntry.IdleAudioConfig;
             if (idleAudioConfig == null) return;
 
-            IdleAudioInterval interval;
-            if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
-                interval = idleAudioConfig.GetAICharacterIdleAudioInterval(_currentTarget.AICharacterNameKey);
-            else
-                interval = idleAudioConfig.GetIdleAudioInterval(_currentTarget.TargetType);
+            var targetTypeId = _currentTarget.GetTargetTypeId();
+            var interval = idleAudioConfig.GetIdleAudioInterval(targetTypeId);
 
             var minIntervalRow = CreateSettingRow();
             var minLabel = UIFactory.CreateText("Label", minIntervalRow.transform,
@@ -314,10 +315,17 @@ namespace DuckovCustomModel.UI.Components
             var hideEquipmentConfig = ModEntry.HideEquipmentConfig;
             if (hideEquipmentConfig == null) return;
 
-            if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
-                hideEquipmentConfig.SetHideAICharacterEquipment(_currentTarget.AICharacterNameKey, value);
+            var targetTypeId = _currentTarget.GetTargetTypeId();
+            var aiCharacterNameKey = _currentTarget.GetAICharacterNameKey();
+            if (_currentTarget.IsAICharacter() && aiCharacterNameKey != null)
+            {
+                var aiTargetTypeId = ModelTargetType.CreateAICharacterTargetType(aiCharacterNameKey);
+                hideEquipmentConfig.SetHideEquipment(aiTargetTypeId, value);
+            }
             else
-                hideEquipmentConfig.SetHideEquipment(_currentTarget.TargetType, value);
+            {
+                hideEquipmentConfig.SetHideEquipment(targetTypeId, value);
+            }
 
             ConfigManager.SaveConfigToFile(hideEquipmentConfig, "HideEquipmentConfig.json");
         }
@@ -329,10 +337,8 @@ namespace DuckovCustomModel.UI.Components
             var modelAudioConfig = ModEntry.ModelAudioConfig;
             if (modelAudioConfig == null) return;
 
-            if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
-                modelAudioConfig.SetAICharacterModelAudioEnabled(_currentTarget.AICharacterNameKey, value);
-            else
-                modelAudioConfig.SetModelAudioEnabled(_currentTarget.TargetType, value);
+            var targetTypeId = _currentTarget.GetTargetTypeId();
+            modelAudioConfig.SetModelAudioEnabled(targetTypeId, value);
 
             ConfigManager.SaveConfigToFile(modelAudioConfig, "ModelAudioConfig.json");
         }
@@ -344,10 +350,8 @@ namespace DuckovCustomModel.UI.Components
             var idleAudioConfig = ModEntry.IdleAudioConfig;
             if (idleAudioConfig == null) return;
 
-            if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
-                idleAudioConfig.SetAICharacterIdleAudioEnabled(_currentTarget.AICharacterNameKey, value);
-            else
-                idleAudioConfig.SetIdleAudioEnabled(_currentTarget.TargetType, value);
+            var targetTypeId = _currentTarget.GetTargetTypeId();
+            idleAudioConfig.SetIdleAudioEnabled(targetTypeId, value);
 
             ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
         }
@@ -362,18 +366,9 @@ namespace DuckovCustomModel.UI.Components
             if (!float.TryParse(value, out var minValue)) return;
             if (minValue < 0.1f) minValue = 0.1f;
 
-            IdleAudioInterval interval;
-            if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
-            {
-                interval = idleAudioConfig.GetAICharacterIdleAudioInterval(_currentTarget.AICharacterNameKey);
-                idleAudioConfig.SetAICharacterIdleAudioInterval(_currentTarget.AICharacterNameKey, minValue,
-                    interval.Max);
-            }
-            else
-            {
-                interval = idleAudioConfig.GetIdleAudioInterval(_currentTarget.TargetType);
-                idleAudioConfig.SetIdleAudioInterval(_currentTarget.TargetType, minValue, interval.Max);
-            }
+            var targetTypeId = _currentTarget.GetTargetTypeId();
+            var interval = idleAudioConfig.GetIdleAudioInterval(targetTypeId);
+            idleAudioConfig.SetIdleAudioInterval(targetTypeId, minValue, interval.Max);
 
             ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
         }
@@ -388,20 +383,10 @@ namespace DuckovCustomModel.UI.Components
             if (!float.TryParse(value, out var maxValue)) return;
             if (maxValue < 0.1f) maxValue = 0.1f;
 
-            IdleAudioInterval interval;
-            if (_currentTarget.TargetType == ModelTarget.AICharacter && _currentTarget.AICharacterNameKey != null)
-            {
-                interval = idleAudioConfig.GetAICharacterIdleAudioInterval(_currentTarget.AICharacterNameKey);
-                if (maxValue < interval.Min) maxValue = interval.Min;
-                idleAudioConfig.SetAICharacterIdleAudioInterval(_currentTarget.AICharacterNameKey, interval.Min,
-                    maxValue);
-            }
-            else
-            {
-                interval = idleAudioConfig.GetIdleAudioInterval(_currentTarget.TargetType);
-                if (maxValue < interval.Min) maxValue = interval.Min;
-                idleAudioConfig.SetIdleAudioInterval(_currentTarget.TargetType, interval.Min, maxValue);
-            }
+            var targetTypeId = _currentTarget.GetTargetTypeId();
+            var interval = idleAudioConfig.GetIdleAudioInterval(targetTypeId);
+            if (maxValue < interval.Min) maxValue = interval.Min;
+            idleAudioConfig.SetIdleAudioInterval(targetTypeId, interval.Min, maxValue);
 
             ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
         }

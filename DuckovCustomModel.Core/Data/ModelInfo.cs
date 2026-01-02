@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using DuckovCustomModel.Core.Managers;
 using Newtonsoft.Json;
 
 namespace DuckovCustomModel.Core.Data
@@ -23,9 +24,7 @@ namespace DuckovCustomModel.Core.Data
 
         [JsonIgnore] public string BundleName { get; set; } = string.Empty;
 
-        public ModelTarget[] Target { get; set; } = [ModelTarget.Character];
-
-        public string[] SupportedAICharacters { get; set; } = [];
+        public string[] TargetTypes { get; set; } = [ModelTargetType.Character];
 
         public string[] Features { get; set; } = [];
 
@@ -43,12 +42,29 @@ namespace DuckovCustomModel.Core.Data
 
             if (string.IsNullOrWhiteSpace(DeathLootBoxPrefabPath)) DeathLootBoxPrefabPath = null;
 
-            var targets = new List<ModelTarget>();
-            foreach (var target in Target ?? [])
-            {
-                if (!Enum.IsDefined(typeof(ModelTarget), target)) continue;
-                if (!targets.Contains(target)) targets.Add(target);
-            }
+            var targetTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+
+#pragma warning disable CS0618
+            var hasLegacyData = Target is { Length: > 0 } || SupportedAICharacters is { Length: > 0 };
+#pragma warning restore CS0618
+
+            if (!hasLegacyData)
+                // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+                if (TargetTypes != null)
+                    foreach (var targetType in TargetTypes)
+                    {
+                        if (string.IsNullOrWhiteSpace(targetType)) continue;
+                        if (!ModelTargetType.IsValid(targetType)) continue;
+                        targetTypes.Add(targetType);
+                    }
+
+            MigrateFromLegacyProperties(targetTypes);
+
+            if (targetTypes.Count == 0)
+                targetTypes.Add(ModelTargetType.Character);
+
+            TargetTypes = targetTypes.ToArray();
 
             var soundInfos = new List<SoundInfo>();
             foreach (var soundInfo in CustomSounds ?? [])
@@ -67,24 +83,88 @@ namespace DuckovCustomModel.Core.Data
             }
 
             Features = features.ToArray();
-
-            Target = targets.ToArray();
             CustomSounds = soundInfos.ToArray();
 
             return true;
         }
 
-        public bool CompatibleWithType(ModelTarget modelTarget)
+        public bool CompatibleWithTargetType(string targetTypeId)
         {
-            return Array.Exists(Target, target => target == modelTarget);
+            if (string.IsNullOrWhiteSpace(targetTypeId)) return false;
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            if (TargetTypes == null || TargetTypes.Length == 0) return false;
+
+            if (Array.Exists(TargetTypes, t => t.Equals(targetTypeId, StringComparison.OrdinalIgnoreCase)))
+                return true;
+
+            if (ModelTargetType.IsAICharacterTargetType(targetTypeId))
+            {
+                var nameKey = ModelTargetType.ExtractAICharacterName(targetTypeId);
+                if (!string.IsNullOrEmpty(nameKey) && nameKey != AICharacters.AllAICharactersKey)
+                    if (Array.Exists(TargetTypes,
+                            t => t.Equals(ModelTargetType.AllAICharacters, StringComparison.OrdinalIgnoreCase)))
+                        return true;
+            }
+
+            if (!ModelTargetType.IsExtension(targetTypeId)) return false;
+
+            var compatibleTypes = ModelTargetTypeRegistry.GetCompatibleModelTargetTypes(targetTypeId);
+            return compatibleTypes.Any(compatibleType =>
+                Array.Exists(TargetTypes, t => t.Equals(compatibleType, StringComparison.OrdinalIgnoreCase)));
         }
 
         public bool CompatibleWithAICharacter(string nameKey)
         {
-            if (!CompatibleWithType(ModelTarget.AICharacter)) return false;
+            if (string.IsNullOrEmpty(nameKey)) return false;
             if (nameKey == AICharacters.AllAICharactersKey) return true;
-            if (SupportedAICharacters is not { Length: > 0 }) return false;
-            return Array.Exists(SupportedAICharacters, key => key == AICharacters.AllAICharactersKey || key == nameKey);
+
+            var specificTargetTypeId = ModelTargetType.CreateAICharacterTargetType(nameKey);
+            return CompatibleWithTargetType(specificTargetTypeId) ||
+                   CompatibleWithTargetType(ModelTargetType.AllAICharacters);
         }
+
+        private void MigrateFromLegacyProperties(HashSet<string> targetTypes)
+        {
+#pragma warning disable CS0618
+            var hasAICharacterMarker = Target is { Length: > 0 } &&
+                                       Array.Exists(Target, t => t == ModelTarget.AICharacter);
+
+            if (Target is { Length: > 0 })
+                foreach (var target in Target)
+                {
+                    if (!Enum.IsDefined(typeof(ModelTarget), target)) continue;
+                    if (target == ModelTarget.AICharacter) continue;
+                    var targetTypeId = target.ToTargetTypeId();
+                    targetTypes.Add(targetTypeId);
+                }
+
+            if (!hasAICharacterMarker || SupportedAICharacters is not { Length: > 0 }) return;
+            foreach (var nameKey in SupportedAICharacters)
+            {
+                if (string.IsNullOrWhiteSpace(nameKey)) continue;
+                targetTypes.Add(nameKey == AICharacters.AllAICharactersKey
+                    ? ModelTargetType.AllAICharacters
+                    : ModelTargetType.CreateAICharacterTargetType(nameKey));
+            }
+#pragma warning restore CS0618
+        }
+
+        #region 过时成员（向后兼容）
+
+        [Obsolete("Use TargetTypes instead. This property is kept for backward compatibility.")]
+        public ModelTarget[] Target { get; set; } = [ModelTarget.Character];
+
+        [Obsolete(
+            "Use TargetTypes instead. This property is kept for backward compatibility and will be automatically converted to TargetTypes in Validate().")]
+        public string[] SupportedAICharacters { get; set; } = [];
+
+        [Obsolete("Use CompatibleWithTargetType(string targetTypeId) instead.")]
+        public bool CompatibleWithType(ModelTarget modelTarget)
+        {
+            var targetTypeId = modelTarget.ToTargetTypeId();
+            return CompatibleWithTargetType(targetTypeId);
+        }
+
+        #endregion
     }
 }

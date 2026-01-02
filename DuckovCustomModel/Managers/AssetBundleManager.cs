@@ -195,6 +195,31 @@ namespace DuckovCustomModel.Managers
             return LoadAssetFromBundle<GameObject>(bundleInfo, modelInfo.PrefabPath);
         }
 
+        public static async UniTask<GameObject?> LoadModelPrefabAsync(ModelBundleInfo bundleInfo, ModelInfo modelInfo,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(modelInfo.PrefabPath)) return null;
+
+            var bundle = await GetOrLoadAssetBundleAsync(bundleInfo, false, cancellationToken);
+            if (bundle == null) return null;
+
+            try
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
+                var asset = bundle.LoadAsset<GameObject>(modelInfo.PrefabPath);
+                if (asset == null)
+                    ModLogger.LogError(
+                        $"AssetBundleManager: Failed to load asset '{modelInfo.PrefabPath}' from bundle '{bundleInfo.BundlePath}'");
+                return asset;
+            }
+            catch (Exception ex)
+            {
+                ModLogger.LogError(
+                    $"AssetBundleManager: Exception while loading asset '{modelInfo.PrefabPath}' from bundle '{bundleInfo.BundlePath}'. Exception: {ex}");
+                return null;
+            }
+        }
+
         public static GameObject? LoadDeathLootBoxPrefab(ModelBundleInfo bundleInfo, ModelInfo modelInfo)
         {
             return LoadAssetFromBundle<GameObject>(bundleInfo, modelInfo.DeathLootBoxPrefabPath ?? string.Empty);

@@ -2,6 +2,95 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.10.0
+
+### ⚠️ 重大变更：API 重构
+
+本次更新进行了大规模 API 重构，引入了新的目标类型系统以支持第三方扩展。**大量 API 已标记为过时**，建议尽快迁移到新 API。
+
+#### 新增功能
+
+- **目标类型系统重构**
+  - 引入基于字符串的目标类型标识符系统（`ModelTargetType`）
+  - 支持第三方扩展注册自定义目标类型
+  - 统一所有目标类型为字符串格式（`built-in:` 和 `extension:` 前缀）
+  - 新增 `ModelTargetTypeRegistry` 用于管理目标类型注册
+  - 新增 `ModelTargetTypeInfo` 类型用于扩展目标类型
+
+- **配置文件版本升级**
+  - `UsingModel.json` 升级至 v2，统一使用 `TargetTypeModelIDs` 字典
+  - `HideEquipmentConfig.json` 升级至 v2，统一使用 `TargetTypeHideEquipment` 字典
+  - `IdleAudioConfig.json` 升级至 v2，统一使用 `TargetTypeIdleAudioIntervals` 和 `TargetTypeEnableIdleAudio` 字典
+  - `ModelAudioConfig.json` 升级至 v2，统一使用 `TargetTypeEnableModelAudio` 字典
+  - 所有配置文件支持自动从旧格式迁移
+
+- **多语言显示名称支持**
+  - 目标类型支持多语言显示名称
+  - 内置类型使用正式的多语言系统
+  - 扩展类型可通过 `ModelTargetTypeInfo` 的 `GetDisplayName` 委托提供多语言支持
+
+- **Animator 参数扩展**
+  - `CurrentCharacterType` 参数新增 `-1` 值，用于标识自定义类型（Extension）
+  - 新增 `CustomCharacterTypeID` 参数，使用 `targetTypeId` 字符串生成的哈希值，用于唯一标识自定义目标类型
+  - 当 `CurrentCharacterType` 为 `-1` 时，`CustomCharacterTypeID` 包含自定义类型的哈希值；否则为 `0`
+
+- **模型应用逻辑重构**
+  - 重构模型应用逻辑，使用优先级列表管理模型应用
+  - `ModelHandler` 通过优先级列表管理模型应用，支持多级优先级（如普通设置、AI 单独设置）
+  - `ModelListManager` 通过调用 `UpdateModelPriorityList()` 方法更新各个 handler 的模型优先级列表
+  - 刷新模型列表时按 handler 逐个处理，支持单独角色使用不同模型
+  - 新增 `ModelLoadedEventArgs` 事件参数类（用于未来扩展）
+
+#### 已过时的 API
+
+**核心类型**:
+- `ModelTarget` 枚举 → 使用 `ModelTargetType` 字符串标识符
+- `ModelTargetExtensions` 类 → 直接使用 `ModelTargetType` 相关方法
+
+**配置类**:
+- `UsingModel`: `ModelIDs`, `AICharacterModelIDs`, `GetModelID(ModelTarget)`, `SetModelID(ModelTarget, string)`, `GetAICharacterModelID`, `SetAICharacterModelID` 等
+- `HideEquipmentConfig`: `HideEquipment`, `HideAICharacterEquipment`, `GetHideEquipment(ModelTarget)`, `GetHideAICharacterEquipment` 等
+- `IdleAudioConfig`: `IdleAudioIntervals`, `AICharacterIdleAudioIntervals`, `EnableIdleAudio`, `AICharacterEnableIdleAudio` 及所有相关方法
+- `ModelAudioConfig`: `EnableModelAudio`, `AICharacterEnableModelAudio` 及所有相关方法
+
+**数据类**:
+- `ModelInfo`: `Target`, `SupportedAICharacters`, `CompatibleWithType(ModelTarget)`
+- `ModelChangedEventArgs`: `Target`, `AICharacterNameKey`, `HandlerCount`, `Success`
+- `TargetInfo`: `TargetType`, `AICharacterNameKey`
+
+**管理器类**:
+- `ModelManager`: `InitializeModelHandler(CharacterMainControl, ModelTarget)`, `GetAllModelHandlers(ModelTarget)`, `GetAICharacterModelHandlers`
+- `ModelListManager`: `ApplyModelToTarget`, `ApplyModelToTargetType`, `ApplyModelToTargetAfterRefresh`, `ApplyAllModelsFromConfig`, `ApplyModelToAICharacter`, `RestoreOriginalModelForTarget`, `RestoreOriginalModelForTargetType`
+- `ModelListManager`: `ApplyAllAICharacterModelsFromConfig`, `WaitForRefreshCompletion`, `WaitForModelBundleReady`, `CurrentRefreshingBundles` 属性, `OnRefreshProgress` 事件 → 已删除，不再可用
+
+**MonoBehaviour 类**:
+- `ModelHandler`: `Target` 属性, `Initialize(CharacterMainControl, ModelTarget)`, `SetTarget(ModelTarget)`
+
+详细的过时 API 列表和迁移指南请参考 [docs/OBSOLETE_APIS_v1.10.0.md](docs/OBSOLETE_APIS_v1.10.0.md)
+
+#### 改进
+
+- **代码组织优化**
+  - 将所有过时成员移至文件末尾的 `#region 过时成员（向后兼容）` 区域
+  - 改善代码可读性，主要 API 与过时 API 分离
+
+- **性能优化**
+  - `ModelTargetTypeRegistry` 的兼容类型缓存优化，只清除相关条目而非全部清除
+
+- **架构改进**
+  - 将本地化逻辑从 Core 项目移至主项目
+  - `GetDisplayName` 方法完全在主项目中实现
+  - 模型应用逻辑重构为事件驱动，提升可扩展性和性能
+  - 刷新模型列表时按 handler 逐个处理，支持单独角色使用不同模型
+  - `ModelHandler` 使用注册机制替代 `FindObjectsByType`，提升性能和可靠性
+  - `ModelChangedEventArgs` 新增 `Handler` 属性，由 `ModelHandler` 自身触发事件更新
+
+#### 向后兼容性
+
+- 所有过时 API 仍然可用，但会在编译时显示警告
+- 配置文件会自动从旧格式迁移到新格式
+- 现有代码可以继续工作，但建议尽快迁移
+
 ## v1.9.5-fix2
 
 - 优化 ShoulderSurfing mod 扩展查找机制
