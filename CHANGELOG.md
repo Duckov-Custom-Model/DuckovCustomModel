@@ -39,7 +39,6 @@
   - `ModelHandler` 通过优先级列表管理模型应用，支持多级优先级（如普通设置、AI 单独设置）
   - `ModelListManager` 通过调用 `UpdateModelPriorityList()` 方法更新各个 handler 的模型优先级列表
   - 刷新模型列表时按 handler 逐个处理，支持单独角色使用不同模型
-  - 新增 `ModelLoadedEventArgs` 事件参数类（用于未来扩展）
 
 #### 已过时的 API
 

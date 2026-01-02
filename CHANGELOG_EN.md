@@ -39,7 +39,6 @@ This update includes a major API refactoring, introducing a new target type syst
   - `ModelHandler` manages model application through priority lists, supporting multiple priority levels (e.g., normal settings, AI-specific settings)
   - `ModelListManager` updates each handler's model priority list by calling the `UpdateModelPriorityList()` method
   - Model list refresh now processes handlers individually instead of by type, supporting individual characters using different models
-  - Added `ModelLoadedEventArgs` event argument class (for future extensions)
 
 #### Obsolete APIs
 
