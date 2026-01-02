@@ -318,8 +318,7 @@ UI 界面相关配置。
       "ThumbnailPath": "thumbnail.png",
       "PrefabPath": "Assets/Model.prefab",
       "DeathLootBoxPrefabPath": "Assets/DeathLootBox.prefab",
-      "Target": ["Character", "AICharacter"],
-      "SupportedAICharacters": ["Cname_Wolf", "Cname_Scav", "*"],
+      "TargetTypes": ["built-in:Character", "built-in:AICharacter_*", "built-in:AICharacter_Cname_Wolf", "built-in:AICharacter_Cname_Scav"],
       "CustomSounds": [
         {
           "Path": "sounds/normal1.wav",
@@ -372,16 +371,29 @@ UI 界面相关配置。
 - `DeathLootBoxPrefabPath`（可选）：死亡战利品箱 Prefab 在 AssetBundle 内的资源路径（如 `"Assets/DeathLootBox.prefab"`）
   - 当角色使用该模型并死亡时，如果配置了此字段，死亡战利品箱会使用自定义的 Prefab 替换默认模型
   - 如果未配置此字段，死亡战利品箱将使用默认模型
-- `Target`（可选）：模型适用的目标类型数组（默认：`["Character"]`）
-  - 可选值：`"Character"`（角色）、`"Pet"`（宠物）、`"AICharacter"`（AI 角色标记）
+- `TargetTypes`（可选）：模型适用的目标类型 ID 数组（默认：`["built-in:Character"]`）
+  - 使用字符串格式的目标类型 ID，支持内置类型和扩展类型
+  - 内置类型示例：`"built-in:Character"`（角色）、`"built-in:Pet"`（宠物）、`"built-in:AICharacter_*"`（所有 AI 角色）、`"built-in:AICharacter_<角色名>"`（特定 AI 角色）
+  - 扩展类型示例：`"extension:CustomType"`（由第三方扩展注册的自定义类型）
   - 可以同时包含多个值，表示该模型同时适用于多个目标类型
-  - **注意**：`"AICharacter"` 只是一个标记，表示需要处理 `SupportedAICharacters`，它本身不会被转换为目标类型
   - 模型选择界面会根据当前选择的目标类型过滤显示兼容的模型
-- `SupportedAICharacters`（可选）：支持的 AI 角色名称键数组（仅在 `Target` 包含 `"AICharacter"` 时有效）
+  - **示例**：
+    - 适用于角色和所有 AI 角色：`["built-in:Character", "built-in:AICharacter_*"]`
+    - 适用于特定 AI 角色：`["built-in:AICharacter_Cname_Wolf", "built-in:AICharacter_Cname_Scav"]`
+    - 适用于角色、宠物和所有 AI 角色：`["built-in:Character", "built-in:Pet", "built-in:AICharacter_*"]`
+
+**⚠️ 过时字段（v1.10.0 起已过时，但仍支持向后兼容）**：
+- `Target`（可选）：模型适用的目标类型数组（已过时，使用 `TargetTypes` 替代）
+  - 可选值：`"Character"`（角色）、`"Pet"`（宠物）、`"AICharacter"`（AI 角色标记）
+  - 系统会自动从 `Target` 和 `SupportedAICharacters` 迁移到 `TargetTypes`
+  - **注意**：`"AICharacter"` 只是一个标记，表示需要处理 `SupportedAICharacters`，它本身不会被转换为目标类型
+- `SupportedAICharacters`（可选）：支持的 AI 角色名称键数组（已过时，使用 `TargetTypes` 替代）
+  - 仅在 `Target` 包含 `"AICharacter"` 时有效
   - 可以指定该模型适用于哪些 AI 角色
   - 特殊值 `"*"`：表示该模型适用于所有 AI 角色
   - 如果为空数组且 `Target` 包含 `"AICharacter"`，则该模型不会应用于任何 AI 角色
   - **重要**：如果 `Target` 中没有 `"AICharacter"` 标记，即使 `SupportedAICharacters` 有值，也不会被处理
+  - 系统会自动将 `Target` 和 `SupportedAICharacters` 转换为 `TargetTypes` 格式（如 `"built-in:AICharacter_*"` 或 `"built-in:AICharacter_<角色名>"`）
 - `CustomSounds`（可选）：自定义音效信息数组，支持为音效配置标签
   - 每个音效可以配置多个标签（`normal`、`surprise`、`death`）
   - 未指定标签时，默认为 `["normal"]`
@@ -936,10 +948,24 @@ Animator Controller 可以使用以下参数：
 
 在模型的 `bundleinfo.json` 中，需要：
 
-1. 在 `Target` 数组中包含 `"AICharacter"`，表示该模型适用于 AI 角色
-2. 在 `SupportedAICharacters` 数组中指定支持的 AI 角色名称键
+1. 在 `TargetTypes` 数组中包含 AI 角色相关的目标类型 ID（推荐方式，v1.10.0+）
+2. 或使用过时的 `Target` 和 `SupportedAICharacters` 字段（向后兼容）
 
-示例：
+**推荐方式（v1.10.0+）**：
+
+```json
+{
+  "ModelID": "ai_model_id",
+  "Name": "AI 模型",
+  "TargetTypes": ["built-in:AICharacter_*", "built-in:AICharacter_Cname_Wolf", "built-in:AICharacter_Cname_Scav"]
+}
+```
+
+- `"built-in:AICharacter_*"`：表示该模型适用于所有 AI 角色
+- `"built-in:AICharacter_<角色名>"`：表示该模型适用于特定的 AI 角色（如 `"built-in:AICharacter_Cname_Wolf"`）
+- 可以同时包含多个值，表示该模型适用于多个 AI 角色
+
+**过时方式（向后兼容）**：
 
 ```json
 {
@@ -950,13 +976,28 @@ Animator Controller 可以使用以下参数：
 }
 ```
 
-- 如果 `SupportedAICharacters` 包含 `"*"`，表示该模型适用于所有 AI 角色
-- 如果 `SupportedAICharacters` 包含具体的 AI 角色名称键，表示该模型仅适用于这些 AI 角色
+- 如果 `SupportedAICharacters` 包含 `"*"`，系统会自动转换为 `"built-in:AICharacter_*"`
+- 如果 `SupportedAICharacters` 包含具体的 AI 角色名称键，系统会自动转换为 `"built-in:AICharacter_<角色名>"`
 - 如果 `SupportedAICharacters` 为空数组，则该模型不会应用于任何 AI 角色
 
 #### 在 UsingModel.json 中配置
 
 在 `UsingModel.json` 中，可以为每个 AI 角色单独配置模型：
+
+**推荐方式（v1.10.0+）**：
+
+```json
+{
+  "Version": 2,
+  "TargetTypeModelIDs": {
+    "built-in:AICharacter_Cname_Wolf": "wolf_model_id",
+    "built-in:AICharacter_Cname_Scav": "scav_model_id",
+    "built-in:AICharacter_*": "default_ai_model_id"
+  }
+}
+```
+
+**过时方式（向后兼容）**：
 
 ```json
 {
@@ -970,8 +1011,8 @@ Animator Controller 可以使用以下参数：
 
 配置优先级：
 
-1. 首先检查该 AI 角色是否有单独配置的模型
-2. 如果没有，则检查 `"*"` 对应的默认模型
+1. 首先检查该 AI 角色是否有单独配置的模型（`built-in:AICharacter_<角色名>` 或过时的 `AICharacterModelIDs[<角色名>]`）
+2. 如果没有，则检查 `"built-in:AICharacter_*"` 或过时的 `AICharacterModelIDs["*"]` 对应的默认模型
 3. 如果都没有，则使用原始模型
 
 #### 查找 AI 角色名称键
@@ -1006,8 +1047,9 @@ AI 单位目标的 key（如 `"Cname_Wolf"`、`"Cname_Scav"`）可以从游戏�
 ### 注意事项
 
 - AI 角色模型需要满足与角色模型相同的要求（定位锚点、Animator 配置等）
-- 模型必须在其 `bundleinfo.json` 中明确声明支持 AI 角色（`Target` 包含 `"AICharacter"`）
-- 模型必须在其 `SupportedAICharacters` 中声明支持该 AI 角色，或包含 `"*"` 表示支持所有 AI 角色
+- 模型必须在其 `bundleinfo.json` 中明确声明支持 AI 角色
+  - **推荐方式（v1.10.0+）**：在 `TargetTypes` 中包含 `"built-in:AICharacter_*"` 或 `"built-in:AICharacter_<角色名>"`
+  - **过时方式（向后兼容）**：在 `Target` 中包含 `"AICharacter"`，并在 `SupportedAICharacters` 中声明支持的 AI 角色
 - 如果模型没有正确配置，AI 角色将使用原始模型
 
 
