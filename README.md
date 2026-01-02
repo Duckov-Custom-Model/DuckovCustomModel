@@ -90,7 +90,6 @@ UI 界面相关配置。
 
 **兼容性说明**：
 - 系统会自动从 v1 格式迁移到 v2 格式
-- 如果 `UIConfig.json` 中存在旧的 `HideCharacterEquipment` 或 `HidePetEquipment` 配置，系统会自动迁移到新的 `HideEquipmentConfig.json` 文件中
 
 ### UsingModel.json
 
