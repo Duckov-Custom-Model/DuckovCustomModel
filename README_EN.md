@@ -90,7 +90,6 @@ Hide equipment configuration. **⚠️ Upgraded to v2, old format is obsolete.**
 
 **Compatibility Note**:
 - The system will automatically migrate from v1 format to v2 format
-- If old `HideCharacterEquipment` or `HidePetEquipment` configurations exist in `UIConfig.json`, the system will automatically migrate them to the new `HideEquipmentConfig.json` file
 
 ### UsingModel.json
 
