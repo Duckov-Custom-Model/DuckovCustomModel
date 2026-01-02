@@ -2,6 +2,95 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.0
+
+### ⚠️ Breaking Changes: API Refactoring
+
+This update includes a major API refactoring, introducing a new target type system to support third-party extensions. **Many APIs have been marked as obsolete**. It is recommended to migrate to the new APIs as soon as possible.
+
+#### New Features
+
+- **Target Type System Refactoring**
+  - Introduced string-based target type identifier system (`ModelTargetType`)
+  - Support for third-party extensions to register custom target types
+  - Unified all target types to string format (`built-in:` and `extension:` prefixes)
+  - Added `ModelTargetTypeRegistry` for managing target type registration
+  - Added `ModelTargetTypeInfo` type for extending target types
+
+- **Configuration File Version Upgrade**
+  - `UsingModel.json` upgraded to v2, unified use of `TargetTypeModelIDs` dictionary
+  - `HideEquipmentConfig.json` upgraded to v2, unified use of `TargetTypeHideEquipment` dictionary
+  - `IdleAudioConfig.json` upgraded to v2, unified use of `TargetTypeIdleAudioIntervals` and `TargetTypeEnableIdleAudio` dictionaries
+  - `ModelAudioConfig.json` upgraded to v2, unified use of `TargetTypeEnableModelAudio` dictionary
+  - All configuration files support automatic migration from old formats
+
+- **Multilingual Display Name Support**
+  - Target types support multilingual display names
+  - Built-in types use the formal multilingual system
+  - Extension types can provide multilingual support through `ModelTargetTypeInfo.GetDisplayName` delegate
+
+- **Animator Parameter Extensions**
+  - `CurrentCharacterType` parameter now supports `-1` value to identify custom types (Extension)
+  - Added `CustomCharacterTypeID` parameter, using hash value generated from `targetTypeId` string to uniquely identify custom target types
+  - When `CurrentCharacterType` is `-1`, `CustomCharacterTypeID` contains the hash value of the custom type; otherwise it is `0`
+
+- **Model Application Logic Refactoring**
+  - Refactored model application logic to use priority lists for managing model application
+  - `ModelHandler` manages model application through priority lists, supporting multiple priority levels (e.g., normal settings, AI-specific settings)
+  - `ModelListManager` updates each handler's model priority list by calling the `UpdateModelPriorityList()` method
+  - Model list refresh now processes handlers individually instead of by type, supporting individual characters using different models
+  - Added `ModelLoadedEventArgs` event argument class (for future extensions)
+
+#### Obsolete APIs
+
+**Core Types**:
+- `ModelTarget` enum → Use `ModelTargetType` string identifiers
+- `ModelTargetExtensions` class → Use `ModelTargetType` related methods directly
+
+**Configuration Classes**:
+- `UsingModel`: `ModelIDs`, `AICharacterModelIDs`, `GetModelID(ModelTarget)`, `SetModelID(ModelTarget, string)`, `GetAICharacterModelID`, `SetAICharacterModelID`, etc.
+- `HideEquipmentConfig`: `HideEquipment`, `HideAICharacterEquipment`, `GetHideEquipment(ModelTarget)`, `GetHideAICharacterEquipment`, etc.
+- `IdleAudioConfig`: `IdleAudioIntervals`, `AICharacterIdleAudioIntervals`, `EnableIdleAudio`, `AICharacterEnableIdleAudio` and all related methods
+- `ModelAudioConfig`: `EnableModelAudio`, `AICharacterEnableModelAudio` and all related methods
+
+**Data Classes**:
+- `ModelInfo`: `Target`, `SupportedAICharacters`, `CompatibleWithType(ModelTarget)`
+- `ModelChangedEventArgs`: `Target`, `AICharacterNameKey`, `HandlerCount`, `Success`
+- `TargetInfo`: `TargetType`, `AICharacterNameKey`
+
+**Manager Classes**:
+- `ModelManager`: `InitializeModelHandler(CharacterMainControl, ModelTarget)`, `GetAllModelHandlers(ModelTarget)`, `GetAICharacterModelHandlers`
+- `ModelListManager`: `ApplyModelToTarget`, `ApplyModelToTargetType`, `ApplyModelToTargetAfterRefresh`, `ApplyAllModelsFromConfig`, `ApplyModelToAICharacter`, `RestoreOriginalModelForTarget`, `RestoreOriginalModelForTargetType`
+- `ModelListManager`: `ApplyAllAICharacterModelsFromConfig`, `WaitForRefreshCompletion`, `WaitForModelBundleReady`, `CurrentRefreshingBundles` property, `OnRefreshProgress` event → Removed, no longer available
+
+**MonoBehaviour Classes**:
+- `ModelHandler`: `Target` property, `Initialize(CharacterMainControl, ModelTarget)`, `SetTarget(ModelTarget)`
+
+For detailed obsolete API list and migration guide, please refer to [docs/OBSOLETE_APIS_v1.10.0_EN.md](docs/OBSOLETE_APIS_v1.10.0_EN.md)
+
+#### Improvements
+
+- **Code Organization Optimization**
+  - Moved all obsolete members to `#region Obsolete Members (Backward Compatibility)` at the end of files
+  - Improved code readability by separating main APIs from obsolete APIs
+
+- **Performance Optimization**
+  - Optimized `ModelTargetTypeRegistry` compatible types cache, only clearing relevant entries instead of clearing all
+
+- **Architectural Improvements**
+  - Moved localization logic from Core project to main project
+  - `GetDisplayName` method is now completely implemented in the main project
+  - Refactored model application logic to event-driven, improving extensibility and performance
+  - Model list refresh now processes handlers individually instead of by type, supporting individual characters using different models
+  - `ModelHandler` uses registration mechanism instead of `FindObjectsByType`, improving performance and reliability
+  - `ModelChangedEventArgs` added `Handler` property, triggered by `ModelHandler` itself for event updates
+
+#### Backward Compatibility
+
+- All obsolete APIs are still available but will show warnings at compile time
+- Configuration files will automatically migrate from old formats to new formats
+- Existing code can continue to work, but migration is recommended
+
 ## v1.9.5-fix2
 
 - Optimized ShoulderSurfing mod extension lookup mechanism

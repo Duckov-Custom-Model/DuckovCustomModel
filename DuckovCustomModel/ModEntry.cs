@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.Extensions.ShoulderSurfing;
 using DuckovCustomModel.HarmonyPatches;
 using DuckovCustomModel.Localizations;
@@ -56,11 +57,31 @@ namespace DuckovCustomModel
 
             var priorityModelIDs = new List<string>();
             if (UsingModel != null)
-                priorityModelIDs.AddRange(from ModelTarget target in Enum.GetValues(typeof(ModelTarget))
-                    select UsingModel.GetModelID(target)
-                    into modelID
-                    where !string.IsNullOrEmpty(modelID)
-                    select modelID);
+            {
+                var targetTypeIds = ModelTargetTypeRegistry.GetAllAvailableTargetTypes();
+                foreach (var targetTypeId in targetTypeIds)
+                {
+                    if (ModelTargetType.IsAICharacterTargetType(targetTypeId)) continue;
+                    var modelID = UsingModel.GetModelID(targetTypeId);
+                    if (!string.IsNullOrEmpty(modelID))
+                        priorityModelIDs.Add(modelID);
+                }
+
+                var aiModelIDs = new HashSet<string>();
+                foreach (var nameKey in AICharacters.SupportedAICharacters)
+                {
+                    var targetTypeId = ModelTargetType.CreateAICharacterTargetType(nameKey);
+                    var modelID = UsingModel.GetModelID(targetTypeId);
+                    if (!string.IsNullOrEmpty(modelID))
+                        aiModelIDs.Add(modelID);
+                }
+
+                var defaultModelID = UsingModel.GetModelID(ModelTargetType.AllAICharacters);
+                if (!string.IsNullOrEmpty(defaultModelID))
+                    aiModelIDs.Add(defaultModelID);
+
+                priorityModelIDs.AddRange(aiModelIDs);
+            }
 
             ModelListManager.RefreshModelList(priorityModelIDs);
 
@@ -281,22 +302,25 @@ namespace DuckovCustomModel
             var priorityModelIDs = new List<string>();
             if (UsingModel != null)
             {
-                priorityModelIDs.AddRange(from ModelTarget target in Enum.GetValues(typeof(ModelTarget))
-                    where target != ModelTarget.AICharacter
-                    select UsingModel.GetModelID(target)
-                    into modelID
-                    where !string.IsNullOrEmpty(modelID)
-                    select modelID);
+                var targetTypeIds = ModelTargetTypeRegistry.GetAllAvailableTargetTypes();
+                foreach (var targetTypeId in targetTypeIds)
+                {
+                    if (ModelTargetType.IsAICharacterTargetType(targetTypeId)) continue;
+                    var modelID = UsingModel.GetModelID(targetTypeId);
+                    if (!string.IsNullOrEmpty(modelID))
+                        priorityModelIDs.Add(modelID);
+                }
 
                 var aiModelIDs = new HashSet<string>();
                 foreach (var nameKey in AICharacters.SupportedAICharacters)
                 {
-                    var modelID = UsingModel.GetAICharacterModelID(nameKey);
+                    var targetTypeId = ModelTargetType.CreateAICharacterTargetType(nameKey);
+                    var modelID = UsingModel.GetModelID(targetTypeId);
                     if (!string.IsNullOrEmpty(modelID))
                         aiModelIDs.Add(modelID);
                 }
 
-                var defaultModelID = UsingModel.GetAICharacterModelID(AICharacters.AllAICharactersKey);
+                var defaultModelID = UsingModel.GetModelID(ModelTargetType.AllAICharacters);
                 if (!string.IsNullOrEmpty(defaultModelID))
                     aiModelIDs.Add(defaultModelID);
 
@@ -311,12 +335,12 @@ namespace DuckovCustomModel
             var mainCharacterControl = LevelManager.Instance.MainCharacter;
             var petCharacterControl = LevelManager.Instance.PetCharacter;
             InitializeModelHandlerToCharacter(mainCharacterControl, "MainCharacter");
-            InitializeModelHandlerToCharacter(petCharacterControl, "PetCharacter", ModelTarget.Pet);
+            InitializeModelHandlerToCharacter(petCharacterControl, "PetCharacter", ModelTargetType.Pet);
         }
 
         private static void LevelManager_OnAfterLevelInitialized()
         {
-            ModelListManager.ApplyAllModelsFromConfig();
+            ModelListManager.RefreshAndApplyAllModels();
         }
 
         private static void InitializeConfigWindow()
@@ -345,7 +369,7 @@ namespace DuckovCustomModel
         }
 
         private static void InitializeModelHandlerToCharacter(CharacterMainControl characterMainControl,
-            string characterName, ModelTarget target = ModelTarget.Character)
+            string characterName, string targetTypeId = ModelTargetType.Character)
         {
             if (characterMainControl == null)
             {
@@ -353,7 +377,7 @@ namespace DuckovCustomModel
                 return;
             }
 
-            var modelHandler = ModelManager.InitializeModelHandler(characterMainControl, target);
+            var modelHandler = ModelManager.InitializeModelHandler(characterMainControl, targetTypeId);
             if (modelHandler != null) return;
             ModLogger.LogError($"Initialize ModelHandler to {characterName} failed: ModelHandler is null");
         }

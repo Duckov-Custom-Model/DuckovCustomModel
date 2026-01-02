@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.UI.Base;
 using DuckovCustomModel.UI.Data;
 using SodaCraft.Localizations;
@@ -52,19 +53,8 @@ namespace DuckovCustomModel.UI.Components
                 var hasModel = false;
                 if (usingModel != null)
                 {
-                    if (target.TargetType == ModelTarget.AICharacter && target.AICharacterNameKey != null)
-                    {
-                        if (target.AICharacterNameKey == AICharacters.AllAICharactersKey)
-                            hasModel = !string.IsNullOrEmpty(
-                                usingModel.GetAICharacterModelID(AICharacters.AllAICharactersKey));
-                        else
-                            hasModel = !string.IsNullOrEmpty(
-                                usingModel.GetAICharacterModelID(target.AICharacterNameKey));
-                    }
-                    else
-                    {
-                        hasModel = !string.IsNullOrEmpty(usingModel.GetModelID(target.TargetType));
-                    }
+                    var targetTypeId = target.GetTargetTypeId();
+                    hasModel = !string.IsNullOrEmpty(usingModel.GetModelID(targetTypeId));
                 }
 
                 target.HasModel = hasModel;
@@ -107,6 +97,12 @@ namespace DuckovCustomModel.UI.Components
             targets.AddRange(from nameKey in AICharacters.SupportedAICharacters
                 let displayName = LocalizationManager.GetPlainText(nameKey)
                 select TargetInfo.CreateAICharacterTarget(nameKey, displayName));
+
+            var extensionTargetTypes = ModelTargetTypeRegistry.GetAllAvailableTargetTypes()
+                .Where(ModelTargetType.IsExtension);
+
+            targets.AddRange(extensionTargetTypes.Select(targetTypeId =>
+                TargetInfo.CreateFromTargetTypeId(targetTypeId, LocalizationManager.CurrentLanguage)));
 
             return targets;
         }

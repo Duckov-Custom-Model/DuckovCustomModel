@@ -1,58 +1,139 @@
+using System;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Localizations;
+using DuckovCustomModel.Managers;
+using UnityEngine;
 
 namespace DuckovCustomModel.UI.Data
 {
     public class TargetInfo
     {
         public string Id { get; set; } = string.Empty;
+        public string TargetTypeId { get; set; } = string.Empty;
         public string DisplayName { get; set; } = string.Empty;
-        public ModelTarget TargetType { get; set; }
-        public string? AICharacterNameKey { get; set; }
+
         public bool IsSelected { get; set; }
         public bool HasModel { get; set; }
         public int ModelCount { get; set; }
 
         public static TargetInfo CreateCharacterTarget()
         {
-            return new()
+            var targetInfo = new TargetInfo
             {
                 Id = "Character",
+                TargetTypeId = ModelTargetType.Character,
                 DisplayName = Localization.TargetCharacter,
-                TargetType = ModelTarget.Character,
             };
+            InitializeObsoleteProperties(targetInfo);
+            return targetInfo;
         }
 
         public static TargetInfo CreatePetTarget()
         {
-            return new()
+            var targetInfo = new TargetInfo
             {
                 Id = "Pet",
+                TargetTypeId = ModelTargetType.Pet,
                 DisplayName = Localization.TargetPet,
-                TargetType = ModelTarget.Pet,
             };
+            InitializeObsoleteProperties(targetInfo);
+            return targetInfo;
         }
 
         public static TargetInfo CreateAICharacterTarget(string nameKey, string displayName)
         {
-            return new()
+            var targetTypeId = ModelTargetType.CreateAICharacterTargetType(nameKey);
+            var targetInfo = new TargetInfo
             {
                 Id = $"AI_{nameKey}",
+                TargetTypeId = targetTypeId,
                 DisplayName = displayName,
-                TargetType = ModelTarget.AICharacter,
-                AICharacterNameKey = nameKey,
             };
+            InitializeObsoleteProperties(targetInfo);
+            return targetInfo;
         }
 
         public static TargetInfo CreateAllAICharactersTarget()
         {
-            return new()
+            var targetInfo = new TargetInfo
             {
                 Id = "AI_*",
+                TargetTypeId = ModelTargetType.AllAICharacters,
                 DisplayName = Localization.TargetAllAICharacters,
-                TargetType = ModelTarget.AICharacter,
-                AICharacterNameKey = AICharacters.AllAICharactersKey,
             };
+            InitializeObsoleteProperties(targetInfo);
+            return targetInfo;
         }
+
+        public static TargetInfo CreateFromTargetTypeId(string targetTypeId,
+            SystemLanguage language = SystemLanguage.English)
+        {
+            if (string.IsNullOrWhiteSpace(targetTypeId))
+                throw new ArgumentException("Target type ID cannot be null or empty.", nameof(targetTypeId));
+
+            var displayName = ModelTargetTypeRegistryExtensions.GetDisplayName(targetTypeId, language);
+            var id = targetTypeId.Replace(ModelTargetType.BuiltInPrefix, "")
+                .Replace(ModelTargetType.ExtensionPrefix, "");
+
+            var targetInfo = new TargetInfo
+            {
+                Id = id,
+                TargetTypeId = targetTypeId,
+                DisplayName = displayName,
+            };
+            InitializeObsoleteProperties(targetInfo);
+            return targetInfo;
+        }
+
+        private static void InitializeObsoleteProperties(TargetInfo targetInfo)
+        {
+#pragma warning disable CS0618
+            var target = ModelTargetExtensions.FromTargetTypeId(targetInfo.TargetTypeId);
+            if (!target.HasValue) return;
+            targetInfo.TargetType = target.Value;
+            if (target.Value != ModelTarget.AICharacter) return;
+            var aiName = ModelTargetType.ExtractAICharacterName(targetInfo.TargetTypeId);
+            targetInfo.AICharacterNameKey = aiName;
+#pragma warning restore CS0618
+        }
+
+        public string GetTargetTypeId()
+        {
+            if (!string.IsNullOrWhiteSpace(TargetTypeId))
+                return TargetTypeId;
+
+#pragma warning disable CS0618
+            var targetTypeId = TargetType.ToTargetTypeId();
+            if (TargetType == ModelTarget.AICharacter && !string.IsNullOrEmpty(AICharacterNameKey))
+                targetTypeId = ModelTargetType.CreateAICharacterTargetType(AICharacterNameKey);
+#pragma warning restore CS0618
+
+            return targetTypeId;
+        }
+
+        public string? GetAICharacterNameKey()
+        {
+            var targetTypeId = GetTargetTypeId();
+#pragma warning disable CS0618
+            return ModelTargetType.IsAICharacterTargetType(targetTypeId)
+                ? ModelTargetType.ExtractAICharacterName(targetTypeId)
+                : AICharacterNameKey;
+#pragma warning restore CS0618
+        }
+
+        public bool IsAICharacter()
+        {
+            return ModelTargetType.IsAICharacterTargetType(GetTargetTypeId());
+        }
+
+        #region 过时成员（向后兼容）
+
+        [Obsolete("Use TargetTypeId instead. This property is kept for backward compatibility.")]
+        public ModelTarget TargetType { get; set; }
+
+        [Obsolete("Use TargetTypeId instead. This property is kept for backward compatibility.")]
+        public string? AICharacterNameKey { get; set; }
+
+        #endregion
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -6,7 +7,6 @@ using System.Reflection;
 using Duckov;
 using Duckov.Buffs;
 using Duckov.UI;
-using DuckovCustomModel.Configs;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Core.MonoBehaviours.Animators;
 using DuckovCustomModel.Managers;
@@ -21,6 +21,9 @@ namespace DuckovCustomModel.MonoBehaviours
     {
         public const string CustomModelInstanceName = "CustomModelInstance";
 
+        private const int PriorityNormal = 0; // 普通设置（Character, Pet等）或 AllAICharacters
+        private const int PriorityAISpecific = 1; // AI单独设置（仅内建AI）
+
         private static readonly IReadOnlyDictionary<string, FieldInfo> OriginalModelSocketFieldInfos =
             CharacterModelSocketUtils.AllSocketFields;
 
@@ -34,6 +37,8 @@ namespace DuckovCustomModel.MonoBehaviours
         private readonly Dictionary<string, List<EventInstance>> _playingSoundInstances = [];
         private readonly Dictionary<string, List<string>> _soundsByTag = [];
         private readonly Dictionary<string, float> _soundTagPlayChance = [];
+
+        public readonly SortedDictionary<int, string> ModelPriorityList = [];
         private Renderer[]? _cachedCustomModelRenderers;
 
         private ModelBundleInfo? _currentModelBundleInfo;
@@ -70,14 +75,15 @@ namespace DuckovCustomModel.MonoBehaviours
                 if (ModEntry.HideEquipmentConfig == null) return false;
                 if (!IsHiddenOriginalModel || CustomModelInstance == null) return false;
 
-                if (Target != ModelTarget.AICharacter)
-                    return ModEntry.HideEquipmentConfig.GetHideEquipment(Target);
+                if (!ModelTargetType.IsAICharacterTargetType(TargetTypeId))
+                    return ModEntry.HideEquipmentConfig.GetHideEquipment(TargetTypeId);
                 var nameKey = CharacterMainControl?.characterPreset?.nameKey;
                 if (string.IsNullOrEmpty(nameKey))
-                    return ModEntry.HideEquipmentConfig.GetHideEquipment(Target);
-
+                    return ModEntry.HideEquipmentConfig.GetHideEquipment(TargetTypeId);
                 var effectiveNameKey = GetEffectiveAICharacterConfigKey(nameKey);
-                return ModEntry.HideEquipmentConfig.GetHideAICharacterEquipment(effectiveNameKey);
+                var effectiveTargetTypeId = ModelTargetType.CreateAICharacterTargetType(effectiveNameKey);
+                return ModEntry.HideEquipmentConfig.GetHideEquipment(effectiveTargetTypeId) ||
+                       ModEntry.HideEquipmentConfig.GetHideEquipment(ModelTargetType.AllAICharacters);
             }
         }
 
@@ -86,20 +92,11 @@ namespace DuckovCustomModel.MonoBehaviours
             get
             {
                 var modelAudioConfig = ModEntry.ModelAudioConfig;
-                if (modelAudioConfig == null) return true;
-
-                if (Target != ModelTarget.AICharacter)
-                    return modelAudioConfig.IsModelAudioEnabled(Target);
-
-                var nameKey = NameKey;
-                if (string.IsNullOrEmpty(nameKey)) return true;
-
-                var effectiveNameKey = GetEffectiveAICharacterConfigKey(nameKey);
-                return modelAudioConfig.IsAICharacterModelAudioEnabled(effectiveNameKey);
+                return modelAudioConfig == null || modelAudioConfig.IsModelAudioEnabled(TargetTypeId);
             }
         }
 
-        public ModelTarget Target { get; private set; }
+        public string TargetTypeId { get; private set; } = string.Empty;
         public string? NameKey => CharacterMainControl?.characterPreset?.nameKey;
 
         public string? CurrentModelDirectory => _currentModelBundleInfo?.DirectoryPath;
@@ -112,7 +109,6 @@ namespace DuckovCustomModel.MonoBehaviours
         public Animator? CustomAnimator { get; private set; }
         public CustomAnimatorControl? CustomAnimatorControl { get; private set; }
 
-
         private void Update()
         {
             if (!IsInitialized || CharacterMainControl == null) return;
@@ -120,21 +116,8 @@ namespace DuckovCustomModel.MonoBehaviours
             if (CharacterMainControl.Health != null && CharacterMainControl.Health.IsDead) return;
 
             if (ModEntry.IdleAudioConfig != null)
-            {
-                if (Target == ModelTarget.AICharacter)
-                {
-                    var nameKey = NameKey;
-                    if (string.IsNullOrEmpty(nameKey)) return;
-                    var effectiveNameKey = GetEffectiveAICharacterConfigKey(nameKey);
-                    if (!ModEntry.IdleAudioConfig.IsAICharacterIdleAudioEnabled(effectiveNameKey))
-                        return;
-                }
-                else
-                {
-                    if (!ModEntry.IdleAudioConfig.IsIdleAudioEnabled(Target))
-                        return;
-                }
-            }
+                if (!ModEntry.IdleAudioConfig.IsIdleAudioEnabled(TargetTypeId))
+                    return;
 
             if (!(Time.time >= _nextIdleAudioTime)) return;
             PlayIdleAudio();
@@ -185,17 +168,31 @@ namespace DuckovCustomModel.MonoBehaviours
             Health.OnHurt -= OnGlobalHurt;
             Health.OnDead -= OnGlobalDead;
 
+
+            ModelManager.UnregisterHandler(this);
+
             if (CharacterMainControl == null) return;
             if (CharacterMainControl.Health == null) return;
             CharacterMainControl.Health.OnHurtEvent.RemoveListener(OnHurt);
             CharacterMainControl.Health.OnDeadEvent.RemoveListener(OnDeath);
         }
 
-        public void Initialize(CharacterMainControl characterMainControl, ModelTarget target = ModelTarget.Character)
+        public string GetTargetTypeId()
+        {
+            return TargetTypeId;
+        }
+
+        public void Initialize(CharacterMainControl characterMainControl, string targetTypeId)
         {
             if (IsInitialized) return;
+            if (string.IsNullOrWhiteSpace(targetTypeId))
+            {
+                ModLogger.LogError("Target type ID is null or empty.");
+                return;
+            }
+
             CharacterMainControl = characterMainControl;
-            Target = target;
+            TargetTypeId = targetTypeId;
             if (CharacterMainControl == null)
             {
                 ModLogger.LogError("CharacterMainControl component not found.");
@@ -246,8 +243,83 @@ namespace DuckovCustomModel.MonoBehaviours
             ModelSoundTrigger.OnSoundTriggered += OnSoundTriggered;
             ModelSoundStopTrigger.OnSoundStopTriggered += OnSoundStopTriggered;
 
+
+            InitializeModelPriorityList();
+
+            ModelManager.RegisterHandler(this);
+
             ModLogger.Log("ModelHandler initialized successfully.");
             IsInitialized = true;
+        }
+
+        private void InitializeModelPriorityList()
+        {
+            if (ModEntry.UsingModel == null)
+            {
+                ModelPriorityList.Remove(PriorityNormal);
+                ModelPriorityList.Remove(PriorityAISpecific);
+                return;
+            }
+
+            var isAICharacter = ModelTargetType.IsAICharacterTargetType(TargetTypeId);
+
+            string? modelID;
+            if (isAICharacter)
+            {
+                modelID = ModEntry.UsingModel.GetModelID(ModelTargetType.AllAICharacters);
+
+                var nameKey = ModelTargetType.ExtractAICharacterName(TargetTypeId);
+                if (!string.IsNullOrEmpty(nameKey))
+                {
+                    var specificModelID = ModEntry.UsingModel.GetModelID(TargetTypeId);
+                    if (!string.IsNullOrEmpty(specificModelID))
+                        ModelPriorityList[PriorityAISpecific] = specificModelID;
+                    else
+                        ModelPriorityList.Remove(PriorityAISpecific);
+                }
+            }
+            else
+            {
+                modelID = ModEntry.UsingModel.GetModelID(TargetTypeId);
+                ModelPriorityList.Remove(PriorityAISpecific);
+            }
+
+            if (!string.IsNullOrEmpty(modelID))
+                ModelPriorityList[PriorityNormal] = modelID;
+            else
+                ModelPriorityList.Remove(PriorityNormal);
+        }
+
+        public void UpdateModelPriorityList()
+        {
+            InitializeModelPriorityList();
+
+            if (IsHiddenOriginalModel || CustomModelInstance != null)
+                CleanupCustomModel();
+
+            if (ModelPriorityList.Count == 0) return;
+
+            foreach (var priority in ModelPriorityList.Keys.Reverse())
+            {
+                var modelID = ModelPriorityList[priority];
+                if (string.IsNullOrEmpty(modelID)) continue;
+
+                if (!ModelManager.FindModelByID(modelID, out var bundleInfo, out var modelInfo)) continue;
+
+                if (ModelTargetType.IsAICharacterTargetType(TargetTypeId))
+                {
+                    var nameKey = ModelTargetType.ExtractAICharacterName(TargetTypeId);
+                    if (string.IsNullOrEmpty(nameKey)) continue;
+                    if (!modelInfo.CompatibleWithAICharacter(nameKey)) continue;
+                }
+                else
+                {
+                    if (!modelInfo.CompatibleWithTargetType(TargetTypeId)) continue;
+                }
+
+                InitializeCustomModel(bundleInfo, modelInfo);
+                return;
+            }
         }
 
         public void InitializeFrom(ModelHandler sourceHandler, CharacterMainControl characterMainControl)
@@ -260,7 +332,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
             if (!sourceHandler.IsInitialized || !sourceHandler.IsHiddenOriginalModel)
             {
-                Initialize(characterMainControl, sourceHandler.Target);
+                var targetTypeId = sourceHandler.GetTargetTypeId();
+                Initialize(characterMainControl, targetTypeId);
                 if (!IsInitialized) return;
 
                 if (sourceHandler is not { _currentModelBundleInfo: not null, CurrentModelInfo: not null }) return;
@@ -288,13 +361,13 @@ namespace DuckovCustomModel.MonoBehaviours
             var remnantCustomModel = newCharacterModel.transform.Find(CustomModelInstanceName);
             if (remnantCustomModel != null) DestroyImmediate(remnantCustomModel.gameObject);
 
-            Initialize(characterMainControl, sourceHandler.Target);
+            var targetTypeId2 = sourceHandler.GetTargetTypeId();
+            Initialize(characterMainControl, targetTypeId2);
             if (!IsInitialized) return;
             if (CharacterMainControl == null || OriginalCharacterModel == null) return;
 
             if (sourceHandler is not { _currentModelBundleInfo: not null, CurrentModelInfo: not null }) return;
             InitializeCustomModel(sourceHandler._currentModelBundleInfo, sourceHandler.CurrentModelInfo);
-            ChangeToCustomModel();
         }
 
         private static void RestoreSocketsFromSource(ModelHandler sourceHandler, CharacterModel newCharacterModel)
@@ -348,11 +421,6 @@ namespace DuckovCustomModel.MonoBehaviours
             }
 
             return path;
-        }
-
-        public void SetTarget(ModelTarget target)
-        {
-            Target = target;
         }
 
         public bool HaveCustomDeathLootBox()
@@ -424,7 +492,7 @@ namespace DuckovCustomModel.MonoBehaviours
             return null;
         }
 
-        public void RestoreOriginalModel()
+        public void CleanupCustomModel()
         {
             if (OriginalCharacterModel == null)
             {
@@ -438,37 +506,31 @@ namespace DuckovCustomModel.MonoBehaviours
                 return;
             }
 
-            if (!IsHiddenOriginalModel) return;
-
-            if (_customModelSubVisuals != null)
-                CharacterMainControl.RemoveVisual(_customModelSubVisuals);
-
-            RestoreToOriginalModelSockets();
-            UpdateColliderHeight();
-
-            if (OriginalCharacterSoundMaker != null)
-                OriginalCharacterSoundMaker.enabled = true;
-
-            var customFaceInstance = GetOriginalCustomFaceInstance();
-            if (customFaceInstance != null) customFaceInstance.gameObject.SetActive(true);
-            if (CustomModelInstance != null) CustomModelInstance.SetActive(false);
-
-            ForceUpdateHealthBar();
-
             if (IsHiddenOriginalModel)
-                ModLogger.Log("Restored to original model.");
-            IsHiddenOriginalModel = false;
-        }
-
-        public void CleanupCustomModel()
-        {
-            if (OriginalCharacterModel == null)
             {
-                ModLogger.LogError("OriginalCharacterModel is not set.");
-                return;
+                if (_customModelSubVisuals != null)
+                    CharacterMainControl.RemoveVisual(_customModelSubVisuals);
+
+                RestoreToOriginalModelSockets();
+                UpdateColliderHeight();
+
+                if (OriginalCharacterSoundMaker != null)
+                    OriginalCharacterSoundMaker.enabled = true;
+
+                var customFaceInstance = GetOriginalCustomFaceInstance();
+                if (customFaceInstance != null) customFaceInstance.gameObject.SetActive(true);
+                if (CustomModelInstance != null) CustomModelInstance.SetActive(false);
+
+                ForceUpdateHealthBar();
+
+                ModLogger.Log("Restored to original model.");
+                IsHiddenOriginalModel = false;
+
+                NotifyModelChanged(true);
             }
 
-            RestoreOriginalModel();
+            CurrentModelInfo = null;
+            _currentModelBundleInfo = null;
 
             if (CustomModelInstance != null)
             {
@@ -505,50 +567,11 @@ namespace DuckovCustomModel.MonoBehaviours
             IsHiddenOriginalModel = false;
         }
 
-        public void ChangeToCustomModel()
-        {
-            if (OriginalCharacterModel == null)
-            {
-                ModLogger.LogError("OriginalCharacterModel is not set.");
-                return;
-            }
-
-            if (CustomModelInstance == null)
-            {
-                ModLogger.LogError("Custom model instance is not initialized.");
-                return;
-            }
-
-            if (CharacterMainControl == null)
-            {
-                ModLogger.LogError("CharacterMainControl is not set.");
-                return;
-            }
-
-            if (_customModelSubVisuals != null)
-                CharacterMainControl.AddSubVisuals(_customModelSubVisuals);
-
-            ChangeToCustomModelSockets();
-            UpdateColliderHeight();
-
-            if (OriginalCharacterSoundMaker != null)
-                OriginalCharacterSoundMaker.enabled = false;
-
-            var customFaceInstance = GetOriginalCustomFaceInstance();
-            if (customFaceInstance != null) customFaceInstance.gameObject.SetActive(false);
-
-            CustomModelInstance.SetActive(true);
-
-            ForceUpdateHealthBar();
-            OriginalCharacterModel.SyncHiddenToMainCharacter();
-
-            if (!IsHiddenOriginalModel)
-                ModLogger.Log("Changed to custom model.");
-            IsHiddenOriginalModel = true;
-        }
-
         public void InitializeCustomModel(ModelBundleInfo modelBundleInfo, ModelInfo modelInfo)
         {
+            if (IsHiddenOriginalModel || CustomModelInstance != null)
+                CleanupCustomModel();
+
             var prefab = AssetBundleManager.LoadModelPrefab(modelBundleInfo, modelInfo);
             if (prefab == null)
             {
@@ -556,34 +579,17 @@ namespace DuckovCustomModel.MonoBehaviours
                 return;
             }
 
-            if (CustomModelInstance != null) CleanupCustomModel();
             _currentModelBundleInfo = modelBundleInfo;
             CurrentModelInfo = modelInfo;
             InitSoundFilePath(modelBundleInfo, modelInfo);
             InitializeDeathLootBoxPrefab(modelBundleInfo, modelInfo);
             InitializeCustomModelInternal(prefab, modelInfo);
 
+            NotifyModelChanged(false);
+
             if (!HasIdleSounds()) return;
-            if (Target == ModelTarget.AICharacter)
-            {
-                var nameKey = NameKey;
-                if (ModEntry.IdleAudioConfig == null || string.IsNullOrEmpty(nameKey))
-                {
-                    ScheduleNextIdleAudio();
-                }
-                else
-                {
-                    var effectiveNameKey = GetEffectiveAICharacterConfigKey(nameKey);
-                    if (ModEntry.IdleAudioConfig.IsAICharacterIdleAudioEnabled(effectiveNameKey))
-                        ScheduleNextIdleAudio();
-                }
-            }
-            else
-            {
-                if (ModEntry.IdleAudioConfig == null ||
-                    ModEntry.IdleAudioConfig.IsIdleAudioEnabled(Target))
-                    ScheduleNextIdleAudio();
-            }
+            if (ModEntry.IdleAudioConfig == null || ModEntry.IdleAudioConfig.IsIdleAudioEnabled(TargetTypeId))
+                ScheduleNextIdleAudio();
         }
 
         private void InitializeDeathLootBoxPrefab(ModelBundleInfo modelBundleInfo, ModelInfo modelInfo)
@@ -645,8 +651,32 @@ namespace DuckovCustomModel.MonoBehaviours
 
             ModLogger.Log($"Custom model initialized: {customModelPrefab.name}");
 
-            if (IsHiddenOriginalModel)
-                ChangeToCustomModel();
+            if (CharacterMainControl == null)
+            {
+                ModLogger.LogError("CharacterMainControl is not set.");
+                return;
+            }
+
+            if (_customModelSubVisuals != null)
+                CharacterMainControl.AddSubVisuals(_customModelSubVisuals);
+
+            ChangeToCustomModelSockets();
+            UpdateColliderHeight();
+
+            if (OriginalCharacterSoundMaker != null)
+                OriginalCharacterSoundMaker.enabled = false;
+
+            var customFaceInstance = GetOriginalCustomFaceInstance();
+            if (customFaceInstance != null) customFaceInstance.gameObject.SetActive(false);
+
+            CustomModelInstance.SetActive(true);
+
+            ForceUpdateHealthBar();
+            OriginalCharacterModel.SyncHiddenToMainCharacter();
+
+            if (!IsHiddenOriginalModel)
+                ModLogger.Log("Changed to custom model.");
+            IsHiddenOriginalModel = true;
         }
 
         private void RecordOriginalModelSockets()
@@ -1101,7 +1131,8 @@ namespace DuckovCustomModel.MonoBehaviours
             var usingModel = ModEntry.UsingModel;
             if (usingModel == null) return nameKey;
 
-            var modelID = usingModel.GetAICharacterModelID(nameKey);
+            var targetTypeId = ModelTargetType.CreateAICharacterTargetType(nameKey);
+            var modelID = usingModel.GetModelID(targetTypeId);
             return !string.IsNullOrEmpty(modelID) ? nameKey : AICharacters.AllAICharactersKey;
         }
 
@@ -1391,27 +1422,44 @@ namespace DuckovCustomModel.MonoBehaviours
                 return;
             }
 
-            IdleAudioInterval interval;
-            if (Target == ModelTarget.AICharacter)
-            {
-                var nameKey = NameKey;
-                if (string.IsNullOrEmpty(nameKey))
-                {
-                    interval = ModEntry.IdleAudioConfig.GetIdleAudioInterval(Target);
-                }
-                else
-                {
-                    var effectiveNameKey = GetEffectiveAICharacterConfigKey(nameKey);
-                    interval = ModEntry.IdleAudioConfig.GetAICharacterIdleAudioInterval(effectiveNameKey);
-                }
-            }
-            else
-            {
-                interval = ModEntry.IdleAudioConfig.GetIdleAudioInterval(Target);
-            }
+            var interval = ModEntry.IdleAudioConfig.GetIdleAudioInterval(TargetTypeId);
 
             var randomInterval = Random.Range(interval.Min, interval.Max);
             _nextIdleAudioTime = Time.time + randomInterval;
+        }
+
+
+        public void NotifyModelChanged(bool isRestored)
+        {
+            ModelListManager.NotifyModelChanged(this, isRestored);
+        }
+
+        #endregion
+
+        #region 过时成员（向后兼容）
+
+        [Obsolete("Use Initialize(CharacterMainControl characterMainControl, string targetTypeId) instead.")]
+        public void Initialize(CharacterMainControl characterMainControl, ModelTarget target = ModelTarget.Character)
+        {
+            var targetTypeId = target.ToTargetTypeId();
+            Initialize(characterMainControl, targetTypeId);
+        }
+
+        [Obsolete("Use TargetTypeId instead. This property is kept for backward compatibility.")]
+        public ModelTarget Target
+        {
+            get
+            {
+                var target = ModelTargetExtensions.FromTargetTypeId(TargetTypeId);
+                return target ?? ModelTarget.Character;
+            }
+            private set => TargetTypeId = value.ToTargetTypeId();
+        }
+
+        [Obsolete("TargetTypeId is read-only and can only be set during initialization. Re-call Initialize(CharacterMainControl, string targetTypeId) if you need to change the target type. This method is kept for backward compatibility.")]
+        public void SetTarget(ModelTarget target)
+        {
+            Target = target;
         }
 
         #endregion

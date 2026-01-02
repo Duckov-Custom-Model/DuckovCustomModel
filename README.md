@@ -13,12 +13,14 @@
 - **模型搜索**：支持通过模型名称、ID 等关键词搜索模型
 - **模型管理**：自动扫描并加载模型包，支持多个模型包同时存在
 - **增量更新**：使用哈希缓存机制，只更新变更的模型包，提高刷新效率
-- **多对象支持**：每个模型目标类型（ModelTarget）可对应多个游戏对象，切换时统一应用到所有对象
+- **多对象支持**：每个模型目标类型可对应多个游戏对象，切换时统一应用到所有对象
 - **快速切换**：支持在游戏中快速切换模型，无需重启游戏
 
 ## 配置文件
 
 配置文件位于：`游戏安装路径/ModConfigs/DuckovCustomModel`
+
+**⚠️ 重要提示**：从 v1.10.0 开始，所有配置文件已升级至 v2 版本，大量旧格式 API 已标记为过时。系统会自动从旧格式迁移到新格式，但建议开发者尽快迁移到新 API。详细的过时 API 列表和迁移指南请参考 [docs/OBSOLETE_APIS_v1.10.0.md](docs/OBSOLETE_APIS_v1.10.0.md)
 
 **注意**：如果游戏安装目录为只读环境（如 macOS 上的某些安装方式），模组会自动将配置文件路径切换到游戏存档的上一级目录的 ModConfigs（Windows: `AppData\LocalLow\TeamSoda\Duckov\ModConfigs\DuckovCustomModel`，macOS/Linux: 对应的用户数据目录）。模组会自动检测并处理这种情况，无需手动配置。
 
@@ -58,123 +60,122 @@ UI 界面相关配置。
 
 ### HideEquipmentConfig.json
 
-隐藏装备配置。使用 `ModelTarget` 作为键，便于后续扩展新的模型目标类型。
+隐藏装备配置。**⚠️ 已升级至 v2 版本，旧格式已过时。**
 
 ```json
 {
-  "HideEquipment": {
-    "Character": false,
-    "Pet": false
+  "Version": 2,
+  "TargetTypeHideEquipment": {
+    "built-in:Character": false,
+    "built-in:Pet": false,
+    "built-in:AICharacter_*": false
   }
 }
 ```
 
-- `HideEquipment`：字典类型，键为 `ModelTarget` 枚举值（如 `"Character"`、`"Pet"`），值为布尔类型
-  - `Character`：是否隐藏角色原有装备（默认：`false`）
+- `Version`：配置文件版本（当前为 `2`）
+- `TargetTypeHideEquipment`：字典类型，键为目标类型 ID（字符串格式，如 `"built-in:Character"`、`"built-in:Pet"`、`"built-in:AICharacter_*"` 或 `"built-in:AICharacter_<角色名>"`），值为布尔类型
+  - `built-in:Character`：是否隐藏角色原有装备（默认：`false`）
     - 设置为 `true` 时，角色模型的 Animator 的 `HideOriginalEquipment` 参数会被设置为 `true`
     - 可在模型选择界面的设置区域中切换此选项
-  - `Pet`：是否隐藏宠物原有装备（默认：`false`）
+  - `built-in:Pet`：是否隐藏宠物原有装备（默认：`false`）
     - 设置为 `true` 时，宠物模型的 Animator 的 `HideOriginalEquipment` 参数会被设置为 `true`
     - 可在模型选择界面的设置区域中切换此选项
-  - 当添加新的 `ModelTarget` 类型时，配置会自动包含该类型（默认值为 `false`）
+  - `built-in:AICharacter_*`：所有 AI 角色的默认隐藏装备设置
+  - `built-in:AICharacter_<角色名>`：特定 AI 角色的隐藏装备设置
 
-**兼容性说明**：如果 `UIConfig.json` 中存在旧的 `HideCharacterEquipment` 或 `HidePetEquipment` 配置，系统会自动迁移到新的 `HideEquipmentConfig.json` 文件中。
+**⚠️ 过时格式（v1）**：
+- `HideEquipment` (Dictionary<ModelTarget, bool>) - 已过时，使用 `TargetTypeHideEquipment` 替代
+- `HideAICharacterEquipment` (Dictionary<string, bool>) - 已过时，使用 `TargetTypeHideEquipment` 替代
+
+**兼容性说明**：
+- 系统会自动从 v1 格式迁移到 v2 格式
+- 如果 `UIConfig.json` 中存在旧的 `HideCharacterEquipment` 或 `HidePetEquipment` 配置，系统会自动迁移到新的 `HideEquipmentConfig.json` 文件中
 
 ### UsingModel.json
 
-当前使用的模型配置。使用 `ModelTarget` 作为键，便于后续扩展新的模型目标类型。
+当前使用的模型配置。**⚠️ 已升级至 v2 版本，旧格式已过时。**
 
 ```json
 {
-  "ModelIDs": {
-    "Character": "",
-    "Pet": ""
-  },
-  "AICharacterModelIDs": {
-    "Cname_Wolf": "",
-    "Cname_Scav": "",
-    "*": ""
+  "Version": 2,
+  "TargetTypeModelIDs": {
+    "built-in:Character": "",
+    "built-in:Pet": "",
+    "built-in:AICharacter_*": "",
+    "built-in:AICharacter_Cname_Wolf": "",
+    "built-in:AICharacter_Cname_Scav": ""
   }
 }
 ```
 
-- `ModelIDs`：字典类型，键为 `ModelTarget` 枚举值（如 `"Character"`、`"Pet"`），值为模型 ID（字符串，为空时使用原始模型）
-  - `Character`：当前使用的角色模型 ID
+- `Version`：配置文件版本（当前为 `2`）
+- `TargetTypeModelIDs`：字典类型，键为目标类型 ID（字符串格式，如 `"built-in:Character"`、`"built-in:Pet"`、`"built-in:AICharacter_*"` 或 `"built-in:AICharacter_<角色名>"`），值为模型 ID（字符串，为空时使用原始模型）
+  - `built-in:Character`：当前使用的角色模型 ID
     - 设置后，游戏会在关卡加载时自动应用该模型到所有角色对象
     - 可通过模型选择界面修改，修改后会自动保存到此文件
-  - `Pet`：当前使用的宠物模型 ID
+  - `built-in:Pet`：当前使用的宠物模型 ID
     - 设置后，游戏会在关卡加载时自动应用该模型到所有宠物对象
     - 可通过模型选择界面修改，修改后会自动保存到此文件
-  - 当添加新的 `ModelTarget` 类型时，配置会自动支持该类型
+  - `built-in:AICharacter_*`：所有 AI 角色的默认模型
+    - 当某个 AI 角色没有单独配置模型时，会使用此默认模型
+    - 如果此键也没有配置，则使用原始模型
+  - `built-in:AICharacter_<角色名>`：特定 AI 角色的模型配置
+    - 可以为每个 AI 角色单独配置模型
+    - 可通过模型选择界面修改，修改后会自动保存到此文件
 
-- `AICharacterModelIDs`：字典类型，键为 AI 角色名称键（如 `"Cname_Wolf"`、`"Cname_Scav"`），值为模型 ID（字符串，为空时使用原始模型）
-  - 可以为每个 AI 角色单独配置模型
-  - 特殊键 `"*"`：为所有 AI 角色设置默认模型
-    - 当某个 AI 角色没有单独配置模型时，会使用 `"*"` 对应的模型
-    - 如果 `"*"` 也没有配置，则使用原始模型
-  - 可通过模型选择界面修改，修改后会自动保存到此文件
+**⚠️ 过时格式（v1）**：
+- `ModelIDs` (Dictionary<ModelTarget, string>) - 已过时，使用 `TargetTypeModelIDs` 替代
+- `AICharacterModelIDs` (Dictionary<string, string>) - 已过时，使用 `TargetTypeModelIDs` 替代
 
-**兼容性说明**：如果配置文件中存在旧的 `ModelID` 或 `PetModelID` 字段，系统会自动迁移到新的 `ModelIDs` 字典格式。迁移完成后，配置文件将只包含 `ModelIDs` 字典。
+**兼容性说明**：
+- 系统会自动从 v1 格式迁移到 v2 格式
+- 如果配置文件中存在旧的 `ModelID` 或 `PetModelID` 字段，系统会自动迁移到新的 `TargetTypeModelIDs` 字典格式
 
 ### IdleAudioConfig.json
 
-待机音频自动播放间隔配置。用于配置不同角色的自动播放间隔（最小值和最大值）。
+待机音频自动播放间隔配置。**⚠️ 已升级至 v2 版本，旧格式已过时。**
 
 ```json
 {
-  "IdleAudioIntervals": {
-    "Pet": {
-      "Min": 30.0,
-      "Max": 45.0
-    }
+  "Version": 2,
+  "TargetTypeIdleAudioIntervals": {
+    "built-in:Character": { "Min": 30.0, "Max": 45.0 },
+    "built-in:Pet": { "Min": 30.0, "Max": 45.0 },
+    "built-in:AICharacter_*": { "Min": 30.0, "Max": 45.0 },
+    "built-in:AICharacter_Cname_Wolf": { "Min": 20.0, "Max": 30.0 }
   },
-  "AICharacterIdleAudioIntervals": {
-    "Cname_Wolf": {
-      "Min": 20.0,
-      "Max": 30.0
-    },
-    "*": {
-      "Min": 30.0,
-      "Max": 45.0
-    }
-  },
-  "EnableIdleAudio": {
-    "Character": false,
-    "Pet": true
-  },
-  "AICharacterEnableIdleAudio": {
-    "*": true
+  "TargetTypeEnableIdleAudio": {
+    "built-in:Character": false,
+    "built-in:Pet": true,
+    "built-in:AICharacter_*": true
   }
 }
 ```
 
-- `IdleAudioIntervals`：字典类型，键为 `ModelTarget` 枚举值（如 `"Character"`、`"Pet"`），值为包含 `Min` 和 `Max` 的对象
-  - `Pet`：宠物角色的待机音频播放间隔（秒）
+- `Version`：配置文件版本（当前为 `2`）
+- `TargetTypeIdleAudioIntervals`：字典类型，键为目标类型 ID（字符串格式），值为包含 `Min` 和 `Max` 的对象
+  - `built-in:Character`：玩家角色的待机音频播放间隔（秒）
     - `Min`：最小间隔时间（默认：`30.0`）
     - `Max`：最大间隔时间（默认：`45.0`）
-    - 系统会在最小值和最大值之间随机选择间隔时间
-  - 当添加新的 `ModelTarget` 类型时，配置会自动包含该类型（默认值：`Min: 30.0, Max: 45.0`）
-
-- `AICharacterIdleAudioIntervals`：字典类型，键为 AI 角色名称键（如 `"Cname_Wolf"`、`"Cname_Scav"`），值为包含 `Min` 和 `Max` 的对象
-  - 可以为每个 AI 角色单独配置待机音频播放间隔
-  - 特殊键 `"*"`：为所有 AI 角色设置默认间隔
-    - 当某个 AI 角色没有单独配置间隔时，会使用 `"*"` 对应的间隔
-    - 如果 `"*"` 也没有配置，则使用默认值（`Min: 30.0, Max: 45.0`）
-  - `Min`：最小间隔时间（默认：`30.0`）
-  - `Max`：最大间隔时间（默认：`45.0`）
+  - `built-in:Pet`：宠物角色的待机音频播放间隔（秒）
+    - `Min`：最小间隔时间（默认：`30.0`）
+    - `Max`：最大间隔时间（默认：`45.0`）
+  - `built-in:AICharacter_*`：所有 AI 角色的默认间隔
+  - `built-in:AICharacter_<角色名>`：特定 AI 角色的间隔配置
   - 系统会在最小值和最大值之间随机选择间隔时间
 
-- `EnableIdleAudio`：字典类型，键为 `ModelTarget` 枚举值（如 `"Character"`、`"Pet"`），值为布尔值，控制该角色类型是否允许自动播放待机音频
-  - `Character`：玩家角色是否允许自动播放待机音频（默认：`false`）
-  - `Pet`：宠物角色是否允许自动播放待机音频（默认：`true`）
-  - 当添加新的 `ModelTarget` 类型时，配置会自动包含该类型（默认值：`Character` 为 `false`，其他为 `true`）
+- `TargetTypeEnableIdleAudio`：字典类型，键为目标类型 ID（字符串格式），值为布尔值，控制该目标类型是否允许自动播放待机音频
+  - `built-in:Character`：玩家角色是否允许自动播放待机音频（默认：`false`）
+  - `built-in:Pet`：宠物角色是否允许自动播放待机音频（默认：`true`）
+  - `built-in:AICharacter_*`：所有 AI 角色的默认值（默认：`true`）
+  - `built-in:AICharacter_<角色名>`：特定 AI 角色的配置
 
-- `AICharacterEnableIdleAudio`：字典类型，键为 AI 角色名称键（如 `"Cname_Wolf"`、`"Cname_Scav"`），值为布尔值，控制该 AI 角色是否允许自动播放待机音频
-  - 可以为每个 AI 角色单独配置是否允许自动播放待机音频
-  - 特殊键 `"*"`：为所有 AI 角色设置默认值
-    - 当某个 AI 角色没有单独配置时，会使用 `"*"` 对应的值
-    - 如果 `"*"` 也没有配置，则使用默认值（`true`）
-  - 默认值：`true`（允许自动播放）
+**⚠️ 过时格式（v1）**：
+- `IdleAudioIntervals` (Dictionary<ModelTarget, IdleAudioInterval>) - 已过时，使用 `TargetTypeIdleAudioIntervals` 替代
+- `AICharacterIdleAudioIntervals` (Dictionary<string, IdleAudioInterval>) - 已过时，使用 `TargetTypeIdleAudioIntervals` 替代
+- `EnableIdleAudio` (Dictionary<ModelTarget, bool>) - 已过时，使用 `TargetTypeEnableIdleAudio` 替代
+- `AICharacterEnableIdleAudio` (Dictionary<string, bool>) - 已过时，使用 `TargetTypeEnableIdleAudio` 替代
 
 **注意事项**：
 - 最小间隔时间不能小于 0.1 秒
@@ -185,39 +186,39 @@ UI 界面相关配置。
 
 ### ModelAudioConfig.json
 
-模型音频开关配置。用于控制是否使用模型提供的音频（包括按键触发、AI 自动触发和待机音频）。
+模型音频开关配置。**⚠️ 已升级至 v2 版本，旧格式已过时。**
 
 ```json
 {
-  "EnableModelAudio": {
-    "Character": true,
-    "Pet": true
-  },
-  "AICharacterEnableModelAudio": {
-    "*": true
+  "Version": 2,
+  "TargetTypeEnableModelAudio": {
+    "built-in:Character": true,
+    "built-in:Pet": true,
+    "built-in:AICharacter_*": true,
+    "built-in:AICharacter_Cname_Wolf": true
   }
 }
 ```
 
-- `EnableModelAudio`：字典类型，键为 `ModelTarget` 枚举值（如 `"Character"`、`"Pet"`），值为布尔值，控制该角色类型是否使用模型音频
-  - `Character`：玩家角色是否使用模型音频（默认：`true`）
+- `Version`：配置文件版本（当前为 `2`）
+- `TargetTypeEnableModelAudio`：字典类型，键为目标类型 ID（字符串格式），值为布尔值，控制该目标类型是否使用模型音频
+  - `built-in:Character`：玩家角色是否使用模型音频（默认：`true`）
     - 设置为 `false` 时，玩家角色的所有模型音频都不会播放（包括按键触发和待机音频）
     - 可在模型选择界面的目标设置区域中切换此选项
-  - `Pet`：宠物角色是否使用模型音频（默认：`true`）
+  - `built-in:Pet`：宠物角色是否使用模型音频（默认：`true`）
     - 设置为 `false` 时，宠物角色的所有模型音频都不会播放（包括 AI 自动触发和待机音频）
     - 可在模型选择界面的目标设置区域中切换此选项
-  - 当添加新的 `ModelTarget` 类型时，配置会自动包含该类型（默认值：`true`）
+  - `built-in:AICharacter_*`：所有 AI 角色的默认值（默认：`true`）
+  - `built-in:AICharacter_<角色名>`：特定 AI 角色的配置
+    - 可以为每个 AI 角色单独配置是否使用模型音频
+    - **配置选择逻辑**：音频设置会根据实际使用的模型来选择配置
+      - 如果 AI 角色使用的是自己的模型配置（在 `UsingModel.json` 中为该 AI 角色单独配置了模型），则使用该 AI 角色的音频设置
+      - 如果 AI 角色使用的是回退模型（`*`，即"所有 AI 角色"的默认模型），则使用`*`的音频设置
+    - 可在模型选择界面的目标设置区域中切换此选项
 
-- `AICharacterEnableModelAudio`：字典类型，键为 AI 角色名称键（如 `"Cname_Wolf"`、`"Cname_Scav"`），值为布尔值，控制该 AI 角色是否使用模型音频
-  - 可以为每个 AI 角色单独配置是否使用模型音频
-  - 特殊键 `"*"`：为所有 AI 角色设置默认值
-    - 当某个 AI 角色没有单独配置时，会使用 `"*"` 对应的值
-    - 如果 `"*"` 也没有配置，则使用默认值（`true`）
-  - **配置选择逻辑**：音频设置会根据实际使用的模型来选择配置
-    - 如果 AI 角色使用的是自己的模型配置（在 `UsingModel.json` 中为该 AI 角色单独配置了模型），则使用该 AI 角色的音频设置
-    - 如果 AI 角色使用的是回退模型（`*`，即"所有 AI 角色"的默认模型），则使用`*`的音频设置
-  - 默认值：`true`（使用模型音频）
-  - 可在模型选择界面的目标设置区域中切换此选项
+**⚠️ 过时格式（v1）**：
+- `EnableModelAudio` (Dictionary<ModelTarget, bool>) - 已过时，使用 `TargetTypeEnableModelAudio` 替代
+- `AICharacterEnableModelAudio` (Dictionary<string, bool>) - 已过时，使用 `TargetTypeEnableModelAudio` 替代
 
 **注意事项**：
 - 当禁用模型音频时，对应角色的所有模型音频都不会播放，包括：
@@ -372,13 +373,15 @@ UI 界面相关配置。
   - 当角色使用该模型并死亡时，如果配置了此字段，死亡战利品箱会使用自定义的 Prefab 替换默认模型
   - 如果未配置此字段，死亡战利品箱将使用默认模型
 - `Target`（可选）：模型适用的目标类型数组（默认：`["Character"]`）
-  - 可选值：`"Character"`（角色）、`"Pet"`（宠物）、`"AICharacter"`（AI 角色）
+  - 可选值：`"Character"`（角色）、`"Pet"`（宠物）、`"AICharacter"`（AI 角色标记）
   - 可以同时包含多个值，表示该模型同时适用于多个目标类型
+  - **注意**：`"AICharacter"` 只是一个标记，表示需要处理 `SupportedAICharacters`，它本身不会被转换为目标类型
   - 模型选择界面会根据当前选择的目标类型过滤显示兼容的模型
 - `SupportedAICharacters`（可选）：支持的 AI 角色名称键数组（仅在 `Target` 包含 `"AICharacter"` 时有效）
   - 可以指定该模型适用于哪些 AI 角色
   - 特殊值 `"*"`：表示该模型适用于所有 AI 角色
   - 如果为空数组且 `Target` 包含 `"AICharacter"`，则该模型不会应用于任何 AI 角色
+  - **重要**：如果 `Target` 中没有 `"AICharacter"` 标记，即使 `SupportedAICharacters` 有值，也不会被处理
 - `CustomSounds`（可选）：自定义音效信息数组，支持为音效配置标签
   - 每个音效可以配置多个标签（`normal`、`surprise`、`death`）
   - 未指定标签时，默认为 `["normal"]`
@@ -483,7 +486,7 @@ Animator Controller 可以使用以下参数：
 - `Hidden`：角色是否处于隐藏状态
 - `ThermalOn`：热成像是否开启
 - `InAds`：是否正在瞄准（ADS - Aim Down Sights）
-- `HideOriginalEquipment`：是否隐藏原有装备（由 `HideEquipmentConfig.json` 中对应 `ModelTarget` 的配置控制）
+- `HideOriginalEquipment`：是否隐藏原有装备（由 `HideEquipmentConfig.json` 中对应目标类型 ID 的配置控制）
 - `LeftHandEquip`：左手槽位是否有装备（基于装备的 TypeID 判断，TypeID > 0 时为 `true`）
 - `RightHandEquip`：右手槽位是否有装备（基于装备的 TypeID 判断，TypeID > 0 时为 `true`）
 - `ArmorEquip`：护甲槽位是否有装备（基于装备的 TypeID 判断，TypeID > 0 时为 `true`）
@@ -520,6 +523,11 @@ Animator Controller 可以使用以下参数：
 - `CurrentCharacterType`：当前角色类型
   - `0`：角色（Character）
   - `1`：宠物（Pet）
+  - `2`：AI 角色（AICharacter）
+  - `-1`：自定义类型（Extension，由第三方扩展注册的目标类型）
+- `CustomCharacterTypeID`：自定义类型 ID（仅在 `CurrentCharacterType` 为 `-1` 时有效）
+  - 使用 `targetTypeId` 字符串生成的哈希值，用于唯一标识自定义目标类型
+  - 当 `CurrentCharacterType` 不为 `-1` 时，此参数值为 `0`
 - `HandState`：手部状态
   - `0`：默认状态
   - `1`：正常（normal）
