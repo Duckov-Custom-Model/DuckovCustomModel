@@ -12,7 +12,8 @@ jobs:
     permissions:
       contents: write
       packages: read
-    
+      id-token: write
+
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -633,3 +634,54 @@ jobs:
             }
         }
       shell: pwsh
+
+    - name: Extract version from tag
+      id: nuget_version
+      if: success()
+      run: |
+        $tagName = "${{ github.ref_name }}"
+        $version = $tagName -replace '^v', ''
+        echo "version=$version" >> $env:GITHUB_OUTPUT
+      shell: pwsh
+
+    - name: Update info.ini with tag version
+      if: success()
+      run: |
+        $version = "${{ steps.nuget_version.outputs.version }}"
+        (Get-Content "DuckovCustomModel/info.ini") -replace '^version = .*', "version = $version" | Set-Content "DuckovCustomModel/info.ini"
+        (Get-Content "DuckovCustomModelRegister/info.ini") -replace '^version = .*', "version = $version" | Set-Content "DuckovCustomModelRegister/info.ini"
+      shell: pwsh
+
+    - name: NuGet login (OIDC -> temp API key)
+      if: success()
+      uses: NuGet/login@v1
+      id: login
+      continue-on-error: true
+      with:
+        user: ${{ secrets.NUGET_USER }}
+
+    - name: Publish DuckovCustomModel to NuGet
+      if: success()
+      uses: ducky7go/action-ducky-nuget@v1
+      continue-on-error: true
+      with:
+        mod_folder_path: "./DuckovCustomModel"
+        nuget_server: "https://api.nuget.org/v3/index.json"
+        nuget_api_key: "${{ steps.login.outputs.NUGET_API_KEY }}"
+
+    - name: Publish DuckovCustomModelRegister to NuGet
+      if: success()
+      uses: ducky7go/action-ducky-nuget@v1
+      continue-on-error: true
+      with:
+        mod_folder_path: "./DuckovCustomModelRegister"
+        nuget_server: "https://api.nuget.org/v3/index.json"
+        nuget_api_key: "${{ steps.login.outputs.NUGET_API_KEY }}"
+
+    - name: Upload NuGet packages as artifacts
+      if: success() || failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages
+        path: .nuget-temp/mod-copy/*.nupkg
+        if-no-files-found: ignore
