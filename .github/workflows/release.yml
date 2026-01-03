@@ -269,6 +269,73 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
+    - name: Check Steam Workshop Secrets
+      id: check_steam_secrets
+      run: |
+        $hasUsername = "${{ secrets.STEAM_USERNAME }}" -ne ""
+        $hasPassword = "${{ secrets.STEAM_PASSWORD }}" -ne ""
+        $hasAppId = "${{ secrets.STEAM_APP_ID }}" -ne ""
+        
+        if ($hasUsername -and $hasPassword -and $hasAppId) {
+          echo "steam_enabled=true" >> $env:GITHUB_OUTPUT
+          Write-Host "✓ Steam Workshop secrets 已配置"
+        } else {
+          echo "steam_enabled=false" >> $env:GITHUB_OUTPUT
+          Write-Host "⚠ Steam Workshop secrets 未配置，将跳过上传"
+        }
+      shell: pwsh
+    
+    - name: Setup SteamCMD
+      if: steps.check_steam_secrets.outputs.steam_enabled == 'true'
+      uses: buildalon/setup-steamcmd@v1
+    
+    - name: Prepare Workshop Content
+      if: steps.check_steam_secrets.outputs.steam_enabled == 'true'
+      id: prepare_workshop
+      run: |
+        $outputPath = "DuckovCustomModel/bin/Release/netstandard2.1"
+        $workshopDir = "DuckovCustomModel/bin/Release/WorkshopContent"
+        
+        # 检查编译输出目录是否存在
+        if (-not (Test-Path $outputPath)) {
+          Write-Error "编译输出目录不存在: $outputPath，请确保 Build 步骤已成功执行"
+          exit 1
+        }
+        
+        # 创建 Workshop 内容目录
+        if (Test-Path $workshopDir) {
+          Remove-Item -Path $workshopDir -Recurse -Force
+        }
+        New-Item -ItemType Directory -Path $workshopDir -Force | Out-Null
+        
+        # 从编译输出目录复制所有文件到 Workshop 目录
+        Get-ChildItem -Path $outputPath -Recurse -File | ForEach-Object {
+          $relativePath = $_.FullName.Substring((Resolve-Path $outputPath).Path.Length).TrimStart('\', '/')
+          $destPath = Join-Path $workshopDir $relativePath
+          $destDir = Split-Path $destPath -Parent
+          if (-not (Test-Path $destDir)) {
+            New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+          }
+          Copy-Item $_.FullName -Destination $destPath -Force
+        }
+        
+        Write-Host "✓ Workshop 内容已准备完成（从 $outputPath 复制）"
+        
+        echo "workshop_dir=$workshopDir" >> $env:GITHUB_OUTPUT
+      shell: pwsh
+    
+    - name: Upload to Steam Workshop
+      if: steps.check_steam_secrets.outputs.steam_enabled == 'true'
+      id: upload_steam
+      uses: buildalon/upload-steam@v1
+      with:
+        username: ${{ secrets.STEAM_USERNAME }}
+        password: ${{ secrets.STEAM_PASSWORD }}
+        app_id: ${{ secrets.STEAM_APP_ID }}
+        workshop_item_id: ${{ secrets.STEAM_WORKSHOP_ITEM_ID }}
+        description: ${{ steps.prepare_release_body.outputs.release_body }}
+        content_root: ${{ steps.prepare_workshop.outputs.workshop_dir }}
+    
     - name: Get Release Info
       id: release_info
       if: success()
