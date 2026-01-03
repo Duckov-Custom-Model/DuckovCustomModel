@@ -24,7 +24,7 @@ namespace DuckovCustomModel.Core.Data
 
         [JsonIgnore] public string BundleName { get; set; } = string.Empty;
 
-        public string[] TargetTypes { get; set; } = [ModelTargetType.Character];
+        public string[] TargetTypes { get; set; } = [];
 
         public string[] Features { get; set; } = [];
 
@@ -44,22 +44,20 @@ namespace DuckovCustomModel.Core.Data
 
             var targetTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            if (TargetTypes != null)
+                foreach (var targetType in TargetTypes)
+                {
+                    if (string.IsNullOrWhiteSpace(targetType)) continue;
+                    if (!ModelTargetType.IsValid(targetType)) continue;
+                    targetTypes.Add(targetType);
+                }
 
 #pragma warning disable CS0618
             var hasLegacyData = Target is { Length: > 0 } || SupportedAICharacters is { Length: > 0 };
 #pragma warning restore CS0618
-
-            if (!hasLegacyData)
-                // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
-                if (TargetTypes != null)
-                    foreach (var targetType in TargetTypes)
-                    {
-                        if (string.IsNullOrWhiteSpace(targetType)) continue;
-                        if (!ModelTargetType.IsValid(targetType)) continue;
-                        targetTypes.Add(targetType);
-                    }
-
-            MigrateFromLegacyProperties(targetTypes);
+            if (hasLegacyData)
+                MigrateFromLegacyProperties(targetTypes);
 
             if (targetTypes.Count == 0)
                 targetTypes.Add(ModelTargetType.Character);
@@ -152,7 +150,7 @@ namespace DuckovCustomModel.Core.Data
         #region 过时成员（向后兼容）
 
         [Obsolete("Use TargetTypes instead. This property is kept for backward compatibility.")]
-        public ModelTarget[] Target { get; set; } = [ModelTarget.Character];
+        public ModelTarget[] Target { get; set; } = [];
 
         [Obsolete(
             "Use TargetTypes instead. This property is kept for backward compatibility and will be automatically converted to TargetTypes in Validate().")]
