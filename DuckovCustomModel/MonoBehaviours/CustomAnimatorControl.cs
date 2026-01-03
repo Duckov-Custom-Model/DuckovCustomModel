@@ -144,6 +144,7 @@ namespace DuckovCustomModel.MonoBehaviours
             AnimatorParameterUpdaterManager.Register(new GunStateUpdater());
             AnimatorParameterUpdaterManager.Register(new AttackLayerWeightUpdater());
             AnimatorParameterUpdaterManager.Register(new ActionStateUpdater());
+            AnimatorParameterUpdaterManager.Register(new ActionTypeUpdater());
             AnimatorParameterUpdaterManager.Register(new TimeAndWeatherUpdater());
 
             _coreUpdatersRegistered = true;

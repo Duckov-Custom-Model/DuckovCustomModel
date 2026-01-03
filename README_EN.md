@@ -196,6 +196,12 @@ Model audio toggle configuration. **⚠️ Upgraded to v2, old format is obsolet
     "built-in:Character": true,
     "built-in:Pet": true,
     "built-in:AICharacter_*": true
+  },
+  "TargetTypeModelAudioVolume": {
+    "built-in:Character": 1.0,
+    "built-in:Pet": 1.0,
+    "built-in:AICharacter_*": 1.0,
+    "built-in:AICharacter_Cname_Wolf": 0.8
   }
 }
 ```
@@ -215,6 +221,16 @@ Model audio toggle configuration. **⚠️ Upgraded to v2, old format is obsolet
       - If the AI character uses its own model configuration (a model is individually configured for that AI character in `UsingModel.json`), the audio setting for that AI character will be used
       - If the AI character uses the fallback model (`*`, i.e., the default model for "all AI characters"), the audio setting for `*` will be used
     - Can be toggled in the target settings area of the model selection interface
+- `TargetTypeModelAudioVolume`: Dictionary type, where keys are target type IDs (string format), and values are float numbers (0-1) that control the model audio volume for the target type
+  - `built-in:Character`: Model audio volume for player characters (default: `1.0`, i.e., 100%)
+    - Can be adjusted via slider in the target settings area of the model selection interface
+  - `built-in:Pet`: Model audio volume for pet characters (default: `1.0`, i.e., 100%)
+    - Can be adjusted via slider in the target settings area of the model selection interface
+  - `built-in:AICharacter_*`: Default volume for all AI characters (default: `1.0`, i.e., 100%)
+  - `built-in:AICharacter_<character name>`: Volume configuration for specific AI characters
+    - Can configure volume for each AI character individually
+    - If an AI character has no specific configuration, it will fall back to `built-in:AICharacter_*` configuration
+    - Can be adjusted via slider in the target settings area of the model selection interface
 
 **⚠️ Obsolete Format (v1)**:
 - `EnableModelAudio` (Dictionary<ModelTarget, bool>) - Obsolete, use `TargetTypeEnableModelAudio` instead
@@ -607,6 +623,21 @@ The Animator Controller can use the following parameters:
   - `6`: Fishing
   - `7`: Interact
   - When `ActionRunning` is `true`, the action priority can be used to approximately determine what action the character is performing
+- `ActionType`: Action type ID (defined by `CharacterActionDefinitions`, -1 when no action)
+  - `1`: Action_Fishing
+  - `2`: Action_FishingV2
+  - `3`: CA_Attack
+  - `4`: CA_Carry
+  - `5`: CA_Dash
+  - `6`: CA_Interact
+  - `7`: CA_Reload
+  - `8`: CA_Skill
+  - `9`: CA_UseItem
+  - When `ActionRunning` is `true`, the action type can precisely determine what action type the character is performing
+  - The action type definition library supports extensions, new action types can be registered via `CharacterActionDefinitions.RegisterActionType<T>(id)`
+- `ActionFishingRodTypeID`: TypeID of fishing rod used in fishing action (only valid when `ActionType` is `1` or `2`, otherwise `0`)
+- `ActionBaitTypeID`: TypeID of bait used in fishing action (only valid when `ActionType` is `1` or `2`, otherwise `0`)
+- `ActionUseItemTypeID`: TypeID of item used in use item action (only valid when `ActionType` is `9`, otherwise `0`)
 - `Weather`: Current weather state (obtained from `TimeOfDayController.Instance.CurrentWeather`, -1 when unavailable)
   - `0`: Sunny
   - `1`: Cloudy

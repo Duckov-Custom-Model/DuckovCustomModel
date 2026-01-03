@@ -9,6 +9,7 @@ namespace DuckovCustomModel.Configs
         public int Version { get; set; } = 2;
 
         public Dictionary<string, bool> TargetTypeEnableModelAudio { get; set; } = [];
+        public Dictionary<string, float> TargetTypeModelAudioVolume { get; set; } = [];
 
         public override void LoadDefault()
         {
@@ -17,6 +18,11 @@ namespace DuckovCustomModel.Configs
             TargetTypeEnableModelAudio[ModelTargetType.Character] = true;
             TargetTypeEnableModelAudio[ModelTargetType.Pet] = true;
             TargetTypeEnableModelAudio[ModelTargetType.AllAICharacters] = true;
+
+            TargetTypeModelAudioVolume = [];
+            TargetTypeModelAudioVolume[ModelTargetType.Character] = 1f;
+            TargetTypeModelAudioVolume[ModelTargetType.Pet] = 1f;
+            TargetTypeModelAudioVolume[ModelTargetType.AllAICharacters] = 1f;
         }
 
         public override bool Validate()
@@ -31,13 +37,19 @@ namespace DuckovCustomModel.Configs
             }
 
             TargetTypeEnableModelAudio ??= [];
+            TargetTypeModelAudioVolume ??= [];
 
             var builtInTargetTypes = new[] { ModelTargetType.Character, ModelTargetType.Pet };
             foreach (var targetTypeId in builtInTargetTypes)
+            {
                 if (TargetTypeEnableModelAudio.TryAdd(targetTypeId, true))
                     modified = true;
+                if (TargetTypeModelAudioVolume.TryAdd(targetTypeId, 1f))
+                    modified = true;
+            }
 
             if (TargetTypeEnableModelAudio.TryAdd(ModelTargetType.AllAICharacters, true)) modified = true;
+            if (TargetTypeModelAudioVolume.TryAdd(ModelTargetType.AllAICharacters, 1f)) modified = true;
 
 #pragma warning disable CS0618
             EnableModelAudio ??= [];
@@ -61,6 +73,7 @@ namespace DuckovCustomModel.Configs
             if (other is not ModelAudioConfig otherConfig) return;
             Version = otherConfig.Version;
             TargetTypeEnableModelAudio = new(otherConfig.TargetTypeEnableModelAudio);
+            TargetTypeModelAudioVolume = new(otherConfig.TargetTypeModelAudioVolume);
 #pragma warning disable CS0618
             EnableModelAudio = new(otherConfig.EnableModelAudio);
             AICharacterEnableModelAudio = new(otherConfig.AICharacterEnableModelAudio);
@@ -101,6 +114,22 @@ namespace DuckovCustomModel.Configs
         {
             if (string.IsNullOrWhiteSpace(targetTypeId)) return;
             TargetTypeEnableModelAudio[targetTypeId] = enabled;
+        }
+
+        public float GetModelAudioVolume(string targetTypeId)
+        {
+            if (string.IsNullOrWhiteSpace(targetTypeId)) return 1f;
+            if (TargetTypeModelAudioVolume.TryGetValue(targetTypeId, out var volume))
+                return volume;
+            return ModelTargetType.IsAICharacterTargetType(targetTypeId)
+                ? TargetTypeModelAudioVolume.GetValueOrDefault(ModelTargetType.AllAICharacters, 1f)
+                : 1f;
+        }
+
+        public void SetModelAudioVolume(string targetTypeId, float volume)
+        {
+            if (string.IsNullOrWhiteSpace(targetTypeId)) return;
+            TargetTypeModelAudioVolume[targetTypeId] = Math.Clamp(volume, 0f, 1f);
         }
 
         #region 过时成员（向后兼容）

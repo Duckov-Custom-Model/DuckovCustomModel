@@ -195,6 +195,12 @@ UI 界面相关配置。
     "built-in:Pet": true,
     "built-in:AICharacter_*": true,
     "built-in:AICharacter_Cname_Wolf": true
+  },
+  "TargetTypeModelAudioVolume": {
+    "built-in:Character": 1.0,
+    "built-in:Pet": 1.0,
+    "built-in:AICharacter_*": 1.0,
+    "built-in:AICharacter_Cname_Wolf": 0.8
   }
 }
 ```
@@ -214,6 +220,16 @@ UI 界面相关配置。
       - 如果 AI 角色使用的是自己的模型配置（在 `UsingModel.json` 中为该 AI 角色单独配置了模型），则使用该 AI 角色的音频设置
       - 如果 AI 角色使用的是回退模型（`*`，即"所有 AI 角色"的默认模型），则使用`*`的音频设置
     - 可在模型选择界面的目标设置区域中切换此选项
+- `TargetTypeModelAudioVolume`：字典类型，键为目标类型 ID（字符串格式），值为浮点数（0-1），控制该目标类型的模型音效音量
+  - `built-in:Character`：玩家角色的模型音效音量（默认：`1.0`，即 100%）
+    - 可在模型选择界面的目标设置区域中通过滑块调整
+  - `built-in:Pet`：宠物角色的模型音效音量（默认：`1.0`，即 100%）
+    - 可在模型选择界面的目标设置区域中通过滑块调整
+  - `built-in:AICharacter_*`：所有 AI 角色的默认音量（默认：`1.0`，即 100%）
+  - `built-in:AICharacter_<角色名>`：特定 AI 角色的音量配置
+    - 可以为每个 AI 角色单独配置音量
+    - 如果 AI 角色没有特定配置，会回退到 `built-in:AICharacter_*` 的配置
+    - 可在模型选择界面的目标设置区域中通过滑块调整
 
 **⚠️ 过时格式（v1）**：
 - `EnableModelAudio` (Dictionary<ModelTarget, bool>) - 已过时，使用 `TargetTypeEnableModelAudio` 替代
@@ -590,6 +606,21 @@ Animator Controller 可以使用以下参数：
   - `6`：Fishing（钓鱼）
   - `7`：Interact（交互）
   - 当 `ActionRunning` 为 `true` 时，动作优先级可以近似用于判断角色正在执行什么动作
+- `ActionType`：动作类型 ID（由 `CharacterActionDefinitions` 定义，无动作时为 `-1`）
+  - `1`：Action_Fishing（钓鱼）
+  - `2`：Action_FishingV2（钓鱼 V2）
+  - `3`：CA_Attack（攻击）
+  - `4`：CA_Carry（搬运）
+  - `5`：CA_Dash（冲刺）
+  - `6`：CA_Interact（交互）
+  - `7`：CA_Reload（装弹）
+  - `8`：CA_Skill（技能）
+  - `9`：CA_UseItem（使用物品）
+  - 当 `ActionRunning` 为 `true` 时，动作类型可以精确判断角色正在执行的动作类型
+  - 动作类型定义库支持扩展，可通过 `CharacterActionDefinitions.RegisterActionType<T>(id)` 注册新的动作类型
+- `ActionFishingRodTypeID`：钓鱼动作中使用的鱼竿 TypeID（仅在 `ActionType` 为 `1` 或 `2` 时有效，其他情况为 `0`）
+- `ActionBaitTypeID`：钓鱼动作中使用的鱼饵 TypeID（仅在 `ActionType` 为 `1` 或 `2` 时有效，其他情况为 `0`）
+- `ActionUseItemTypeID`：使用物品动作中使用的物品 TypeID（仅在 `ActionType` 为 `9` 时有效，其他情况为 `0`）
 - `Weather`：当前天气状态（由 `TimeOfDayController.Instance.CurrentWeather` 获取，不可用时为 -1）
   - `0`：晴天（Sunny）
   - `1`：多云（Cloudy）

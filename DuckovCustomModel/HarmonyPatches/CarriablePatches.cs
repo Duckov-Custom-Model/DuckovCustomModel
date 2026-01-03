@@ -32,10 +32,6 @@ namespace DuckovCustomModel.HarmonyPatches
                 customSocketMarker.SocketScale = ___rb.transform.localScale;
             }
 
-            var dontHideAsEquipment = ___rb.GetComponent<DontHideAsEquipment>();
-            if (dontHideAsEquipment == null)
-                ___rb.gameObject.AddComponent<DontHideAsEquipment>();
-
             var modelHandler = targetCharacter.GetComponent<ModelHandler>();
             if (modelHandler == null || !modelHandler.IsInitialized)
                 return;
@@ -62,7 +58,6 @@ namespace DuckovCustomModel.HarmonyPatches
             var gameObject = ___rb.gameObject;
             modelHandler.UnregisterCustomSocketObject(gameObject, false);
             RemoveComponent(gameObject.GetComponent<CustomSocketMarker>());
-            RemoveComponent(gameObject.GetComponent<DontHideAsEquipment>());
         }
 
         private static void RemoveComponent(Component? component)

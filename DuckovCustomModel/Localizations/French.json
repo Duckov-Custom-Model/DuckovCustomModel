@@ -66,6 +66,7 @@
   "DaysAgo": "il y a jours",
   "DownloadLinks": "Liens de téléchargement",
   "PublishedAt": "Publié le",
-  "CharacterModelWarning": "Certains personnages utilisent des modèles de bâtiment, donc toutes les instances de ce personnage ne peuvent pas être correctement remplacées par le modèle défini"
+  "CharacterModelWarning": "Certains personnages utilisent des modèles de bâtiment, donc toutes les instances de ce personnage ne peuvent pas être correctement remplacées par le modèle défini",
+  "ModelAudioVolume": "Volume audio du modèle"
 }
 

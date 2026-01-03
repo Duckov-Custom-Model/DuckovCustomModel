@@ -66,6 +66,7 @@
   "DaysAgo": "ngày trước",
   "DownloadLinks": "Liên kết tải xuống",
   "PublishedAt": "Được xuất bản vào",
-  "CharacterModelWarning": "Một số nhân vật sử dụng mô hình tòa nhà, vì vậy không phải tất cả các phiên bản của nhân vật này có thể được thay thế đúng cách bằng mô hình đã đặt"
+  "CharacterModelWarning": "Một số nhân vật sử dụng mô hình tòa nhà, vì vậy không phải tất cả các phiên bản của nhân vật này có thể được thay thế đúng cách bằng mô hình đã đặt",
+  "ModelAudioVolume": "Âm lượng âm thanh mô hình"
 }
 

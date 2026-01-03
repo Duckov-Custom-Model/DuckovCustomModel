@@ -36,9 +36,6 @@ namespace DuckovCustomModel.HarmonyPatches
                 customSocketMarker.OriginParent = socketTransform;
             }
 
-            var dontHideAsEquipment = instance.GetComponent<DontHideAsEquipment>();
-            if (dontHideAsEquipment == null) instance.gameObject.AddComponent<DontHideAsEquipment>();
-
             modelHandler.RegisterCustomSocketObject(instance.gameObject);
         }
 

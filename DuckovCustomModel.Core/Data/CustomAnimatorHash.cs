@@ -86,6 +86,10 @@ namespace DuckovCustomModel.Core.Data
         public static readonly int ActionRunning = Animator.StringToHash("ActionRunning"); // bool
         public static readonly int ActionProgress = Animator.StringToHash("ActionProgress"); // float
         public static readonly int ActionPriority = Animator.StringToHash("ActionPriority"); // int
+        public static readonly int ActionType = Animator.StringToHash("ActionType"); // int
+        public static readonly int ActionFishingRodTypeID = Animator.StringToHash("ActionFishingRodTypeID"); // int
+        public static readonly int ActionBaitTypeID = Animator.StringToHash("ActionBaitTypeID"); // int
+        public static readonly int ActionUseItemTypeID = Animator.StringToHash("ActionUseItemTypeID"); // int
 
         public static readonly int Weather = Animator.StringToHash("Weather"); // int
         public static readonly int Time = Animator.StringToHash("Time"); // float
@@ -167,6 +171,13 @@ namespace DuckovCustomModel.Core.Data
                 new() { Name = "ActionRunning", Hash = ActionRunning, Type = "bool", InitialValue = false },
                 new() { Name = "ActionProgress", Hash = ActionProgress, Type = "float", InitialValue = 0f },
                 new() { Name = "ActionPriority", Hash = ActionPriority, Type = "int", InitialValue = 0 },
+                new() { Name = "ActionType", Hash = ActionType, Type = "int", InitialValue = -1 },
+                new()
+                {
+                    Name = "ActionFishingRodTypeID", Hash = ActionFishingRodTypeID, Type = "int", InitialValue = 0,
+                },
+                new() { Name = "ActionBaitTypeID", Hash = ActionBaitTypeID, Type = "int", InitialValue = 0 },
+                new() { Name = "ActionUseItemTypeID", Hash = ActionUseItemTypeID, Type = "int", InitialValue = 0 },
                 new() { Name = "Weather", Hash = Weather, Type = "int", InitialValue = -1 },
                 new() { Name = "Time", Hash = Time, Type = "float", InitialValue = -1f },
                 new() { Name = "TimePhase", Hash = TimePhase, Type = "int", InitialValue = -1 },

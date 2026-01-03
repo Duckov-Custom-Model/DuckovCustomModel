@@ -2,6 +2,26 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.10.1
+
+- 修复角色装备隐藏逻辑
+  - 改为和原版一致的槽位目标查找而非控制槽位下所有对象
+- 新增 ActionType 动画器参数
+  - 新增 `ActionType` 参数（int 类型），用于精确标识角色当前执行的动作类型
+  - 支持的动作类型包括：钓鱼、攻击、搬运、冲刺、交互、装弹、技能、使用物品等
+  - 动作类型定义库支持扩展，可通过 `CharacterActionDefinitions.RegisterActionType<T>(id)` 注册新的动作类型
+  - 当 `ActionRunning` 为 `true` 时，可以通过 `ActionType` 精确判断角色正在执行的动作类型
+- 新增动作附属参数
+  - 新增 `ActionFishingRodTypeID` 参数（int 类型），用于获取钓鱼动作中使用的鱼竿 TypeID（仅在 `ActionType` 为 `1` 或 `2` 时有效）
+  - 新增 `ActionBaitTypeID` 参数（int 类型），用于获取钓鱼动作中使用的鱼饵 TypeID（仅在 `ActionType` 为 `1` 或 `2` 时有效）
+  - 新增 `ActionUseItemTypeID` 参数（int 类型），用于获取使用物品动作中使用的物品 TypeID（仅在 `ActionType` 为 `9` 时有效）
+- 新增模型音效音量控制功能
+  - 在 `ModelAudioConfig.json` 中新增 `TargetTypeModelAudioVolume` 配置项，支持按目标类型分别设置音量（0-1）
+  - 在模型选择界面的目标设置区域中新增音量滑块，可实时调整模型音效音量
+  - 所有通过 `PlaySound()` 播放的音效都会自动应用音量设置
+  - AI 角色如果没有特定配置，会回退到 `AllAICharacters` 的配置
+  - 默认音量为 1.0（100%），保持向后兼容
+
 ## v1.10.0
 
 ### ⚠️ 重大变更：API 重构

@@ -97,6 +97,7 @@ namespace DuckovCustomModel.Localizations
                 "CharacterModelWarning",
                 "Some characters use building models, so not all instances of this character may be correctly replaced with the set model"
             },
+            { "ModelAudioVolume", "Model Audio Volume" },
         };
 
         public static string Title => GetText("Title");
@@ -167,6 +168,7 @@ namespace DuckovCustomModel.Localizations
         public static string DownloadLinks => GetText("DownloadLinks");
         public static string PublishedAt => GetText("PublishedAt");
         public static string CharacterModelWarning => GetText("CharacterModelWarning");
+        public static string ModelAudioVolume => GetText("ModelAudioVolume");
 
         public static event Action<SystemLanguage>? OnLanguageChangedEvent;
 

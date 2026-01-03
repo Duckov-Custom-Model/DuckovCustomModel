@@ -12,6 +12,8 @@ using DuckovCustomModel.Core.MonoBehaviours.Animators;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.Utils;
 using FMOD.Studio;
+using ItemStatsSystem;
+using ItemStatsSystem.Items;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -96,6 +98,15 @@ namespace DuckovCustomModel.MonoBehaviours
             }
         }
 
+        public float ModelAudioVolume
+        {
+            get
+            {
+                var modelAudioConfig = ModEntry.ModelAudioConfig;
+                return modelAudioConfig?.GetModelAudioVolume(TargetTypeId) ?? 1f;
+            }
+        }
+
         public string TargetTypeId { get; private set; } = string.Empty;
         public string? NameKey => CharacterMainControl?.characterPreset?.nameKey;
 
@@ -128,36 +139,25 @@ namespace DuckovCustomModel.MonoBehaviours
         {
             RefreshPlayingSounds();
 
-            if (OriginalCharacterModel == null) return;
+            if (CharacterMainControl == null || OriginalCharacterModel == null) return;
 
-            var equipmentSockets = new[]
+            var equipmentController = CharacterMainControl.EquipmentController;
+
+            var equipmentAgents = new[]
             {
-                CharacterModelSocketUtils.GetHelmetSocket(OriginalCharacterModel),
-                CharacterModelSocketUtils.GetFaceSocket(OriginalCharacterModel),
-                CharacterModelSocketUtils.GetArmorSocket(OriginalCharacterModel),
-                CharacterModelSocketUtils.GetBackpackSocket(OriginalCharacterModel),
+                GetSlotActiveAgent(equipmentController.armorSlot),
+                GetSlotActiveAgent(equipmentController.helmatSlot),
+                GetSlotActiveAgent(equipmentController.backpackSlot),
+                GetSlotActiveAgent(equipmentController.faceMaskSlot),
+                GetSlotActiveAgent(equipmentController.headsetSlot),
             };
 
             if (IsHiddenOriginalEquipment)
-                foreach (var socket in equipmentSockets)
-                {
-                    if (socket == null) continue;
-                    foreach (Transform child in socket)
-                        if (child != null && child.gameObject.activeSelf)
-                        {
-                            var dontHide = child.GetComponent<DontHideAsEquipment>();
-                            if (dontHide == null)
-                                child.gameObject.SetActive(false);
-                        }
-                }
+                foreach (var agent in equipmentAgents.OfType<ItemAgent>().Where(agent => agent.gameObject.activeSelf))
+                    agent.gameObject.SetActive(false);
             else
-                foreach (var socket in equipmentSockets)
-                {
-                    if (socket == null) continue;
-                    foreach (Transform child in socket)
-                        if (child != null && !child.gameObject.activeSelf)
-                            child.gameObject.SetActive(true);
-                }
+                foreach (var agent in equipmentAgents.OfType<ItemAgent>().Where(agent => !agent.gameObject.activeSelf))
+                    agent.gameObject.SetActive(true);
         }
 
         private void OnDestroy()
@@ -771,9 +771,6 @@ namespace DuckovCustomModel.MonoBehaviours
             if (headCollider == null) return;
 
             _headColliderObject = headCollider.gameObject;
-
-            if (headCollider.gameObject.GetComponent<DontHideAsEquipment>() != null) return;
-            headCollider.gameObject.AddComponent<DontHideAsEquipment>();
         }
 
         private void RecordOriginalSoundMaker()
@@ -823,6 +820,12 @@ namespace DuckovCustomModel.MonoBehaviours
                 targetGameObject.transform.localScale = Vector3.one;
                 return;
             }
+        }
+
+        private static ItemAgent? GetSlotActiveAgent(Slot? slot)
+        {
+            if (slot == null || slot.Content == null) return null;
+            return slot.Content.ActiveAgent != null ? slot.Content.ActiveAgent : null;
         }
 
         private Transform? GetSocketTransform(string socketName)
@@ -1282,7 +1285,8 @@ namespace DuckovCustomModel.MonoBehaviours
             string eventName,
             string path,
             bool loop = false,
-            SoundPlayMode playMode = SoundPlayMode.Normal)
+            SoundPlayMode playMode = SoundPlayMode.Normal,
+            float volume = 1f)
         {
             if (string.IsNullOrEmpty(path)) return null;
 
@@ -1319,6 +1323,9 @@ namespace DuckovCustomModel.MonoBehaviours
                 ModLogger.LogError($"Failed to play sound '{eventName}' from path: {path}");
                 return null;
             }
+
+            var finalVolume = volume * ModelAudioVolume;
+            eventInstance.Value.setVolume(finalVolume);
 
             existingInstances.Add(eventInstance.Value);
 
@@ -1456,7 +1463,8 @@ namespace DuckovCustomModel.MonoBehaviours
             private set => TargetTypeId = value.ToTargetTypeId();
         }
 
-        [Obsolete("TargetTypeId is read-only and can only be set during initialization. Re-call Initialize(CharacterMainControl, string targetTypeId) if you need to change the target type. This method is kept for backward compatibility.")]
+        [Obsolete(
+            "TargetTypeId is read-only and can only be set during initialization. Re-call Initialize(CharacterMainControl, string targetTypeId) if you need to change the target type. This method is kept for backward compatibility.")]
         public void SetTarget(ModelTarget target)
         {
             Target = target;
