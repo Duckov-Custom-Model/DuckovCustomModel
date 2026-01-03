@@ -91,18 +91,19 @@ namespace DuckovCustomModel.UI.Components
             {
                 TargetInfo.CreateCharacterTarget(),
                 TargetInfo.CreatePetTarget(),
-                TargetInfo.CreateAllAICharactersTarget(),
             };
-
-            targets.AddRange(from nameKey in AICharacters.SupportedAICharacters
-                let displayName = LocalizationManager.GetPlainText(nameKey)
-                select TargetInfo.CreateAICharacterTarget(nameKey, displayName));
 
             var extensionTargetTypes = ModelTargetTypeRegistry.GetAllAvailableTargetTypes()
                 .Where(ModelTargetType.IsExtension);
 
             targets.AddRange(extensionTargetTypes.Select(targetTypeId =>
                 TargetInfo.CreateFromTargetTypeId(targetTypeId, LocalizationManager.CurrentLanguage)));
+
+            targets.Add(TargetInfo.CreateAllAICharactersTarget());
+
+            targets.AddRange(from nameKey in AICharacters.SupportedAICharacters
+                let displayName = LocalizationManager.GetPlainText(nameKey)
+                select TargetInfo.CreateAICharacterTarget(nameKey, displayName));
 
             return targets;
         }
