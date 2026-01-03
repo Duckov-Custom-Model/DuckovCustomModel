@@ -590,6 +590,21 @@ Animator Controller 可以使用以下参数：
   - `6`：Fishing（钓鱼）
   - `7`：Interact（交互）
   - 当 `ActionRunning` 为 `true` 时，动作优先级可以近似用于判断角色正在执行什么动作
+- `ActionType`：动作类型 ID（由 `CharacterActionDefinitions` 定义，无动作时为 `-1`）
+  - `1`：Action_Fishing（钓鱼）
+  - `2`：Action_FishingV2（钓鱼 V2）
+  - `3`：CA_Attack（攻击）
+  - `4`：CA_Carry（搬运）
+  - `5`：CA_Dash（冲刺）
+  - `6`：CA_Interact（交互）
+  - `7`：CA_Reload（装弹）
+  - `8`：CA_Skill（技能）
+  - `9`：CA_UseItem（使用物品）
+  - 当 `ActionRunning` 为 `true` 时，动作类型可以精确判断角色正在执行的动作类型
+  - 动作类型定义库支持扩展，可通过 `CharacterActionDefinitions.RegisterActionType<T>(id)` 注册新的动作类型
+- `ActionFishingRodTypeID`：钓鱼动作中使用的鱼竿 TypeID（仅在 `ActionType` 为 `1` 或 `2` 时有效，其他情况为 `0`）
+- `ActionBaitTypeID`：钓鱼动作中使用的鱼饵 TypeID（仅在 `ActionType` 为 `1` 或 `2` 时有效，其他情况为 `0`）
+- `ActionUseItemTypeID`：使用物品动作中使用的物品 TypeID（仅在 `ActionType` 为 `9` 时有效，其他情况为 `0`）
 - `Weather`：当前天气状态（由 `TimeOfDayController.Instance.CurrentWeather` 获取，不可用时为 -1）
   - `0`：晴天（Sunny）
   - `1`：多云（Cloudy）

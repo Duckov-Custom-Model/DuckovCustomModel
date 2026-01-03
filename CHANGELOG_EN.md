@@ -2,6 +2,20 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.1
+
+- Fixed character equipment hiding logic
+  - Changed to slot target lookup consistent with vanilla instead of controlling all objects under the slot
+- Added ActionType animator parameter
+  - Added `ActionType` parameter (int type) to precisely identify the action type the character is currently performing
+  - Supported action types include: Fishing, Attack, Carry, Dash, Interact, Reload, Skill, UseItem, etc.
+  - The action type definition library supports extensions, new action types can be registered via `CharacterActionDefinitions.RegisterActionType<T>(id)`
+  - When `ActionRunning` is `true`, the action type can precisely determine what action type the character is performing
+- Added action sub-parameters
+  - Added `ActionFishingRodTypeID` parameter (int type) to get the TypeID of fishing rod used in fishing action (only valid when `ActionType` is `1` or `2`)
+  - Added `ActionBaitTypeID` parameter (int type) to get the TypeID of bait used in fishing action (only valid when `ActionType` is `1` or `2`)
+  - Added `ActionUseItemTypeID` parameter (int type) to get the TypeID of item used in use item action (only valid when `ActionType` is `9`)
+
 ## v1.10.0
 
 ### ⚠️ Breaking Changes: API Refactoring

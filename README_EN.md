@@ -607,6 +607,21 @@ The Animator Controller can use the following parameters:
   - `6`: Fishing
   - `7`: Interact
   - When `ActionRunning` is `true`, the action priority can be used to approximately determine what action the character is performing
+- `ActionType`: Action type ID (defined by `CharacterActionDefinitions`, -1 when no action)
+  - `1`: Action_Fishing
+  - `2`: Action_FishingV2
+  - `3`: CA_Attack
+  - `4`: CA_Carry
+  - `5`: CA_Dash
+  - `6`: CA_Interact
+  - `7`: CA_Reload
+  - `8`: CA_Skill
+  - `9`: CA_UseItem
+  - When `ActionRunning` is `true`, the action type can precisely determine what action type the character is performing
+  - The action type definition library supports extensions, new action types can be registered via `CharacterActionDefinitions.RegisterActionType<T>(id)`
+- `ActionFishingRodTypeID`: TypeID of fishing rod used in fishing action (only valid when `ActionType` is `1` or `2`, otherwise `0`)
+- `ActionBaitTypeID`: TypeID of bait used in fishing action (only valid when `ActionType` is `1` or `2`, otherwise `0`)
+- `ActionUseItemTypeID`: TypeID of item used in use item action (only valid when `ActionType` is `9`, otherwise `0`)
 - `Weather`: Current weather state (obtained from `TimeOfDayController.Instance.CurrentWeather`, -1 when unavailable)
   - `0`: Sunny
   - `1`: Cloudy
