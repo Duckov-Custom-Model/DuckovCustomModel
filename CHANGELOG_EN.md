@@ -2,6 +2,10 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.1-fix2
+
+- Fixed model target definition validation logic error, now `TargetTypes` can be read and written correctly
+
 ## v1.10.1-fix1
 
 - Optimized model list description text display

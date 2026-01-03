@@ -2,6 +2,10 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.10.1-fix2
+
+- 修复模型目标定义验证逻辑的错误，现在能正确读写 TargetTypes 逻辑了
+
 ## v1.10.1-fix1
 
 - 优化模型列表描述文本显示
