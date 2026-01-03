@@ -8,6 +8,7 @@ using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.UI.Base;
 using DuckovCustomModel.UI.Data;
+using DuckovCustomModel.UI.Utils;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -362,6 +363,11 @@ namespace DuckovCustomModel.UI.Components
             nameTextComponent.enableWordWrapping = true;
             nameTextComponent.overflowMode = TextOverflowModes.Overflow;
 
+            var nameLayoutElement = nameText.AddComponent<LayoutElement>();
+            nameLayoutElement.minHeight = 24;
+            nameLayoutElement.flexibleHeight = 0;
+            nameLayoutElement.flexibleWidth = 1;
+
             var infoText = UIFactory.CreateText("Info", contentArea.transform,
                 Localization.GetModelInfo(model.ModelID, model.Author, model.Version, model.BundleName),
                 16,
@@ -370,6 +376,11 @@ namespace DuckovCustomModel.UI.Components
             var infoTextComponent = infoText.GetComponent<TextMeshProUGUI>();
             infoTextComponent.enableWordWrapping = true;
             infoTextComponent.overflowMode = TextOverflowModes.Truncate;
+
+            var infoLayoutElement = infoText.AddComponent<LayoutElement>();
+            infoLayoutElement.minHeight = 18;
+            infoLayoutElement.flexibleHeight = 0;
+            infoLayoutElement.flexibleWidth = 1;
 
             if (hasError)
             {
@@ -391,20 +402,36 @@ namespace DuckovCustomModel.UI.Components
 
             if (!string.IsNullOrEmpty(model.Description))
             {
-                var descSpacer = new GameObject("DescriptionSpacer", typeof(RectTransform));
-                descSpacer.transform.SetParent(contentArea.transform, false);
-                var descSpacerLayout = descSpacer.AddComponent<LayoutElement>();
-                descSpacerLayout.minHeight = 10;
-                descSpacerLayout.preferredHeight = 10;
-                descSpacerLayout.flexibleHeight = 0;
+                var descScrollView = UIFactory.CreateNonInteractiveScrollView("DescriptionScrollView",
+                    contentArea.transform,
+                    out var descContent);
+                UIFactory.SetupRectTransform(descScrollView.gameObject, Vector2.zero, Vector2.one, Vector2.zero);
 
-                var descText = UIFactory.CreateText("Description", contentArea.transform, model.Description, 15,
+                var descScrollViewLayout = descScrollView.gameObject.AddComponent<LayoutElement>();
+                descScrollViewLayout.minHeight = 0f;
+                descScrollViewLayout.preferredHeight = 70f;
+                descScrollViewLayout.flexibleHeight = 0f;
+                descScrollViewLayout.flexibleWidth = 1f;
+
+                UIFactory.SetupRectTransform(descContent, new Vector2(0, 0), new Vector2(1, 1), Vector2.zero);
+
+                UIFactory.SetupVerticalLayoutGroup(descContent, 0f, new RectOffset(0, 0, 0, 0),
+                    TextAnchor.UpperLeft, childForceExpandWidth: true);
+
+                var descText = UIFactory.CreateText("Description", descContent.transform, model.Description, 15,
                     new(0.7f, 0.7f, 0.7f, 1), TextAnchor.UpperLeft);
                 var descTextComponent = descText.GetComponent<TextMeshProUGUI>();
                 descTextComponent.enableWordWrapping = true;
                 descTextComponent.overflowMode = TextOverflowModes.Overflow;
 
+                UIFactory.SetupRectTransform(descText, new Vector2(0, 1), new Vector2(1, 1), Vector2.zero,
+                    pivot: new Vector2(0.5f, 1));
+
                 UIFactory.SetupContentSizeFitter(descText, ContentSizeFitter.FitMode.Unconstrained);
+                UIFactory.SetupContentSizeFitter(descContent, ContentSizeFitter.FitMode.Unconstrained);
+
+                var autoScrollView = descScrollView.gameObject.AddComponent<AutoScrollView>();
+                autoScrollView.Initialize(descScrollView, descContent.GetComponent<RectTransform>(), 70f);
             }
 
             var button = buttonObj.GetComponent<Button>();
@@ -429,7 +456,7 @@ namespace DuckovCustomModel.UI.Components
             if (usingModel == null) return;
 
             var targetTypeId = _currentTarget.GetTargetTypeId();
-            ModelListManager.SetModelInConfig(targetTypeId, model.ModelID, true);
+            ModelListManager.SetModelInConfig(targetTypeId, model.ModelID);
 
             OnModelSelected?.Invoke();
             Refresh();
@@ -443,7 +470,7 @@ namespace DuckovCustomModel.UI.Components
             if (usingModel == null) return;
 
             var targetTypeId = _currentTarget.GetTargetTypeId();
-            ModelListManager.SetModelInConfig(targetTypeId, string.Empty, true);
+            ModelListManager.SetModelInConfig(targetTypeId, string.Empty);
 
             OnModelSelected?.Invoke();
             Refresh();
