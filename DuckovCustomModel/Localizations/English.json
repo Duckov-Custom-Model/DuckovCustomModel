@@ -66,6 +66,7 @@
   "DaysAgo": "days ago",
   "DownloadLinks": "Download Links",
   "PublishedAt": "Published At",
-  "CharacterModelWarning": "Some characters use building models, so not all instances of this character may be correctly replaced with the set model"
+  "CharacterModelWarning": "Some characters use building models, so not all instances of this character may be correctly replaced with the set model",
+  "ModelAudioVolume": "Model Audio Volume"
 }
 

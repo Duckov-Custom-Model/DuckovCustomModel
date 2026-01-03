@@ -66,6 +66,7 @@
   "DaysAgo": "dni temu",
   "DownloadLinks": "Linki do pobrania",
   "PublishedAt": "Opublikowano",
-  "CharacterModelWarning": "Niektóre postacie używają modeli budynków, więc nie wszystkie instancje tej postaci mogą być poprawnie zastąpione ustawionym modelem"
+  "CharacterModelWarning": "Niektóre postacie używają modeli budynków, więc nie wszystkie instancje tej postaci mogą być poprawnie zastąpione ustawionym modelem",
+  "ModelAudioVolume": "Głośność dźwięku modelu"
 }
 

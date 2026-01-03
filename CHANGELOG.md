@@ -15,6 +15,12 @@
   - 新增 `ActionFishingRodTypeID` 参数（int 类型），用于获取钓鱼动作中使用的鱼竿 TypeID（仅在 `ActionType` 为 `1` 或 `2` 时有效）
   - 新增 `ActionBaitTypeID` 参数（int 类型），用于获取钓鱼动作中使用的鱼饵 TypeID（仅在 `ActionType` 为 `1` 或 `2` 时有效）
   - 新增 `ActionUseItemTypeID` 参数（int 类型），用于获取使用物品动作中使用的物品 TypeID（仅在 `ActionType` 为 `9` 时有效）
+- 新增模型音效音量控制功能
+  - 在 `ModelAudioConfig.json` 中新增 `TargetTypeModelAudioVolume` 配置项，支持按目标类型分别设置音量（0-1）
+  - 在模型选择界面的目标设置区域中新增音量滑块，可实时调整模型音效音量
+  - 所有通过 `PlaySound()` 播放的音效都会自动应用音量设置
+  - AI 角色如果没有特定配置，会回退到 `AllAICharacters` 的配置
+  - 默认音量为 1.0（100%），保持向后兼容
 
 ## v1.10.0
 

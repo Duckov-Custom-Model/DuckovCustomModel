@@ -66,6 +66,7 @@
   "DaysAgo": "天前",
   "DownloadLinks": "下載連結",
   "PublishedAt": "發布時間",
-  "CharacterModelWarning": "由於部分角色使用建築模型，因此不保證所有該角色都能被正確替換為設置的模型"
+  "CharacterModelWarning": "由於部分角色使用建築模型，因此不保證所有該角色都能被正確替換為設置的模型",
+  "ModelAudioVolume": "模型音效音量"
 }
 

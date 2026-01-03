@@ -15,6 +15,12 @@ English | [中文](CHANGELOG.md)
   - Added `ActionFishingRodTypeID` parameter (int type) to get the TypeID of fishing rod used in fishing action (only valid when `ActionType` is `1` or `2`)
   - Added `ActionBaitTypeID` parameter (int type) to get the TypeID of bait used in fishing action (only valid when `ActionType` is `1` or `2`)
   - Added `ActionUseItemTypeID` parameter (int type) to get the TypeID of item used in use item action (only valid when `ActionType` is `9`)
+- Added model audio volume control feature
+  - Added `TargetTypeModelAudioVolume` configuration in `ModelAudioConfig.json`, supporting per-target-type volume settings (0-1)
+  - Added volume slider in the target settings area of the model selection interface for real-time volume adjustment
+  - All sounds played through `PlaySound()` will automatically apply the volume setting
+  - AI characters without specific configuration will fall back to `AllAICharacters` configuration
+  - Default volume is 1.0 (100%), maintaining backward compatibility
 
 ## v1.10.0
 

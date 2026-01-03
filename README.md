@@ -195,6 +195,12 @@ UI 界面相关配置。
     "built-in:Pet": true,
     "built-in:AICharacter_*": true,
     "built-in:AICharacter_Cname_Wolf": true
+  },
+  "TargetTypeModelAudioVolume": {
+    "built-in:Character": 1.0,
+    "built-in:Pet": 1.0,
+    "built-in:AICharacter_*": 1.0,
+    "built-in:AICharacter_Cname_Wolf": 0.8
   }
 }
 ```
@@ -214,6 +220,16 @@ UI 界面相关配置。
       - 如果 AI 角色使用的是自己的模型配置（在 `UsingModel.json` 中为该 AI 角色单独配置了模型），则使用该 AI 角色的音频设置
       - 如果 AI 角色使用的是回退模型（`*`，即"所有 AI 角色"的默认模型），则使用`*`的音频设置
     - 可在模型选择界面的目标设置区域中切换此选项
+- `TargetTypeModelAudioVolume`：字典类型，键为目标类型 ID（字符串格式），值为浮点数（0-1），控制该目标类型的模型音效音量
+  - `built-in:Character`：玩家角色的模型音效音量（默认：`1.0`，即 100%）
+    - 可在模型选择界面的目标设置区域中通过滑块调整
+  - `built-in:Pet`：宠物角色的模型音效音量（默认：`1.0`，即 100%）
+    - 可在模型选择界面的目标设置区域中通过滑块调整
+  - `built-in:AICharacter_*`：所有 AI 角色的默认音量（默认：`1.0`，即 100%）
+  - `built-in:AICharacter_<角色名>`：特定 AI 角色的音量配置
+    - 可以为每个 AI 角色单独配置音量
+    - 如果 AI 角色没有特定配置，会回退到 `built-in:AICharacter_*` 的配置
+    - 可在模型选择界面的目标设置区域中通过滑块调整
 
 **⚠️ 过时格式（v1）**：
 - `EnableModelAudio` (Dictionary<ModelTarget, bool>) - 已过时，使用 `TargetTypeEnableModelAudio` 替代

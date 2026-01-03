@@ -404,6 +404,50 @@ namespace DuckovCustomModel.UI.Base
             };
         }
 
+        public static Slider CreateSlider(string name, Transform parent, float minValue = 0f, float maxValue = 1f,
+            float value = 1f, UnityAction<float>? onValueChanged = null)
+        {
+            var sliderObj = new GameObject(name, typeof(RectTransform), typeof(Slider));
+            sliderObj.transform.SetParent(parent, false);
+
+            var slider = sliderObj.GetComponent<Slider>();
+            slider.minValue = minValue;
+            slider.maxValue = maxValue;
+            slider.value = value;
+            if (onValueChanged != null) slider.onValueChanged.AddListener(onValueChanged);
+
+            var backgroundObj = new GameObject("Background", typeof(RectTransform), typeof(Image));
+            backgroundObj.transform.SetParent(sliderObj.transform, false);
+            SetupRectTransform(backgroundObj, new(0, 0.25f), new(1, 0.75f), Vector2.zero);
+            var backgroundImage = backgroundObj.GetComponent<Image>();
+            backgroundImage.color = new(0.1f, 0.1f, 0.1f, 0.5f);
+            slider.targetGraphic = backgroundImage;
+
+            var fillAreaObj = new GameObject("Fill Area", typeof(RectTransform));
+            fillAreaObj.transform.SetParent(sliderObj.transform, false);
+            SetupRectTransform(fillAreaObj, new(0, 0.25f), new(1, 0.75f), Vector2.zero);
+
+            var fillObj = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            fillObj.transform.SetParent(fillAreaObj.transform, false);
+            SetupRectTransform(fillObj, Vector2.zero, Vector2.one, Vector2.zero);
+            var fillImage = fillObj.GetComponent<Image>();
+            fillImage.color = new(0.2f, 0.6f, 0.9f, 1f);
+            slider.fillRect = fillObj.GetComponent<RectTransform>();
+
+            var handleSlideAreaObj = new GameObject("Handle Slide Area", typeof(RectTransform));
+            handleSlideAreaObj.transform.SetParent(sliderObj.transform, false);
+            SetupRectTransform(handleSlideAreaObj, Vector2.zero, Vector2.one, Vector2.zero);
+
+            var handleObj = new GameObject("Handle", typeof(RectTransform), typeof(Image));
+            handleObj.transform.SetParent(handleSlideAreaObj.transform, false);
+            SetupRectTransform(handleObj, new(0.5f, 0.25f), new(0.5f, 0.75f), new(8, -10), pivot: new(0.5f, 0.5f));
+            var handleImage = handleObj.GetComponent<Image>();
+            handleImage.color = new(0.8f, 0.8f, 0.8f, 1f);
+            slider.handleRect = handleObj.GetComponent<RectTransform>();
+
+            return slider;
+        }
+
         public static Scrollbar CreateScrollbar(ScrollRect scrollRect, float width = 6f)
         {
             return CreateScrollbar(scrollRect, width, true);

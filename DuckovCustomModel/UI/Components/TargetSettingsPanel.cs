@@ -18,6 +18,8 @@ namespace DuckovCustomModel.UI.Components
         private Toggle? _hideEquipmentToggle;
         private TMP_InputField? _idleAudioMaxIntervalInput;
         private TMP_InputField? _idleAudioMinIntervalInput;
+        private Slider? _modelAudioVolumeSlider;
+        private TMP_Text? _modelAudioVolumeText;
         private ScrollRect? _scrollRect;
         private int _settingRowIndex;
 
@@ -55,6 +57,7 @@ namespace DuckovCustomModel.UI.Components
             BuildCharacterModelWarning();
             BuildHideEquipmentSetting();
             BuildEnableModelAudioSetting();
+            BuildModelAudioVolumeSetting();
             BuildEnableIdleAudioSetting();
             BuildIdleAudioIntervalSettings();
         }
@@ -148,6 +151,42 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupRightControl(toggle.gameObject, new(20, 20));
 
             _enableModelAudioToggle = toggle;
+        }
+
+        private void BuildModelAudioVolumeSetting()
+        {
+            if (_content == null || _currentTarget == null) return;
+
+            var settingRow = CreateSettingRow();
+            var modelAudioConfig = ModEntry.ModelAudioConfig;
+
+            var label = UIFactory.CreateText("Label", settingRow.transform, Localization.ModelAudioVolume, 18,
+                Color.white);
+            UIFactory.SetupLeftLabel(label);
+            UIFactory.SetupContentSizeFitter(label);
+            UIFactory.SetLocalizedText(label, () => Localization.ModelAudioVolume);
+
+            var volume = 1f;
+            if (modelAudioConfig != null)
+            {
+                var targetTypeId = _currentTarget.GetTargetTypeId();
+                volume = modelAudioConfig.GetModelAudioVolume(targetTypeId);
+            }
+
+            var sliderContainer = new GameObject("SliderContainer", typeof(RectTransform));
+            sliderContainer.transform.SetParent(settingRow.transform, false);
+            UIFactory.SetupRightControl(sliderContainer, new(200, 30));
+
+            var slider = UIFactory.CreateSlider("ModelAudioVolumeSlider", sliderContainer.transform, 0f, 1f, volume,
+                OnModelAudioVolumeChanged);
+            UIFactory.SetupRectTransform(slider.gameObject, Vector2.zero, Vector2.one, Vector2.zero);
+
+            var volumeText = UIFactory.CreateText("VolumeText", sliderContainer.transform,
+                $"{volume:P0}", 14, Color.white, TextAnchor.MiddleRight);
+            UIFactory.SetupRightLabel(volumeText, 25f, -10f);
+            _modelAudioVolumeText = volumeText.GetComponent<TMP_Text>();
+
+            _modelAudioVolumeSlider = slider;
         }
 
         private void BuildEnableIdleAudioSetting()
@@ -389,6 +428,22 @@ namespace DuckovCustomModel.UI.Components
             idleAudioConfig.SetIdleAudioInterval(targetTypeId, interval.Min, maxValue);
 
             ConfigManager.SaveConfigToFile(idleAudioConfig, "IdleAudioConfig.json");
+        }
+
+        private void OnModelAudioVolumeChanged(float value)
+        {
+            if (_currentTarget == null) return;
+
+            var modelAudioConfig = ModEntry.ModelAudioConfig;
+            if (modelAudioConfig == null) return;
+
+            var targetTypeId = _currentTarget.GetTargetTypeId();
+            modelAudioConfig.SetModelAudioVolume(targetTypeId, value);
+
+            if (_modelAudioVolumeText != null)
+                _modelAudioVolumeText.text = $"{value:P0}";
+
+            ConfigManager.SaveConfigToFile(modelAudioConfig, "ModelAudioConfig.json");
         }
     }
 }

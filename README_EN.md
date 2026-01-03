@@ -196,6 +196,12 @@ Model audio toggle configuration. **⚠️ Upgraded to v2, old format is obsolet
     "built-in:Character": true,
     "built-in:Pet": true,
     "built-in:AICharacter_*": true
+  },
+  "TargetTypeModelAudioVolume": {
+    "built-in:Character": 1.0,
+    "built-in:Pet": 1.0,
+    "built-in:AICharacter_*": 1.0,
+    "built-in:AICharacter_Cname_Wolf": 0.8
   }
 }
 ```
@@ -215,6 +221,16 @@ Model audio toggle configuration. **⚠️ Upgraded to v2, old format is obsolet
       - If the AI character uses its own model configuration (a model is individually configured for that AI character in `UsingModel.json`), the audio setting for that AI character will be used
       - If the AI character uses the fallback model (`*`, i.e., the default model for "all AI characters"), the audio setting for `*` will be used
     - Can be toggled in the target settings area of the model selection interface
+- `TargetTypeModelAudioVolume`: Dictionary type, where keys are target type IDs (string format), and values are float numbers (0-1) that control the model audio volume for the target type
+  - `built-in:Character`: Model audio volume for player characters (default: `1.0`, i.e., 100%)
+    - Can be adjusted via slider in the target settings area of the model selection interface
+  - `built-in:Pet`: Model audio volume for pet characters (default: `1.0`, i.e., 100%)
+    - Can be adjusted via slider in the target settings area of the model selection interface
+  - `built-in:AICharacter_*`: Default volume for all AI characters (default: `1.0`, i.e., 100%)
+  - `built-in:AICharacter_<character name>`: Volume configuration for specific AI characters
+    - Can configure volume for each AI character individually
+    - If an AI character has no specific configuration, it will fall back to `built-in:AICharacter_*` configuration
+    - Can be adjusted via slider in the target settings area of the model selection interface
 
 **⚠️ Obsolete Format (v1)**:
 - `EnableModelAudio` (Dictionary<ModelTarget, bool>) - Obsolete, use `TargetTypeEnableModelAudio` instead

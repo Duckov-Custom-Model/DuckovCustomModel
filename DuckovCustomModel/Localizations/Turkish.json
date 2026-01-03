@@ -66,6 +66,7 @@
   "DaysAgo": "gün önce",
   "DownloadLinks": "İndirme bağlantıları",
   "PublishedAt": "Yayınlandı",
-  "CharacterModelWarning": "Bazı karakterler bina modelleri kullandığı için bu karakterin tüm örnekleri ayarlanan modelle doğru şekilde değiştirilemeyebilir"
+  "CharacterModelWarning": "Bazı karakterler bina modelleri kullandığı için bu karakterin tüm örnekleri ayarlanan modelle doğru şekilde değiştirilemeyebilir",
+  "ModelAudioVolume": "Model ses seviyesi"
 }
 

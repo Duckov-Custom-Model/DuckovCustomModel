@@ -98,6 +98,15 @@ namespace DuckovCustomModel.MonoBehaviours
             }
         }
 
+        public float ModelAudioVolume
+        {
+            get
+            {
+                var modelAudioConfig = ModEntry.ModelAudioConfig;
+                return modelAudioConfig?.GetModelAudioVolume(TargetTypeId) ?? 1f;
+            }
+        }
+
         public string TargetTypeId { get; private set; } = string.Empty;
         public string? NameKey => CharacterMainControl?.characterPreset?.nameKey;
 
@@ -1276,7 +1285,8 @@ namespace DuckovCustomModel.MonoBehaviours
             string eventName,
             string path,
             bool loop = false,
-            SoundPlayMode playMode = SoundPlayMode.Normal)
+            SoundPlayMode playMode = SoundPlayMode.Normal,
+            float volume = 1f)
         {
             if (string.IsNullOrEmpty(path)) return null;
 
@@ -1313,6 +1323,9 @@ namespace DuckovCustomModel.MonoBehaviours
                 ModLogger.LogError($"Failed to play sound '{eventName}' from path: {path}");
                 return null;
             }
+
+            var finalVolume = volume * ModelAudioVolume;
+            eventInstance.Value.setVolume(finalVolume);
 
             existingInstances.Add(eventInstance.Value);
 

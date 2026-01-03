@@ -66,6 +66,7 @@
   "DaysAgo": "dias atrás",
   "DownloadLinks": "Links de download",
   "PublishedAt": "Publicado em",
-  "CharacterModelWarning": "Alguns personagens usam modelos de edifícios, então nem todas as instâncias deste personagem podem ser corretamente substituídas pelo modelo definido"
+  "CharacterModelWarning": "Alguns personagens usam modelos de edifícios, então nem todas as instâncias deste personagem podem ser corretamente substituídas pelo modelo definido",
+  "ModelAudioVolume": "Volume de áudio do modelo"
 }
 

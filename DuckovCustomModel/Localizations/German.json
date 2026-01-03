@@ -66,6 +66,7 @@
   "DaysAgo": "Tage zuvor",
   "DownloadLinks": "Download-Links",
   "PublishedAt": "Veröffentlicht am",
-  "CharacterModelWarning": "Einige Charaktere verwenden Gebäudemodelle, daher können nicht alle Instanzen dieses Charakters korrekt durch das eingestellte Modell ersetzt werden"
+  "CharacterModelWarning": "Einige Charaktere verwenden Gebäudemodelle, daher können nicht alle Instanzen dieses Charakters korrekt durch das eingestellte Modell ersetzt werden",
+  "ModelAudioVolume": "Modell-Audio-Lautstärke"
 }
 
