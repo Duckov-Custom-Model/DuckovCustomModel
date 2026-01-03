@@ -1,5 +1,6 @@
 using System;
 using DuckovCustomModel.Localizations;
+using DuckovCustomModel.UI.Utils;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -166,6 +167,37 @@ namespace DuckovCustomModel.UI.Base
             scrollRect.horizontal = horizontal;
             scrollRect.vertical = vertical;
             scrollRect.scrollSensitivity = 1;
+
+            content = new("Content", typeof(RectTransform));
+            content.transform.SetParent(scrollView.transform, false);
+            var contentRect = content.GetComponent<RectTransform>();
+            SetupRectTransform(content, new(0, 1), new(1, 1), Vector2.zero, pivot: new(0, 1),
+                anchoredPosition: Vector2.zero);
+
+            scrollRect.content = contentRect;
+
+            return scrollRect;
+        }
+
+        public static ScrollRect CreateNonInteractiveScrollView(string name, Transform parent, out GameObject content,
+            bool vertical = true, bool horizontal = false)
+        {
+            var scrollView = new GameObject(name, typeof(RectTransform), typeof(NonInteractiveScrollRect),
+                typeof(Image));
+            scrollView.transform.SetParent(parent, false);
+
+            var scrollImage = scrollView.GetComponent<Image>();
+            scrollImage.color = new(0.05f, 0.08f, 0.12f, 0.8f);
+            scrollImage.raycastTarget = false;
+
+            var mask = scrollView.AddComponent<Mask>();
+            mask.showMaskGraphic = false;
+
+            var scrollRect = scrollView.GetComponent<NonInteractiveScrollRect>();
+            scrollRect.horizontal = horizontal;
+            scrollRect.vertical = vertical;
+            scrollRect.scrollSensitivity = 0;
+            scrollRect.movementType = ScrollRect.MovementType.Clamped;
 
             content = new("Content", typeof(RectTransform));
             content.transform.SetParent(scrollView.transform, false);

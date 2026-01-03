@@ -2,6 +2,12 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.1-fix1
+
+- Optimized model list description text display
+  - Description text area automatically scrolls when content exceeds the visible area
+  - Optimized layout element configuration for info text to ensure correct display
+
 ## v1.10.1
 
 - Fixed character equipment hiding logic
