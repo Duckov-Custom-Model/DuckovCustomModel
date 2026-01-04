@@ -2,6 +2,11 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.1-fix3
+
+- Fixed migration issues in configuration validation logic
+  - Improved migration logic for `IdleAudioConfig` and `ModelAudioConfig` to ensure migration logic is more accurate and reasonable
+
 ## v1.10.1-fix2
 
 - Fixed model target definition validation logic error, now `TargetTypes` can be read and written correctly

@@ -2,6 +2,11 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.10.1-fix3
+
+- 修复配置验证逻辑中的迁移问题
+  - 改进了 `IdleAudioConfig` 和 `ModelAudioConfig` 的迁移逻辑，保证迁移逻辑更为准确和合理
+
 ## v1.10.1-fix2
 
 - 修复模型目标定义验证逻辑的错误，现在能正确读写 TargetTypes 逻辑了

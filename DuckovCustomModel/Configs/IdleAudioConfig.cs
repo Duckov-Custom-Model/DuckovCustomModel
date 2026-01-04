@@ -35,33 +35,62 @@ namespace DuckovCustomModel.Configs
         {
             var modified = false;
 
-            if (Version < 2)
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            if (TargetTypeIdleAudioIntervals == null)
+            {
+                TargetTypeIdleAudioIntervals = [];
+                modified = true;
+            }
+
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            if (TargetTypeEnableIdleAudio == null)
+            {
+                TargetTypeEnableIdleAudio = [];
+                modified = true;
+            }
+
+#pragma warning disable CS0618
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            IdleAudioIntervals ??= [];
+
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            AICharacterIdleAudioIntervals ??= [];
+
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            EnableIdleAudio ??= [];
+
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            AICharacterEnableIdleAudio ??= [];
+
+            var hasOldData = IdleAudioIntervals.Count > 0 || AICharacterIdleAudioIntervals.Count > 0 ||
+                             EnableIdleAudio.Count > 0 || AICharacterEnableIdleAudio.Count > 0;
+            var hasNewData = TargetTypeIdleAudioIntervals.Count > 0 || TargetTypeEnableIdleAudio.Count > 0;
+            var needsMigration = Version < 2 || (Version >= 2 && hasOldData && !hasNewData);
+
+            if (needsMigration)
             {
                 MigrateToVersion2();
                 Version = 2;
                 modified = true;
             }
+#pragma warning restore CS0618
 
             TargetTypeIdleAudioIntervals ??= [];
             TargetTypeEnableIdleAudio ??= [];
 
-            var builtInTargetTypes = new[] { ModelTargetType.Character, ModelTargetType.Pet };
+            var builtInTargetTypes = new[]
+            {
+                ModelTargetType.Character,
+                ModelTargetType.Pet,
+                ModelTargetType.AllAICharacters,
+            };
+
             foreach (var targetTypeId in builtInTargetTypes)
             {
-                if (!TargetTypeIdleAudioIntervals.TryGetValue(targetTypeId, out var interval) || interval == null)
+                if (!TargetTypeIdleAudioIntervals.ContainsKey(targetTypeId))
                 {
                     TargetTypeIdleAudioIntervals[targetTypeId] = new() { Min = 30f, Max = 45f };
                     modified = true;
-                }
-                else
-                {
-                    var originalMin = interval.Min;
-                    var originalMax = interval.Max;
-                    if (interval.Min < 0.1f) interval.Min = 0.1f;
-                    if (interval.Max < interval.Min) interval.Max = interval.Min;
-                    if (!Mathf.Approximately(originalMin, interval.Min) ||
-                        !Mathf.Approximately(originalMax, interval.Max))
-                        modified = true;
                 }
 
                 if (TargetTypeEnableIdleAudio.ContainsKey(targetTypeId)) continue;
@@ -69,31 +98,17 @@ namespace DuckovCustomModel.Configs
                 modified = true;
             }
 
-            if (TargetTypeEnableIdleAudio.TryAdd(ModelTargetType.AllAICharacters, true)) modified = true;
-
-#pragma warning disable CS0618
-            AICharacterIdleAudioIntervals ??= [];
-            foreach (var (key, interval) in AICharacterIdleAudioIntervals)
-                if (interval == null)
-                {
-                    AICharacterIdleAudioIntervals[key] = new() { Min = 30f, Max = 45f };
+            foreach (var kvp in TargetTypeIdleAudioIntervals)
+            {
+                var interval = kvp.Value;
+                var originalMin = interval.Min;
+                var originalMax = interval.Max;
+                if (interval.Min < 0.1f) interval.Min = 0.1f;
+                if (interval.Max < interval.Min) interval.Max = interval.Min;
+                if (!Mathf.Approximately(originalMin, interval.Min) ||
+                    !Mathf.Approximately(originalMax, interval.Max))
                     modified = true;
-                }
-                else
-                {
-                    var originalMin = interval.Min;
-                    var originalMax = interval.Max;
-                    if (interval.Min < 0.1f) interval.Min = 0.1f;
-                    if (interval.Max < interval.Min) interval.Max = interval.Min;
-                    if (!Mathf.Approximately(originalMin, interval.Min) ||
-                        !Mathf.Approximately(originalMax, interval.Max))
-                        modified = true;
-                }
-
-            AICharacterEnableIdleAudio ??= [];
-            if (!AICharacterEnableIdleAudio.TryAdd(AICharacters.AllAICharactersKey, true)) return modified;
-            modified = true;
-#pragma warning restore CS0618
+            }
 
             return modified;
         }
