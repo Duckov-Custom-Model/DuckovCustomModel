@@ -29,7 +29,16 @@ namespace DuckovCustomModel.Configs
         {
             var modified = false;
 
-            if (Version < 2)
+#pragma warning disable CS0618
+            EnableModelAudio ??= [];
+            AICharacterEnableModelAudio ??= [];
+
+            var hasOldData = EnableModelAudio.Count > 0 || AICharacterEnableModelAudio.Count > 0;
+            var hasNewData = TargetTypeEnableModelAudio.Count > 0 || TargetTypeModelAudioVolume.Count > 0;
+            var needsMigration = Version < 2 || (Version >= 2 && hasOldData && !hasNewData);
+#pragma warning restore CS0618
+
+            if (needsMigration)
             {
                 MigrateToVersion2();
                 Version = 2;
@@ -39,7 +48,12 @@ namespace DuckovCustomModel.Configs
             TargetTypeEnableModelAudio ??= [];
             TargetTypeModelAudioVolume ??= [];
 
-            var builtInTargetTypes = new[] { ModelTargetType.Character, ModelTargetType.Pet };
+            var builtInTargetTypes = new[]
+            {
+                ModelTargetType.Character,
+                ModelTargetType.Pet,
+                ModelTargetType.AllAICharacters,
+            };
             foreach (var targetTypeId in builtInTargetTypes)
             {
                 if (TargetTypeEnableModelAudio.TryAdd(targetTypeId, true))
@@ -47,23 +61,6 @@ namespace DuckovCustomModel.Configs
                 if (TargetTypeModelAudioVolume.TryAdd(targetTypeId, 1f))
                     modified = true;
             }
-
-            if (TargetTypeEnableModelAudio.TryAdd(ModelTargetType.AllAICharacters, true)) modified = true;
-            if (TargetTypeModelAudioVolume.TryAdd(ModelTargetType.AllAICharacters, 1f)) modified = true;
-
-#pragma warning disable CS0618
-            EnableModelAudio ??= [];
-            foreach (ModelTarget target in Enum.GetValues(typeof(ModelTarget)))
-            {
-                if (target == ModelTarget.AICharacter) continue;
-                if (!EnableModelAudio.TryAdd(target, true)) continue;
-                modified = true;
-            }
-
-            AICharacterEnableModelAudio ??= [];
-            if (!AICharacterEnableModelAudio.TryAdd(AICharacters.AllAICharactersKey, true)) return modified;
-            modified = true;
-#pragma warning restore CS0618
 
             return modified;
         }

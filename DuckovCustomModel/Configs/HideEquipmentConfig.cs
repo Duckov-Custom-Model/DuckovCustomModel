@@ -17,18 +17,12 @@ namespace DuckovCustomModel.Configs
         public override void LoadDefault()
         {
             Version = 2;
-            TargetTypeHideEquipment = [];
-
-            var builtInTargetTypes = new[]
+            TargetTypeHideEquipment = new()
             {
-                ModelTargetType.Character,
-                ModelTargetType.Pet,
+                { ModelTargetType.Character, false },
+                { ModelTargetType.Pet, false },
+                { ModelTargetType.AllAICharacters, false },
             };
-
-            foreach (var targetTypeId in builtInTargetTypes)
-                if (TargetTypeHideEquipment.TryAdd(targetTypeId, false))
-                {
-                }
         }
 
         public override bool Validate()
@@ -65,6 +59,7 @@ namespace DuckovCustomModel.Configs
             {
                 ModelTargetType.Character,
                 ModelTargetType.Pet,
+                ModelTargetType.AllAICharacters,
             };
 
             foreach (var targetTypeId in builtInTargetTypes)
