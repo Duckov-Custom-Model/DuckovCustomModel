@@ -24,11 +24,7 @@ namespace DuckovCustomModel.Core.Managers
                 targetTypeId = prefixedId;
             }
 
-            if (ModelTargetType.IsBuiltIn(targetTypeId))
-                throw new ArgumentException("Cannot register built-in target types.", nameof(targetTypeId));
-
             var targetTypeInfo = new ModelTargetTypeInfo(targetTypeId, compatibleBuiltInTargetTypes, getDisplayName);
-
             if (!RegisteredTypes.TryAdd(targetTypeId, targetTypeInfo))
                 throw new InvalidOperationException($"Target type '{targetTypeId}' is already registered.");
 
@@ -38,10 +34,9 @@ namespace DuckovCustomModel.Core.Managers
         public static bool UnregisterTargetType(string targetTypeId)
         {
             if (string.IsNullOrWhiteSpace(targetTypeId)) return false;
+
             if (!targetTypeId.StartsWith(ModelTargetType.ExtensionPrefix))
                 targetTypeId = ModelTargetType.ExtensionPrefix + targetTypeId;
-
-            if (ModelTargetType.IsBuiltIn(targetTypeId)) return false;
 
             var removed = RegisteredTypes.Remove(targetTypeId);
             if (removed) CompatibleTypesCache.Remove(targetTypeId);
