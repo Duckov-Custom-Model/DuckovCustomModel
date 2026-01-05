@@ -28,22 +28,18 @@ namespace DuckovCustomModel.UI.Base
         {
             if (!IsInitialized) Initialize();
 
-            if (PanelRoot != null)
-            {
-                PanelRoot.SetActive(true);
-                IsVisible = true;
-                OnShow();
-            }
+            if (PanelRoot == null) return;
+            PanelRoot.SetActive(true);
+            IsVisible = true;
+            OnShow();
         }
 
         public virtual void Hide()
         {
-            if (PanelRoot != null)
-            {
-                PanelRoot.SetActive(false);
-                IsVisible = false;
-                OnHide();
-            }
+            if (PanelRoot == null) return;
+            PanelRoot.SetActive(false);
+            IsVisible = false;
+            OnHide();
         }
 
         public virtual void Refresh()
