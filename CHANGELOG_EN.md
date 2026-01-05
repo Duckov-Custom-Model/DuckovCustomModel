@@ -2,6 +2,11 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.2-fix2
+
+- Fixed custom target type equipment hiding setting text display content
+  - Now all types of equipment hiding setting text styles are unified
+
 ## v1.10.2-fix1
 
 - Fixed panel state management issue when switching tabs

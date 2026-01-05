@@ -88,21 +88,13 @@ namespace DuckovCustomModel.UI.Components
             var isAICharacter = _currentTarget.IsAICharacter();
 
             var label = UIFactory.CreateText("Label", settingRow.transform,
-                isAICharacter && aiCharacterNameKey != null
-                    ? string.Format(Localization.HideAICharacterEquipment, displayName)
-                    : targetTypeId == ModelTargetType.Character
-                        ? Localization.HideCharacterEquipment
-                        : Localization.HidePetEquipment,
+                string.Format(Localization.HideEquipment, displayName),
                 18, Color.white);
             UIFactory.SetupLeftLabel(label);
             UIFactory.SetupContentSizeFitter(label);
 
             UIFactory.SetLocalizedText(label, () =>
-                isAICharacter && aiCharacterNameKey != null
-                    ? string.Format(Localization.HideAICharacterEquipment, displayName)
-                    : targetTypeId == ModelTargetType.Character
-                        ? Localization.HideCharacterEquipment
-                        : Localization.HidePetEquipment);
+                string.Format(Localization.HideEquipment, displayName));
 
             var isOn = false;
             if (hideEquipmentConfig != null)
