@@ -31,8 +31,6 @@ namespace DuckovCustomModel.Localizations
             { "Refresh", "Reload All Model Information" },
             { "Loading", "Loading..." },
             { "LoadingModelList", "Loading model list..." },
-            { "HideCharacterEquipment", "Hide Character Equipment" },
-            { "HidePetEquipment", "Hide Pet Equipment" },
             { "Hotkey", "Hotkey" },
             { "AnimatorParamsHotkey", "Animator Parameters Hotkey" },
             { "None", "None" },
@@ -64,7 +62,7 @@ namespace DuckovCustomModel.Localizations
             { "IdleAudioInterval", "Idle Audio Interval" },
             { "Seconds", "seconds" },
             { "Updating", "Updating..." },
-            { "HideAICharacterEquipment", "Hide {0} Equipment" },
+            { "HideEquipment", "Hide {0} Equipment" },
             { "MinValue", "Min" },
             { "MaxValue", "Max" },
             { "ShowDCMButton", "Show DCM Button in Main Menu and Inventory" },
@@ -105,8 +103,6 @@ namespace DuckovCustomModel.Localizations
         public static string Refresh => GetText("Refresh");
         public static string Loading => GetText("Loading");
         public static string LoadingModelList => GetText("LoadingModelList");
-        public static string HideCharacterEquipment => GetText("HideCharacterEquipment");
-        public static string HidePetEquipment => GetText("HidePetEquipment");
         public static string Hotkey => GetText("Hotkey");
         public static string AnimatorParamsHotkey => GetText("AnimatorParamsHotkey");
         public static string None => GetText("None");
@@ -138,7 +134,7 @@ namespace DuckovCustomModel.Localizations
         public static string IdleAudioInterval => GetText("IdleAudioInterval");
         public static string Seconds => GetText("Seconds");
         public static string Updating => GetText("Updating");
-        public static string HideAICharacterEquipment => GetText("HideAICharacterEquipment");
+        public static string HideEquipment => GetText("HideEquipment");
         public static string MinValue => GetText("MinValue");
         public static string MaxValue => GetText("MaxValue");
         public static string ShowDCMButton => GetText("ShowDCMButton");
