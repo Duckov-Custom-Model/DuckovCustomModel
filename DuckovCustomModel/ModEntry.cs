@@ -59,13 +59,12 @@ namespace DuckovCustomModel
             if (UsingModel != null)
             {
                 var targetTypeIds = ModelTargetTypeRegistry.GetAllAvailableTargetTypes();
-                foreach (var targetTypeId in targetTypeIds)
-                {
-                    if (ModelTargetType.IsAICharacterTargetType(targetTypeId)) continue;
-                    var modelID = UsingModel.GetModelID(targetTypeId);
-                    if (!string.IsNullOrEmpty(modelID))
-                        priorityModelIDs.Add(modelID);
-                }
+                priorityModelIDs.AddRange(from targetTypeId in targetTypeIds
+                    where !ModelTargetType.IsAICharacterTargetType(targetTypeId)
+                    select UsingModel.GetModelID(targetTypeId)
+                    into modelID
+                    where !string.IsNullOrEmpty(modelID)
+                    select modelID);
 
                 var aiModelIDs = new HashSet<string>();
                 foreach (var nameKey in AICharacters.SupportedAICharacters)
@@ -303,13 +302,12 @@ namespace DuckovCustomModel
             if (UsingModel != null)
             {
                 var targetTypeIds = ModelTargetTypeRegistry.GetAllAvailableTargetTypes();
-                foreach (var targetTypeId in targetTypeIds)
-                {
-                    if (ModelTargetType.IsAICharacterTargetType(targetTypeId)) continue;
-                    var modelID = UsingModel.GetModelID(targetTypeId);
-                    if (!string.IsNullOrEmpty(modelID))
-                        priorityModelIDs.Add(modelID);
-                }
+                priorityModelIDs.AddRange(from targetTypeId in targetTypeIds
+                    where !ModelTargetType.IsAICharacterTargetType(targetTypeId)
+                    select UsingModel.GetModelID(targetTypeId)
+                    into modelID
+                    where !string.IsNullOrEmpty(modelID)
+                    select modelID);
 
                 var aiModelIDs = new HashSet<string>();
                 foreach (var nameKey in AICharacters.SupportedAICharacters)

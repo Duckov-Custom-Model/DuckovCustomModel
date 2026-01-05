@@ -1178,14 +1178,22 @@ namespace DuckovCustomModel.MonoBehaviours
                 return;
             }
 
-            foreach (var renderer in renderers)
-            foreach (var material in renderer.materials)
-            {
-                if (material == null) continue;
-                material.shader = shader;
-                if (material.HasProperty(EmissionColor))
-                    material.SetColor(EmissionColor, Color.black);
-            }
+            if (shader == GameDefaultShader) // SodaCraft/SodaCharacter shader needs to disable emission
+                foreach (var renderer in renderers)
+                foreach (var material in renderer.materials)
+                {
+                    if (material == null) continue;
+                    material.shader = shader;
+                    if (material.HasProperty(EmissionColor))
+                        material.SetColor(EmissionColor, Color.black);
+                }
+            else
+                foreach (var renderer in renderers)
+                foreach (var material in renderer.materials)
+                {
+                    if (material == null) continue;
+                    material.shader = shader;
+                }
         }
 
         #region Shader Constants

@@ -1,6 +1,7 @@
 ﻿using Duckov;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
+using DuckovCustomModel.UI.Utils;
 using HarmonyLib;
 using TMPro;
 using UnityEngine;
@@ -77,6 +78,9 @@ namespace DuckovCustomModel.HarmonyPatches
             _versionTextComponent = textComponent;
             textComponent.richText = true;
             textComponent.text = $"{Constant.ModName} v{Constant.ModVersion}";
+
+            SetupClickHandler(cloneObject);
+
             return true;
         }
 
@@ -122,6 +126,15 @@ namespace DuckovCustomModel.HarmonyPatches
         private static void RemoveComponent(Component? component)
         {
             if (component != null) Object.Destroy(component);
+        }
+
+        private static void SetupClickHandler(GameObject versionObject)
+        {
+            if (versionObject == null) return;
+
+            var clickHandler = versionObject.GetComponent<VersionTextClickHandler>();
+            if (clickHandler == null)
+                versionObject.AddComponent<VersionTextClickHandler>();
         }
     }
 }
