@@ -61,9 +61,16 @@ namespace DuckovCustomModel.UI
         private GameObject? _updateIndicatorButton;
         private GameObject? _updateIndicatorTitle;
 
+        public static ConfigWindow? Instance { get; private set; }
+
         private static UIConfig? UIConfig => ModEntry.UIConfig;
         private static CharacterInputControl? CharacterInputControl => CharacterInputControl.Instance;
         private static PlayerInput? PlayerInput => GameManager.MainPlayerInput;
+
+        private void Awake()
+        {
+            Instance = this;
+        }
 
         private void Update()
         {
@@ -127,6 +134,8 @@ namespace DuckovCustomModel.UI
 
         private void OnDestroy()
         {
+            if (Instance == this)
+                Instance = null;
             UpdateChecker.OnUpdateCheckCompleted -= OnUpdateCheckCompleted;
         }
 
@@ -319,7 +328,18 @@ namespace DuckovCustomModel.UI
             return inputField != null && inputField.isFocused;
         }
 
-        public void ShowPanel()
+        public void ShowPanel(int tabIndex = 0)
+        {
+            if (_panelRoot != null && _panelRoot.activeSelf)
+            {
+                _tabSystem?.SwitchToTab(tabIndex);
+                return;
+            }
+
+            ShowPanelInternal(tabIndex);
+        }
+
+        private void ShowPanelInternal(int tabIndex)
         {
             if (!_isInitialized || _panelRoot == null)
             {
@@ -334,8 +354,7 @@ namespace DuckovCustomModel.UI
             _modelSelectionTab?.Initialize();
             _settingsTab?.Initialize();
 
-            _tabSystem?.SwitchToTab(0);
-            _modelSelectionTab?.Show();
+            _tabSystem?.SwitchToTab(tabIndex);
 
             _cursorWasVisible = Cursor.visible;
             _originalCursorLockState = Cursor.lockState;
