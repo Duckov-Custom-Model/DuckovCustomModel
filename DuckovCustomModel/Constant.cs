@@ -4,7 +4,7 @@
     {
         public const string ModID = "DuckovCustomModel";
         public const string ModName = "Duckov Custom Model";
-        public const string ModVersion = "1.10.1-fix3";
+        public const string ModVersion = "1.10.2";
         public const string HarmonyId = "com.ritsukage.DuckovCustomModel";
     }
 }

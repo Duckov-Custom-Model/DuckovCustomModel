@@ -2,6 +2,15 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.2
+
+- Added version text click functionality, clicking the version text can quickly open the settings interface
+- Optimized material shader setting logic
+  - Distinguished between default shader (SodaCraft/SodaCharacter) and non-default shader handling logic
+  - Default shaders automatically disable emission effects, non-default shaders maintain original material properties
+- Added self-distribution warning notice
+  - Added self-distribution warning and related requirements in README
+
 ## v1.10.1-fix3
 
 - Fixed migration issues in configuration validation logic
