@@ -4,6 +4,14 @@ English | [中文](README.md)
 
 [Changelog](CHANGELOG_EN.md)
 
+## ⚠️ Redistribution Warning
+
+If you plan to redistribute this mod, please note the following requirements:
+
+1. **Remove loading validation**: You must remove the loading validation logic from the mod (located in the `OnAfterSetup` method in `DuckovCustomModel.ModLoader/ModBehaviour.cs`). This validation is used to prevent unauthorized redistribution. Please modify it according to your needs.
+2. **Modify or remove update logic**: You must modify the update check source (located in `DuckovCustomModel/Managers/UpdateChecker.cs`), or completely remove the update checking functionality. Redistributed versions should not use this repository's data source for update checks.
+3. **Comply with MIT License requirements**: You must comply with the MIT License requirements specified in the [LICENSE](LICENSE) file, including retaining copyright notices and license text
+
 A custom player model mod for Duckov game.
 
 ## Basic Features

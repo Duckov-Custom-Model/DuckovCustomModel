@@ -21,14 +21,6 @@ namespace DuckovCustomModel
             ModLogger.Log($"{Constant.ModName} Loaded");
         }
 
-#pragma warning disable CA1822
-        private void OnEnable()
-#pragma warning restore CA1822
-        {
-            ModLoader.Initialize();
-            HarmonyLoader.Initialize();
-        }
-
         private void OnDisable()
         {
             OnModDisabled?.Invoke();
@@ -37,14 +29,24 @@ namespace DuckovCustomModel
             HarmonyLoader.Uninitialize();
         }
 
-#pragma warning disable CA1822
         private void OnDestroy()
-#pragma warning restore CA1822
         {
             ModLoader.Uninitialize();
             HarmonyLoader.Uninitialize();
 
             Instance = null;
+        }
+
+        protected override void OnAfterSetup()
+        {
+            if (info.isSteamItem && info.publishedFileId != 3600560151)
+            {
+                ModLogger.Log($"Skipping mod loading: Steam item {info.publishedFileId} is not the target item.");
+                return;
+            }
+
+            ModLoader.Initialize();
+            HarmonyLoader.Initialize();
         }
 
         public event Action? OnModDisabled;
