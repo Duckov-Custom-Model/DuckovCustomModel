@@ -2,6 +2,11 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.2-fix1
+
+- Fixed panel state management issue when switching tabs
+  - Fixed issue where `TabSystem` did not correctly call `UIPanel`'s `Show()` and `Hide()` methods when switching tabs
+
 ## v1.10.2
 
 - Added version text click functionality, clicking the version text can quickly open the settings interface

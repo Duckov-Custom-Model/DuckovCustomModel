@@ -99,8 +99,20 @@ namespace DuckovCustomModel.UI.Components
                 var tab = _tabs[i];
                 var isActive = i == tabIndex;
 
+                if (!isActive)
+                {
+                    var uiPanel = tab.Panel.GetComponent<Base.UIPanel>();
+                    uiPanel?.Hide();
+                }
+
                 tab.Panel.SetActive(isActive);
                 tab.IsActive = isActive;
+
+                if (isActive)
+                {
+                    var uiPanel = tab.Panel.GetComponent<Base.UIPanel>();
+                    uiPanel?.Show();
+                }
 
                 var colors = tab.Button.colors;
                 colors.normalColor = isActive ? new(0.3f, 0.4f, 0.5f, 1) : new(0.2f, 0.2f, 0.2f, 1);
