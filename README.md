@@ -40,6 +40,8 @@ UI 界面相关配置。
 {
   "ToggleKey": "Backslash",
   "AnimatorParamsToggleKey": "None",
+  "EmotionModifierKey1": "LeftShift",
+  "EmotionModifierKey2": "RightShift",
   "ShowDCMButton": true,
   "DCMButtonAnchor": "TopLeft",
   "DCMButtonOffsetX": 10.0,
@@ -53,6 +55,14 @@ UI 界面相关配置。
   - 需要用户主动在设置界面中设置
   - 支持的按键值可参考 Unity KeyCode 枚举
   - 设置为 `None` 时，该快捷键功能将被禁用
+- `EmotionModifierKey1`：表情快捷键修饰键1（默认：`LeftShift`，即左 Shift 键）
+  - 用于表情快捷键功能，按住此键 + F1-F8 可设置 `EmotionValue1` 参数（值为 0-7）
+  - 支持的按键值可参考 Unity KeyCode 枚举
+  - 可在设置界面中点击按钮进行设置
+- `EmotionModifierKey2`：表情快捷键修饰键2（默认：`RightShift`，即右 Shift 键）
+  - 用于表情快捷键功能，按住此键 + F1-F8 可设置 `EmotionValue2` 参数（值为 0-7）
+  - 支持的按键值可参考 Unity KeyCode 枚举
+  - 可在设置界面中点击按钮进行设置
 - `ShowDCMButton`：是否在主菜单和背包界面显示 DCM 按钮（默认：`true`）
   - 设置为 `true` 时，在主菜单或背包界面会自动显示 DCM 按钮
   - 可在设置界面中切换此选项
@@ -269,6 +279,11 @@ UI 界面相关配置。
   - **动画器参数快捷键**：配置打开/关闭参数显示界面的快捷键
     - 默认值为没有按键，需要用户主动设置
     - 可在设置界面中点击按钮进行设置
+  - **表情快捷键修饰键**：配置表情快捷键功能的两个修饰键
+    - 修饰键1（默认：左 Shift）：按住此键 + F1-F8 可设置 `EmotionValue1` 参数（值为 0-7）
+    - 修饰键2（默认：右 Shift）：按住此键 + F1-F8 可设置 `EmotionValue2` 参数（值为 0-7）
+    - 可在设置界面中点击按钮进行设置
+    - 操作方式：按住修饰键后，按 F1-F8 键即可设置对应的表情参数值
   - **隐藏原有装备**：分别有"隐藏角色装备"和"隐藏宠物装备"选项
     - 此选项会立即保存到配置文件
     - 影响 Animator 的 `HideOriginalEquipment` 参数值
@@ -639,6 +654,12 @@ Animator Controller 可以使用以下参数：
   - `0`：白天（day）
   - `1`：黄昏（dawn）
   - `2`：夜晚（night）
+- `EmotionValue1`：表情参数值1（int 类型，初始值 0）
+  - 可通过表情快捷键功能设置：按住修饰键1（默认左 Shift）+ F1-F8 设置（值为 0-7）
+  - 可在设置界面中配置修饰键1（`EmotionModifierKey1`）
+- `EmotionValue2`：表情参数值2（int 类型，初始值 0）
+  - 可通过表情快捷键功能设置：按住修饰键2（默认右 Shift）+ F1-F8 设置（值为 0-7）
+  - 可在设置界面中配置修饰键2（`EmotionModifierKey2`）
 
 #### Mod 扩展参数
 

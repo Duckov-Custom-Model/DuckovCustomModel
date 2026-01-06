@@ -2,6 +2,21 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.10.3
+
+- 新增表情快捷键功能
+  - 支持通过快捷键快速设置角色的表情参数值
+  - 操作方式：按住修饰键（默认左 Shift 或右 Shift）+ F1-F8 来设置表情参数值
+    - 修饰键1（默认左 Shift）+ F1-F8 设置 `EmotionValue1` 参数（值为 0-7）
+    - 修饰键2（默认右 Shift）+ F1-F8 设置 `EmotionValue2` 参数（值为 0-7）
+  - 可在设置界面中配置两个修饰键（`EmotionModifierKey1` 和 `EmotionModifierKey2`）
+  - 配置项位于 `UIConfig.json` 中：
+    - `EmotionModifierKey1`：修饰键1（默认：`LeftShift`）
+    - `EmotionModifierKey2`：修饰键2（默认：`RightShift`）
+  - 新增 Animator 参数：
+    - `EmotionValue1`（int 类型，初始值 0）：表情参数值1
+    - `EmotionValue2`（int 类型，初始值 0）：表情参数值2
+
 ## v1.10.2-fix2
 
 - 修复了自定义类型的角色装备隐藏设置的文本显示内容

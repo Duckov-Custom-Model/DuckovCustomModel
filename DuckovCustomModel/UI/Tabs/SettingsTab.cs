@@ -21,10 +21,14 @@ namespace DuckovCustomModel.UI.Tabs
         private TMP_InputField? _dcmButtonOffsetYInput;
         private GameObject? _downloadButtonsContainer;
         private bool _isWaitingForAnimatorParamsKeyInput;
+        private bool _isWaitingForModifierKey1Input;
+        private bool _isWaitingForModifierKey2Input;
 
         private bool _isWaitingForUIKeyInput;
         private GameObject? _keyButton;
         private float _lastUpdateInfoRefreshTime;
+        private GameObject? _modifierKey1Button;
+        private GameObject? _modifierKey2Button;
 
         private int _settingRowIndex;
         private Toggle? _showDCMButtonToggle;
@@ -35,11 +39,14 @@ namespace DuckovCustomModel.UI.Tabs
 
         private static UIConfig? UIConfig => ModEntry.UIConfig;
 
-        public bool IsWaitingForKeyInput => _isWaitingForUIKeyInput || _isWaitingForAnimatorParamsKeyInput;
+        public bool IsWaitingForKeyInput => _isWaitingForUIKeyInput || _isWaitingForAnimatorParamsKeyInput ||
+                                            _isWaitingForModifierKey1Input || _isWaitingForModifierKey2Input;
 
         private void Update()
         {
-            if (_isWaitingForUIKeyInput || _isWaitingForAnimatorParamsKeyInput) HandleKeyInputCapture();
+            if (_isWaitingForUIKeyInput || _isWaitingForAnimatorParamsKeyInput ||
+                _isWaitingForModifierKey1Input || _isWaitingForModifierKey2Input)
+                HandleKeyInputCapture();
 
             if (_updateInfoLocalizedText == null || !(Time.time - _lastUpdateInfoRefreshTime > 30f)) return;
             _lastUpdateInfoRefreshTime = Time.time;
@@ -95,10 +102,14 @@ namespace DuckovCustomModel.UI.Tabs
 
             BuildKeySetting(contentArea);
             BuildAnimatorParamsKeySetting(contentArea);
+            BuildModifierKeySettings(contentArea);
             BuildAnimatorParamsToggle(contentArea);
             BuildShowDCMButtonToggle(contentArea);
             BuildDCMButtonPositionSettings(contentArea);
             BuildUpdateCheckSection(contentArea);
+
+            if (contentArea != null)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(contentArea.GetComponent<RectTransform>());
         }
 
         private void BuildKeySetting(GameObject parent)
@@ -158,6 +169,91 @@ namespace DuckovCustomModel.UI.Tabs
                 _isWaitingForAnimatorParamsKeyInput
                     ? Localization.PressAnyKey
                     : GetKeyCodeDisplayName(UIConfig?.AnimatorParamsToggleKey ?? KeyCode.None));
+        }
+
+        private void BuildModifierKeySettings(GameObject parent)
+        {
+            var modifier1Row = CreateSettingRow(parent);
+            var modifier1Label = UIFactory.CreateText("ModifierKey1Label", modifier1Row.transform,
+                Localization.EmotionModifierKey1, 18, Color.white);
+            UIFactory.SetupLeftLabel(modifier1Label);
+            UIFactory.SetupContentSizeFitter(modifier1Label);
+            UIFactory.SetLocalizedText(modifier1Label, () => Localization.EmotionModifierKey1);
+
+            var modifier1Button = UIFactory.CreateButton("ModifierKey1Button", modifier1Row.transform,
+                OnModifierKey1ButtonClicked, new(0.2f, 0.2f, 0.2f, 1));
+            _modifierKey1Button = modifier1Button;
+            UIFactory.SetupRightControl(modifier1Button, new(100, 30));
+
+            var modifier1ButtonText = UIFactory.CreateText("Text", modifier1Button.transform,
+                GetKeyCodeDisplayName(UIConfig?.EmotionModifierKey1 ?? KeyCode.LeftShift), 18, Color.white,
+                TextAnchor.MiddleCenter);
+            UIFactory.SetupButtonText(modifier1ButtonText);
+            UIFactory.SetLocalizedText(modifier1ButtonText, () =>
+                _isWaitingForModifierKey1Input
+                    ? Localization.PressAnyKey
+                    : GetKeyCodeDisplayName(UIConfig?.EmotionModifierKey1 ?? KeyCode.LeftShift));
+
+            var modifier2Row = CreateSettingRow(parent);
+            var modifier2Label = UIFactory.CreateText("ModifierKey2Label", modifier2Row.transform,
+                Localization.EmotionModifierKey2, 18, Color.white);
+            UIFactory.SetupLeftLabel(modifier2Label);
+            UIFactory.SetupContentSizeFitter(modifier2Label);
+            UIFactory.SetLocalizedText(modifier2Label, () => Localization.EmotionModifierKey2);
+
+            var modifier2Button = UIFactory.CreateButton("ModifierKey2Button", modifier2Row.transform,
+                OnModifierKey2ButtonClicked, new(0.2f, 0.2f, 0.2f, 1));
+            _modifierKey2Button = modifier2Button;
+            UIFactory.SetupRightControl(modifier2Button, new(100, 30));
+
+            var modifier2ButtonText = UIFactory.CreateText("Text", modifier2Button.transform,
+                GetKeyCodeDisplayName(UIConfig?.EmotionModifierKey2 ?? KeyCode.RightShift), 18, Color.white,
+                TextAnchor.MiddleCenter);
+            UIFactory.SetupButtonText(modifier2ButtonText);
+            UIFactory.SetLocalizedText(modifier2ButtonText, () =>
+                _isWaitingForModifierKey2Input
+                    ? Localization.PressAnyKey
+                    : GetKeyCodeDisplayName(UIConfig?.EmotionModifierKey2 ?? KeyCode.RightShift));
+
+            var warningRow = new GameObject("WarningRow", typeof(RectTransform), typeof(Image));
+            warningRow.transform.SetParent(parent.transform, false);
+
+            var rowImage = warningRow.GetComponent<Image>();
+            rowImage.color = new Color(0.3f, 0.2f, 0.05f, 0.9f);
+
+            var outline = warningRow.AddComponent<Outline>();
+            outline.effectColor = new Color(0.8f, 0.6f, 0.2f, 0.8f);
+            outline.effectDistance = new Vector2(2, -2);
+
+            UIFactory.SetupAnchor(warningRow, new(0, 1), new(1, 1), new(0.5f, 1), new(800, 0), Vector2.zero);
+
+            var warningRowLayoutElement = warningRow.AddComponent<LayoutElement>();
+            warningRowLayoutElement.minWidth = 800;
+            warningRowLayoutElement.preferredWidth = 800;
+            warningRowLayoutElement.flexibleWidth = 0;
+            warningRowLayoutElement.flexibleHeight = 1;
+
+            UIFactory.SetupVerticalLayoutGroup(warningRow, 0f, new RectOffset(20, 20, 10, 10),
+                TextAnchor.UpperLeft, true, true, true);
+
+            var warningText = UIFactory.CreateText("WarningText", warningRow.transform,
+                Localization.EmotionModifierKeyWarning, 16, new Color(1f, 0.8f, 0.4f, 1f), TextAnchor.UpperLeft);
+
+            UIFactory.SetupRectTransform(warningText, Vector2.zero, Vector2.one, Vector2.zero);
+
+            var warningTextComponent = warningText.GetComponent<TextMeshProUGUI>();
+            if (warningTextComponent != null)
+                warningTextComponent.enableWordWrapping = true;
+
+            UIFactory.SetLocalizedText(warningText, () => Localization.EmotionModifierKeyWarning);
+
+            var warningLayoutElement = warningText.AddComponent<LayoutElement>();
+            warningLayoutElement.flexibleWidth = 1;
+            warningLayoutElement.flexibleHeight = 1;
+
+            UIFactory.SetupContentSizeFitter(warningText, ContentSizeFitter.FitMode.Unconstrained);
+            UIFactory.SetupContentSizeFitter(warningRow, ContentSizeFitter.FitMode.PreferredSize,
+                ContentSizeFitter.FitMode.PreferredSize);
         }
 
         private void BuildAnimatorParamsToggle(GameObject parent)
@@ -415,17 +511,9 @@ namespace DuckovCustomModel.UI.Tabs
             if (UIConfig == null) return;
             _isWaitingForUIKeyInput = true;
             _isWaitingForAnimatorParamsKeyInput = false;
-            if (_keyButton == null) return;
-            var textObj = _keyButton.transform.Find("Text");
-            if (textObj == null) return;
-            var localizedText = textObj.GetComponent<LocalizedText>();
-            if (localizedText != null)
-                localizedText.RefreshText();
-            if (_animatorParamsKeyButton == null) return;
-            var animatorParamsTextObj = _animatorParamsKeyButton.transform.Find("Text");
-            if (animatorParamsTextObj == null) return;
-            var animatorParamsLocalizedText = animatorParamsTextObj.GetComponent<LocalizedText>();
-            animatorParamsLocalizedText?.RefreshText();
+            _isWaitingForModifierKey1Input = false;
+            _isWaitingForModifierKey2Input = false;
+            RefreshAllKeyButtons();
         }
 
         private void OnAnimatorParamsKeyButtonClicked()
@@ -433,17 +521,9 @@ namespace DuckovCustomModel.UI.Tabs
             if (UIConfig == null) return;
             _isWaitingForAnimatorParamsKeyInput = true;
             _isWaitingForUIKeyInput = false;
-            if (_animatorParamsKeyButton == null) return;
-            var textObj = _animatorParamsKeyButton.transform.Find("Text");
-            if (textObj == null) return;
-            var localizedText = textObj.GetComponent<LocalizedText>();
-            if (localizedText != null)
-                localizedText.RefreshText();
-            if (_keyButton == null) return;
-            var keyTextObj = _keyButton.transform.Find("Text");
-            if (keyTextObj == null) return;
-            var keyLocalizedText = keyTextObj.GetComponent<LocalizedText>();
-            keyLocalizedText?.RefreshText();
+            _isWaitingForModifierKey1Input = false;
+            _isWaitingForModifierKey2Input = false;
+            RefreshAllKeyButtons();
         }
 
         private void OnAnimatorParamsClearButtonClicked()
@@ -451,38 +531,41 @@ namespace DuckovCustomModel.UI.Tabs
             if (UIConfig == null) return;
             UIConfig.AnimatorParamsToggleKey = KeyCode.None;
             ConfigManager.SaveConfigToFile(UIConfig, "UIConfig.json");
-            if (_animatorParamsKeyButton == null) return;
-            var textObj = _animatorParamsKeyButton.transform.Find("Text");
-            if (textObj == null) return;
-            var localizedText = textObj.GetComponent<LocalizedText>();
-            localizedText?.RefreshText();
+            RefreshKeyButton(_animatorParamsKeyButton);
+        }
+
+        private void OnModifierKey1ButtonClicked()
+        {
+            if (UIConfig == null) return;
+            _isWaitingForModifierKey1Input = true;
+            _isWaitingForUIKeyInput = false;
+            _isWaitingForAnimatorParamsKeyInput = false;
+            _isWaitingForModifierKey2Input = false;
+            RefreshAllKeyButtons();
+        }
+
+        private void OnModifierKey2ButtonClicked()
+        {
+            if (UIConfig == null) return;
+            _isWaitingForModifierKey2Input = true;
+            _isWaitingForUIKeyInput = false;
+            _isWaitingForAnimatorParamsKeyInput = false;
+            _isWaitingForModifierKey1Input = false;
+            RefreshAllKeyButtons();
         }
 
         private void HandleKeyInputCapture()
         {
-            if ((!_isWaitingForUIKeyInput && !_isWaitingForAnimatorParamsKeyInput) || UIConfig == null) return;
+            if ((!_isWaitingForUIKeyInput && !_isWaitingForAnimatorParamsKeyInput &&
+                 !_isWaitingForModifierKey1Input && !_isWaitingForModifierKey2Input) || UIConfig == null) return;
 
             if (Input.GetKeyDown(KeyCode.Escape))
             {
                 _isWaitingForUIKeyInput = false;
                 _isWaitingForAnimatorParamsKeyInput = false;
-                if (_keyButton != null)
-                {
-                    var textObj = _keyButton.transform.Find("Text");
-                    if (textObj != null)
-                    {
-                        var localizedText = textObj.GetComponent<LocalizedText>();
-                        localizedText?.RefreshText();
-                    }
-                }
-
-                if (_animatorParamsKeyButton == null) return;
-                {
-                    var textObj = _animatorParamsKeyButton.transform.Find("Text");
-                    if (textObj == null) return;
-                    var localizedText = textObj.GetComponent<LocalizedText>();
-                    localizedText?.RefreshText();
-                }
+                _isWaitingForModifierKey1Input = false;
+                _isWaitingForModifierKey2Input = false;
+                RefreshAllKeyButtons();
                 return;
             }
 
@@ -498,26 +581,49 @@ namespace DuckovCustomModel.UI.Tabs
                         UIConfig.ToggleKey = keyCode;
                         ConfigManager.SaveConfigToFile(UIConfig, "UIConfig.json");
                         _isWaitingForUIKeyInput = false;
-                        if (_keyButton == null) return;
-                        var textObj = _keyButton.transform.Find("Text");
-                        if (textObj == null) return;
-                        var localizedText = textObj.GetComponent<LocalizedText>();
-                        localizedText?.RefreshText();
+                        RefreshKeyButton(_keyButton);
                     }
                     else if (_isWaitingForAnimatorParamsKeyInput)
                     {
                         UIConfig.AnimatorParamsToggleKey = keyCode;
                         ConfigManager.SaveConfigToFile(UIConfig, "UIConfig.json");
                         _isWaitingForAnimatorParamsKeyInput = false;
-                        if (_animatorParamsKeyButton == null) return;
-                        var textObj = _animatorParamsKeyButton.transform.Find("Text");
-                        if (textObj == null) return;
-                        var localizedText = textObj.GetComponent<LocalizedText>();
-                        localizedText?.RefreshText();
+                        RefreshKeyButton(_animatorParamsKeyButton);
+                    }
+                    else if (_isWaitingForModifierKey1Input)
+                    {
+                        UIConfig.EmotionModifierKey1 = keyCode;
+                        ConfigManager.SaveConfigToFile(UIConfig, "UIConfig.json");
+                        _isWaitingForModifierKey1Input = false;
+                        RefreshKeyButton(_modifierKey1Button);
+                    }
+                    else if (_isWaitingForModifierKey2Input)
+                    {
+                        UIConfig.EmotionModifierKey2 = keyCode;
+                        ConfigManager.SaveConfigToFile(UIConfig, "UIConfig.json");
+                        _isWaitingForModifierKey2Input = false;
+                        RefreshKeyButton(_modifierKey2Button);
                     }
 
                     return;
                 }
+        }
+
+        private void RefreshAllKeyButtons()
+        {
+            RefreshKeyButton(_keyButton);
+            RefreshKeyButton(_animatorParamsKeyButton);
+            RefreshKeyButton(_modifierKey1Button);
+            RefreshKeyButton(_modifierKey2Button);
+        }
+
+        private static void RefreshKeyButton(GameObject? button)
+        {
+            if (button == null) return;
+            var textObj = button.transform.Find("Text");
+            if (textObj == null) return;
+            var localizedText = textObj.GetComponent<LocalizedText>();
+            localizedText?.RefreshText();
         }
 
         private static string GetKeyCodeDisplayName(KeyCode keyCode)

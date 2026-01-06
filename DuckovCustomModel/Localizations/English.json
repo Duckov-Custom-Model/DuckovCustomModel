@@ -65,6 +65,9 @@
   "DownloadLinks": "Download Links",
   "PublishedAt": "Published At",
   "CharacterModelWarning": "Some characters use building models, so not all instances of this character may be correctly replaced with the set model",
-  "ModelAudioVolume": "Model Audio Volume"
+  "ModelAudioVolume": "Model Audio Volume",
+  "EmotionModifierKey1": "Emotion Modifier Key 1",
+  "EmotionModifierKey2": "Emotion Modifier Key 2",
+  "EmotionModifierKeyWarning": "Warning: Pressing modifier keys will block all other key inputs, only F1~F8 combination key events will be responded to"
 }
 

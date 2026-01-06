@@ -40,6 +40,8 @@ UI interface related configuration.
 {
   "ToggleKey": "Backslash",
   "AnimatorParamsToggleKey": "None",
+  "EmotionModifierKey1": "LeftShift",
+  "EmotionModifierKey2": "RightShift",
   "ShowDCMButton": true,
   "DCMButtonAnchor": "TopLeft",
   "DCMButtonOffsetX": 10.0,
@@ -53,6 +55,14 @@ UI interface related configuration.
   - Users need to actively set it in the settings interface
   - Supported key values can refer to Unity KeyCode enum
   - When set to `None`, the hotkey feature will be disabled
+- `EmotionModifierKey1`: Emotion shortcut modifier key 1 (default: `LeftShift`, i.e., left Shift key)
+  - Used for emotion shortcut functionality, hold this key + F1-F8 to set `EmotionValue1` parameter (value 0-7)
+  - Supported key values can refer to Unity KeyCode enum
+  - Can be set by clicking the button in the settings interface
+- `EmotionModifierKey2`: Emotion shortcut modifier key 2 (default: `RightShift`, i.e., right Shift key)
+  - Used for emotion shortcut functionality, hold this key + F1-F8 to set `EmotionValue2` parameter (value 0-7)
+  - Supported key values can refer to Unity KeyCode enum
+  - Can be set by clicking the button in the settings interface
 - `ShowDCMButton`: Whether to show the DCM button in the main menu and inventory interface (default: `true`)
   - When set to `true`, the DCM button will automatically appear in the main menu or inventory interface
   - Can be toggled in the settings interface
@@ -286,6 +296,11 @@ The model selection interface provides the following features:
   - **Animator Parameters Hotkey**: Configure the hotkey to open/close the animator parameters window
     - Default value is no key, users need to actively set it
     - Can be set by clicking the button in the settings interface
+  - **Emotion Shortcut Modifier Keys**: Configure two modifier keys for the emotion shortcut functionality
+    - Modifier key 1 (default: Left Shift): Hold this key + F1-F8 to set `EmotionValue1` parameter (value 0-7)
+    - Modifier key 2 (default: Right Shift): Hold this key + F1-F8 to set `EmotionValue2` parameter (value 0-7)
+    - Can be set by clicking the button in the settings interface
+    - Operation: Hold the modifier key, then press F1-F8 to set the corresponding emotion parameter value
   - **Hide Original Equipment**: Separate options for "Hide Character Equipment" and "Hide Pet Equipment"
     - These options are immediately saved to the configuration file
     - Affect the Animator's `HideOriginalEquipment` parameter value
@@ -656,6 +671,12 @@ The Animator Controller can use the following parameters:
   - `0`: Day
   - `1`: Dawn
   - `2`: Night
+- `EmotionValue1`: Emotion parameter value 1 (int type, initial value 0)
+  - Can be set via emotion shortcut functionality: Hold modifier key 1 (default Left Shift) + F1-F8 to set (value 0-7)
+  - Modifier key 1 can be configured in the settings interface (`EmotionModifierKey1`)
+- `EmotionValue2`: Emotion parameter value 2 (int type, initial value 0)
+  - Can be set via emotion shortcut functionality: Hold modifier key 2 (default Right Shift) + F1-F8 to set (value 0-7)
+  - Modifier key 2 can be configured in the settings interface (`EmotionModifierKey2`)
 
 #### Mod Extension Parameters
 

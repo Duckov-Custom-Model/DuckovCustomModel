@@ -19,6 +19,8 @@ namespace DuckovCustomModel.Configs
     {
         public KeyCode ToggleKey { get; set; } = KeyCode.Backslash;
         public KeyCode AnimatorParamsToggleKey { get; set; } = KeyCode.None;
+        public KeyCode EmotionModifierKey1 { get; set; } = KeyCode.LeftShift;
+        public KeyCode EmotionModifierKey2 { get; set; } = KeyCode.RightShift;
         public bool ShowDCMButton { get; set; } = true;
         public AnchorPosition DCMButtonAnchor { get; set; } = AnchorPosition.TopLeft;
         public float DCMButtonOffsetX { get; set; } = 10f;
@@ -28,6 +30,8 @@ namespace DuckovCustomModel.Configs
         {
             ToggleKey = KeyCode.Backslash;
             AnimatorParamsToggleKey = KeyCode.None;
+            EmotionModifierKey1 = KeyCode.LeftShift;
+            EmotionModifierKey2 = KeyCode.RightShift;
             ShowDCMButton = true;
             DCMButtonAnchor = AnchorPosition.TopLeft;
             DCMButtonOffsetX = 10f;
@@ -44,6 +48,8 @@ namespace DuckovCustomModel.Configs
             if (other is not UIConfig otherSetting) return;
             ToggleKey = otherSetting.ToggleKey;
             AnimatorParamsToggleKey = otherSetting.AnimatorParamsToggleKey;
+            EmotionModifierKey1 = otherSetting.EmotionModifierKey1;
+            EmotionModifierKey2 = otherSetting.EmotionModifierKey2;
             ShowDCMButton = otherSetting.ShowDCMButton;
             DCMButtonAnchor = otherSetting.DCMButtonAnchor;
             DCMButtonOffsetX = otherSetting.DCMButtonOffsetX;

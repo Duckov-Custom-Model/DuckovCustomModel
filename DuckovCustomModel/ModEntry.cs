@@ -86,6 +86,7 @@ namespace DuckovCustomModel
 
             InitializeConfigWindow();
             InitializeUpdateChecker();
+            InitializeInputBlocker();
 
             UpdateChecker.OnUpdateCheckCompleted += OnUpdateCheckCompleted;
             GameVersionDisplayPatches.Initialize();
@@ -136,6 +137,8 @@ namespace DuckovCustomModel
                 Object.Destroy(_configWindow.gameObject);
                 _configWindow = null;
             }
+
+            CleanupInputBlocker();
 
             AnimatorParameterUpdaterManager.Cleanup();
 
@@ -359,6 +362,23 @@ namespace DuckovCustomModel
             updateCheckerObject.AddComponent<UpdateChecker>();
             Object.DontDestroyOnLoad(updateCheckerObject);
             ModLogger.Log("UpdateChecker initialized.");
+        }
+
+        private static void InitializeInputBlocker()
+        {
+            if (InputBlocker.Instance != null) return;
+
+            var inputBlockerObject = new GameObject("InputBlocker");
+            inputBlockerObject.AddComponent<InputBlocker>();
+            ModLogger.Log("InputBlocker initialized.");
+        }
+
+        private static void CleanupInputBlocker()
+        {
+            if (InputBlocker.Instance == null) return;
+
+            Object.Destroy(InputBlocker.Instance.gameObject);
+            ModLogger.Log("InputBlocker cleaned up.");
         }
 
         private static void InitializeExtensions()

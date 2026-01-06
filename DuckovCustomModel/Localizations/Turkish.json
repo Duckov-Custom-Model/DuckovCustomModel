@@ -65,6 +65,9 @@
   "DownloadLinks": "İndirme bağlantıları",
   "PublishedAt": "Yayınlandı",
   "CharacterModelWarning": "Bazı karakterler bina modelleri kullandığı için bu karakterin tüm örnekleri ayarlanan modelle doğru şekilde değiştirilemeyebilir",
-  "ModelAudioVolume": "Model ses seviyesi"
+  "ModelAudioVolume": "Model ses seviyesi",
+  "EmotionModifierKey1": "Duygu değiştirici tuş 1",
+  "EmotionModifierKey2": "Duygu değiştirici tuş 2",
+  "EmotionModifierKeyWarning": "Uyarı: Değiştirici tuşlara basmak diğer tüm tuş girişlerini engelleyecektir, yalnızca F1~F8 kombinasyon tuş olaylarına yanıt verilecektir"
 }
 

@@ -65,6 +65,9 @@
   "DownloadLinks": "Enlaces de descarga",
   "PublishedAt": "Publicado el",
   "CharacterModelWarning": "Algunos personajes usan modelos de edificios, por lo que no todas las instancias de este personaje pueden ser reemplazadas correctamente por el modelo establecido",
-  "ModelAudioVolume": "Volumen de audio del modelo"
+  "ModelAudioVolume": "Volumen de audio del modelo",
+  "EmotionModifierKey1": "Tecla modificadora de emoción 1",
+  "EmotionModifierKey2": "Tecla modificadora de emoción 2",
+  "EmotionModifierKeyWarning": "Advertencia: Presionar las teclas modificadoras bloqueará todas las demás entradas de teclas, solo se responderán los eventos de combinación de teclas F1~F8"
 }
 

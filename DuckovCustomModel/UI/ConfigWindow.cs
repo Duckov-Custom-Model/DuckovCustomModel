@@ -35,6 +35,7 @@ namespace DuckovCustomModel.UI
         private CharacterInputControl? _charInput;
         private bool _charInputWasEnabled;
         private bool _cursorWasVisible;
+        private bool _emotionModifierBlockingInput;
         private bool _isInitialized;
 
         private AnchorPosition _lastAnchorPosition;
@@ -62,6 +63,9 @@ namespace DuckovCustomModel.UI
         private GameObject? _updateIndicatorTitle;
 
         public static ConfigWindow? Instance { get; private set; }
+
+        public int EmotionParameterValue1 { get; private set; }
+        public int EmotionParameterValue2 { get; private set; }
 
         private static UIConfig? UIConfig => ModEntry.UIConfig;
         private static CharacterInputControl? CharacterInputControl => CharacterInputControl.Instance;
@@ -115,6 +119,8 @@ namespace DuckovCustomModel.UI
                 _settingsTab?.RefreshAnimatorParamsToggleState(_showAnimatorParamsWindow);
             }
 
+            HandleShortcutParameters(uiConfig);
+
             if (_uiActive && Input.GetKeyDown(KeyCode.Escape)) HidePanel();
 
             if (!_uiActive) return;
@@ -137,6 +143,7 @@ namespace DuckovCustomModel.UI
             if (Instance == this)
                 Instance = null;
             UpdateChecker.OnUpdateCheckCompleted -= OnUpdateCheckCompleted;
+            ModelListManager.OnModelChanged -= OnModelChanged;
         }
 
         private void OnGUI()
@@ -185,6 +192,9 @@ namespace DuckovCustomModel.UI
                 UpdateChecker.OnUpdateCheckCompleted += OnUpdateCheckCompleted;
                 UpdateChecker.Instance.CheckForUpdate();
             }
+
+            ModelListManager.OnModelChanged -= OnModelChanged;
+            ModelListManager.OnModelChanged += OnModelChanged;
 
             ModLogger.Log("ConfigWindow initialized.");
         }
@@ -951,6 +961,73 @@ namespace DuckovCustomModel.UI
             }
 
             if (_updateIndicatorButton != null) _updateIndicatorButton.SetActive(hasUpdate);
+        }
+
+        private void HandleShortcutParameters(UIConfig? uiConfig)
+        {
+            if (uiConfig == null) return;
+
+            var modifier1Pressed = InputBlocker.GetRealKey(uiConfig.EmotionModifierKey1);
+            var modifier2Pressed = InputBlocker.GetRealKey(uiConfig.EmotionModifierKey2);
+            var anyModifierPressed = modifier1Pressed || modifier2Pressed;
+
+            switch (anyModifierPressed)
+            {
+                case true when !_emotionModifierBlockingInput:
+                    InputBlocker.BlockInput();
+                    _emotionModifierBlockingInput = true;
+                    break;
+                case false when _emotionModifierBlockingInput:
+                    InputBlocker.UnblockInput();
+                    _emotionModifierBlockingInput = false;
+                    break;
+            }
+
+            if (!anyModifierPressed) return;
+
+            for (var i = 0; i < 8; i++)
+            {
+                var fKey = KeyCode.F1 + i;
+                if (!InputBlocker.GetRealKeyDown(fKey)) continue;
+
+                var value1Changed = false;
+                var value2Changed = false;
+
+                if (modifier1Pressed)
+                {
+                    EmotionParameterValue1 = i;
+                    value1Changed = true;
+                }
+
+                if (modifier2Pressed)
+                {
+                    EmotionParameterValue2 = i;
+                    value2Changed = true;
+                }
+
+                if (value1Changed || value2Changed) UpdateAnimatorEmotionValues();
+            }
+        }
+
+        private void UpdateAnimatorEmotionValues()
+        {
+            UpdateModelHandlers();
+
+            if (_modelHandler == null) return;
+            var customAnimatorControl = _modelHandler.CustomAnimatorControl;
+            if (customAnimatorControl == null) return;
+            customAnimatorControl.SetParameterInteger(CustomAnimatorHash.EmotionValue1, EmotionParameterValue1);
+            customAnimatorControl.SetParameterInteger(CustomAnimatorHash.EmotionValue2, EmotionParameterValue2);
+        }
+
+        private void OnModelChanged(ModelChangedEventArgs? e)
+        {
+            if (e is not { TargetTypeId: ModelTargetType.Character, Handler: ModelHandler handler }) return;
+            if (handler.CharacterMainControl != CharacterMainControl.Main) return;
+            var customAnimatorControl = handler.CustomAnimatorControl;
+            if (customAnimatorControl == null) return;
+            customAnimatorControl.SetParameterInteger(CustomAnimatorHash.EmotionValue1, EmotionParameterValue1);
+            customAnimatorControl.SetParameterInteger(CustomAnimatorHash.EmotionValue2, EmotionParameterValue2);
         }
     }
 }
