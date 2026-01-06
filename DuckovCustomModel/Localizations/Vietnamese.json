@@ -68,6 +68,13 @@
   "ModelAudioVolume": "Âm lượng âm thanh mô hình",
   "EmotionModifierKey1": "Phím sửa đổi cảm xúc 1",
   "EmotionModifierKey2": "Phím sửa đổi cảm xúc 2",
-  "EmotionModifierKeyWarning": "Cảnh báo: Nhấn các phím sửa đổi sẽ chặn tất cả các đầu vào phím khác, chỉ các sự kiện kết hợp phím F1~F8 mới được phản hồi"
+  "EmotionModifierKeyWarning": "Cảnh báo: Nhấn các phím sửa đổi sẽ chặn tất cả các đầu vào phím khác, chỉ các sự kiện kết hợp phím F1~F8 mới được phản hồi",
+  "AnimatorParamFilterAll": "Tất cả",
+  "AnimatorParamTypeFloat": "Số thực",
+  "AnimatorParamTypeInt": "Số nguyên",
+  "AnimatorParamTypeBool": "Boolean",
+  "AnimatorParamTypeTrigger": "Kích hoạt",
+  "AnimatorParamUsageUsed": "Đã sử dụng",
+  "AnimatorParamUsageUnused": "Chưa sử dụng"
 }
 

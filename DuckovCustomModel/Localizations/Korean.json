@@ -68,6 +68,13 @@
   "ModelAudioVolume": "모델 오디오 볼륨",
   "EmotionModifierKey1": "감정 수정 키 1",
   "EmotionModifierKey2": "감정 수정 키 2",
-  "EmotionModifierKeyWarning": "경고: 수정 키를 누르면 다른 모든 키 입력이 차단되며, F1~F8 조합 키 이벤트만 응답됩니다"
+  "EmotionModifierKeyWarning": "경고: 수정 키를 누르면 다른 모든 키 입력이 차단되며, F1~F8 조합 키 이벤트만 응답됩니다",
+  "AnimatorParamFilterAll": "전체",
+  "AnimatorParamTypeFloat": "부동소수점",
+  "AnimatorParamTypeInt": "정수",
+  "AnimatorParamTypeBool": "불린",
+  "AnimatorParamTypeTrigger": "트리거",
+  "AnimatorParamUsageUsed": "사용됨",
+  "AnimatorParamUsageUnused": "미사용"
 }
 

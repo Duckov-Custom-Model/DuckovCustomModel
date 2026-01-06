@@ -16,6 +16,12 @@ English | [中文](CHANGELOG.md)
   - New Animator parameters:
     - `EmotionValue1` (int type, initial value 0): Emotion parameter value 1
     - `EmotionValue2` (int type, initial value 0): Emotion parameter value 2
+- Refactored parameter display list, improved parameter display list UI and functionality:
+  - Support for multi-select filtering (type filter: float, int, bool, trigger; usage status filter: used, unused)
+  - Support for regex search functionality to quickly find parameters
+  - Support for character switching, can select different characters from dropdown to view their parameters
+  - Uses grid layout to display parameters, improving display efficiency
+  - Parameter list supports window dragging and resizing for better user experience
 
 ## v1.10.2-fix2
 

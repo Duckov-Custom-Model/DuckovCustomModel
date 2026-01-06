@@ -88,6 +88,7 @@ namespace DuckovCustomModel.MonoBehaviours
             if (CharacterModel != null) CharacterModel.OnAttackOrShootEvent -= OnAttack;
             if (CharacterMainControl != null) CharacterMainControl.OnHoldAgentChanged -= OnHoldAgentChanged;
             UnsubscribeGunEvents();
+            EmotionParameterManager.OnEmotionParametersChanged -= OnEmotionParametersChanged;
         }
 
         public void Initialize(ModelHandler modelHandler)
@@ -125,7 +126,16 @@ namespace DuckovCustomModel.MonoBehaviours
             InitializeBuffParamCache();
             RegisterCoreUpdaters();
 
+            if (CharacterMainControl == CharacterMainControl.Main)
+                EmotionParameterManager.OnEmotionParametersChanged += OnEmotionParametersChanged;
+
             OnHoldAgentChanged(CharacterMainControl.CurrentHoldItemAgent);
+        }
+
+        private void OnEmotionParametersChanged(int value1, int value2)
+        {
+            SetParameterInteger(CustomAnimatorHash.EmotionValue1, value1);
+            SetParameterInteger(CustomAnimatorHash.EmotionValue2, value2);
         }
 
         private static void RegisterCoreUpdaters()

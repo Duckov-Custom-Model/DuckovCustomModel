@@ -68,6 +68,13 @@
   "ModelAudioVolume": "Głośność dźwięku modelu",
   "EmotionModifierKey1": "Klawisz modyfikatora emocji 1",
   "EmotionModifierKey2": "Klawisz modyfikatora emocji 2",
-  "EmotionModifierKeyWarning": "Ostrzeżenie: Naciśnięcie klawiszy modyfikujących zablokuje wszystkie inne wejścia klawiatury, tylko zdarzenia kombinacji klawiszy F1~F8 będą obsługiwane"
+  "EmotionModifierKeyWarning": "Ostrzeżenie: Naciśnięcie klawiszy modyfikujących zablokuje wszystkie inne wejścia klawiatury, tylko zdarzenia kombinacji klawiszy F1~F8 będą obsługiwane",
+  "AnimatorParamFilterAll": "Wszystkie",
+  "AnimatorParamTypeFloat": "Zmiennoprzecinkowy",
+  "AnimatorParamTypeInt": "Całkowity",
+  "AnimatorParamTypeBool": "Logiczny",
+  "AnimatorParamTypeTrigger": "Wyzwalacz",
+  "AnimatorParamUsageUsed": "Używany",
+  "AnimatorParamUsageUnused": "Nieużywany"
 }
 

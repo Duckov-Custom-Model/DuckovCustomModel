@@ -11,6 +11,7 @@ namespace DuckovCustomModel.Core.Data
         public string Type { get; set; } = string.Empty;
         public object? InitialValue { get; set; }
         public bool IsExternal { get; set; }
+        public bool IsUsed { get; set; } = true;
     }
 
     public static class CustomAnimatorHash

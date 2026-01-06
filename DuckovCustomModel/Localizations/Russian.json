@@ -68,6 +68,13 @@
   "ModelAudioVolume": "Громкость аудио модели",
   "EmotionModifierKey1": "Клавиша-модификатор эмоций 1",
   "EmotionModifierKey2": "Клавиша-модификатор эмоций 2",
-  "EmotionModifierKeyWarning": "Предупреждение: Нажатие клавиш-модификаторов заблокирует все остальные нажатия клавиш, будут обрабатываться только комбинации клавиш F1~F8"
+  "EmotionModifierKeyWarning": "Предупреждение: Нажатие клавиш-модификаторов заблокирует все остальные нажатия клавиш, будут обрабатываться только комбинации клавиш F1~F8",
+  "AnimatorParamFilterAll": "Все",
+  "AnimatorParamTypeFloat": "С плавающей точкой",
+  "AnimatorParamTypeInt": "Целое число",
+  "AnimatorParamTypeBool": "Логическое",
+  "AnimatorParamTypeTrigger": "Триггер",
+  "AnimatorParamUsageUsed": "Используется",
+  "AnimatorParamUsageUnused": "Не используется"
 }
 

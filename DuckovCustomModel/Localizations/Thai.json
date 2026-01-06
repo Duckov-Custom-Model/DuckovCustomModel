@@ -68,6 +68,13 @@
   "ModelAudioVolume": "ระดับเสียงโมเดล",
   "EmotionModifierKey1": "ปุ่มแก้ไขอารมณ์ 1",
   "EmotionModifierKey2": "ปุ่มแก้ไขอารมณ์ 2",
-  "EmotionModifierKeyWarning": "คำเตือน: การกดปุ่มแก้ไขจะบล็อกการป้อนคีย์อื่นๆ ทั้งหมด จะตอบสนองเฉพาะเหตุการณ์คีย์ผสม F1~F8 เท่านั้น"
+  "EmotionModifierKeyWarning": "คำเตือน: การกดปุ่มแก้ไขจะบล็อกการป้อนคีย์อื่นๆ ทั้งหมด จะตอบสนองเฉพาะเหตุการณ์คีย์ผสม F1~F8 เท่านั้น",
+  "AnimatorParamFilterAll": "ทั้งหมด",
+  "AnimatorParamTypeFloat": "ทศนิยม",
+  "AnimatorParamTypeInt": "จำนวนเต็ม",
+  "AnimatorParamTypeBool": "บูลีน",
+  "AnimatorParamTypeTrigger": "ทริกเกอร์",
+  "AnimatorParamUsageUsed": "ใช้งาน",
+  "AnimatorParamUsageUnused": "ไม่ได้ใช้งาน"
 }
 

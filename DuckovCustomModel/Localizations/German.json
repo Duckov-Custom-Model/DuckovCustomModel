@@ -68,6 +68,13 @@
   "ModelAudioVolume": "Modell-Audio-Lautstärke",
   "EmotionModifierKey1": "Emotions-Modifikatortaste 1",
   "EmotionModifierKey2": "Emotions-Modifikatortaste 2",
-  "EmotionModifierKeyWarning": "Warnung: Das Drücken von Modifikatortasten blockiert alle anderen Tasteneingaben, nur F1~F8 Kombinationstastenereignisse werden berücksichtigt"
+  "EmotionModifierKeyWarning": "Warnung: Das Drücken von Modifikatortasten blockiert alle anderen Tasteneingaben, nur F1~F8 Kombinationstastenereignisse werden berücksichtigt",
+  "AnimatorParamFilterAll": "Alle",
+  "AnimatorParamTypeFloat": "Gleitkommazahl",
+  "AnimatorParamTypeInt": "Ganzzahl",
+  "AnimatorParamTypeBool": "Boolesch",
+  "AnimatorParamTypeTrigger": "Auslöser",
+  "AnimatorParamUsageUsed": "Verwendet",
+  "AnimatorParamUsageUnused": "Nicht verwendet"
 }
 

@@ -68,6 +68,13 @@
   "ModelAudioVolume": "モデル音声ボリューム",
   "EmotionModifierKey1": "表情修飾キー 1",
   "EmotionModifierKey2": "表情修飾キー 2",
-  "EmotionModifierKeyWarning": "警告：修飾キーを押すと、他のすべてのキー入力がブロックされ、F1~F8 の組み合わせキーイベントのみが応答されます"
+  "EmotionModifierKeyWarning": "警告：修飾キーを押すと、他のすべてのキー入力がブロックされ、F1~F8 の組み合わせキーイベントのみが応答されます",
+  "AnimatorParamFilterAll": "すべて",
+  "AnimatorParamTypeFloat": "浮動小数点数",
+  "AnimatorParamTypeInt": "整数",
+  "AnimatorParamTypeBool": "ブール値",
+  "AnimatorParamTypeTrigger": "トリガー",
+  "AnimatorParamUsageUsed": "使用中",
+  "AnimatorParamUsageUnused": "未使用"
 }
 

@@ -68,6 +68,13 @@
   "ModelAudioVolume": "Volume audio del modello",
   "EmotionModifierKey1": "Tasto modificatore emozione 1",
   "EmotionModifierKey2": "Tasto modificatore emozione 2",
-  "EmotionModifierKeyWarning": "Avviso: Premere i tasti modificatori bloccherà tutti gli altri input di tasti, solo gli eventi di combinazione di tasti F1~F8 verranno risposti"
+  "EmotionModifierKeyWarning": "Avviso: Premere i tasti modificatori bloccherà tutti gli altri input di tasti, solo gli eventi di combinazione di tasti F1~F8 verranno risposti",
+  "AnimatorParamFilterAll": "Tutti",
+  "AnimatorParamTypeFloat": "Virgola mobile",
+  "AnimatorParamTypeInt": "Intero",
+  "AnimatorParamTypeBool": "Booleano",
+  "AnimatorParamTypeTrigger": "Trigger",
+  "AnimatorParamUsageUsed": "Usato",
+  "AnimatorParamUsageUnused": "Non usato"
 }
 

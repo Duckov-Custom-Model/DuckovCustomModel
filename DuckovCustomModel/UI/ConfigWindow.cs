@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using Duckov.UI;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Core.Data;
@@ -22,15 +20,7 @@ namespace DuckovCustomModel.UI
 {
     public class ConfigWindow : MonoBehaviour
     {
-        private const float AnimatorParamsWindowWidth = 700f;
-        private const float AnimatorParamsWindowHeight = 900f;
-        private readonly Dictionary<int, bool> _paramIsChanging = new();
-        private readonly Dictionary<int, object> _paramPreviousValues = new();
-        private Vector2 _animatorParamsScrollPosition;
-        private bool _animatorParamsViewingPet;
-        private Rect _animatorParamsWindowRect = new(10, 10, 600, 1000);
-        private Animator? _cachedAnimator;
-        private List<AnimatorParamInfo>? _cachedParamInfos;
+        private AnimatorParamsPanel? _animatorParamsPanel;
 
         private CharacterInputControl? _charInput;
         private bool _charInputWasEnabled;
@@ -41,18 +31,12 @@ namespace DuckovCustomModel.UI
         private AnchorPosition _lastAnchorPosition;
         private float _lastOffsetX;
         private float _lastOffsetY;
-        private ModelHandler? _modelHandler;
         private ModelSelectionTab? _modelSelectionTab;
         private CursorLockMode _originalCursorLockState;
         private GameObject? _overlay;
         private GameObject? _panelRoot;
-        private GUIStyle? _paramLabelStyle;
-        private GUIStyle? _paramLabelStyleChanged;
-        private GUIStyle? _paramLabelStyleChanging;
-        private ModelHandler? _petModelHandler;
         private PlayerInput? _playerInput;
         private bool _playerInputWasActive;
-        private GUIStyle? _scrollViewStyle;
         private GameObject? _settingsButton;
         private SettingsTab? _settingsTab;
         private bool _showAnimatorParamsWindow;
@@ -115,7 +99,9 @@ namespace DuckovCustomModel.UI
             if (uiConfig.AnimatorParamsToggleKey != KeyCode.None &&
                 Input.GetKeyDown(uiConfig.AnimatorParamsToggleKey))
             {
+                if (!_isInitialized) InitializeUI();
                 _showAnimatorParamsWindow = !_showAnimatorParamsWindow;
+                SetAnimatorParamsWindowVisible(_showAnimatorParamsWindow);
                 _settingsTab?.RefreshAnimatorParamsToggleState(_showAnimatorParamsWindow);
             }
 
@@ -146,22 +132,6 @@ namespace DuckovCustomModel.UI
             ModelListManager.OnModelChanged -= OnModelChanged;
         }
 
-        private void OnGUI()
-        {
-            if (!_showAnimatorParamsWindow) return;
-
-            UpdateModelHandlers();
-            var currentHandler = _animatorParamsViewingPet ? _petModelHandler : _modelHandler;
-            if (currentHandler == null) return;
-
-            var customAnimatorControl = currentHandler.CustomAnimatorControl;
-            if (customAnimatorControl == null) return;
-
-            _animatorParamsWindowRect.width = AnimatorParamsWindowWidth;
-            _animatorParamsWindowRect.height = AnimatorParamsWindowHeight;
-            _animatorParamsWindowRect = GUI.Window(100, _animatorParamsWindowRect, DrawAnimatorParamsWindow,
-                Localization.AnimatorParameters);
-        }
 
         private void InitializeUI()
         {
@@ -171,6 +141,7 @@ namespace DuckovCustomModel.UI
             BuildMainPanel();
             SetupPanels();
             BuildSettingsButton();
+            BuildAnimatorParamsPanel();
 
             _uiActive = false;
             if (_overlay != null) _overlay.SetActive(false);
@@ -447,363 +418,44 @@ namespace DuckovCustomModel.UI
             }
         }
 
-        private void DrawAnimatorParamsWindow(int windowID)
+        private void BuildAnimatorParamsPanel()
         {
-            var currentHandler = _animatorParamsViewingPet ? _petModelHandler : _modelHandler;
-            if (currentHandler == null) return;
+            if (_uiRoot == null) return;
 
-            var customAnimatorControl = currentHandler.CustomAnimatorControl;
-            if (customAnimatorControl == null) return;
-
-            InitializeParamStyles();
-
-            GUILayout.BeginArea(new(10, 30, AnimatorParamsWindowWidth - 20, AnimatorParamsWindowHeight - 40));
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label($"{Localization.TargetType}: ", GUILayout.Width(80));
-
-            var characterButtonStyle = _animatorParamsViewingPet ? GUI.skin.button : GUI.skin.box;
-            if (GUILayout.Button(Localization.TargetCharacter, characterButtonStyle, GUILayout.Width(100)))
-                if (_animatorParamsViewingPet)
-                {
-                    _paramIsChanging.Clear();
-                    _paramPreviousValues.Clear();
-                    _animatorParamsViewingPet = false;
-                    _cachedAnimator = null;
-                    _cachedParamInfos = null;
-                }
-
-            var petButtonStyle = _animatorParamsViewingPet ? GUI.skin.box : GUI.skin.button;
-            if (GUILayout.Button(Localization.TargetPet, petButtonStyle, GUILayout.Width(100)))
-                if (!_animatorParamsViewingPet && _petModelHandler != null)
-                {
-                    _paramIsChanging.Clear();
-                    _paramPreviousValues.Clear();
-                    _animatorParamsViewingPet = true;
-                    _cachedAnimator = null;
-                    _cachedParamInfos = null;
-                }
-
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
-
-            GUILayout.Space(5);
-
-            _animatorParamsScrollPosition = GUILayout.BeginScrollView(_animatorParamsScrollPosition,
-                _scrollViewStyle, GUILayout.Width(AnimatorParamsWindowWidth - 20),
-                GUILayout.Height(AnimatorParamsWindowHeight - 80));
-
-            var animator = currentHandler.CustomAnimator;
-            if (animator != _cachedAnimator || _cachedParamInfos == null)
-                UpdateAnimatorParamsCache(currentHandler);
-
-            var paramInfos = _cachedParamInfos ?? [];
-            for (var i = 0; i < paramInfos.Count; i += 2)
-            {
-                GUILayout.BeginHorizontal();
-
-                var paramInfo1 = paramInfos[i];
-                var paramName1 = $"{paramInfo1.Name} ({paramInfo1.Type})";
-                var paramValue1 = GetParameterValue(customAnimatorControl, paramInfo1, animator);
-                var paramValueObj1 = GetParameterValueObject(customAnimatorControl, paramInfo1, animator);
-                var style1 = GetParamStyle(paramInfo1, paramValueObj1);
-
-                GUILayout.Label($"{paramName1}: {paramValue1}", style1,
-                    GUILayout.Width((AnimatorParamsWindowWidth - 40) / 2f));
-
-                UpdateParamState(paramInfo1.Hash, paramValueObj1, paramInfo1.Type);
-
-                if (i + 1 < paramInfos.Count)
-                {
-                    var paramInfo2 = paramInfos[i + 1];
-                    var paramName2 = $"{paramInfo2.Name} ({paramInfo2.Type})";
-                    var paramValue2 = GetParameterValue(customAnimatorControl, paramInfo2, animator);
-                    var paramValueObj2 = GetParameterValueObject(customAnimatorControl, paramInfo2, animator);
-                    var style2 = GetParamStyle(paramInfo2, paramValueObj2);
-
-                    GUILayout.Label($"{paramName2}: {paramValue2}", style2,
-                        GUILayout.Width((AnimatorParamsWindowWidth - 40) / 2f));
-
-                    UpdateParamState(paramInfo2.Hash, paramValueObj2, paramInfo2.Type);
-                }
-
-                GUILayout.EndHorizontal();
-            }
-
-            GUILayout.EndScrollView();
-
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button(Localization.Close, GUILayout.Width(100), GUILayout.Height(20)))
-                _showAnimatorParamsWindow = false;
-
-            GUILayout.EndHorizontal();
-            GUILayout.EndArea();
-
-            GUI.DragWindow(new(0, 0, AnimatorParamsWindowWidth, 20));
-        }
-
-        private void InitializeParamStyles()
-        {
-            _paramLabelStyle ??= new(GUI.skin.label)
-            {
-                fontSize = 16,
-                normal = { textColor = Color.white },
-            };
-
-            _paramLabelStyleChanged ??= new(GUI.skin.label)
-            {
-                fontSize = 16,
-                normal = { textColor = new(1f, 0.8f, 0.2f, 1f) },
-            };
-
-            _paramLabelStyleChanging ??= new(GUI.skin.label)
-            {
-                fontSize = 16,
-                normal = { textColor = new(1f, 0.4f, 0.1f, 1f) },
-            };
-
-            _scrollViewStyle ??= new(GUI.skin.scrollView)
-            {
-                normal = { background = MakeTex(2, 2, new(0.1f, 0.1f, 0.1f, 0.8f)) },
-            };
-        }
-
-        private static Texture2D MakeTex(int width, int height, Color col)
-        {
-            var pix = new Color[width * height];
-            for (var i = 0; i < pix.Length; i++)
-                pix[i] = col;
-
-            var result = new Texture2D(width, height);
-            result.SetPixels(pix);
-            result.Apply();
-            return result;
-        }
-
-        private void UpdateAnimatorParamsCache(ModelHandler? modelHandler)
-        {
-            var customParams = CustomAnimatorHash.GetAllParams();
-            var customParamHashes = new HashSet<int>(customParams.Select(p => p.Hash));
-
-            if (modelHandler?.CustomAnimator == null)
-            {
-                _cachedAnimator = null;
-                _cachedParamInfos = customParams;
-                return;
-            }
-
-            _cachedAnimator = modelHandler.CustomAnimator;
-            var customParamsList = customParams.OrderBy(p => p.Name).ToList();
-            var animatorParamsList = (from animatorParam in modelHandler.CustomAnimator.parameters
-                where !customParamHashes.Contains(animatorParam.nameHash)
-                let paramType = animatorParam.type switch
-                {
-                    AnimatorControllerParameterType.Float => "float",
-                    AnimatorControllerParameterType.Int => "int",
-                    AnimatorControllerParameterType.Bool => "bool",
-                    AnimatorControllerParameterType.Trigger => "trigger",
-                    _ => "unknown",
-                }
-                let initialValue = (object?)(animatorParam.type switch
-                {
-                    AnimatorControllerParameterType.Float => animatorParam.defaultFloat,
-                    AnimatorControllerParameterType.Int => animatorParam.defaultInt,
-                    AnimatorControllerParameterType.Bool => animatorParam.defaultBool,
-                    _ => null,
-                })
-                select new AnimatorParamInfo
-                {
-                    Name = animatorParam.name,
-                    Hash = animatorParam.nameHash,
-                    Type = paramType,
-                    InitialValue = initialValue,
-                    IsExternal = true,
-                }).ToList();
-
-            animatorParamsList = animatorParamsList.OrderBy(p => p.Name).ToList();
-
-            var buffParamsList = new List<AnimatorParamInfo>();
-            if (modelHandler.CurrentModelInfo?.BuffAnimatorParams != null)
-                foreach (var (paramName, _) in modelHandler.CurrentModelInfo.BuffAnimatorParams)
-                {
-                    if (string.IsNullOrWhiteSpace(paramName)) continue;
-
-                    var paramHash = Animator.StringToHash(paramName);
-                    buffParamsList.Add(new AnimatorParamInfo
-                    {
-                        Name = paramName,
-                        Hash = paramHash,
-                        Type = "bool",
-                        InitialValue = false,
-                        IsExternal = false,
-                    });
-                }
-
-            buffParamsList = buffParamsList.OrderBy(p => p.Name).ToList();
-            _cachedParamInfos = customParamsList.Concat(animatorParamsList).Concat(buffParamsList).ToList();
-        }
-
-
-        private static string GetParameterValue(CustomAnimatorControl? customAnimatorControl,
-            AnimatorParamInfo paramInfo, Animator? animator)
-        {
-            if (!paramInfo.IsExternal)
-            {
-                if (customAnimatorControl == null) return "N/A";
-
-                try
-                {
-                    return paramInfo.Type switch
-                    {
-                        "float" => customAnimatorControl.GetParameterFloat(paramInfo.Hash).ToString("F3"),
-                        "int" => customAnimatorControl.GetParameterInteger(paramInfo.Hash).ToString(),
-                        "bool" => customAnimatorControl.GetParameterBool(paramInfo.Hash).ToString(),
-                        "trigger" => "Trigger",
-                        _ => "Unknown",
-                    };
-                }
-                catch
-                {
-                    return "N/A";
-                }
-            }
-
-            if (animator == null) return "N/A";
-
-            try
-            {
-                return paramInfo.Type switch
-                {
-                    "float" => animator.GetFloat(paramInfo.Hash).ToString("F3"),
-                    "int" => animator.GetInteger(paramInfo.Hash).ToString(),
-                    "bool" => animator.GetBool(paramInfo.Hash).ToString(),
-                    "trigger" => "Trigger",
-                    _ => "Unknown",
-                };
-            }
-            catch
-            {
-                return "N/A";
-            }
-        }
-
-        private static object? GetParameterValueObject(CustomAnimatorControl? customAnimatorControl,
-            AnimatorParamInfo paramInfo, Animator? animator)
-        {
-            if (!paramInfo.IsExternal)
-            {
-                if (customAnimatorControl == null) return null;
-
-                try
-                {
-                    return paramInfo.Type switch
-                    {
-                        "float" => customAnimatorControl.GetParameterFloat(paramInfo.Hash),
-                        "int" => customAnimatorControl.GetParameterInteger(paramInfo.Hash),
-                        "bool" => customAnimatorControl.GetParameterBool(paramInfo.Hash),
-                        _ => null,
-                    };
-                }
-                catch
-                {
-                    return null;
-                }
-            }
-
-            if (animator == null) return null;
-
-            try
-            {
-                return paramInfo.Type switch
-                {
-                    "float" => animator.GetFloat(paramInfo.Hash),
-                    "int" => animator.GetInteger(paramInfo.Hash),
-                    "bool" => animator.GetBool(paramInfo.Hash),
-                    _ => null,
-                };
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private void UpdateParamState(int hash, object? currentValue, string paramType)
-        {
-            if (currentValue == null || paramType == "trigger") return;
-
-            if (!_paramPreviousValues.TryGetValue(hash, out var previousValue))
-            {
-                _paramPreviousValues[hash] = currentValue;
-                _paramIsChanging[hash] = false;
-                return;
-            }
-
-            var isValueChanged = !ValuesEqual(currentValue, previousValue, paramType);
-            _paramIsChanging[hash] = isValueChanged;
-            _paramPreviousValues[hash] = currentValue;
-        }
-
-        private static bool ValuesEqual(object? value1, object? value2, string paramType)
-        {
-            if (value1 == null && value2 == null) return true;
-            if (value1 == null || value2 == null) return false;
-
-            return paramType switch
-            {
-                "float" => Math.Abs((float)value1 - (float)value2) < 0.0001f,
-                "int" => (int)value1 == (int)value2,
-                "bool" => (bool)value1 == (bool)value2,
-                _ => value1.Equals(value2),
-            };
-        }
-
-        private GUIStyle GetParamStyle(AnimatorParamInfo paramInfo, object? currentValue)
-        {
-            if (currentValue == null || paramInfo.InitialValue == null)
-                return _paramLabelStyle ?? GUI.skin.label;
-
-            var isChanged = !ValuesEqual(currentValue, paramInfo.InitialValue, paramInfo.Type);
-            var isChanging = _paramIsChanging.GetValueOrDefault(paramInfo.Hash, false);
-
-            if (isChanging)
-                return _paramLabelStyleChanging ?? _paramLabelStyle ?? GUI.skin.label;
-
-            if (isChanged)
-                return _paramLabelStyleChanged ?? _paramLabelStyle ?? GUI.skin.label;
-
-            return _paramLabelStyle ?? GUI.skin.label;
-        }
-
-        private void UpdateModelHandlers()
-        {
-            if (LevelManager.Instance == null) return;
-
-            var mainCharacterControl = LevelManager.Instance.MainCharacter;
-            if (mainCharacterControl != null)
-            {
-                _modelHandler = mainCharacterControl.GetComponent<ModelHandler>();
-                if (_modelHandler == null)
-                    _modelHandler =
-                        ModelManager.InitializeModelHandler(mainCharacterControl, ModelTargetType.Character);
-            }
-
-            var petCharacterControl = LevelManager.Instance.PetCharacter;
-            if (petCharacterControl == null) return;
-            _petModelHandler = petCharacterControl.GetComponent<ModelHandler>();
-            if (_petModelHandler == null)
-                _petModelHandler = ModelManager.InitializeModelHandler(petCharacterControl, ModelTargetType.Pet);
+            var panelObj = new GameObject("AnimatorParamsPanel", typeof(RectTransform), typeof(AnimatorParamsPanel));
+            panelObj.transform.SetParent(_uiRoot.transform, false);
+            _animatorParamsPanel = panelObj.GetComponent<AnimatorParamsPanel>();
+            _animatorParamsPanel.Initialize(_uiRoot.transform);
+            _animatorParamsPanel.Hide();
         }
 
         public void SetAnimatorParamsWindowVisible(bool visible)
         {
             _showAnimatorParamsWindow = visible;
+            if (_animatorParamsPanel == null) return;
+            if (visible)
+                _animatorParamsPanel.Show();
+            else
+                _animatorParamsPanel.Hide();
+        }
+
+        public void OnAnimatorParamsPanelOpened()
+        {
+            if (_showAnimatorParamsWindow) return;
+            _showAnimatorParamsWindow = true;
+            _settingsTab?.RefreshAnimatorParamsToggleState(true);
+        }
+
+        public void OnAnimatorParamsPanelClosed()
+        {
+            if (!_showAnimatorParamsWindow) return;
+            _showAnimatorParamsWindow = false;
+            _settingsTab?.RefreshAnimatorParamsToggleState(false);
         }
 
         public bool IsAnimatorParamsWindowVisible()
         {
-            return _showAnimatorParamsWindow;
+            return _animatorParamsPanel != null && _animatorParamsPanel.IsVisible();
         }
 
         private void BuildSettingsButton()
@@ -1011,23 +663,14 @@ namespace DuckovCustomModel.UI
 
         private void UpdateAnimatorEmotionValues()
         {
-            UpdateModelHandlers();
-
-            if (_modelHandler == null) return;
-            var customAnimatorControl = _modelHandler.CustomAnimatorControl;
-            if (customAnimatorControl == null) return;
-            customAnimatorControl.SetParameterInteger(CustomAnimatorHash.EmotionValue1, EmotionParameterValue1);
-            customAnimatorControl.SetParameterInteger(CustomAnimatorHash.EmotionValue2, EmotionParameterValue2);
+            EmotionParameterManager.NotifyEmotionParametersChanged(EmotionParameterValue1, EmotionParameterValue2);
         }
 
         private void OnModelChanged(ModelChangedEventArgs? e)
         {
             if (e is not { TargetTypeId: ModelTargetType.Character, Handler: ModelHandler handler }) return;
             if (handler.CharacterMainControl != CharacterMainControl.Main) return;
-            var customAnimatorControl = handler.CustomAnimatorControl;
-            if (customAnimatorControl == null) return;
-            customAnimatorControl.SetParameterInteger(CustomAnimatorHash.EmotionValue1, EmotionParameterValue1);
-            customAnimatorControl.SetParameterInteger(CustomAnimatorHash.EmotionValue2, EmotionParameterValue2);
+            EmotionParameterManager.NotifyEmotionParametersChanged(EmotionParameterValue1, EmotionParameterValue2);
         }
     }
 }

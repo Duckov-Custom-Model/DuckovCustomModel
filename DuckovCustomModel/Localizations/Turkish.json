@@ -68,6 +68,13 @@
   "ModelAudioVolume": "Model ses seviyesi",
   "EmotionModifierKey1": "Duygu değiştirici tuş 1",
   "EmotionModifierKey2": "Duygu değiştirici tuş 2",
-  "EmotionModifierKeyWarning": "Uyarı: Değiştirici tuşlara basmak diğer tüm tuş girişlerini engelleyecektir, yalnızca F1~F8 kombinasyon tuş olaylarına yanıt verilecektir"
+  "EmotionModifierKeyWarning": "Uyarı: Değiştirici tuşlara basmak diğer tüm tuş girişlerini engelleyecektir, yalnızca F1~F8 kombinasyon tuş olaylarına yanıt verilecektir",
+  "AnimatorParamFilterAll": "Tümü",
+  "AnimatorParamTypeFloat": "Kayan nokta",
+  "AnimatorParamTypeInt": "Tam sayı",
+  "AnimatorParamTypeBool": "Boole",
+  "AnimatorParamTypeTrigger": "Tetikleyici",
+  "AnimatorParamUsageUsed": "Kullanılıyor",
+  "AnimatorParamUsageUnused": "Kullanılmıyor"
 }
 

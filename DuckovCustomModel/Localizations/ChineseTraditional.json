@@ -68,6 +68,13 @@
   "ModelAudioVolume": "模型音效音量",
   "EmotionModifierKey1": "表情修飾鍵 1",
   "EmotionModifierKey2": "表情修飾鍵 2",
-  "EmotionModifierKeyWarning": "警告：按下修飾鍵時會屏蔽所有其他按鍵響應，只能響應 F1~F8 組合鍵事件"
+  "EmotionModifierKeyWarning": "警告：按下修飾鍵時會屏蔽所有其他按鍵響應，只能響應 F1~F8 組合鍵事件",
+  "AnimatorParamFilterAll": "全部",
+  "AnimatorParamTypeFloat": "浮點數",
+  "AnimatorParamTypeInt": "整數",
+  "AnimatorParamTypeBool": "布林值",
+  "AnimatorParamTypeTrigger": "觸發器",
+  "AnimatorParamUsageUsed": "已使用",
+  "AnimatorParamUsageUnused": "未使用"
 }
 
