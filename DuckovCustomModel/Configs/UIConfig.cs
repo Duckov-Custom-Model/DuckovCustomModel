@@ -19,8 +19,8 @@ namespace DuckovCustomModel.Configs
     {
         public KeyCode ToggleKey { get; set; } = KeyCode.Backslash;
         public KeyCode AnimatorParamsToggleKey { get; set; } = KeyCode.None;
-        public KeyCode EmotionModifierKey1 { get; set; } = KeyCode.LeftShift;
-        public KeyCode EmotionModifierKey2 { get; set; } = KeyCode.RightShift;
+        public KeyCode EmotionModifierKey1 { get; set; } = KeyCode.Comma;
+        public KeyCode EmotionModifierKey2 { get; set; } = KeyCode.Period;
         public bool ShowDCMButton { get; set; } = true;
         public AnchorPosition DCMButtonAnchor { get; set; } = AnchorPosition.TopLeft;
         public float DCMButtonOffsetX { get; set; } = 10f;
@@ -30,8 +30,8 @@ namespace DuckovCustomModel.Configs
         {
             ToggleKey = KeyCode.Backslash;
             AnimatorParamsToggleKey = KeyCode.None;
-            EmotionModifierKey1 = KeyCode.LeftShift;
-            EmotionModifierKey2 = KeyCode.RightShift;
+            EmotionModifierKey1 = KeyCode.Comma;
+            EmotionModifierKey2 = KeyCode.Period;
             ShowDCMButton = true;
             DCMButtonAnchor = AnchorPosition.TopLeft;
             DCMButtonOffsetX = 10f;

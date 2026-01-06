@@ -186,13 +186,13 @@ namespace DuckovCustomModel.UI.Tabs
             UIFactory.SetupRightControl(modifier1Button, new(100, 30));
 
             var modifier1ButtonText = UIFactory.CreateText("Text", modifier1Button.transform,
-                GetKeyCodeDisplayName(UIConfig?.EmotionModifierKey1 ?? KeyCode.LeftShift), 18, Color.white,
+                GetKeyCodeDisplayName(UIConfig?.EmotionModifierKey1 ?? KeyCode.Comma), 18, Color.white,
                 TextAnchor.MiddleCenter);
             UIFactory.SetupButtonText(modifier1ButtonText);
             UIFactory.SetLocalizedText(modifier1ButtonText, () =>
                 _isWaitingForModifierKey1Input
                     ? Localization.PressAnyKey
-                    : GetKeyCodeDisplayName(UIConfig?.EmotionModifierKey1 ?? KeyCode.LeftShift));
+                    : GetKeyCodeDisplayName(UIConfig?.EmotionModifierKey1 ?? KeyCode.Comma));
 
             var modifier2Row = CreateSettingRow(parent);
             var modifier2Label = UIFactory.CreateText("ModifierKey2Label", modifier2Row.transform,
@@ -207,13 +207,13 @@ namespace DuckovCustomModel.UI.Tabs
             UIFactory.SetupRightControl(modifier2Button, new(100, 30));
 
             var modifier2ButtonText = UIFactory.CreateText("Text", modifier2Button.transform,
-                GetKeyCodeDisplayName(UIConfig?.EmotionModifierKey2 ?? KeyCode.RightShift), 18, Color.white,
+                GetKeyCodeDisplayName(UIConfig?.EmotionModifierKey2 ?? KeyCode.Period), 18, Color.white,
                 TextAnchor.MiddleCenter);
             UIFactory.SetupButtonText(modifier2ButtonText);
             UIFactory.SetLocalizedText(modifier2ButtonText, () =>
                 _isWaitingForModifierKey2Input
                     ? Localization.PressAnyKey
-                    : GetKeyCodeDisplayName(UIConfig?.EmotionModifierKey2 ?? KeyCode.RightShift));
+                    : GetKeyCodeDisplayName(UIConfig?.EmotionModifierKey2 ?? KeyCode.Period));
 
             var warningRow = new GameObject("WarningRow", typeof(RectTransform), typeof(Image));
             warningRow.transform.SetParent(parent.transform, false);

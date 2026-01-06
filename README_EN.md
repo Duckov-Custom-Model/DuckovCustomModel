@@ -40,8 +40,8 @@ UI interface related configuration.
 {
   "ToggleKey": "Backslash",
   "AnimatorParamsToggleKey": "None",
-  "EmotionModifierKey1": "LeftShift",
-  "EmotionModifierKey2": "RightShift",
+  "EmotionModifierKey1": "Comma",
+  "EmotionModifierKey2": "Period",
   "ShowDCMButton": true,
   "DCMButtonAnchor": "TopLeft",
   "DCMButtonOffsetX": 10.0,
@@ -55,11 +55,11 @@ UI interface related configuration.
   - Users need to actively set it in the settings interface
   - Supported key values can refer to Unity KeyCode enum
   - When set to `None`, the hotkey feature will be disabled
-- `EmotionModifierKey1`: Emotion shortcut modifier key 1 (default: `LeftShift`, i.e., left Shift key)
+- `EmotionModifierKey1`: Emotion shortcut modifier key 1 (default: `Comma`, i.e., comma key `,`)
   - Used for emotion shortcut functionality, hold this key + F1-F8 to set `EmotionValue1` parameter (value 0-7)
   - Supported key values can refer to Unity KeyCode enum
   - Can be set by clicking the button in the settings interface
-- `EmotionModifierKey2`: Emotion shortcut modifier key 2 (default: `RightShift`, i.e., right Shift key)
+- `EmotionModifierKey2`: Emotion shortcut modifier key 2 (default: `Period`, i.e., period key `.`)
   - Used for emotion shortcut functionality, hold this key + F1-F8 to set `EmotionValue2` parameter (value 0-7)
   - Supported key values can refer to Unity KeyCode enum
   - Can be set by clicking the button in the settings interface
@@ -672,10 +672,10 @@ The Animator Controller can use the following parameters:
   - `1`: Dawn
   - `2`: Night
 - `EmotionValue1`: Emotion parameter value 1 (int type, initial value 0)
-  - Can be set via emotion shortcut functionality: Hold modifier key 1 (default Left Shift) + F1-F8 to set (value 0-7)
+  - Can be set via emotion shortcut functionality: Hold modifier key 1 (default comma key `,`) + F1-F8 to set (value 0-7)
   - Modifier key 1 can be configured in the settings interface (`EmotionModifierKey1`)
 - `EmotionValue2`: Emotion parameter value 2 (int type, initial value 0)
-  - Can be set via emotion shortcut functionality: Hold modifier key 2 (default Right Shift) + F1-F8 to set (value 0-7)
+  - Can be set via emotion shortcut functionality: Hold modifier key 2 (default period key `.`) + F1-F8 to set (value 0-7)
   - Modifier key 2 can be configured in the settings interface (`EmotionModifierKey2`)
 
 #### Mod Extension Parameters
