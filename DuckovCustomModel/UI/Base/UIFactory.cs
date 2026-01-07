@@ -389,9 +389,6 @@ namespace DuckovCustomModel.UI.Base
             SetupRectTransform(itemBackgroundObj, Vector2.zero, Vector2.one, Vector2.zero);
             var itemBackgroundImage = itemBackgroundObj.GetComponent<Image>();
             itemBackgroundImage.color = Color.white;
-            var itemBackgroundOutline = itemBackgroundObj.AddComponent<Outline>();
-            itemBackgroundOutline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
-            itemBackgroundOutline.effectDistance = new(0, 1);
 
             var itemToggle = itemObj.GetComponent<Toggle>();
             itemToggle.targetGraphic = itemBackgroundImage;
