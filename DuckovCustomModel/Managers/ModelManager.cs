@@ -229,16 +229,25 @@ namespace DuckovCustomModel.Managers
             return modelHandler;
         }
 
+        public static event Action<ModelHandler>? OnHandlerRegistered;
+        public static event Action<ModelHandler>? OnHandlerUnregistered;
+
         internal static void RegisterHandler(ModelHandler handler)
         {
             if (handler != null)
+            {
                 RegisteredHandlers.Add(handler);
+                OnHandlerRegistered?.Invoke(handler);
+            }
         }
 
         internal static void UnregisterHandler(ModelHandler handler)
         {
             if (handler != null)
+            {
                 RegisteredHandlers.Remove(handler);
+                OnHandlerUnregistered?.Invoke(handler);
+            }
         }
 
         public static IReadOnlyCollection<ModelHandler> GetAllHandlers()

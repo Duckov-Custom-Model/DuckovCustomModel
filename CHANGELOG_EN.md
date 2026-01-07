@@ -2,6 +2,27 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.3
+
+- Added emotion shortcut key functionality
+  - Support for quickly setting character emotion parameter values via shortcut keys
+  - Operation: Hold modifier key (default Left Shift or Right Shift) + F1-F8 to set emotion parameter values
+    - Modifier key 1 (default comma key `,`) + F1-F8 sets `EmotionValue1` parameter (value 0-7)
+    - Modifier key 2 (default period key `.`) + F1-F8 sets `EmotionValue2` parameter (value 0-7)
+  - Two modifier keys can be configured in the settings interface (`EmotionModifierKey1` and `EmotionModifierKey2`)
+  - Configuration items in `UIConfig.json`:
+    - `EmotionModifierKey1`: Modifier key 1 (default: `Comma`)
+    - `EmotionModifierKey2`: Modifier key 2 (default: `Period`)
+  - New Animator parameters:
+    - `EmotionValue1` (int type, initial value 0): Emotion parameter value 1
+    - `EmotionValue2` (int type, initial value 0): Emotion parameter value 2
+- Refactored parameter display list, improved parameter display list UI and functionality:
+  - Support for multi-select filtering (type filter: float, int, bool, trigger; usage status filter: used, unused)
+  - Support for regex search functionality to quickly find parameters
+  - Support for character switching, can select different characters from dropdown to view their parameters
+  - Uses grid layout to display parameters, improving display efficiency
+  - Parameter list supports window dragging and resizing for better user experience
+
 ## v1.10.2-fix2
 
 - Fixed custom target type equipment hiding setting text display content

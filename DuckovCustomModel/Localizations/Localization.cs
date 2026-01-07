@@ -96,6 +96,19 @@ namespace DuckovCustomModel.Localizations
                 "Some characters use building models, so not all instances of this character may be correctly replaced with the set model"
             },
             { "ModelAudioVolume", "Model Audio Volume" },
+            { "EmotionModifierKey1", "Emotion Modifier Key 1" },
+            { "EmotionModifierKey2", "Emotion Modifier Key 2" },
+            {
+                "EmotionModifierKeyWarning",
+                "Warning: Pressing modifier keys will block all other key inputs, only F1~F8 combination key events will be responded to"
+            },
+            { "AnimatorParamFilterAll", "All" },
+            { "AnimatorParamTypeFloat", "Float" },
+            { "AnimatorParamTypeInt", "Int" },
+            { "AnimatorParamTypeBool", "Bool" },
+            { "AnimatorParamTypeTrigger", "Trigger" },
+            { "AnimatorParamUsageUsed", "Used" },
+            { "AnimatorParamUsageUnused", "Unused" },
         };
 
         public static string Title => GetText("Title");
@@ -165,6 +178,16 @@ namespace DuckovCustomModel.Localizations
         public static string PublishedAt => GetText("PublishedAt");
         public static string CharacterModelWarning => GetText("CharacterModelWarning");
         public static string ModelAudioVolume => GetText("ModelAudioVolume");
+        public static string EmotionModifierKey1 => GetText("EmotionModifierKey1");
+        public static string EmotionModifierKey2 => GetText("EmotionModifierKey2");
+        public static string EmotionModifierKeyWarning => GetText("EmotionModifierKeyWarning");
+        public static string AnimatorParamFilterAll => GetText("AnimatorParamFilterAll");
+        public static string AnimatorParamTypeFloat => GetText("AnimatorParamTypeFloat");
+        public static string AnimatorParamTypeInt => GetText("AnimatorParamTypeInt");
+        public static string AnimatorParamTypeBool => GetText("AnimatorParamTypeBool");
+        public static string AnimatorParamTypeTrigger => GetText("AnimatorParamTypeTrigger");
+        public static string AnimatorParamUsageUsed => GetText("AnimatorParamUsageUsed");
+        public static string AnimatorParamUsageUnused => GetText("AnimatorParamUsageUnused");
 
         public static event Action<SystemLanguage>? OnLanguageChangedEvent;
 

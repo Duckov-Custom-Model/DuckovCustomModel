@@ -65,6 +65,16 @@
   "DownloadLinks": "Linki do pobrania",
   "PublishedAt": "Opublikowano",
   "CharacterModelWarning": "Niektóre postacie używają modeli budynków, więc nie wszystkie instancje tej postaci mogą być poprawnie zastąpione ustawionym modelem",
-  "ModelAudioVolume": "Głośność dźwięku modelu"
+  "ModelAudioVolume": "Głośność dźwięku modelu",
+  "EmotionModifierKey1": "Klawisz modyfikatora emocji 1",
+  "EmotionModifierKey2": "Klawisz modyfikatora emocji 2",
+  "EmotionModifierKeyWarning": "Ostrzeżenie: Naciśnięcie klawiszy modyfikujących zablokuje wszystkie inne wejścia klawiatury, tylko zdarzenia kombinacji klawiszy F1~F8 będą obsługiwane",
+  "AnimatorParamFilterAll": "Wszystkie",
+  "AnimatorParamTypeFloat": "Zmiennoprzecinkowy",
+  "AnimatorParamTypeInt": "Całkowity",
+  "AnimatorParamTypeBool": "Logiczny",
+  "AnimatorParamTypeTrigger": "Wyzwalacz",
+  "AnimatorParamUsageUsed": "Używany",
+  "AnimatorParamUsageUnused": "Nieużywany"
 }
 

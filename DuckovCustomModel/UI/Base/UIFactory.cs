@@ -350,10 +350,14 @@ namespace DuckovCustomModel.UI.Base
             templateObj.transform.SetParent(dropdownObj.transform, false);
             templateObj.SetActive(false);
             SetupRectTransform(templateObj, new(0, 0), new(1, 0),
-                new(0, 150), pivot: new(0.5f, 1), anchoredPosition: new(0, 2));
+                new(0, 200), pivot: new(0.5f, 1), anchoredPosition: new(0, 2));
 
             var templateImage = templateObj.GetComponent<Image>();
             templateImage.color = new(0.1f, 0.12f, 0.15f, 0.95f);
+
+            var templateOutline = templateObj.AddComponent<Outline>();
+            templateOutline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
+            templateOutline.effectDistance = new(1, -1);
 
             var templateScrollRect = templateObj.GetComponent<ScrollRect>();
             templateScrollRect.horizontal = false;
@@ -362,47 +366,58 @@ namespace DuckovCustomModel.UI.Base
             var viewportObj = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(Mask));
             viewportObj.transform.SetParent(templateObj.transform, false);
             SetupRectTransform(viewportObj, Vector2.zero, Vector2.one, Vector2.zero);
+            var viewportImage = viewportObj.GetComponent<Image>();
+            viewportImage.color = new(0.1f, 0.12f, 0.15f, 0.95f);
+            viewportImage.raycastTarget = false;
+            var viewportMask = viewportObj.GetComponent<Mask>();
+            viewportMask.showMaskGraphic = false;
             templateScrollRect.viewport = viewportObj.GetComponent<RectTransform>();
 
             var contentObj = new GameObject("Content", typeof(RectTransform), typeof(ToggleGroup));
             contentObj.transform.SetParent(viewportObj.transform, false);
             SetupRectTransform(contentObj, new(0, 1), new(1, 1),
-                new(0, 36), pivot: new(0.5f, 1));
+                new(0, 40), pivot: new(0.5f, 1));
             templateScrollRect.content = contentObj.GetComponent<RectTransform>();
 
             var itemObj = new GameObject("Item", typeof(RectTransform), typeof(Toggle));
             itemObj.transform.SetParent(contentObj.transform, false);
             SetupRectTransform(itemObj, new(0, 1), new(1, 1),
-                new(0, 28), pivot: new(0.5f, 1));
+                new(0, 40), pivot: new(0.5f, 1));
 
             var itemBackgroundObj = new GameObject("Item Background", typeof(Image));
             itemBackgroundObj.transform.SetParent(itemObj.transform, false);
-            SetupRectTransform(itemBackgroundObj, new(0, 0.1f), new(1, 0.9f), Vector2.zero);
+            SetupRectTransform(itemBackgroundObj, Vector2.zero, Vector2.one, Vector2.zero);
             var itemBackgroundImage = itemBackgroundObj.GetComponent<Image>();
-            itemBackgroundImage.color = new(0.05f, 0.06f, 0.08f, 0.95f);
+            itemBackgroundImage.color = Color.white;
 
             var itemToggle = itemObj.GetComponent<Toggle>();
             itemToggle.targetGraphic = itemBackgroundImage;
+            itemToggle.transition = Selectable.Transition.ColorTint;
 
             var colors = itemToggle.colors;
-            colors.normalColor = new(0.05f, 0.06f, 0.08f, 0.95f);
-            colors.highlightedColor = new(0.15f, 0.18f, 0.22f, 0.95f);
-            colors.pressedColor = new(0.1f, 0.12f, 0.15f, 0.95f);
-            colors.selectedColor = new(0.15f, 0.18f, 0.22f, 0.95f);
+            colors.normalColor = new(0.1f, 0.12f, 0.15f, 0.98f);
+            colors.highlightedColor = new(0.2f, 0.25f, 0.3f, 0.98f);
+            colors.pressedColor = new(0.15f, 0.18f, 0.22f, 0.98f);
+            colors.selectedColor = new(0.25f, 0.3f, 0.35f, 0.98f);
             colors.disabledColor = new(0.05f, 0.06f, 0.08f, 0.5f);
+            colors.colorMultiplier = 1f;
+            colors.fadeDuration = 0.1f;
             itemToggle.colors = colors;
 
             var itemLabelObj = new GameObject("Item Label", typeof(TextMeshProUGUI));
             itemLabelObj.transform.SetParent(itemObj.transform, false);
             var itemLabelText = itemLabelObj.GetComponent<TextMeshProUGUI>();
-            itemLabelText.fontSize = 16;
-            itemLabelText.color = Color.white;
+            itemLabelText.fontSize = 15;
+            itemLabelText.color = new(0.95f, 0.95f, 0.95f, 1f);
             itemLabelText.alignment = TextAlignmentOptions.MidlineLeft;
             SetupRectTransform(itemLabelObj, new(0, 0), new(1, 1),
-                offsetMin: new(10, 2), offsetMax: new(-10, -2));
+                offsetMin: new(12, 4), offsetMax: new(-12, -4));
 
             dropdown.template = templateObj.GetComponent<RectTransform>();
             dropdown.itemText = itemLabelText;
+
+            var scrollbar = CreateScrollbar(templateScrollRect, 6f, true);
+            scrollbar.transform.SetParent(templateObj.transform, false);
 
             return dropdown;
         }

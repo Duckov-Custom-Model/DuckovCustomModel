@@ -65,6 +65,16 @@
   "DownloadLinks": "下载链接",
   "PublishedAt": "发布时间",
   "CharacterModelWarning": "由于部分角色使用建筑模型，因此不保证所有该角色都能被正确替换为设置的模型",
-  "ModelAudioVolume": "模型音效音量"
+  "ModelAudioVolume": "模型音效音量",
+  "EmotionModifierKey1": "表情修饰键 1",
+  "EmotionModifierKey2": "表情修饰键 2",
+  "EmotionModifierKeyWarning": "警告：按下修饰键时会屏蔽所有其他按键响应，只能响应 F1~F8 组合键事件",
+  "AnimatorParamFilterAll": "全部",
+  "AnimatorParamTypeFloat": "浮点数",
+  "AnimatorParamTypeInt": "整数",
+  "AnimatorParamTypeBool": "布尔值",
+  "AnimatorParamTypeTrigger": "触发器",
+  "AnimatorParamUsageUsed": "已使用",
+  "AnimatorParamUsageUnused": "未使用"
 }
 

@@ -65,6 +65,16 @@
   "DownloadLinks": "Links de download",
   "PublishedAt": "Publicado em",
   "CharacterModelWarning": "Alguns personagens usam modelos de edifícios, então nem todas as instâncias deste personagem podem ser corretamente substituídas pelo modelo definido",
-  "ModelAudioVolume": "Volume de áudio do modelo"
+  "ModelAudioVolume": "Volume de áudio do modelo",
+  "EmotionModifierKey1": "Tecla modificadora de emoção 1",
+  "EmotionModifierKey2": "Tecla modificadora de emoção 2",
+  "EmotionModifierKeyWarning": "Aviso: Pressionar as teclas modificadoras bloqueará todas as outras entradas de teclas, apenas eventos de combinação de teclas F1~F8 serão respondidos",
+  "AnimatorParamFilterAll": "Todos",
+  "AnimatorParamTypeFloat": "Ponto flutuante",
+  "AnimatorParamTypeInt": "Inteiro",
+  "AnimatorParamTypeBool": "Booleano",
+  "AnimatorParamTypeTrigger": "Gatilho",
+  "AnimatorParamUsageUsed": "Usado",
+  "AnimatorParamUsageUnused": "Não usado"
 }
 

@@ -228,7 +228,8 @@ namespace DuckovCustomModel.Managers
             SetModelInConfigForAICharacter(nameKey, modelID);
         }
 
-        [Obsolete("Use RefreshAndApplyAllModels() or directly call ModelHandler.UpdateModelPriorityList() instead. This method is kept for backward compatibility.")]
+        [Obsolete(
+            "Use RefreshAndApplyAllModels() or directly call ModelHandler.UpdateModelPriorityList() instead. This method is kept for backward compatibility.")]
         public static void RestoreOriginalModelForTargetType(string targetTypeId)
         {
             if (string.IsNullOrWhiteSpace(targetTypeId)) return;

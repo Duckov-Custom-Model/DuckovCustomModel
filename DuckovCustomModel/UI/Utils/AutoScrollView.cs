@@ -10,6 +10,7 @@ namespace DuckovCustomModel.UI.Utils
     public class AutoScrollView : MonoBehaviour
     {
         private readonly List<GameObject> _createdObjects = [];
+        private readonly float _spacingHeight = 30f;
         private RectTransform? _contentRect;
         private bool _hasDuplicate;
         private bool _isScrolling;
@@ -18,7 +19,6 @@ namespace DuckovCustomModel.UI.Utils
         private float _originalContentHeight;
         private CancellationTokenSource? _scrollCts;
         private ScrollRect? _scrollRect;
-        private readonly float _spacingHeight = 30f;
 
         private void OnDestroy()
         {

@@ -11,6 +11,7 @@ namespace DuckovCustomModel.Core.Data
         public string Type { get; set; } = string.Empty;
         public object? InitialValue { get; set; }
         public bool IsExternal { get; set; }
+        public bool IsUsed { get; set; } = true;
     }
 
     public static class CustomAnimatorHash
@@ -97,6 +98,9 @@ namespace DuckovCustomModel.Core.Data
 
         public static readonly int ModShoulderSurfingCameraPitch =
             Animator.StringToHash("Mod:ShoulderSurfing:CameraPitch"); // float
+
+        public static readonly int EmotionValue1 = Animator.StringToHash("EmotionValue1"); // int
+        public static readonly int EmotionValue2 = Animator.StringToHash("EmotionValue2"); // int
 
         public static List<AnimatorParamInfo> GetAllParams()
         {
@@ -186,6 +190,8 @@ namespace DuckovCustomModel.Core.Data
                     Name = "Mod:ShoulderSurfing:CameraPitch", Hash = ModShoulderSurfingCameraPitch, Type = "float",
                     InitialValue = 0f,
                 },
+                new() { Name = "EmotionValue1", Hash = EmotionValue1, Type = "int", InitialValue = 0 },
+                new() { Name = "EmotionValue2", Hash = EmotionValue2, Type = "int", InitialValue = 0 },
             }.OrderBy(p => p.Name).ToList();
         }
     }
