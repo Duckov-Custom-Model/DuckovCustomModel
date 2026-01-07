@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Duckov.Utilities;
 using DuckovCustomModel.Core.Data;
-using UnityEngine;
 
 namespace DuckovCustomModel.Managers
 {
@@ -20,9 +19,7 @@ namespace DuckovCustomModel.Managers
 
             foreach (var preset in presets.Where(preset => !string.IsNullOrEmpty(preset.nameKey))
                          .Where(preset => preset.nameKey != AICharacters.AllAICharactersKey))
-            {
                 aiCharacterNameKeys.Add(preset.nameKey);
-            }
 
             if (aiCharacterNameKeys.Count <= 0) return;
             AICharacters.AddAICharacters(aiCharacterNameKeys);
@@ -30,4 +27,3 @@ namespace DuckovCustomModel.Managers
         }
     }
 }
-

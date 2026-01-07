@@ -1,4 +1,3 @@
-using Duckov;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Data;
 using DuckovCustomModel.MonoBehaviours;
@@ -13,10 +12,7 @@ namespace DuckovCustomModel.Managers.Updaters
 
             var currentAction = control.CharacterMainControl.CurrentAction;
             var actionType = -1;
-            if (currentAction != null)
-            {
-                actionType = CharacterActionDefinitions.GetActionTypeId(currentAction.GetType());
-            }
+            if (currentAction != null) actionType = CharacterActionDefinitions.GetActionTypeId(currentAction.GetType());
 
             control.SetParameterInteger(CustomAnimatorHash.ActionType, actionType);
 
@@ -60,4 +56,3 @@ namespace DuckovCustomModel.Managers.Updaters
         }
     }
 }
-

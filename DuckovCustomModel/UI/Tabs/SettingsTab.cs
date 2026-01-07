@@ -252,8 +252,7 @@ namespace DuckovCustomModel.UI.Tabs
             warningLayoutElement.flexibleHeight = 1;
 
             UIFactory.SetupContentSizeFitter(warningText, ContentSizeFitter.FitMode.Unconstrained);
-            UIFactory.SetupContentSizeFitter(warningRow, ContentSizeFitter.FitMode.PreferredSize,
-                ContentSizeFitter.FitMode.PreferredSize);
+            UIFactory.SetupContentSizeFitter(warningRow);
         }
 
         private void BuildAnimatorParamsToggle(GameObject parent)

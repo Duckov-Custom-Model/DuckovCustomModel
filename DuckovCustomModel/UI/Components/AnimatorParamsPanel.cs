@@ -516,7 +516,7 @@ namespace DuckovCustomModel.UI.Components
         }
 
 
-        private string GetTypeDisplayName(string type)
+        private static string GetTypeDisplayName(string type)
         {
             return type switch
             {
@@ -528,7 +528,7 @@ namespace DuckovCustomModel.UI.Components
             };
         }
 
-        private string GetUsageDisplayName(string usage)
+        private static string GetUsageDisplayName(string usage)
         {
             return usage switch
             {
