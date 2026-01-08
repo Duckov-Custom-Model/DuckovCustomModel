@@ -2,6 +2,17 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.3-fix1
+
+- Fixed parameter display list parameter duplication issue
+  - Fixed issue where some parameters would continuously be added but values remained empty
+  - Added deduplication logic when merging parameter cache to ensure each parameter appears only once
+  - Added duplicate check when updating parameter grid to prevent duplicate parameter item creation
+- Optimized regular expression search functionality in parameter display interface
+  - Optimized regular expression matching logic, only enables regex search when using `/pattern/` format
+  - All input is treated as normal search by default, avoiding accidental regex matching from special characters
+  - Regular expression search is case-insensitive by default, no additional configuration needed
+
 ## v1.10.3
 
 - Added emotion shortcut key functionality
