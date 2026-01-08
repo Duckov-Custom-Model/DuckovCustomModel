@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using DuckovCustomModel.Configs;
@@ -43,6 +44,8 @@ namespace DuckovCustomModel
             ModLogger.Log($"Initializing {Constant.ModName}...");
 
             _initialized = true;
+
+            CheckAndUpdateVersionFile();
 
             LoadConfig();
 
@@ -379,6 +382,33 @@ namespace DuckovCustomModel
 
             Object.Destroy(InputBlocker.Instance.gameObject);
             ModLogger.Log("InputBlocker cleaned up.");
+        }
+
+        private static void CheckAndUpdateVersionFile()
+        {
+            if (string.IsNullOrEmpty(ModDirectory))
+            {
+                ModLogger.LogWarning("ModDirectory 未设置，无法检查版本号文件。");
+                return;
+            }
+
+            var versionFilePath = Path.Combine(ModDirectory, "version.txt");
+            const string currentVersion = Constant.ModVersion;
+
+            try
+            {
+                if (File.Exists(versionFilePath))
+                {
+                    var fileVersion = File.ReadAllText(versionFilePath).Trim();
+                    if (fileVersion == currentVersion) return;
+                }
+
+                File.WriteAllText(versionFilePath, currentVersion);
+            }
+            catch
+            {
+                // ignored
+            }
         }
 
         private static void InitializeExtensions()

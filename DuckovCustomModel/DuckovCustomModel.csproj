@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
@@ -112,6 +112,19 @@
 
     <Message Text="已复制 ModLoader 文件: @(CopiedModLoaderFiles)" Importance="normal" Condition="'@(CopiedModLoaderFiles)' != ''"/>
     <Warning Text="未找到 ModLoader 输出文件。请确保 ModLoader 项目已成功构建。" Condition="!Exists('$(ModLoaderOutputPath)')"/>
+  </Target>
+
+  <Target Name="GenerateVersionFile" AfterTargets="Build">
+    <PropertyGroup>
+      <ConstantFile>$(MSBuildProjectDirectory)\Constant.cs</ConstantFile>
+      <VersionFile>$(OutputPath)version.txt</VersionFile>
+    </PropertyGroup>
+
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$line = Get-Content '$(ConstantFile)' | Where-Object { $_ -like '*ModVersion*' }; if ($line -match 'ModVersion\s*=\s*\x22([^\x22]+)\x22') { $matches[1] | Out-File '$(VersionFile)' -Encoding utf8 -NoNewline }&quot;"
+          Condition="Exists('$(ConstantFile)')"
+          ContinueOnError="true"/>
+
+    <Warning Text="未找到 Constant.cs 文件，无法生成版本号文件。" Condition="!Exists('$(ConstantFile)')"/>
   </Target>
 
   <Target Name="PackageRelease" BeforeTargets="PostBuildEvent" Condition="'$(Configuration)' == 'Release' AND '$(CI)' != 'true' AND '$(GITHUB_ACTIONS)' != 'true'"
