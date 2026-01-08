@@ -502,15 +502,26 @@ namespace DuckovCustomModel.UI.Components
         {
             _searchText = text;
             _searchRegex = null;
-            if (!string.IsNullOrEmpty(text))
-                try
-                {
-                    _searchRegex = new Regex(text, RegexOptions.IgnoreCase | RegexOptions.Compiled);
-                }
-                catch
-                {
-                    _searchRegex = null;
-                }
+
+            if (string.IsNullOrEmpty(text))
+            {
+                ScheduleRebuildCacheAndGrid();
+                return;
+            }
+
+            if (text.StartsWith("/") && text.EndsWith("/") && text.Length > 2)
+            {
+                var pattern = text.Substring(1, text.Length - 2);
+                if (!string.IsNullOrEmpty(pattern))
+                    try
+                    {
+                        _searchRegex = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+                    }
+                    catch
+                    {
+                        _searchRegex = null;
+                    }
+            }
 
             ScheduleRebuildCacheAndGrid();
         }
@@ -662,7 +673,12 @@ namespace DuckovCustomModel.UI.Components
                 }
 
             buffParamsList = buffParamsList.OrderBy(p => p.Name).ToList();
-            _cachedParamInfos = customParamsList.Concat(animatorParamsList).Concat(buffParamsList).ToList();
+
+            var allParamInfos = customParamsList.Concat(animatorParamsList).Concat(buffParamsList).ToList();
+            var seenHashes = new HashSet<int>();
+            var uniqueParamInfos = allParamInfos.Where(paramInfo => seenHashes.Add(paramInfo.Hash)).ToList();
+
+            _cachedParamInfos = uniqueParamInfos;
         }
 
         private List<AnimatorParamInfo> FilterParameters(List<AnimatorParamInfo> parameters)
@@ -684,10 +700,7 @@ namespace DuckovCustomModel.UI.Components
                     return false;
 
                 var usage = param.IsUsed ? "Used" : "Unused";
-                if (!_enabledUsage.Contains(usage))
-                    return false;
-
-                return true;
+                return _enabledUsage.Contains(usage);
             }).ToList();
         }
 
@@ -702,8 +715,11 @@ namespace DuckovCustomModel.UI.Components
             _paramPreviousValues.Clear();
             _paramIsChanging.Clear();
 
+            var processedHashes = new HashSet<int>();
             foreach (var paramInfo in parameters)
             {
+                if (!processedHashes.Add(paramInfo.Hash)) continue;
+
                 var paramItem = CreateParameterItem(paramInfo);
                 if (paramItem == null) continue;
 

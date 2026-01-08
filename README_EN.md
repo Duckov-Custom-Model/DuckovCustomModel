@@ -296,6 +296,45 @@ The model selection interface provides the following features:
   - **Animator Parameters Hotkey**: Configure the hotkey to open/close the animator parameters window
     - Default value is no key, users need to actively set it
     - Can be set by clicking the button in the settings interface
+  - **Animator Parameters Display Interface**: Used to view and monitor Animator parameter values in real-time
+    - **Opening Method**:
+      - Click the "Show Animator Parameters" toggle in the settings interface, or use the configured hotkey to open
+      - Press `ESC` key or click the close button in the top-right corner of the window to close the interface
+    - **Character Switching**: Select different characters from the dropdown at the top to view their Animator parameters
+      - The dropdown displays all available characters (including main character, pet, and AI characters)
+      - Each character displays its name, hash value, and distance information
+    - **Type Filtering**: Filter parameter types through the type filter dropdown
+      - Supports multi-select filtering: `float`, `int`, `bool`, `trigger`
+      - Multiple types can be selected simultaneously for filtering
+    - **Usage Status Filtering**: Filter parameter usage status through the usage status filter dropdown
+      - Supports multi-select filtering: `Used`, `Unused`
+      - "Used" means the parameter is used in the Animator Controller
+      - "Unused" means the parameter is not used in the Animator Controller
+    - **Search Functionality**: Quickly find parameters through the search box
+      - **Normal Search**: Directly enter keywords of parameter names, supports case-insensitive matching
+        - By default, all input is treated as normal search
+        - Example: Entering `Move` matches all parameters containing "Move" (such as "MoveSpeed", "MoveDirX", etc.)
+      - **Regular Expression Search**: Use JavaScript-style regular expression format for more precise matching of parameter names
+        - **Format**: Use `/pattern/` format to enable regular expression search
+        - **Note**: Regular expression search is case-insensitive by default
+        - **Examples**:
+          - `/^Move.*/` matches all parameters starting with "Move" (such as "MoveSpeed", "MoveDirX")
+          - `/.*Speed$/` matches all parameters ending with "Speed" (such as "MoveSpeed", "AmmoRate" won't match)
+          - `/(Move|Run|Dash).*/` matches parameters containing "Move", "Run", or "Dash"
+          - `/^[A-Z].*/` matches all parameters starting with an uppercase letter
+        - **Note**: Regular expression search is only enabled when using `/pattern/` format, otherwise treated as normal search
+      - Search filters the parameter list in real-time and can be combined with type filtering and usage status filtering
+    - **Parameter Display**:
+      - Parameters are displayed in a grid layout, showing each parameter's name, type, and current value
+      - Parameter values update in real-time, showing the actual values in the Animator
+      - Parameter colors change based on status:
+        - **White**: Parameter value is the same as the initial value
+        - **Yellow**: Parameter value differs from the initial value (changed)
+        - **Orange**: Parameter value is currently changing
+    - **Window Operations**:
+      - Supports dragging the window title bar to move the window position
+      - Supports dragging window edges to resize the window
+      - Window size has a minimum limit (400x300 pixels)
   - **Emotion Shortcut Modifier Keys**: Configure two modifier keys for the emotion shortcut functionality
     - Modifier key 1 (default: Left Shift): Hold this key + F1-F8 to set `EmotionValue1` parameter (value 0-7)
     - Modifier key 2 (default: Right Shift): Hold this key + F1-F8 to set `EmotionValue2` parameter (value 0-7)
