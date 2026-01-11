@@ -75,6 +75,11 @@
   "AnimatorParamTypeBool": "Booleano",
   "AnimatorParamTypeTrigger": "Gatilho",
   "AnimatorParamUsageUsed": "Usado",
-  "AnimatorParamUsageUnused": "Não usado"
+  "AnimatorParamUsageUnused": "Não usado",
+  "ModelUninstallHint": "Nota: A exclusão manual dos arquivos do modelo é necessária ao cancelar a assinatura ou remover modelos",
+  "OpenBundleFolder": "Abrir pasta",
+  "UnnamedBundle": "Bundle sem nome",
+  "ExpandAllBundles": "Expandir tudo",
+  "CollapseAllBundles": "Recolher tudo"
 }
 

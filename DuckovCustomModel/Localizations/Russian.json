@@ -75,6 +75,11 @@
   "AnimatorParamTypeBool": "Логическое",
   "AnimatorParamTypeTrigger": "Триггер",
   "AnimatorParamUsageUsed": "Используется",
-  "AnimatorParamUsageUnused": "Не используется"
+  "AnimatorParamUsageUnused": "Не используется",
+  "ModelUninstallHint": "Примечание: Требуется ручное удаление файлов модели при отмене подписки или удалении моделей",
+  "OpenBundleFolder": "Открыть папку",
+  "UnnamedBundle": "Безымянный Bundle",
+  "ExpandAllBundles": "Развернуть все",
+  "CollapseAllBundles": "Свернуть все"
 }
 

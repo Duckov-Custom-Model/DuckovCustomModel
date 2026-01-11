@@ -75,6 +75,11 @@
   "AnimatorParamTypeBool": "불린",
   "AnimatorParamTypeTrigger": "트리거",
   "AnimatorParamUsageUsed": "사용됨",
-  "AnimatorParamUsageUnused": "미사용"
+  "AnimatorParamUsageUnused": "미사용",
+  "ModelUninstallHint": "참고: 구독을 취소하거나 모델을 제거할 때 모델 파일을 수동으로 삭제해야 합니다",
+  "OpenBundleFolder": "폴더 열기",
+  "UnnamedBundle": "이름 없는 Bundle",
+  "ExpandAllBundles": "모두 확장",
+  "CollapseAllBundles": "모두 접기"
 }
 

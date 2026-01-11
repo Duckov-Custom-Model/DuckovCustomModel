@@ -75,6 +75,11 @@
   "AnimatorParamTypeBool": "布尔值",
   "AnimatorParamTypeTrigger": "触发器",
   "AnimatorParamUsageUsed": "已使用",
-  "AnimatorParamUsageUnused": "未使用"
+  "AnimatorParamUsageUnused": "未使用",
+  "ModelUninstallHint": "提示：取消订阅或移除模型时需要手动删除模型文件",
+  "OpenBundleFolder": "打开文件夹",
+  "UnnamedBundle": "未命名Bundle",
+  "ExpandAllBundles": "全部展开",
+  "CollapseAllBundles": "全部折叠"
 }
 

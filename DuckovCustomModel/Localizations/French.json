@@ -75,6 +75,11 @@
   "AnimatorParamTypeBool": "Booléen",
   "AnimatorParamTypeTrigger": "Déclencheur",
   "AnimatorParamUsageUsed": "Utilisé",
-  "AnimatorParamUsageUnused": "Non utilisé"
+  "AnimatorParamUsageUnused": "Non utilisé",
+  "ModelUninstallHint": "Note : La suppression manuelle des fichiers de modèle est requise lors de l'annulation de l'abonnement ou de la suppression de modèles",
+  "OpenBundleFolder": "Ouvrir le dossier",
+  "UnnamedBundle": "Bundle sans nom",
+  "ExpandAllBundles": "Tout développer",
+  "CollapseAllBundles": "Tout réduire"
 }
 

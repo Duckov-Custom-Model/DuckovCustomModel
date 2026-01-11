@@ -75,6 +75,11 @@
   "AnimatorParamTypeBool": "Booleano",
   "AnimatorParamTypeTrigger": "Disparador",
   "AnimatorParamUsageUsed": "Usado",
-  "AnimatorParamUsageUnused": "No usado"
+  "AnimatorParamUsageUnused": "No usado",
+  "ModelUninstallHint": "Nota: Se requiere la eliminación manual de los archivos del modelo al cancelar la suscripción o eliminar modelos",
+  "OpenBundleFolder": "Abrir carpeta",
+  "UnnamedBundle": "Bundle sin nombre",
+  "ExpandAllBundles": "Expandir todo",
+  "CollapseAllBundles": "Contraer todo"
 }
 

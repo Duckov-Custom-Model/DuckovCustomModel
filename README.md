@@ -10,7 +10,8 @@
 
 1. **自行去除加载校验**：必须修改模组中的加载校验逻辑（位于 `DuckovCustomModel.ModLoader/ModBehaviour.cs` 的 `OnAfterSetup` 方法中）。该校验用于避免盗传，请根据您的需求进行修改。
 2. **修改或去除更新逻辑**：必须修改更新检查功能的检查源（位于 `DuckovCustomModel/Managers/UpdateChecker.cs`），或完全移除该功能。自行分发版本不应使用本仓库的数据源进行更新检查。
-3. **遵守 MIT 协议的要求**：必须遵守 [LICENSE](LICENSE) 文件中规定的 MIT 协议要求，包括保留版权声明和许可证文本
+3. **调整 info.ini 说明文本**：必须修改 `DuckovCustomModel/info.ini` 文件中的 `description` 字段，调整其中的说明文本以符合您的分发需求。该文件中的描述文本包含关于盗传的警告信息，请根据您的实际情况进行修改或删除。
+4. **遵守 MIT 协议的要求**：必须遵守 [LICENSE](LICENSE) 文件中规定的 MIT 协议要求，包括保留版权声明和许可证文本
 
 一个用于 Duckov 游戏的自定义玩家模型模组。
 

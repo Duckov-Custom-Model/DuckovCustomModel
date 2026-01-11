@@ -75,6 +75,11 @@
   "AnimatorParamTypeBool": "Boolesch",
   "AnimatorParamTypeTrigger": "Auslöser",
   "AnimatorParamUsageUsed": "Verwendet",
-  "AnimatorParamUsageUnused": "Nicht verwendet"
+  "AnimatorParamUsageUnused": "Nicht verwendet",
+  "ModelUninstallHint": "Hinweis: Beim Abbestellen oder Entfernen von Modellen ist eine manuelle Löschung der Modell-Dateien erforderlich",
+  "OpenBundleFolder": "Ordner öffnen",
+  "UnnamedBundle": "Unbenanntes Bundle",
+  "ExpandAllBundles": "Alle erweitern",
+  "CollapseAllBundles": "Alle einklappen"
 }
 

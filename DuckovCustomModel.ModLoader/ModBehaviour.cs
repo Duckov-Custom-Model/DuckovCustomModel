@@ -12,6 +12,7 @@ namespace DuckovCustomModel
         private static readonly ulong[] ValidWorkshopItemIds =
         [
             3600560151UL,
+            3644112037UL,
         ];
 
         private void Awake()
