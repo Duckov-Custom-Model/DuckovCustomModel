@@ -75,6 +75,11 @@
   "AnimatorParamTypeBool": "Bool",
   "AnimatorParamTypeTrigger": "Trigger",
   "AnimatorParamUsageUsed": "Used",
-  "AnimatorParamUsageUnused": "Unused"
+  "AnimatorParamUsageUnused": "Unused",
+  "ModelUninstallHint": "Note: Manual deletion of model files is required when canceling subscription or removing models",
+  "OpenBundleFolder": "Open Folder",
+  "UnnamedBundle": "Unnamed Bundle",
+  "ExpandAllBundles": "Expand All",
+  "CollapseAllBundles": "Collapse All"
 }
 

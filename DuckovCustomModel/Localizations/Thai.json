@@ -75,6 +75,11 @@
   "AnimatorParamTypeBool": "บูลีน",
   "AnimatorParamTypeTrigger": "ทริกเกอร์",
   "AnimatorParamUsageUsed": "ใช้งาน",
-  "AnimatorParamUsageUnused": "ไม่ได้ใช้งาน"
+  "AnimatorParamUsageUnused": "ไม่ได้ใช้งาน",
+  "ModelUninstallHint": "หมายเหตุ: จำเป็นต้องลบไฟล์โมเดลด้วยตนเองเมื่อยกเลิกการสมัครสมาชิกหรือลบโมเดล",
+  "OpenBundleFolder": "เปิดโฟลเดอร์",
+  "UnnamedBundle": "Bundle ไม่มีชื่อ",
+  "ExpandAllBundles": "ขยายทั้งหมด",
+  "CollapseAllBundles": "ย่อทั้งหมด"
 }
 

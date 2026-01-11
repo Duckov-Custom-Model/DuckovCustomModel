@@ -43,7 +43,9 @@ namespace DuckovCustomModel.UI.Tabs
 
             var functionButtonBarContainer = CreateFunctionButtonBarContainer(topContainer);
             var targetListContainer = CreateTargetListContainer(leftContainer);
+            var noneModelButtonContainer = CreateNoneModelButtonContainer(midContainer);
             var searchFieldContainer = CreateSearchFieldContainer(midContainer);
+            var bundleToolbarContainer = CreateBundleToolbarContainer(midContainer);
             var modelListContainer = CreateModelListContainer(midContainer);
             var targetSettingsContainer = CreateTargetSettingsContainer(rightContainer);
 
@@ -56,7 +58,8 @@ namespace DuckovCustomModel.UI.Tabs
             _functionButtonBar.Initialize(functionButtonBarContainer.transform);
             _targetListPanel.Initialize(targetListContainer.transform);
             _searchField.Initialize(searchFieldContainer.transform);
-            _modelListPanel.Initialize(modelListContainer.transform);
+            _modelListPanel.Initialize(modelListContainer.transform, noneModelButtonContainer.transform);
+            _modelListPanel.InitializeBundleToolbar(bundleToolbarContainer.transform);
             _targetSettingsPanel.Initialize(targetSettingsContainer.transform);
 
             _functionButtonBar.OnRefresh += () => { ModelListManager.RefreshModelList(); };
@@ -249,6 +252,34 @@ namespace DuckovCustomModel.UI.Tabs
             return container;
         }
 
+        private static GameObject CreateNoneModelButtonContainer(GameObject parent)
+        {
+            var container = new GameObject("NoneModelButtonContainer", typeof(RectTransform), typeof(LayoutElement));
+            container.transform.SetParent(parent.transform, false);
+            UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
+
+            var layoutElement = container.GetComponent<LayoutElement>();
+            layoutElement.preferredHeight = 60;
+            layoutElement.flexibleHeight = 0;
+            layoutElement.flexibleWidth = 1;
+
+            return container;
+        }
+
+        private static GameObject CreateBundleToolbarContainer(GameObject parent)
+        {
+            var container = new GameObject("BundleToolbarContainer", typeof(RectTransform), typeof(LayoutElement));
+            container.transform.SetParent(parent.transform, false);
+            UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
+
+            var layoutElement = container.GetComponent<LayoutElement>();
+            layoutElement.preferredHeight = 40;
+            layoutElement.flexibleHeight = 0;
+            layoutElement.flexibleWidth = 1;
+
+            return container;
+        }
+
         private static GameObject CreateSearchFieldContainer(GameObject parent)
         {
             var container = new GameObject("SearchFieldContainer", typeof(RectTransform), typeof(LayoutElement));
@@ -292,7 +323,7 @@ namespace DuckovCustomModel.UI.Tabs
         protected override void OnShow()
         {
             _targetListPanel?.Refresh();
-            _modelListPanel?.Refresh();
+            _modelListPanel?.Refresh(false);
             _targetSettingsPanel?.Refresh();
 
             UpdateRefreshOverlay();

@@ -2,6 +2,14 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.4
+
+- Optimized model selection interface UI
+  - Added a hint message to remind users that model files need to be manually deleted when canceling model subscription
+  - Models are now grouped by Bundle with collapsible/expandable functionality
+  - Added open Bundle folder button for quick access to model files
+  - Optimized data loading logic to improve list loading efficiency and reduce stuttering
+
 ## v1.10.3-fix1
 
 - Fixed parameter display list parameter duplication issue

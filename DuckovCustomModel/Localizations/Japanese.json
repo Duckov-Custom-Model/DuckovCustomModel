@@ -75,6 +75,11 @@
   "AnimatorParamTypeBool": "ブール値",
   "AnimatorParamTypeTrigger": "トリガー",
   "AnimatorParamUsageUsed": "使用中",
-  "AnimatorParamUsageUnused": "未使用"
+  "AnimatorParamUsageUnused": "未使用",
+  "ModelUninstallHint": "注意：サブスクリプションをキャンセルするかモデルを削除する場合、モデルファイルを手動で削除する必要があります",
+  "OpenBundleFolder": "フォルダを開く",
+  "UnnamedBundle": "名前なしBundle",
+  "ExpandAllBundles": "すべて展開",
+  "CollapseAllBundles": "すべて折りたたむ"
 }
 

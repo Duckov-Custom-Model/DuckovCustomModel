@@ -75,6 +75,11 @@
   "AnimatorParamTypeBool": "Boole",
   "AnimatorParamTypeTrigger": "Tetikleyici",
   "AnimatorParamUsageUsed": "Kullanılıyor",
-  "AnimatorParamUsageUnused": "Kullanılmıyor"
+  "AnimatorParamUsageUnused": "Kullanılmıyor",
+  "ModelUninstallHint": "Not: Aboneliği iptal ederken veya modelleri kaldırırken model dosyalarının manuel olarak silinmesi gerekir",
+  "OpenBundleFolder": "Klasörü aç",
+  "UnnamedBundle": "İsimsiz Bundle",
+  "ExpandAllBundles": "Tümünü genişlet",
+  "CollapseAllBundles": "Tümünü daralt"
 }
 

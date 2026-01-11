@@ -4,6 +4,7 @@ using System.IO;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.UI.Base;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -106,6 +107,17 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetLocalizedText(openFolderTextObj, () => Localization.OpenModelFolder);
             UIFactory.SetupButtonColors(_openModelFolderButton, new(1, 1, 1, 1), new(0.4f, 0.6f, 0.4f, 1),
                 new(0.3f, 0.5f, 0.3f, 1), new(0.4f, 0.6f, 0.4f, 1));
+
+            var hintLabel = UIFactory.CreateLocalizedText("ModelUninstallHint", parent.transform,
+                () => Localization.ModelUninstallHint, 24, new(0.8f, 0.8f, 0.8f, 0.8f));
+            UIFactory.SetupRectTransform(hintLabel, new(0, 0.5f), new(0, 0.5f), new(600, 0), pivot: new(0, 0.5f));
+            var hintTextComponent = hintLabel.GetComponent<TextMeshProUGUI>();
+            if (hintTextComponent == null) return;
+            hintTextComponent.enableWordWrapping = true;
+            hintTextComponent.enableAutoSizing = true;
+            hintTextComponent.fontSizeMin = 12;
+            hintTextComponent.fontSizeMax = 24;
+            hintTextComponent.overflowMode = TextOverflowModes.Overflow;
         }
 
         private void OnResetInvalidModelsButtonClicked()

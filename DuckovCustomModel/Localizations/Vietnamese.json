@@ -75,6 +75,11 @@
   "AnimatorParamTypeBool": "Boolean",
   "AnimatorParamTypeTrigger": "Kích hoạt",
   "AnimatorParamUsageUsed": "Đã sử dụng",
-  "AnimatorParamUsageUnused": "Chưa sử dụng"
+  "AnimatorParamUsageUnused": "Chưa sử dụng",
+  "ModelUninstallHint": "Lưu ý: Cần xóa thủ công các tệp mô hình khi hủy đăng ký hoặc xóa mô hình",
+  "OpenBundleFolder": "Mở thư mục",
+  "UnnamedBundle": "Bundle không tên",
+  "ExpandAllBundles": "Mở rộng tất cả",
+  "CollapseAllBundles": "Thu gọn tất cả"
 }
 

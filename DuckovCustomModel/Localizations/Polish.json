@@ -75,6 +75,11 @@
   "AnimatorParamTypeBool": "Logiczny",
   "AnimatorParamTypeTrigger": "Wyzwalacz",
   "AnimatorParamUsageUsed": "Używany",
-  "AnimatorParamUsageUnused": "Nieużywany"
+  "AnimatorParamUsageUnused": "Nieużywany",
+  "ModelUninstallHint": "Uwaga: Wymagane jest ręczne usunięcie plików modelu przy anulowaniu subskrypcji lub usuwaniu modeli",
+  "OpenBundleFolder": "Otwórz folder",
+  "UnnamedBundle": "Bez nazwy Bundle",
+  "ExpandAllBundles": "Rozwiń wszystkie",
+  "CollapseAllBundles": "Zwiń wszystkie"
 }
 

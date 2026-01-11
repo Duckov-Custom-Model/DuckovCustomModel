@@ -109,6 +109,11 @@ namespace DuckovCustomModel.Localizations
             { "AnimatorParamTypeTrigger", "Trigger" },
             { "AnimatorParamUsageUsed", "Used" },
             { "AnimatorParamUsageUnused", "Unused" },
+            { "ModelUninstallHint", "Note: Manual deletion of model files is required when canceling subscription or removing models" },
+            { "OpenBundleFolder", "Open Folder" },
+            { "UnnamedBundle", "Unnamed Bundle" },
+            { "ExpandAllBundles", "Expand All" },
+            { "CollapseAllBundles", "Collapse All" },
         };
 
         public static string Title => GetText("Title");
@@ -188,6 +193,11 @@ namespace DuckovCustomModel.Localizations
         public static string AnimatorParamTypeTrigger => GetText("AnimatorParamTypeTrigger");
         public static string AnimatorParamUsageUsed => GetText("AnimatorParamUsageUsed");
         public static string AnimatorParamUsageUnused => GetText("AnimatorParamUsageUnused");
+        public static string ModelUninstallHint => GetText("ModelUninstallHint");
+        public static string OpenBundleFolder => GetText("OpenBundleFolder");
+        public static string UnnamedBundle => GetText("UnnamedBundle");
+        public static string ExpandAllBundles => GetText("ExpandAllBundles");
+        public static string CollapseAllBundles => GetText("CollapseAllBundles");
 
         public static event Action<SystemLanguage>? OnLanguageChangedEvent;
 
@@ -304,7 +314,7 @@ namespace DuckovCustomModel.Localizations
             return key;
         }
 
-        public static string GetModelInfo(string modelId, string? author, string? version, string? bundleName = null)
+        public static string GetModelInfo(string modelId, string? author, string? version)
         {
             var stringBuilder = new StringBuilder();
             stringBuilder.Append($"ID: {modelId}");
@@ -312,8 +322,6 @@ namespace DuckovCustomModel.Localizations
                 stringBuilder.Append($" | {Author}: {author}");
             if (!string.IsNullOrEmpty(version))
                 stringBuilder.Append($" | {Version}: {version}");
-            if (!string.IsNullOrEmpty(bundleName))
-                stringBuilder.Append($" | Bundle: {bundleName}");
             return stringBuilder.ToString();
         }
 
