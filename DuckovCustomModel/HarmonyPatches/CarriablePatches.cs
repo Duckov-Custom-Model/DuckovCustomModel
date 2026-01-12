@@ -56,7 +56,7 @@ namespace DuckovCustomModel.HarmonyPatches
                 return;
 
             var gameObject = ___rb.gameObject;
-            modelHandler.UnregisterCustomSocketObject(gameObject, false);
+            modelHandler.UnregisterCustomSocketObject(gameObject);
             RemoveComponent(gameObject.GetComponent<CustomSocketMarker>());
         }
 

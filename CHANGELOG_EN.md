@@ -2,6 +2,10 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.4-fix1
+
+- Fixed rotation and scale not being reset when dropping carriable items
+
 ## v1.10.4
 
 - Optimized model selection interface UI
