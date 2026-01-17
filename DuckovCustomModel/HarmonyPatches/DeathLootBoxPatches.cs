@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
+using DuckovCustomModel.MonoBehaviours;
 using HarmonyLib;
 using ItemStatsSystem;
 using UnityEngine;
 
-namespace DuckovCustomModel.MonoBehaviours
+namespace DuckovCustomModel.HarmonyPatches
 {
     [HarmonyPatch]
     internal static class DeathLootBoxPatches

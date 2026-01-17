@@ -44,7 +44,6 @@ namespace DuckovCustomModel.MonoBehaviours
         private Renderer[]? _cachedCustomModelRenderers;
 
         private ModelBundleInfo? _currentModelBundleInfo;
-        private CustomCharacterSoundMaker? _customCharacterSoundMaker;
         private CharacterSubVisuals? _customModelSubVisuals;
         private GameObject? _deathLootBoxPrefab;
         private GameObject? _headColliderObject;
@@ -1116,15 +1115,11 @@ namespace DuckovCustomModel.MonoBehaviours
                 }
             }
 
-            if (modelInfo != null)
-            {
-                if (modelInfo.WalkSoundFrequency.HasValue)
-                    soundMaker.CustomWalkSoundFrequency = modelInfo.WalkSoundFrequency.Value;
-                if (modelInfo.RunSoundFrequency.HasValue)
-                    soundMaker.CustomRunSoundFrequency = modelInfo.RunSoundFrequency.Value;
-            }
-
-            _customCharacterSoundMaker = soundMaker;
+            if (modelInfo == null) return;
+            if (modelInfo.WalkSoundFrequency.HasValue)
+                soundMaker.CustomWalkSoundFrequency = modelInfo.WalkSoundFrequency.Value;
+            if (modelInfo.RunSoundFrequency.HasValue)
+                soundMaker.CustomRunSoundFrequency = modelInfo.RunSoundFrequency.Value;
         }
 
         private static string GetEffectiveAICharacterConfigKey(string nameKey)

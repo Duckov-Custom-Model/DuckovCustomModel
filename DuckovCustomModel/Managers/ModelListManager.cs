@@ -13,8 +13,6 @@ namespace DuckovCustomModel.Managers
         private static CancellationTokenSource? _refreshCancellationTokenSource;
         private static UniTaskCompletionSource? _refreshCompletionSource;
 
-        private static HashSet<string>? _currentRefreshingBundles;
-
         public static bool IsRefreshing { get; private set; }
 
         public static event Action? OnRefreshStarted;
@@ -74,7 +72,6 @@ namespace DuckovCustomModel.Managers
             try
             {
                 var bundlesToReload = ModelManager.UpdateModelBundles();
-                _currentRefreshingBundles = bundlesToReload;
 
                 if (bundlesToReload.Count > 0)
                 {
@@ -136,7 +133,6 @@ namespace DuckovCustomModel.Managers
             finally
             {
                 IsRefreshing = false;
-                _currentRefreshingBundles = null;
                 completionSource?.TrySetResult();
                 _refreshCompletionSource = null;
                 linkedCts?.Dispose();
