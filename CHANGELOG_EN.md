@@ -2,6 +2,10 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.4-fix4
+
+- Fixed the issue of replacing the transparent material with the normal material, causing abnormal rendering performance
+
 ## v1.10.4-fix3
 
 - Fixed a material rendering performance issue in a specific scenario introduced in the previous fix version
