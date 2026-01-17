@@ -16,7 +16,6 @@ namespace DuckovCustomModel.UI.Components
     {
         private readonly Dictionary<string, GameObject> _targetButtons = new();
         private GameObject? _content;
-        private ScrollRect? _scrollRect;
         private TargetInfo? _selectedTarget;
 
         public event Action<TargetInfo>? OnTargetSelected;
@@ -33,7 +32,6 @@ namespace DuckovCustomModel.UI.Components
             var scrollbar = UIFactory.CreateScrollbar(scrollView, 6f, true);
             scrollbar.transform.SetParent(scrollView.transform, false);
 
-            _scrollRect = scrollView;
             _content = content;
 
             UIFactory.SetupVerticalLayoutGroup(_content, 10f, new(10, 20, 10, 10), TextAnchor.UpperLeft, true, false,

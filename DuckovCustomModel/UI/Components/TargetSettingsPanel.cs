@@ -13,14 +13,9 @@ namespace DuckovCustomModel.UI.Components
     {
         private GameObject? _content;
         private TargetInfo? _currentTarget;
-        private Toggle? _enableIdleAudioToggle;
-        private Toggle? _enableModelAudioToggle;
-        private Toggle? _hideEquipmentToggle;
         private TMP_InputField? _idleAudioMaxIntervalInput;
         private TMP_InputField? _idleAudioMinIntervalInput;
-        private Slider? _modelAudioVolumeSlider;
         private TMP_Text? _modelAudioVolumeText;
-        private ScrollRect? _scrollRect;
         private int _settingRowIndex;
 
         public void Initialize(Transform parent)
@@ -31,7 +26,6 @@ namespace DuckovCustomModel.UI.Components
             var scrollbar = UIFactory.CreateScrollbar(scrollView, 6f, true);
             scrollbar.transform.SetParent(scrollView.transform, false);
 
-            _scrollRect = scrollView;
             _content = content;
 
             UIFactory.SetupVerticalLayoutGroup(_content, 10f, new(10, 10, 10, 10), TextAnchor.UpperCenter,
@@ -114,8 +108,6 @@ namespace DuckovCustomModel.UI.Components
             var toggle = UIFactory.CreateToggle("HideEquipmentToggle", settingRow.transform, isOn,
                 OnHideEquipmentToggleChanged);
             UIFactory.SetupRightControl(toggle.gameObject, new(20, 20));
-
-            _hideEquipmentToggle = toggle;
         }
 
         private void BuildEnableModelAudioSetting()
@@ -141,8 +133,6 @@ namespace DuckovCustomModel.UI.Components
             var toggle = UIFactory.CreateToggle("EnableModelAudioToggle", settingRow.transform, isOn,
                 OnEnableModelAudioToggleChanged);
             UIFactory.SetupRightControl(toggle.gameObject, new(20, 20));
-
-            _enableModelAudioToggle = toggle;
         }
 
         private void BuildModelAudioVolumeSetting()
@@ -177,8 +167,6 @@ namespace DuckovCustomModel.UI.Components
                 $"{volume:P0}", 14, Color.white, TextAnchor.MiddleRight);
             UIFactory.SetupRightLabel(volumeText, 25f, -10f);
             _modelAudioVolumeText = volumeText.GetComponent<TMP_Text>();
-
-            _modelAudioVolumeSlider = slider;
         }
 
         private void BuildEnableIdleAudioSetting()
@@ -204,8 +192,6 @@ namespace DuckovCustomModel.UI.Components
             var toggle = UIFactory.CreateToggle("EnableIdleAudioToggle", settingRow.transform, isOn,
                 OnEnableIdleAudioToggleChanged);
             UIFactory.SetupRightControl(toggle.gameObject, new(20, 20));
-
-            _enableIdleAudioToggle = toggle;
         }
 
         private void BuildIdleAudioIntervalSettings()

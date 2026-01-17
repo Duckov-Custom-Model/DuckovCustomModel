@@ -10,8 +10,6 @@ namespace DuckovCustomModel.UI.Utils
         private bool _isUpdating;
         private LayoutElement? _layoutElement;
         private float _maxHeight;
-        private float _minHeight;
-        private ScrollRect? _scrollRect;
         private TextMeshProUGUI? _textComponent;
 
         private void OnDestroy()
@@ -22,10 +20,8 @@ namespace DuckovCustomModel.UI.Utils
 
         public void Initialize(ScrollRect scrollRect, GameObject content, float minHeight, float maxHeight)
         {
-            _scrollRect = scrollRect;
             _contentRect = content.GetComponent<RectTransform>();
             _textComponent = content.GetComponentInChildren<TextMeshProUGUI>();
-            _minHeight = minHeight;
             _maxHeight = maxHeight;
             _layoutElement = GetComponent<LayoutElement>();
 

@@ -31,11 +31,8 @@ namespace DuckovCustomModel.UI.Tabs
         private GameObject? _modifierKey2Button;
 
         private int _settingRowIndex;
-        private Toggle? _showDCMButtonToggle;
-        private GameObject? _updateCheckButton;
         private LocalizedText? _updateCheckButtonText;
         private LocalizedText? _updateInfoLocalizedText;
-        private GameObject? _updateInfoPanel;
 
         private static UIConfig? UIConfig => ModEntry.UIConfig;
 
@@ -286,8 +283,6 @@ namespace DuckovCustomModel.UI.Tabs
             var toggle = UIFactory.CreateToggle("ShowDCMButtonToggle", row.transform,
                 UIConfig?.ShowDCMButton ?? true, OnShowDCMButtonToggleChanged);
             UIFactory.SetupRightControl(toggle.gameObject, new(20, 20));
-
-            _showDCMButtonToggle = toggle;
         }
 
         private static void OnShowDCMButtonToggleChanged(bool value)
@@ -372,11 +367,9 @@ namespace DuckovCustomModel.UI.Tabs
             if (_dcmButtonAnchorDropdown == null) return;
             var currentValue = _dcmButtonAnchorDropdown.value;
             RefreshAnchorDropdownOptions(_dcmButtonAnchorDropdown);
-            if (currentValue >= 0 && currentValue < _dcmButtonAnchorDropdown.options.Count)
-            {
-                _dcmButtonAnchorDropdown.value = -1;
-                _dcmButtonAnchorDropdown.value = currentValue;
-            }
+            if (currentValue < 0 || currentValue >= _dcmButtonAnchorDropdown.options.Count) return;
+            _dcmButtonAnchorDropdown.value = -1;
+            _dcmButtonAnchorDropdown.value = currentValue;
         }
 
         private void RefreshDCMButtonPositionDisplay()
@@ -419,22 +412,18 @@ namespace DuckovCustomModel.UI.Tabs
         {
             if (UIConfig == null) return;
             var anchorValues = Enum.GetValues(typeof(AnchorPosition));
-            if (index >= 0 && index < anchorValues.Length)
-            {
-                UIConfig.DCMButtonAnchor = (AnchorPosition)anchorValues.GetValue(index);
-                ConfigManager.SaveConfigToFile(UIConfig, "UIConfig.json");
-                RefreshSettingsButton();
-            }
+            if (index < 0 || index >= anchorValues.Length) return;
+            UIConfig.DCMButtonAnchor = (AnchorPosition)anchorValues.GetValue(index);
+            ConfigManager.SaveConfigToFile(UIConfig, "UIConfig.json");
+            RefreshSettingsButton();
         }
 
         private void OnOffsetXValueChanged(string value)
         {
             if (UIConfig == null) return;
-            if (float.TryParse(value, out var offsetX))
-            {
-                UIConfig.DCMButtonOffsetX = offsetX;
-                RefreshSettingsButton();
-            }
+            if (!float.TryParse(value, out var offsetX)) return;
+            UIConfig.DCMButtonOffsetX = offsetX;
+            RefreshSettingsButton();
         }
 
         private void OnOffsetXEndEdit(string value)
@@ -455,11 +444,9 @@ namespace DuckovCustomModel.UI.Tabs
         private void OnOffsetYValueChanged(string value)
         {
             if (UIConfig == null) return;
-            if (float.TryParse(value, out var offsetY))
-            {
-                UIConfig.DCMButtonOffsetY = offsetY;
-                RefreshSettingsButton();
-            }
+            if (!float.TryParse(value, out var offsetY)) return;
+            UIConfig.DCMButtonOffsetY = offsetY;
+            RefreshSettingsButton();
         }
 
         private void OnOffsetYEndEdit(string value)
@@ -699,8 +686,6 @@ namespace DuckovCustomModel.UI.Tabs
 
             UIFactory.SetupContentSizeFitter(updatePanel, ContentSizeFitter.FitMode.Unconstrained);
 
-            _updateInfoPanel = updatePanel;
-
             var updateInfoText = UIFactory.CreateText("UpdateInfo", updatePanel.transform, "", 18,
                 new Color(0.9f, 0.9f, 0.9f, 1), TextAnchor.UpperCenter);
 
@@ -817,8 +802,6 @@ namespace DuckovCustomModel.UI.Tabs
             var localizedCheckButtonText = checkButtonText.AddComponent<LocalizedText>();
             localizedCheckButtonText.SetTextGetter(GetCheckButtonText);
             _updateCheckButtonText = localizedCheckButtonText;
-
-            _updateCheckButton = checkButton;
 
             if (UpdateChecker.Instance != null) UpdateChecker.OnUpdateCheckCompleted += OnUpdateCheckCompleted;
 

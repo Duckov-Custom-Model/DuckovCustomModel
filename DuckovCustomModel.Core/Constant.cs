@@ -1,4 +1,4 @@
-﻿namespace DuckovCustomModel
+﻿namespace DuckovCustomModel.Core
 {
     internal static class Constant
     {

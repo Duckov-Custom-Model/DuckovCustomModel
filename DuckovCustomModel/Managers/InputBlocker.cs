@@ -7,7 +7,6 @@ namespace DuckovCustomModel.Managers
     {
         internal static bool IsGettingRealInput;
         private PlayerInput? _playerInput;
-        private bool _playerInputWasActive;
         internal bool IsBlocked;
         internal bool IsBlockerCalling;
         internal bool IsExternalBlocking;
@@ -58,14 +57,12 @@ namespace DuckovCustomModel.Managers
             if (playerInput == null)
             {
                 _playerInput = null;
-                _playerInputWasActive = false;
                 return;
             }
 
             if (_playerInput == null || _playerInput != playerInput)
             {
                 _playerInput = playerInput;
-                _playerInputWasActive = playerInput.inputIsActive;
             }
 
             var shouldBeActive = !IsBlocked && !IsExternalBlocking;

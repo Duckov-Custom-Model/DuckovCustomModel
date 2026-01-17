@@ -44,7 +44,6 @@ namespace DuckovCustomModel.MonoBehaviours
         private Renderer[]? _cachedCustomModelRenderers;
 
         private ModelBundleInfo? _currentModelBundleInfo;
-        private CustomCharacterSoundMaker? _customCharacterSoundMaker;
         private CharacterSubVisuals? _customModelSubVisuals;
         private GameObject? _deathLootBoxPrefab;
         private GameObject? _headColliderObject;
@@ -67,7 +66,7 @@ namespace DuckovCustomModel.MonoBehaviours
             CharacterMainControl != null ? CharacterMainControl.GetBuffManager() : null;
 
         public ReadOnlyCollection<Buff> Buffs =>
-            BuffManager != null ? BuffManager.Buffs : new ReadOnlyCollection<Buff>([]);
+            BuffManager != null ? BuffManager.Buffs : new([]);
 
         public bool IsHiddenOriginalEquipment
         {
@@ -140,6 +139,9 @@ namespace DuckovCustomModel.MonoBehaviours
             RefreshPlayingSounds();
 
             if (CharacterMainControl == null || OriginalCharacterModel == null) return;
+
+            if (ReplaceShader && _cachedCustomModelRenderers != null)
+                CheckAndFixMaterialShaders();
 
             var equipmentController = CharacterMainControl.EquipmentController;
 
@@ -1116,15 +1118,11 @@ namespace DuckovCustomModel.MonoBehaviours
                 }
             }
 
-            if (modelInfo != null)
-            {
-                if (modelInfo.WalkSoundFrequency.HasValue)
-                    soundMaker.CustomWalkSoundFrequency = modelInfo.WalkSoundFrequency.Value;
-                if (modelInfo.RunSoundFrequency.HasValue)
-                    soundMaker.CustomRunSoundFrequency = modelInfo.RunSoundFrequency.Value;
-            }
-
-            _customCharacterSoundMaker = soundMaker;
+            if (modelInfo == null) return;
+            if (modelInfo.WalkSoundFrequency.HasValue)
+                soundMaker.CustomWalkSoundFrequency = modelInfo.WalkSoundFrequency.Value;
+            if (modelInfo.RunSoundFrequency.HasValue)
+                soundMaker.CustomRunSoundFrequency = modelInfo.RunSoundFrequency.Value;
         }
 
         private static string GetEffectiveAICharacterConfigKey(string nameKey)
@@ -1167,6 +1165,29 @@ namespace DuckovCustomModel.MonoBehaviours
             }
         }
 
+        private void CheckAndFixMaterialShaders()
+        {
+            if (_cachedCustomModelRenderers == null) return;
+
+            var targetShader = GameDefaultShader;
+            if (targetShader == null) return;
+
+            foreach (var renderer in _cachedCustomModelRenderers)
+            {
+                if (renderer == null) continue;
+
+                foreach (var material in renderer.sharedMaterials)
+                {
+                    if (material == null) continue;
+                    if (material.shader == targetShader) continue;
+
+                    material.shader = targetShader;
+                    if (material.HasProperty(EmissionColor))
+                        material.SetColor(EmissionColor, Color.black);
+                }
+            }
+        }
+
         private static void ReplaceRenderersShader(Renderer[] renderers, string? shaderName = null)
         {
             var shader = shaderName != null ? Shader.Find(shaderName) : GameDefaultShader;
@@ -1180,7 +1201,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
             if (shader == GameDefaultShader) // SodaCraft/SodaCharacter shader needs to disable emission
                 foreach (var renderer in renderers)
-                foreach (var material in renderer.materials)
+                foreach (var material in renderer.sharedMaterials)
                 {
                     if (material == null) continue;
                     material.shader = shader;
@@ -1189,7 +1210,7 @@ namespace DuckovCustomModel.MonoBehaviours
                 }
             else
                 foreach (var renderer in renderers)
-                foreach (var material in renderer.materials)
+                foreach (var material in renderer.sharedMaterials)
                 {
                     if (material == null) continue;
                     material.shader = shader;
@@ -1199,10 +1220,10 @@ namespace DuckovCustomModel.MonoBehaviours
         #region Shader Constants
 
         // ReSharper disable once ShaderLabShaderReferenceNotResolved
-        private static Shader GameDefaultShader => Shader.Find("SodaCraft/SodaCharacter");
+        private static Shader GameDefaultShader => field ??= Shader.Find("SodaCraft/SodaCharacter");
 
         // ReSharper disable once ShaderLabShaderReferenceNotResolved
-        private static Shader GameCharacterShowBackShader => Shader.Find("CharacterShowBack");
+        private static Shader GameCharacterShowBackShader => field ??= Shader.Find("CharacterShowBack");
 
         private static readonly int EmissionColor = Shader.PropertyToID("_EmissionColor");
 

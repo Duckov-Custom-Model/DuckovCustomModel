@@ -2,6 +2,10 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.4-fix2
+
+- Fixed incomplete material replacement for models using animated material switching
+
 ## v1.10.4-fix1
 
 - Fixed rotation and scale not being reset when dropping carriable items

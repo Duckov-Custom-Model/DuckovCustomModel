@@ -31,7 +31,6 @@ namespace DuckovCustomModel.UI.Components
         private readonly Dictionary<int, GameObject> _paramItemObjects = new();
         private readonly Dictionary<int, object> _paramPreviousValues = new();
         private List<ModelHandler>? _availableHandlers;
-        private Animator? _cachedAnimator;
         private List<AnimatorParamInfo>? _cachedParamInfos;
         private TMP_Dropdown? _characterDropdown;
         private GameObject? _closeButton;
@@ -146,7 +145,6 @@ namespace DuckovCustomModel.UI.Components
         private void ClearSelection()
         {
             _selectedModelHandler = null;
-            _cachedAnimator = null;
             _cachedParamInfos = null;
             _cachedParamInfoDict.Clear();
             _paramPreviousValues.Clear();
@@ -583,7 +581,6 @@ namespace DuckovCustomModel.UI.Components
 
             if (_paramGridContent == null || _selectedModelHandler == null) return;
 
-            _cachedAnimator = null;
             _cachedParamInfos = null;
             UpdateAnimatorParamsCache(_selectedModelHandler);
 
@@ -597,7 +594,6 @@ namespace DuckovCustomModel.UI.Components
         {
             if (modelHandler == null)
             {
-                _cachedAnimator = null;
                 var paramInfos = CustomAnimatorHash.GetAllParams();
                 foreach (var param in paramInfos)
                     param.IsUsed = false;
@@ -610,14 +606,12 @@ namespace DuckovCustomModel.UI.Components
 
             if (modelHandler.CustomAnimator == null)
             {
-                _cachedAnimator = null;
                 foreach (var param in allParams)
                     param.IsUsed = false;
                 _cachedParamInfos = allParams;
                 return;
             }
 
-            _cachedAnimator = modelHandler.CustomAnimator;
             var animatorParamHashes = new HashSet<int>(
                 modelHandler.CustomAnimator.parameters.Select(p => p.nameHash));
 

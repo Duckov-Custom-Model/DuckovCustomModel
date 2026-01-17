@@ -80,7 +80,7 @@ namespace DuckovCustomModel.UI.Utils
 
                 // 匹配有序列表项：数字. 开头，前面可能有缩进
                 var orderedMatch = Regex.Match(line, @"^(\s*)(\d+)\.\s+(.+)$");
-                if (orderedMatch.Success)
+                if (!orderedMatch.Success) continue;
                 {
                     var indent = orderedMatch.Groups[1].Value;
                     var number = orderedMatch.Groups[2].Value;
