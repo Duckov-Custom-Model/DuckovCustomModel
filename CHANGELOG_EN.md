@@ -2,6 +2,10 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.4-fix3
+
+- Fixed a material rendering performance issue in a specific scenario introduced in the previous fix version
+
 ## v1.10.4-fix2
 
 - Fixed incomplete material replacement for models using animated material switching
