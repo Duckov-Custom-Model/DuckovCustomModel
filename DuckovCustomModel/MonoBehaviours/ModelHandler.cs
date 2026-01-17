@@ -1201,7 +1201,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
             if (shader == GameDefaultShader) // SodaCraft/SodaCharacter shader needs to disable emission
                 foreach (var renderer in renderers)
-                foreach (var material in renderer.sharedMaterials)
+                foreach (var material in renderer.materials)
                 {
                     if (material == null) continue;
                     material.shader = shader;
@@ -1210,7 +1210,7 @@ namespace DuckovCustomModel.MonoBehaviours
                 }
             else
                 foreach (var renderer in renderers)
-                foreach (var material in renderer.sharedMaterials)
+                foreach (var material in renderer.materials)
                 {
                     if (material == null) continue;
                     material.shader = shader;
