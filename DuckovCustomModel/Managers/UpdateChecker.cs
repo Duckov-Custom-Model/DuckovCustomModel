@@ -59,7 +59,7 @@ namespace DuckovCustomModel.Managers
             catch (Exception ex)
             {
                 ModLogger.LogError($"Failed to load update info config: {ex.Message}");
-                _updateInfoConfig = new UpdateInfoConfig();
+                _updateInfoConfig = new();
             }
         }
 
@@ -80,7 +80,7 @@ namespace DuckovCustomModel.Managers
         {
             _periodicCheckCts?.Cancel();
             _periodicCheckCts?.Dispose();
-            _periodicCheckCts = new CancellationTokenSource();
+            _periodicCheckCts = new();
             PeriodicCheckAsync(_periodicCheckCts.Token).Forget();
         }
 
@@ -128,7 +128,7 @@ namespace DuckovCustomModel.Managers
                         var currentVersion = NormalizeVersion(Constant.ModVersion);
                         var hasUpdate = CompareVersions(currentVersion, latestVersion) < 0;
 
-                        _updateInfoConfig ??= new UpdateInfoConfig();
+                        _updateInfoConfig ??= new();
 
                         _updateInfoConfig.LatestVersion = latestVersion;
                         _updateInfoConfig.LatestReleaseName = releaseInfo.ReleaseName ?? latestVersion;
@@ -140,7 +140,7 @@ namespace DuckovCustomModel.Managers
                         _updateInfoConfig.LatestDownloadLinks = [];
                         if (releaseInfo.DownloadLinks != null)
                             foreach (var link in releaseInfo.DownloadLinks)
-                                _updateInfoConfig.LatestDownloadLinks.Add(new DownloadLinkInfo
+                                _updateInfoConfig.LatestDownloadLinks.Add(new()
                                 {
                                     Name = link.Name,
                                     Url = link.Url,

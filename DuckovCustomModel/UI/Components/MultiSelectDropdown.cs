@@ -84,22 +84,22 @@ namespace DuckovCustomModel.UI.Components
 
             _buttonText = UIFactory.CreateText("Text", _button.transform, "", 14, Color.white);
             var buttonTextRect = _buttonText.GetComponent<RectTransform>();
-            buttonTextRect.anchorMin = new Vector2(0, 0);
-            buttonTextRect.anchorMax = new Vector2(1, 1);
-            buttonTextRect.offsetMin = new Vector2(5, 0);
-            buttonTextRect.offsetMax = new Vector2(-20, 0);
+            buttonTextRect.anchorMin = new(0, 0);
+            buttonTextRect.anchorMax = new(1, 1);
+            buttonTextRect.offsetMin = new(5, 0);
+            buttonTextRect.offsetMax = new(-20, 0);
             UpdateButtonText();
 
             var arrowObj =
                 UIFactory.CreateText("Arrow", _button.transform, "▼", 12, Color.white, TextAnchor.MiddleRight);
             var arrowRect = arrowObj.GetComponent<RectTransform>();
-            arrowRect.anchorMin = new Vector2(1, 0);
-            arrowRect.anchorMax = new Vector2(1, 1);
-            arrowRect.pivot = new Vector2(1, 0.5f);
+            arrowRect.anchorMin = new(1, 0);
+            arrowRect.anchorMax = new(1, 1);
+            arrowRect.pivot = new(1, 0.5f);
             arrowRect.anchoredPosition = Vector2.zero;
-            arrowRect.sizeDelta = new Vector2(15, 0);
-            arrowRect.offsetMin = new Vector2(-15, 0);
-            arrowRect.offsetMax = new Vector2(-5, 0);
+            arrowRect.sizeDelta = new(15, 0);
+            arrowRect.offsetMin = new(-15, 0);
+            arrowRect.offsetMax = new(-5, 0);
         }
 
         private void CreateDropdownPanel()
@@ -110,20 +110,20 @@ namespace DuckovCustomModel.UI.Components
             _dropdownPanel.SetActive(false);
 
             var outline = _dropdownPanel.AddComponent<Outline>();
-            outline.effectColor = new Color(0.3f, 0.35f, 0.4f, 0.7f);
-            outline.effectDistance = new Vector2(2, -2);
+            outline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
+            outline.effectDistance = new(2, -2);
 
             var content = new GameObject("Content", typeof(RectTransform));
             content.transform.SetParent(_dropdownPanel.transform, false);
             var contentRect = content.GetComponent<RectTransform>();
             contentRect.anchorMin = Vector2.zero;
             contentRect.anchorMax = Vector2.one;
-            contentRect.offsetMin = new Vector2(5, 5);
-            contentRect.offsetMax = new Vector2(-5, -5);
+            contentRect.offsetMin = new(5, 5);
+            contentRect.offsetMax = new(-5, -5);
 
             var layoutGroup = content.AddComponent<VerticalLayoutGroup>();
             layoutGroup.spacing = 2f;
-            layoutGroup.padding = new RectOffset(5, 5, 5, 5);
+            layoutGroup.padding = new(5, 5, 5, 5);
             layoutGroup.childControlWidth = true;
             layoutGroup.childControlHeight = false;
             layoutGroup.childForceExpandWidth = true;
@@ -135,10 +135,10 @@ namespace DuckovCustomModel.UI.Components
                 toggleObj.transform.SetParent(content.transform, false);
 
                 var toggleRect = toggleObj.GetComponent<RectTransform>();
-                toggleRect.anchorMin = new Vector2(0, 1);
-                toggleRect.anchorMax = new Vector2(1, 1);
-                toggleRect.pivot = new Vector2(0.5f, 1);
-                toggleRect.sizeDelta = new Vector2(0, 30);
+                toggleRect.anchorMin = new(0, 1);
+                toggleRect.anchorMax = new(1, 1);
+                toggleRect.pivot = new(0.5f, 1);
+                toggleRect.sizeDelta = new(0, 30);
 
                 var toggle = toggleObj.GetComponent<Toggle>();
                 toggle.isOn = _selectedValues.Contains(option);
@@ -154,29 +154,29 @@ namespace DuckovCustomModel.UI.Components
                 checkboxVar.transform.SetParent(toggleObj.transform, false);
 
                 var checkboxRect = checkboxVar.GetComponent<RectTransform>();
-                checkboxRect.anchorMin = new Vector2(0, 0.5f);
-                checkboxRect.anchorMax = new Vector2(0, 0.5f);
-                checkboxRect.pivot = new Vector2(0.5f, 0.5f);
-                checkboxRect.sizeDelta = new Vector2(20, 20);
-                checkboxRect.anchoredPosition = new Vector2(10, 0);
+                checkboxRect.anchorMin = new(0, 0.5f);
+                checkboxRect.anchorMax = new(0, 0.5f);
+                checkboxRect.pivot = new(0.5f, 0.5f);
+                checkboxRect.sizeDelta = new(20, 20);
+                checkboxRect.anchoredPosition = new(10, 0);
 
                 var bgImage = checkboxVar.GetComponent<Image>();
-                bgImage.color = new Color(0.2f, 0.2f, 0.2f, 1);
+                bgImage.color = new(0.2f, 0.2f, 0.2f, 1);
                 toggle.targetGraphic = bgImage;
 
                 var checkmark = new GameObject("Checkmark", typeof(RectTransform), typeof(Image));
                 checkmark.transform.SetParent(checkboxVar.transform, false);
                 var checkImage = checkmark.GetComponent<Image>();
-                checkImage.color = new Color(0.2f, 0.8f, 0.2f, 1);
+                checkImage.color = new(0.2f, 0.8f, 0.2f, 1);
 
                 var checkRect = checkmark.GetComponent<RectTransform>();
                 checkRect.anchorMin = Vector2.zero;
                 checkRect.anchorMax = Vector2.one;
-                checkRect.pivot = new Vector2(0.5f, 0.5f);
+                checkRect.pivot = new(0.5f, 0.5f);
                 checkRect.anchoredPosition = Vector2.zero;
                 checkRect.sizeDelta = Vector2.zero;
-                checkRect.offsetMin = new Vector2(4, 4);
-                checkRect.offsetMax = new Vector2(-4, -4);
+                checkRect.offsetMin = new(4, 4);
+                checkRect.offsetMax = new(-4, -4);
 
                 toggle.graphic = checkImage;
 
@@ -192,12 +192,12 @@ namespace DuckovCustomModel.UI.Components
                 labelText.overflowMode = TextOverflowModes.Ellipsis;
 
                 var labelRect = labelObj.GetComponent<RectTransform>();
-                labelRect.anchorMin = new Vector2(0, 0);
-                labelRect.anchorMax = new Vector2(1, 1);
-                labelRect.pivot = new Vector2(0, 0.5f);
+                labelRect.anchorMin = new(0, 0);
+                labelRect.anchorMax = new(1, 1);
+                labelRect.pivot = new(0, 0.5f);
                 labelRect.anchoredPosition = Vector2.zero;
-                labelRect.offsetMin = new Vector2(40, 0);
-                labelRect.offsetMax = new Vector2(-5, 0);
+                labelRect.offsetMin = new(40, 0);
+                labelRect.offsetMax = new(-5, 0);
             }
 
             var contentSizeFitter = content.AddComponent<ContentSizeFitter>();
@@ -257,13 +257,13 @@ namespace DuckovCustomModel.UI.Components
             var buttonRect = GetComponent<RectTransform>();
             var panelRect = _dropdownPanel.GetComponent<RectTransform>();
 
-            panelRect.pivot = new Vector2(0, 1);
+            panelRect.pivot = new(0, 1);
             panelRect.anchorMin = Vector2.zero;
             panelRect.anchorMax = Vector2.zero;
-            panelRect.anchoredPosition = new Vector2(0, -buttonRect.sizeDelta.y + 15);
+            panelRect.anchoredPosition = new(0, -buttonRect.sizeDelta.y + 15);
 
             var contentSize = contentRect.rect.height;
-            panelRect.sizeDelta = new Vector2(buttonRect.rect.width, contentSize + 10);
+            panelRect.sizeDelta = new(buttonRect.rect.width, contentSize + 10);
         }
 
         private void OnToggleChanged(bool value)

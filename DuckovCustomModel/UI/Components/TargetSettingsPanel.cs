@@ -244,7 +244,7 @@ namespace DuckovCustomModel.UI.Components
             var warningText = UIFactory.CreateText("WarningText", parent,
                 Localization.CharacterModelWarning, 16, new Color(1f, 0.8f, 0.4f, 1f), TextAnchor.UpperLeft);
 
-            UIFactory.SetupRectTransform(warningText, new Vector2(0, 1), new Vector2(1, 1),
+            UIFactory.SetupRectTransform(warningText, new(0, 1), new(1, 1),
                 offsetMin: new Vector2(20, 10), offsetMax: new Vector2(-20, -10),
                 pivot: new Vector2(0.5f, 1));
 
@@ -279,10 +279,10 @@ namespace DuckovCustomModel.UI.Components
             outline.effectColor = new(0.8f, 0.6f, 0.2f, 0.8f);
             outline.effectDistance = new(2, -2);
 
-            UIFactory.SetupRectTransform(row, new Vector2(0, 1), new Vector2(1, 1), Vector2.zero,
+            UIFactory.SetupRectTransform(row, new(0, 1), new(1, 1), Vector2.zero,
                 pivot: new Vector2(0.5f, 1));
 
-            UIFactory.SetupVerticalLayoutGroup(row, 0f, new RectOffset(20, 20, 10, 10),
+            UIFactory.SetupVerticalLayoutGroup(row, 0f, new(20, 20, 10, 10),
                 TextAnchor.UpperLeft, true, true, true);
 
             var warningText = UIFactory.CreateText("WarningText", row.transform,

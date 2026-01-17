@@ -109,7 +109,10 @@ namespace DuckovCustomModel.Localizations
             { "AnimatorParamTypeTrigger", "Trigger" },
             { "AnimatorParamUsageUsed", "Used" },
             { "AnimatorParamUsageUnused", "Unused" },
-            { "ModelUninstallHint", "Note: Manual deletion of model files is required when canceling subscription or removing models" },
+            {
+                "ModelUninstallHint",
+                "Note: Manual deletion of model files is required when canceling subscription or removing models"
+            },
             { "OpenBundleFolder", "Open Folder" },
             { "UnnamedBundle", "Unnamed Bundle" },
             { "ExpandAllBundles", "Expand All" },

@@ -491,8 +491,8 @@ namespace DuckovCustomModel.UI.Components
                 descScrollViewLayout.preferredHeight = 70f;
                 descScrollViewLayout.flexibleHeight = 0f;
                 descScrollViewLayout.flexibleWidth = 1f;
-                UIFactory.SetupRectTransform(descContent, new Vector2(0, 0), new Vector2(1, 1), Vector2.zero);
-                UIFactory.SetupVerticalLayoutGroup(descContent, 0f, new RectOffset(0, 0, 0, 0), TextAnchor.UpperLeft,
+                UIFactory.SetupRectTransform(descContent, new(0, 0), new(1, 1), Vector2.zero);
+                UIFactory.SetupVerticalLayoutGroup(descContent, 0f, new(0, 0, 0, 0), TextAnchor.UpperLeft,
                     childForceExpandWidth: true);
                 var descText = UIFactory.CreateText("Description", descContent.transform, model.Description, 15,
                     new(0.7f, 0.7f, 0.7f, 1), TextAnchor.UpperLeft);
@@ -503,7 +503,7 @@ namespace DuckovCustomModel.UI.Components
                     descTextComponent.overflowMode = TextOverflowModes.Overflow;
                 }
 
-                UIFactory.SetupRectTransform(descText, new Vector2(0, 1), new Vector2(1, 1), Vector2.zero,
+                UIFactory.SetupRectTransform(descText, new(0, 1), new(1, 1), Vector2.zero,
                     pivot: new Vector2(0.5f, 1));
                 UIFactory.SetupContentSizeFitter(descText, ContentSizeFitter.FitMode.Unconstrained);
                 UIFactory.SetupContentSizeFitter(descContent, ContentSizeFitter.FitMode.Unconstrained);
@@ -620,7 +620,7 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupContentSizeFitter(bundleGroupObj, ContentSizeFitter.FitMode.Unconstrained);
 
             var bundleHeaderColor = hasModelInUse
-                ? new Color(0.15f, 0.22f, 0.18f, 0.9f)
+                ? new(0.15f, 0.22f, 0.18f, 0.9f)
                 : new Color(0.18f, 0.2f, 0.25f, 0.9f);
             var bundleHeaderObj = UIFactory.CreateButton($"BundleHeader_{bundleKey}", bundleGroupObj.transform, null,
                 bundleHeaderColor).gameObject;

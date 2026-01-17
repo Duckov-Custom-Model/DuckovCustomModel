@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -111,7 +112,7 @@ namespace DuckovCustomModel.UI.Components
         {
             _refreshCharacterListCts?.Cancel();
             _refreshCharacterListCts?.Dispose();
-            _refreshCharacterListCts = new CancellationTokenSource();
+            _refreshCharacterListCts = new();
             RefreshCharacterListWithSelectionAsync(_refreshCharacterListCts.Token).Forget();
         }
 
@@ -199,18 +200,18 @@ namespace DuckovCustomModel.UI.Components
         {
             _panelRoot = UIFactory.CreateImage("AnimatorParamsPanel", parent, new Color(0.1f, 0.12f, 0.15f, 0.95f));
             var rectTransform = _panelRoot.GetComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
-            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            rectTransform.anchorMin = new(0.5f, 0.5f);
+            rectTransform.anchorMax = new(0.5f, 0.5f);
+            rectTransform.pivot = new(0.5f, 0.5f);
             rectTransform.anchoredPosition = Vector2.zero;
-            rectTransform.sizeDelta = new Vector2(DefaultWidth, DefaultHeight);
+            rectTransform.sizeDelta = new(DefaultWidth, DefaultHeight);
 
             var outline = _panelRoot.AddComponent<Outline>();
             outline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
             outline.effectDistance = new(2, -2);
 
             var windowBase = _panelRoot.AddComponent<WindowBase>();
-            windowBase.SetMinSize(new Vector2(MinWidth, MinHeight));
+            windowBase.SetMinSize(new(MinWidth, MinHeight));
         }
 
         private void BuildTitleBar()
@@ -219,29 +220,29 @@ namespace DuckovCustomModel.UI.Components
 
             _titleBar = UIFactory.CreateImage("TitleBar", _panelRoot.transform, new Color(0.15f, 0.18f, 0.22f, 0.9f));
             var titleRect = _titleBar.GetComponent<RectTransform>();
-            titleRect.anchorMin = new Vector2(0, 1);
-            titleRect.anchorMax = new Vector2(1, 1);
-            titleRect.pivot = new Vector2(0.5f, 1);
+            titleRect.anchorMin = new(0, 1);
+            titleRect.anchorMax = new(1, 1);
+            titleRect.pivot = new(0.5f, 1);
             titleRect.anchoredPosition = Vector2.zero;
-            titleRect.sizeDelta = new Vector2(0, 40);
+            titleRect.sizeDelta = new(0, 40);
 
             var titleText = UIFactory.CreateText("Title", _titleBar.transform, Localization.AnimatorParameters, 18,
                 Color.white, TextAnchor.MiddleLeft, FontStyle.Bold);
             UIFactory.SetLocalizedText(titleText, () => Localization.AnimatorParameters);
             var titleTextRect = titleText.GetComponent<RectTransform>();
-            titleTextRect.anchorMin = new Vector2(0, 0);
-            titleTextRect.anchorMax = new Vector2(1, 1);
-            titleTextRect.offsetMin = new Vector2(10, 0);
-            titleTextRect.offsetMax = new Vector2(-100, 0);
+            titleTextRect.anchorMin = new(0, 0);
+            titleTextRect.anchorMax = new(1, 1);
+            titleTextRect.offsetMin = new(10, 0);
+            titleTextRect.offsetMax = new(-100, 0);
 
             _closeButton = UIFactory.CreateButton("CloseButton", _titleBar.transform, Hide,
                 new Color(0.8f, 0.2f, 0.2f, 1));
             var closeRect = _closeButton.GetComponent<RectTransform>();
-            closeRect.anchorMin = new Vector2(1, 0.5f);
-            closeRect.anchorMax = new Vector2(1, 0.5f);
-            closeRect.pivot = new Vector2(1, 0.5f);
-            closeRect.anchoredPosition = new Vector2(-10, 0);
-            closeRect.sizeDelta = new Vector2(80, 30);
+            closeRect.anchorMin = new(1, 0.5f);
+            closeRect.anchorMax = new(1, 0.5f);
+            closeRect.pivot = new(1, 0.5f);
+            closeRect.anchoredPosition = new(-10, 0);
+            closeRect.sizeDelta = new(80, 30);
 
             var closeText = UIFactory.CreateText("Text", _closeButton.transform, Localization.Close, 14,
                 Color.white, TextAnchor.MiddleCenter);
@@ -257,13 +258,13 @@ namespace DuckovCustomModel.UI.Components
         {
             if (_panelRoot == null) return;
 
-            _contentArea = new GameObject("ContentArea", typeof(RectTransform));
+            _contentArea = new("ContentArea", typeof(RectTransform));
             _contentArea.transform.SetParent(_panelRoot.transform, false);
             var contentRect = _contentArea.GetComponent<RectTransform>();
-            contentRect.anchorMin = new Vector2(0, 0);
-            contentRect.anchorMax = new Vector2(1, 1);
-            contentRect.offsetMin = new Vector2(0, 0);
-            contentRect.offsetMax = new Vector2(0, -40);
+            contentRect.anchorMin = new(0, 0);
+            contentRect.anchorMax = new(1, 1);
+            contentRect.offsetMin = new(0, 0);
+            contentRect.offsetMax = new(0, -40);
         }
 
         private void BuildFilters()
@@ -273,16 +274,16 @@ namespace DuckovCustomModel.UI.Components
             var filterContainer = new GameObject("FilterContainer", typeof(RectTransform));
             filterContainer.transform.SetParent(_contentArea.transform, false);
             var filterRect = filterContainer.GetComponent<RectTransform>();
-            filterRect.anchorMin = new Vector2(0, 1);
-            filterRect.anchorMax = new Vector2(1, 1);
-            filterRect.pivot = new Vector2(0.5f, 1);
+            filterRect.anchorMin = new(0, 1);
+            filterRect.anchorMax = new(1, 1);
+            filterRect.pivot = new(0.5f, 1);
             filterRect.anchoredPosition = Vector2.zero;
-            filterRect.offsetMin = new Vector2(0, -40);
-            filterRect.offsetMax = new Vector2(0, 0);
+            filterRect.offsetMin = new(0, -40);
+            filterRect.offsetMax = new(0, 0);
 
             var layoutGroup = filterContainer.AddComponent<HorizontalLayoutGroup>();
             layoutGroup.spacing = 10f;
-            layoutGroup.padding = new RectOffset(5, 5, 0, 0);
+            layoutGroup.padding = new(5, 5, 0, 0);
             layoutGroup.childAlignment = TextAnchor.MiddleLeft;
             layoutGroup.childControlWidth = true;
             layoutGroup.childControlHeight = true;
@@ -339,29 +340,29 @@ namespace DuckovCustomModel.UI.Components
             _paramScrollRect = UIFactory.CreateScrollView("ParameterScrollView", _contentArea.transform,
                 out _paramGridContent);
             var scrollRect = _paramScrollRect.GetComponent<RectTransform>();
-            scrollRect.anchorMin = new Vector2(0, 0);
-            scrollRect.anchorMax = new Vector2(1, 1);
-            scrollRect.offsetMin = new Vector2(0, 0);
-            scrollRect.offsetMax = new Vector2(0, -50);
+            scrollRect.anchorMin = new(0, 0);
+            scrollRect.anchorMax = new(1, 1);
+            scrollRect.offsetMin = new(0, 0);
+            scrollRect.offsetMax = new(0, -50);
 
             var scrollbar = UIFactory.CreateScrollbar(_paramScrollRect, 6f, true);
             scrollbar.transform.SetParent(_paramScrollRect.transform, false);
 
             var gridLayout = _paramGridContent.AddComponent<GridLayoutGroup>();
-            gridLayout.cellSize = new Vector2(240, 40);
-            gridLayout.spacing = new Vector2(8, 4);
+            gridLayout.cellSize = new(240, 40);
+            gridLayout.spacing = new(8, 4);
             gridLayout.constraint = GridLayoutGroup.Constraint.Flexible;
             gridLayout.startCorner = GridLayoutGroup.Corner.UpperLeft;
             gridLayout.startAxis = GridLayoutGroup.Axis.Horizontal;
             gridLayout.childAlignment = TextAnchor.UpperLeft;
 
             var contentRect = _paramGridContent.GetComponent<RectTransform>();
-            contentRect.anchorMin = new Vector2(0, 1);
-            contentRect.anchorMax = new Vector2(1, 1);
-            contentRect.pivot = new Vector2(0.5f, 1);
+            contentRect.anchorMin = new(0, 1);
+            contentRect.anchorMax = new(1, 1);
+            contentRect.pivot = new(0.5f, 1);
             contentRect.anchoredPosition = Vector2.zero;
-            contentRect.offsetMin = new Vector2(5, 0);
-            contentRect.offsetMax = new Vector2(-5, 0);
+            contentRect.offsetMin = new(5, 0);
+            contentRect.offsetMax = new(-5, 0);
 
             var contentSizeFitter = _paramGridContent.AddComponent<ContentSizeFitter>();
             contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
@@ -437,7 +438,7 @@ namespace DuckovCustomModel.UI.Components
                 if (string.IsNullOrEmpty(handlerName)) handlerName = "Unknown";
 
                 var distance = Vector3.Distance(mainCharacterPosition, characterControl.transform.position);
-                _characterDropdown.options.Add(new TMP_Dropdown.OptionData(
+                _characterDropdown.options.Add(new(
                     $"{handlerName} (#{hash:X8}) [{distance:F1}m]"));
             }
 
@@ -450,7 +451,7 @@ namespace DuckovCustomModel.UI.Components
 
             _periodicRefreshCts?.Cancel();
             _periodicRefreshCts?.Dispose();
-            _periodicRefreshCts = new CancellationTokenSource();
+            _periodicRefreshCts = new();
             PeriodicRefreshAsync(_periodicRefreshCts.Token).Forget();
         }
 
@@ -513,7 +514,7 @@ namespace DuckovCustomModel.UI.Components
                 if (!string.IsNullOrEmpty(pattern))
                     try
                     {
-                        _searchRegex = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+                        _searchRegex = new(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
                     }
                     catch
                     {
@@ -569,7 +570,7 @@ namespace DuckovCustomModel.UI.Components
         {
             _rebuildCacheAndGridCts?.Cancel();
             _rebuildCacheAndGridCts?.Dispose();
-            _rebuildCacheAndGridCts = new CancellationTokenSource();
+            _rebuildCacheAndGridCts = new();
             RebuildCacheAndGridAsync(_rebuildCacheAndGridCts.Token).Forget();
         }
 
@@ -655,7 +656,7 @@ namespace DuckovCustomModel.UI.Components
                     if (string.IsNullOrWhiteSpace(paramName)) continue;
 
                     var paramHash = Animator.StringToHash(paramName);
-                    buffParamsList.Add(new AnimatorParamInfo
+                    buffParamsList.Add(new()
                     {
                         Name = paramName,
                         Hash = paramHash,
@@ -729,23 +730,24 @@ namespace DuckovCustomModel.UI.Components
             if (_paramGridContent == null) return null;
 
             var item = UIFactory.CreateImage($"Param_{paramInfo.Name}", _paramGridContent.transform,
-                paramInfo.IsUsed ? new Color(0.15f, 0.2f, 0.25f, 0.8f) : new Color(0.1f, 0.1f, 0.1f, 0.2f));
+                paramInfo.IsUsed ? new(0.15f, 0.2f, 0.25f, 0.8f) : new Color(0.1f, 0.1f, 0.1f, 0.2f));
 
             var itemRect = item.GetComponent<RectTransform>();
             itemRect.anchorMin = Vector2.zero;
             itemRect.anchorMax = Vector2.zero;
-            itemRect.pivot = new Vector2(0, 1);
+            itemRect.pivot = new(0, 1);
 
-            var paramText = $"{paramInfo.Name} ({paramInfo.Type})";
+            var paramText = HighlightWhitespace(paramInfo.Name, paramInfo.Type);
             var nameText = UIFactory.CreateText("NameText", item.transform, paramText, 12, Color.white);
             var nameTextComponent = nameText.GetComponent<TextMeshProUGUI>();
             nameTextComponent.enableWordWrapping = true;
             nameTextComponent.overflowMode = TextOverflowModes.Overflow;
+            nameTextComponent.richText = true;
             var nameTextRect = nameText.GetComponent<RectTransform>();
-            nameTextRect.anchorMin = new Vector2(0, 0);
-            nameTextRect.anchorMax = new Vector2(1, 1);
-            nameTextRect.offsetMin = new Vector2(5, 3);
-            nameTextRect.offsetMax = new Vector2(-85, -3);
+            nameTextRect.anchorMin = new(0, 0);
+            nameTextRect.anchorMax = new(1, 1);
+            nameTextRect.offsetMin = new(5, 3);
+            nameTextRect.offsetMax = new(-85, -3);
 
             var valueTextObj = UIFactory.CreateText("ValueText", item.transform, "", 12, Color.white,
                 TextAnchor.MiddleRight);
@@ -753,15 +755,71 @@ namespace DuckovCustomModel.UI.Components
             valueTextComponent.alignment = TextAlignmentOptions.MidlineRight;
             valueTextComponent.overflowMode = TextOverflowModes.Overflow;
             var valueTextRect = valueTextObj.GetComponent<RectTransform>();
-            valueTextRect.anchorMin = new Vector2(1, 0);
-            valueTextRect.anchorMax = new Vector2(1, 1);
-            valueTextRect.pivot = new Vector2(1, 0.5f);
+            valueTextRect.anchorMin = new(1, 0);
+            valueTextRect.anchorMax = new(1, 1);
+            valueTextRect.pivot = new(1, 0.5f);
             valueTextRect.anchoredPosition = Vector2.zero;
-            valueTextRect.sizeDelta = new Vector2(80, 0);
-            valueTextRect.offsetMin = new Vector2(-80, 3);
-            valueTextRect.offsetMax = new Vector2(-5, -3);
+            valueTextRect.sizeDelta = new(80, 0);
+            valueTextRect.offsetMin = new(-80, 3);
+            valueTextRect.offsetMax = new(-5, -3);
 
             return item;
+        }
+
+        private static string HighlightWhitespace(string paramName, string paramType)
+        {
+            var leadingWhitespace = 0;
+            var trailingWhitespace = 0;
+
+            foreach (var c in paramName)
+                if (char.IsWhiteSpace(c))
+                    leadingWhitespace++;
+                else
+                    break;
+
+            if (leadingWhitespace == paramName.Length)
+            {
+                var result = new StringBuilder(paramName.Length * 32);
+                result.Append("<color=#ff4444><b>");
+                result.Append('␣', paramName.Length);
+                result.Append("</b></color> (");
+                result.Append(paramType);
+                result.Append(')');
+                return result.ToString();
+            }
+
+            for (var i = paramName.Length - 1; i >= leadingWhitespace; i--)
+                if (char.IsWhiteSpace(paramName[i]))
+                    trailingWhitespace++;
+                else
+                    break;
+
+            if (leadingWhitespace == 0 && trailingWhitespace == 0)
+                return $"{paramName} ({paramType})";
+
+            var sb = new StringBuilder(paramName.Length + leadingWhitespace * 30 + trailingWhitespace * 30 + 32);
+
+            if (leadingWhitespace > 0)
+            {
+                sb.Append("<color=#ff4444><b>");
+                sb.Append('␣', leadingWhitespace);
+                sb.Append("</b></color>");
+            }
+
+            sb.Append(paramName.AsSpan(leadingWhitespace, paramName.Length - leadingWhitespace - trailingWhitespace));
+
+            if (trailingWhitespace > 0)
+            {
+                sb.Append("<color=#ff4444><b>");
+                sb.Append('␣', trailingWhitespace);
+                sb.Append("</b></color>");
+            }
+
+            sb.Append(" (");
+            sb.Append(paramType);
+            sb.Append(')');
+
+            return sb.ToString();
         }
 
         private void RefreshParameterValues()
@@ -926,9 +984,9 @@ namespace DuckovCustomModel.UI.Components
             var isChanging = _paramIsChanging.GetValueOrDefault(paramInfo.Hash, false);
 
             if (isChanging)
-                return new Color(1f, 0.4f, 0.1f, 1f);
+                return new(1f, 0.4f, 0.1f, 1f);
 
-            return isChanged ? new Color(1f, 0.8f, 0.2f, 1f) : Color.white;
+            return isChanged ? new(1f, 0.8f, 0.2f, 1f) : Color.white;
         }
     }
 }

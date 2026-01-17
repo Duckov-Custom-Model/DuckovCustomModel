@@ -505,14 +505,14 @@ namespace DuckovCustomModel.UI.Base
             var scrollbarObj = new GameObject("Scrollbar", typeof(RectTransform), typeof(Image), typeof(Scrollbar));
 
             if (onRight)
-                SetupRectTransform(scrollbarObj, new Vector2(1, 0), new Vector2(1, 1),
+                SetupRectTransform(scrollbarObj, new(1, 0), new(1, 1),
                     new Vector2(width, 0), pivot: new Vector2(1, 0.5f));
             else
-                SetupRectTransform(scrollbarObj, new Vector2(0, 0), new Vector2(0, 1),
+                SetupRectTransform(scrollbarObj, new(0, 0), new(0, 1),
                     new Vector2(width, 0), pivot: new Vector2(0, 0.5f));
 
             var scrollbarImage = scrollbarObj.GetComponent<Image>();
-            scrollbarImage.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+            scrollbarImage.color = new(0.2f, 0.2f, 0.2f, 0.8f);
 
             var scrollbar = scrollbarObj.GetComponent<Scrollbar>();
             scrollbar.direction = Scrollbar.Direction.BottomToTop;
@@ -522,14 +522,14 @@ namespace DuckovCustomModel.UI.Base
             scrollbarBackground.transform.SetParent(scrollbarObj.transform, false);
             SetupRectTransform(scrollbarBackground, Vector2.zero, Vector2.one, Vector2.zero);
             var backgroundImage = scrollbarBackground.GetComponent<Image>();
-            backgroundImage.color = new Color(0.1f, 0.1f, 0.1f, 0.5f);
+            backgroundImage.color = new(0.1f, 0.1f, 0.1f, 0.5f);
             scrollbar.targetGraphic = backgroundImage;
 
             var scrollbarHandle = new GameObject("Handle", typeof(RectTransform), typeof(Image));
             scrollbarHandle.transform.SetParent(scrollbarBackground.transform, false);
-            SetupRectTransform(scrollbarHandle, new Vector2(0.2f, 0), new Vector2(0.8f, 1), Vector2.zero);
+            SetupRectTransform(scrollbarHandle, new(0.2f, 0), new(0.8f, 1), Vector2.zero);
             var handleImage = scrollbarHandle.GetComponent<Image>();
-            handleImage.color = new Color(0.5f, 0.5f, 0.5f, 0.8f);
+            handleImage.color = new(0.5f, 0.5f, 0.5f, 0.8f);
             scrollbar.handleRect = scrollbarHandle.GetComponent<RectTransform>();
 
             return scrollbar;

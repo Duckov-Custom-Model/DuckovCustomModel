@@ -25,7 +25,7 @@ namespace DuckovCustomModel.Managers
         {
             if (handler == null) return;
 
-            OnModelChanged?.Invoke(new ModelChangedEventArgs
+            OnModelChanged?.Invoke(new()
             {
                 Handler = handler,
                 TargetTypeId = handler.GetTargetTypeId(),

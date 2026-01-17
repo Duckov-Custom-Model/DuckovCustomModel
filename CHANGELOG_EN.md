@@ -2,6 +2,12 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.5
+
+- Animator parameter display interface optimization
+  - Added warning for leading and trailing whitespace characters in parameter names
+  - Spaces at the beginning or end of parameter names are marked with red bold `␣` symbols
+
 ## v1.10.4-fix4
 
 - Fixed the issue of replacing the transparent material with the normal material, causing abnormal rendering performance

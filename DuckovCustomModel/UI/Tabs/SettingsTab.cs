@@ -216,11 +216,11 @@ namespace DuckovCustomModel.UI.Tabs
             warningRow.transform.SetParent(parent.transform, false);
 
             var rowImage = warningRow.GetComponent<Image>();
-            rowImage.color = new Color(0.3f, 0.2f, 0.05f, 0.9f);
+            rowImage.color = new(0.3f, 0.2f, 0.05f, 0.9f);
 
             var outline = warningRow.AddComponent<Outline>();
-            outline.effectColor = new Color(0.8f, 0.6f, 0.2f, 0.8f);
-            outline.effectDistance = new Vector2(2, -2);
+            outline.effectColor = new(0.8f, 0.6f, 0.2f, 0.8f);
+            outline.effectDistance = new(2, -2);
 
             UIFactory.SetupAnchor(warningRow, new(0, 1), new(1, 1), new(0.5f, 1), new(800, 0), Vector2.zero);
 
@@ -230,7 +230,7 @@ namespace DuckovCustomModel.UI.Tabs
             warningRowLayoutElement.flexibleWidth = 0;
             warningRowLayoutElement.flexibleHeight = 1;
 
-            UIFactory.SetupVerticalLayoutGroup(warningRow, 0f, new RectOffset(20, 20, 10, 10),
+            UIFactory.SetupVerticalLayoutGroup(warningRow, 0f, new(20, 20, 10, 10),
                 TextAnchor.UpperLeft, true, true, true);
 
             var warningText = UIFactory.CreateText("WarningText", warningRow.transform,
@@ -663,17 +663,17 @@ namespace DuckovCustomModel.UI.Tabs
 
             var updatePanel = new GameObject("UpdateCheckPanel", typeof(RectTransform));
             updatePanel.transform.SetParent(PanelRoot.transform, false);
-            UIFactory.SetupRectTransform(updatePanel, new Vector2(1f, 0f), new Vector2(1f, 0f),
+            UIFactory.SetupRectTransform(updatePanel, new(1f, 0f), new(1f, 0f),
                 new Vector2(400f, 120f), pivot: new Vector2(1f, 0f), anchoredPosition: new Vector2(-20f, 20f));
 
             var updatePanelImage = updatePanel.AddComponent<Image>();
-            updatePanelImage.color = new Color(0.1f, 0.12f, 0.14f, 0.9f);
+            updatePanelImage.color = new(0.1f, 0.12f, 0.14f, 0.9f);
 
             var outline = updatePanel.AddComponent<Outline>();
-            outline.effectColor = new Color(0.3f, 0.35f, 0.4f, 0.7f);
-            outline.effectDistance = new Vector2(1, -1);
+            outline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
+            outline.effectDistance = new(1, -1);
 
-            UIFactory.SetupVerticalLayoutGroup(updatePanel, 8f, new RectOffset(10, 10, 10, 10),
+            UIFactory.SetupVerticalLayoutGroup(updatePanel, 8f, new(10, 10, 10, 10),
                 childControlHeight: true, childControlWidth: true, childForceExpandHeight: false,
                 childForceExpandWidth: true);
 
@@ -723,15 +723,15 @@ namespace DuckovCustomModel.UI.Tabs
 
             changelogScrollView.gameObject.SetActive(false);
 
-            UIFactory.SetupRectTransform(changelogContent, new Vector2(0, 0), new Vector2(1, 1), Vector2.zero);
+            UIFactory.SetupRectTransform(changelogContent, new(0, 0), new(1, 1), Vector2.zero);
 
-            UIFactory.SetupVerticalLayoutGroup(changelogContent, 0f, new RectOffset(0, 10, 0, 0),
+            UIFactory.SetupVerticalLayoutGroup(changelogContent, 0f, new(0, 10, 0, 0),
                 TextAnchor.UpperLeft, childForceExpandWidth: true);
 
             var changelogText = UIFactory.CreateText("ChangelogText", changelogContent.transform, "", 14,
                 new Color(0.9f, 0.9f, 0.9f, 1), TextAnchor.UpperLeft);
 
-            UIFactory.SetupRectTransform(changelogText, new Vector2(0, 1), new Vector2(1, 1), Vector2.zero,
+            UIFactory.SetupRectTransform(changelogText, new(0, 1), new(1, 1), Vector2.zero,
                 pivot: new Vector2(0.5f, 1));
 
             var changelogTextComponent = changelogText.GetComponent<TextMeshProUGUI>();
@@ -756,7 +756,7 @@ namespace DuckovCustomModel.UI.Tabs
             downloadSection.transform.SetParent(updatePanel.transform, false);
             downloadSection.SetActive(false);
 
-            UIFactory.SetupVerticalLayoutGroup(downloadSection, 6f, new RectOffset(0, 0, 0, 0),
+            UIFactory.SetupVerticalLayoutGroup(downloadSection, 6f, new(0, 0, 0, 0),
                 childControlHeight: false, childControlWidth: true, childForceExpandHeight: false,
                 childForceExpandWidth: true);
 
@@ -776,7 +776,7 @@ namespace DuckovCustomModel.UI.Tabs
             var downloadButtonsContainer = new GameObject("DownloadButtonsContainer", typeof(RectTransform));
             downloadButtonsContainer.transform.SetParent(downloadSection.transform, false);
 
-            UIFactory.SetupHorizontalLayoutGroup(downloadButtonsContainer, 8f, new RectOffset(0, 0, 0, 0),
+            UIFactory.SetupHorizontalLayoutGroup(downloadButtonsContainer, 8f, new(0, 0, 0, 0),
                 TextAnchor.MiddleCenter,
                 childControlHeight: false, childControlWidth: false, childForceExpandHeight: false,
                 childForceExpandWidth: false);
@@ -932,7 +932,7 @@ namespace DuckovCustomModel.UI.Tabs
                     () => OpenURL(link.Url),
                     new Color(0.2f, 0.5f, 0.8f, 0.9f));
 
-                UIFactory.SetupRectTransform(downloadButton, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
+                UIFactory.SetupRectTransform(downloadButton, new(0f, 0.5f), new(0f, 0.5f),
                     new Vector2(130f, 28f), pivot: new Vector2(0.5f, 0.5f));
 
                 var buttonLayout = downloadButton.AddComponent<LayoutElement>();

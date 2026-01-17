@@ -60,18 +60,18 @@ namespace DuckovCustomModel.UI.Utils
         {
             if (_windowRectTransform == null) return;
 
-            _resizeHandle = new GameObject("ResizeHandle", typeof(RectTransform), typeof(Image));
+            _resizeHandle = new("ResizeHandle", typeof(RectTransform), typeof(Image));
             _resizeHandle.transform.SetParent(_windowRectTransform, false);
 
             var handleRect = _resizeHandle.GetComponent<RectTransform>();
-            handleRect.anchorMin = new Vector2(1, 0);
-            handleRect.anchorMax = new Vector2(1, 0);
-            handleRect.pivot = new Vector2(1, 0);
+            handleRect.anchorMin = new(1, 0);
+            handleRect.anchorMax = new(1, 0);
+            handleRect.pivot = new(1, 0);
             handleRect.anchoredPosition = Vector2.zero;
-            handleRect.sizeDelta = new Vector2(20f, 20f);
+            handleRect.sizeDelta = new(20f, 20f);
 
             _resizeHandleImage = _resizeHandle.GetComponent<Image>();
-            _resizeHandleImage.color = new Color(0.5f, 0.5f, 0.5f, 0.3f);
+            _resizeHandleImage.color = new(0.5f, 0.5f, 0.5f, 0.3f);
             _resizeHandleImage.raycastTarget = true;
 
             var dragHandler = _resizeHandle.AddComponent<ResizeHandleDragHandler>();
@@ -110,12 +110,12 @@ namespace DuckovCustomModel.UI.Utils
 
         private void OnResizeHandlePointerEnter()
         {
-            if (_resizeHandleImage != null) _resizeHandleImage.color = new Color(0.7f, 0.7f, 0.7f, 0.6f);
+            if (_resizeHandleImage != null) _resizeHandleImage.color = new(0.7f, 0.7f, 0.7f, 0.6f);
         }
 
         private void OnResizeHandlePointerExit()
         {
-            if (_resizeHandleImage != null) _resizeHandleImage.color = new Color(0.5f, 0.5f, 0.5f, 0.3f);
+            if (_resizeHandleImage != null) _resizeHandleImage.color = new(0.5f, 0.5f, 0.5f, 0.3f);
         }
 
         public void SetMinSize(Vector2 minSize)
