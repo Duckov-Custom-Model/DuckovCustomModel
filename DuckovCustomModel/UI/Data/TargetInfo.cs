@@ -13,7 +13,35 @@ namespace DuckovCustomModel.UI.Data
         public string DisplayName { get; set; } = string.Empty;
 
         public bool IsSelected { get; set; }
-        public bool HasModel { get; set; }
+
+        public bool HasModel
+        {
+            get
+            {
+                if (ModEntry.UsingModel == null)
+                    return false;
+
+                var targetTypeId = GetTargetTypeId();
+                var modelID = ModEntry.UsingModel.GetModelID(targetTypeId);
+                return !string.IsNullOrWhiteSpace(modelID);
+            }
+        }
+
+        public bool HasFallbackModel
+        {
+            get
+            {
+                if (ModEntry.UsingModel == null || HasModel)
+                    return false;
+
+                if (!IsAICharacter())
+                    return false;
+
+                var fallbackModelID = ModEntry.UsingModel.GetModelID(ModelTargetType.AllAICharacters);
+                return !string.IsNullOrWhiteSpace(fallbackModelID);
+            }
+        }
+
         public int ModelCount { get; set; }
 
         public static TargetInfo CreateCharacterTarget()

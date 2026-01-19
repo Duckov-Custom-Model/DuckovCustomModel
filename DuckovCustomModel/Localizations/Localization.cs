@@ -109,7 +109,10 @@ namespace DuckovCustomModel.Localizations
             { "AnimatorParamTypeTrigger", "Trigger" },
             { "AnimatorParamUsageUsed", "Used" },
             { "AnimatorParamUsageUnused", "Unused" },
-            { "ModelUninstallHint", "Note: Manual deletion of model files is required when canceling subscription or removing models" },
+            {
+                "ModelUninstallHint",
+                "Note: Manual deletion of model files is required when canceling subscription or removing models"
+            },
             { "OpenBundleFolder", "Open Folder" },
             { "UnnamedBundle", "Unnamed Bundle" },
             { "ExpandAllBundles", "Expand All" },
@@ -183,6 +186,9 @@ namespace DuckovCustomModel.Localizations
         public static string PublishedAt => GetText("PublishedAt");
         public static string CharacterModelWarning => GetText("CharacterModelWarning");
         public static string ModelAudioVolume => GetText("ModelAudioVolume");
+        public static string ModelHeight => GetText("ModelHeight");
+        public static string Reset => GetText("Reset");
+        public static string ClearRuntimeData => GetText("ClearRuntimeData");
         public static string EmotionModifierKey1 => GetText("EmotionModifierKey1");
         public static string EmotionModifierKey2 => GetText("EmotionModifierKey2");
         public static string EmotionModifierKeyWarning => GetText("EmotionModifierKeyWarning");

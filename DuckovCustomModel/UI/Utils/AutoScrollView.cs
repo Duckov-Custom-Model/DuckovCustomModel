@@ -47,10 +47,10 @@ namespace DuckovCustomModel.UI.Utils
             var spacing = new GameObject("Spacing", typeof(RectTransform));
             spacing.transform.SetParent(_contentRect, false);
             var spacingRect = spacing.GetComponent<RectTransform>();
-            spacingRect.anchorMin = new Vector2(0, 0);
-            spacingRect.anchorMax = new Vector2(1, 0);
-            spacingRect.pivot = new Vector2(0.5f, 0);
-            spacingRect.sizeDelta = new Vector2(0, _spacingHeight);
+            spacingRect.anchorMin = new(0, 0);
+            spacingRect.anchorMax = new(1, 0);
+            spacingRect.pivot = new(0.5f, 0);
+            spacingRect.sizeDelta = new(0, _spacingHeight);
             spacingRect.anchoredPosition = Vector2.zero;
 
             var spacingLayout = spacing.AddComponent<LayoutElement>();
@@ -167,14 +167,14 @@ namespace DuckovCustomModel.UI.Utils
                     if (_scrollRect == null || _contentRect == null) return;
 
                     currentY += scrollSpeed * Time.deltaTime * 100f;
-                    _contentRect.anchoredPosition = new Vector2(_contentRect.anchoredPosition.x, currentY);
+                    _contentRect.anchoredPosition = new(_contentRect.anchoredPosition.x, currentY);
                     await UniTask.Yield(cancellationToken);
                 }
 
                 if (cancellationToken.IsCancellationRequested) return;
 
                 var resetY = currentY - scrollTarget;
-                _contentRect.anchoredPosition = new Vector2(_contentRect.anchoredPosition.x, resetY);
+                _contentRect.anchoredPosition = new(_contentRect.anchoredPosition.x, resetY);
             }
         }
     }

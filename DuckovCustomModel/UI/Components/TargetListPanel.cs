@@ -16,6 +16,7 @@ namespace DuckovCustomModel.UI.Components
     {
         private readonly Dictionary<string, GameObject> _targetButtons = new();
         private GameObject? _content;
+
         private TargetInfo? _selectedTarget;
 
         public event Action<TargetInfo>? OnTargetSelected;
@@ -44,20 +45,9 @@ namespace DuckovCustomModel.UI.Components
             if (_content == null) return;
 
             var targets = GetAllTargets();
-            var usingModel = ModEntry.UsingModel;
 
             foreach (var target in targets)
-            {
-                var hasModel = false;
-                if (usingModel != null)
-                {
-                    var targetTypeId = target.GetTargetTypeId();
-                    hasModel = !string.IsNullOrEmpty(usingModel.GetModelID(targetTypeId));
-                }
-
-                target.HasModel = hasModel;
                 target.IsSelected = _selectedTarget != null && _selectedTarget.Id == target.Id;
-            }
 
             var existingButtonIds = new HashSet<string>(_targetButtons.Keys);
             var targetIds = new HashSet<string>(targets.Select(t => t.Id));
@@ -136,20 +126,37 @@ namespace DuckovCustomModel.UI.Components
         private static void SetupTargetButton(GameObject buttonObj, TargetInfo targetInfo)
         {
             var buttonImage = buttonObj.GetComponent<Image>();
-            Color highlightedColor = targetInfo.HasModel ? new(0.5f, 0.8f, 0.6f, 1) : new(0.5f, 0.7f, 0.9f, 1);
-            Color pressedColor = targetInfo.HasModel ? new(0.4f, 0.7f, 0.5f, 1) : new(0.4f, 0.6f, 0.8f, 1);
+
+            Color highlightedColor;
+            Color pressedColor;
+            Color outlineColor;
+
+            if (targetInfo.HasModel)
+            {
+                highlightedColor = new(0.5f, 0.8f, 0.6f, 1);
+                pressedColor = new(0.4f, 0.7f, 0.5f, 1);
+                outlineColor = new(0.3f, 0.6f, 0.4f, 0.8f);
+            }
+            else if (targetInfo.HasFallbackModel)
+            {
+                highlightedColor = new(0.7f, 0.6f, 0.9f, 1);
+                pressedColor = new(0.6f, 0.5f, 0.8f, 1);
+                outlineColor = new(0.5f, 0.4f, 0.7f, 0.8f);
+            }
+            else
+            {
+                highlightedColor = new(0.5f, 0.7f, 0.9f, 1);
+                pressedColor = new(0.4f, 0.6f, 0.8f, 1);
+                outlineColor = new(0.3f, 0.35f, 0.4f, 0.6f);
+            }
+
             buttonImage.color = highlightedColor;
 
             var outline = buttonObj.GetComponent<Outline>();
             if (outline == null)
                 outline = buttonObj.AddComponent<Outline>();
 
-            if (targetInfo.IsSelected)
-                outline.effectColor = new(1f, 0.5f, 0f, 1f);
-            else if (targetInfo.HasModel)
-                outline.effectColor = new(0.3f, 0.6f, 0.4f, 0.8f);
-            else
-                outline.effectColor = new(0.3f, 0.35f, 0.4f, 0.6f);
+            outline.effectColor = targetInfo.IsSelected ? new(1f, 0.5f, 0f, 1f) : outlineColor;
             outline.effectDistance = new(10, 0);
 
             var button = buttonObj.GetComponent<Button>();

@@ -15,7 +15,7 @@ namespace DuckovCustomModel.Extensions.ShoulderSurfing
         public ShoulderCameraParameterUpdater()
         {
             ShoulderCameraCompat.Initialize();
-            _cancellationTokenSource = new CancellationTokenSource();
+            _cancellationTokenSource = new();
             UpdateLoop(_cancellationTokenSource.Token).Forget();
         }
 

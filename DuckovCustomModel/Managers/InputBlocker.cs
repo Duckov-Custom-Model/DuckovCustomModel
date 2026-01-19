@@ -60,10 +60,7 @@ namespace DuckovCustomModel.Managers
                 return;
             }
 
-            if (_playerInput == null || _playerInput != playerInput)
-            {
-                _playerInput = playerInput;
-            }
+            if (_playerInput == null || _playerInput != playerInput) _playerInput = playerInput;
 
             var shouldBeActive = !IsBlocked && !IsExternalBlocking;
 

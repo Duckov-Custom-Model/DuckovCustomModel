@@ -42,11 +42,16 @@ namespace DuckovCustomModel.MonoBehaviours
 
         public readonly SortedDictionary<int, string> ModelPriorityList = [];
         private Renderer[]? _cachedCustomModelRenderers;
+        private float _currentHeight;
 
         private ModelBundleInfo? _currentModelBundleInfo;
         private CharacterSubVisuals? _customModelSubVisuals;
         private GameObject? _deathLootBoxPrefab;
         private GameObject? _headColliderObject;
+
+        private float _initialHelmetHeight;
+        private Vector3 _initialRootScale = Vector3.one;
+        private bool _isScaleLocked;
 
         private float _nextIdleAudioTime;
 
@@ -139,6 +144,13 @@ namespace DuckovCustomModel.MonoBehaviours
             RefreshPlayingSounds();
 
             if (CharacterMainControl == null || OriginalCharacterModel == null) return;
+
+            if (_isScaleLocked && CustomModelInstance != null)
+            {
+                var targetScale = CalculateScaleFromHeight(_currentHeight);
+                if (CustomModelInstance.transform.localScale != targetScale)
+                    CustomModelInstance.transform.localScale = targetScale;
+            }
 
             if (ReplaceShader && _cachedCustomModelRenderers != null)
                 CheckAndFixMaterialShaders();
@@ -244,6 +256,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
             ModelSoundTrigger.OnSoundTriggered += OnSoundTriggered;
             ModelSoundStopTrigger.OnSoundStopTriggered += OnSoundStopTriggered;
+
+            ModelHeightManager.OnHeightChanged += OnHeightChangedEvent;
 
 
             InitializeModelPriorityList();
@@ -494,6 +508,11 @@ namespace DuckovCustomModel.MonoBehaviours
             return null;
         }
 
+        public Transform? GetCustomModelLocator(string locatorName)
+        {
+            return GetCustomSocketTransform(locatorName);
+        }
+
         public void CleanupCustomModel()
         {
             if (OriginalCharacterModel == null)
@@ -543,6 +562,11 @@ namespace DuckovCustomModel.MonoBehaviours
             }
 
             _cachedCustomModelRenderers = null;
+
+            _initialHelmetHeight = 0f;
+            _initialRootScale = Vector3.one;
+            _currentHeight = 0f;
+            _isScaleLocked = false;
 
             if (CustomAnimatorControl != null)
                 CustomAnimatorControl.SetCustomAnimator(null);
@@ -672,6 +696,9 @@ namespace DuckovCustomModel.MonoBehaviours
             if (customFaceInstance != null) customFaceInstance.gameObject.SetActive(false);
 
             CustomModelInstance.SetActive(true);
+
+            ModelHeightManager.InitializeHeightForHandler(this);
+            ModelHeightManager.ApplyHeightToHandler(this);
 
             ForceUpdateHealthBar();
             OriginalCharacterModel.SyncHiddenToMainCharacter();
@@ -1471,6 +1498,63 @@ namespace DuckovCustomModel.MonoBehaviours
         public void NotifyModelChanged(bool isRestored)
         {
             ModelListManager.NotifyModelChanged(this, isRestored);
+        }
+
+        #endregion
+
+        #region Height Scale
+
+        private void OnHeightChangedEvent(string targetTypeId, string modelID)
+        {
+            if (TargetTypeId != targetTypeId)
+                return;
+
+            if (CurrentModelInfo?.ModelID != modelID)
+                return;
+
+            ModelHeightManager.ApplyHeightToHandler(this);
+        }
+
+        public void ApplyHeightFromRuntimeData(float targetHeight, float initialHeight, Vector3 initialRootScale)
+        {
+            if (CustomModelInstance == null || initialHeight <= 0)
+                return;
+
+            _initialRootScale = initialRootScale;
+            _initialHelmetHeight = initialHeight;
+            _currentHeight = targetHeight;
+            _isScaleLocked = true;
+
+            ApplyHeightScale();
+            UpdateColliderHeight();
+            ForceUpdateHealthBar();
+        }
+
+        public float GetHeight()
+        {
+            return _currentHeight;
+        }
+
+        public float GetInitialHeight()
+        {
+            return _initialHelmetHeight;
+        }
+
+        private Vector3 CalculateScaleFromHeight(float targetHeight)
+        {
+            if (_initialHelmetHeight <= 0)
+                return _initialRootScale;
+
+            var scaleMultiplier = targetHeight / _initialHelmetHeight;
+            return _initialRootScale * scaleMultiplier;
+        }
+
+        private void ApplyHeightScale()
+        {
+            if (CustomModelInstance == null) return;
+
+            var targetScale = CalculateScaleFromHeight(_currentHeight);
+            CustomModelInstance.transform.localScale = targetScale;
         }
 
         #endregion

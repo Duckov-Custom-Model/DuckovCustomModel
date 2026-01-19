@@ -19,32 +19,6 @@ namespace DuckovCustomModel.Managers
         public static event Action? OnRefreshCompleted;
         public static event Action<ModelChangedEventArgs>? OnModelChanged;
 
-        #region 事件通知
-
-        public static void NotifyModelChanged(ModelHandler handler, bool isRestored)
-        {
-            if (handler == null) return;
-
-            OnModelChanged?.Invoke(new ModelChangedEventArgs
-            {
-                Handler = handler,
-                TargetTypeId = handler.GetTargetTypeId(),
-                ModelID = handler.CurrentModelInfo?.ModelID,
-                ModelName = handler.CurrentModelInfo?.Name,
-                IsRestored = isRestored,
-#pragma warning disable CS0618
-                Target = ModelTargetExtensions.FromTargetTypeId(handler.GetTargetTypeId()) ?? ModelTarget.Character,
-                AICharacterNameKey = ModelTargetType.IsAICharacterTargetType(handler.GetTargetTypeId())
-                    ? ModelTargetType.ExtractAICharacterName(handler.GetTargetTypeId())
-                    : null,
-                HandlerCount = 0,
-                Success = true,
-#pragma warning restore CS0618
-            });
-        }
-
-        #endregion
-
         #region 私有方法
 
         private static async UniTaskVoid RefreshModelListAsync(CancellationToken cancellationToken,
@@ -81,10 +55,8 @@ namespace DuckovCustomModel.Managers
                             cancellationToken.ThrowIfCancellationRequested();
                             await AssetBundleManager.GetOrLoadAssetBundleAsync(priorityBundle, false,
                                 cancellationToken);
-                            await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
+                            await UniTask.NextFrame(cancellationToken);
                         }
-
-                    var count = 0;
 
                     if (priorityModels.Count > 0)
                         foreach (var (priorityBundle, priorityModel) in priorityModels)
@@ -99,8 +71,7 @@ namespace DuckovCustomModel.Managers
                                 await AssetBundleManager.CheckBundleStatusAsync(priorityBundleInList,
                                     priorityModelInList,
                                     cancellationToken);
-                            count++;
-                            await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
+                            await UniTask.NextFrame(cancellationToken);
                         }
 
                     foreach (var bundle in ModelManager.ModelBundles)
@@ -111,14 +82,11 @@ namespace DuckovCustomModel.Managers
 
                         cancellationToken.ThrowIfCancellationRequested();
                         await AssetBundleManager.CheckBundleStatusAsync(bundle, model, cancellationToken);
-                        count++;
-
-                        if (count % 10 != 0) continue;
-                        await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
+                        await UniTask.NextFrame(cancellationToken);
                     }
                 }
 
-                await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
+                await UniTask.NextFrame(cancellationToken);
 
                 RefreshAndApplyAllModels();
             }
@@ -150,6 +118,32 @@ namespace DuckovCustomModel.Managers
 
             foreach (var handler in ModelManager.GetAllHandlers())
                 handler.UpdateModelPriorityList();
+        }
+
+        #endregion
+
+        #region 事件通知
+
+        public static void NotifyModelChanged(ModelHandler handler, bool isRestored)
+        {
+            if (handler == null) return;
+
+            OnModelChanged?.Invoke(new()
+            {
+                Handler = handler,
+                TargetTypeId = handler.GetTargetTypeId(),
+                ModelID = handler.CurrentModelInfo?.ModelID,
+                ModelName = handler.CurrentModelInfo?.Name,
+                IsRestored = isRestored,
+#pragma warning disable CS0618
+                Target = ModelTargetExtensions.FromTargetTypeId(handler.GetTargetTypeId()) ?? ModelTarget.Character,
+                AICharacterNameKey = ModelTargetType.IsAICharacterTargetType(handler.GetTargetTypeId())
+                    ? ModelTargetType.ExtractAICharacterName(handler.GetTargetTypeId())
+                    : null,
+                HandlerCount = 0,
+                Success = true,
+#pragma warning restore CS0618
+            });
         }
 
         #endregion

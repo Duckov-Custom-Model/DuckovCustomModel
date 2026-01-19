@@ -122,7 +122,7 @@ namespace DuckovCustomModel.UI.Utils
         private static string GetUniformIndent(int level)
         {
             // 每个级别使用 2 个空格缩进
-            return new string(' ', level * 2);
+            return new(' ', level * 2);
         }
     }
 }

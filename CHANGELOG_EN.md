@@ -2,6 +2,20 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.5
+
+- Animator parameter display interface optimization
+  - Added warning for leading and trailing whitespace characters in parameter names
+  - Spaces at the beginning or end of parameter names are marked with red bold `␣` symbols
+- Fixed an issue where animator parameters could lose synchronization in specific scenarios (e.g., long-distance teleportation within a scene)
+- Added runtime data recording, data is located in config folder's RuntimeData/&lt;ModelTarget&gt;/&lt;ModelId&gt;.json
+- Added model height setting functionality, allows setting model height, configured separately for each model of each character target
+  - Height corresponds to the position of the character model's HelmetLocator
+    - Note: If the model does not have a HelmetLocator, this feature will be disabled
+  - Recorded in runtime data and persisted
+  - **This feature does not support configuration via the "All AI Characters" option page**
+- Optimized model selection interface, AI characters will now highlight models set in all AI characters in purple
+
 ## v1.10.4-fix4
 
 - Fixed the issue of replacing the transparent material with the normal material, causing abnormal rendering performance
