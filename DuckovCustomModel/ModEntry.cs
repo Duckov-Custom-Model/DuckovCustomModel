@@ -56,37 +56,6 @@ namespace DuckovCustomModel
             LevelManager.OnLevelInitialized += LevelManager_OnLevelInitialized;
             LevelManager.OnAfterLevelInitialized += LevelManager_OnAfterLevelInitialized;
 
-            _ = ModelManager.UpdateModelBundles();
-
-            var priorityModelIDs = new List<string>();
-            if (UsingModel != null)
-            {
-                var targetTypeIds = ModelTargetTypeRegistry.GetAllAvailableTargetTypes();
-                priorityModelIDs.AddRange(from targetTypeId in targetTypeIds
-                    where !ModelTargetType.IsAICharacterTargetType(targetTypeId)
-                    select UsingModel.GetModelID(targetTypeId)
-                    into modelID
-                    where !string.IsNullOrEmpty(modelID)
-                    select modelID);
-
-                var aiModelIDs = new HashSet<string>();
-                foreach (var nameKey in AICharacters.SupportedAICharacters)
-                {
-                    var targetTypeId = ModelTargetType.CreateAICharacterTargetType(nameKey);
-                    var modelID = UsingModel.GetModelID(targetTypeId);
-                    if (!string.IsNullOrEmpty(modelID))
-                        aiModelIDs.Add(modelID);
-                }
-
-                var defaultModelID = UsingModel.GetModelID(ModelTargetType.AllAICharacters);
-                if (!string.IsNullOrEmpty(defaultModelID))
-                    aiModelIDs.Add(defaultModelID);
-
-                priorityModelIDs.AddRange(aiModelIDs);
-            }
-
-            ModelListManager.RefreshModelList(priorityModelIDs);
-
             InitializeConfigWindow();
             InitializeUpdateChecker();
             InitializeInputBlocker();
@@ -101,6 +70,8 @@ namespace DuckovCustomModel
             AICharactersManager.Initialize();
 
             ModLogger.Log($"{Constant.ModName} loaded (Version {Constant.ModVersion})");
+
+            ModelListManager.RefreshModelList();
         }
 
         private static void OnUpdateCheckCompleted(bool hasUpdate, string? latestVersion)

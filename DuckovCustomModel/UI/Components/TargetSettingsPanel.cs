@@ -1,3 +1,4 @@
+using System;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
@@ -11,11 +12,16 @@ namespace DuckovCustomModel.UI.Components
 {
     public class TargetSettingsPanel : MonoBehaviour
     {
+        private GameObject? _clearRuntimeDataRow;
         private GameObject? _content;
         private TargetInfo? _currentTarget;
         private TMP_InputField? _idleAudioMaxIntervalInput;
         private TMP_InputField? _idleAudioMinIntervalInput;
         private TMP_Text? _modelAudioVolumeText;
+        private GameObject? _modelHeightRow;
+        private Slider? _modelHeightSlider;
+        private TMP_Text? _modelHeightText;
+        private GameObject? _runtimeSettingsDivider;
         private int _settingRowIndex;
 
         public void Initialize(Transform parent)
@@ -49,11 +55,16 @@ namespace DuckovCustomModel.UI.Components
 
             _settingRowIndex = 0;
             BuildCharacterModelWarning();
+            BuildModelHeightSetting();
+            BuildClearRuntimeDataButton();
+            BuildRuntimeSettingsDivider();
             BuildHideEquipmentSetting();
             BuildEnableModelAudioSetting();
             BuildModelAudioVolumeSetting();
             BuildEnableIdleAudioSetting();
             BuildIdleAudioIntervalSettings();
+
+            UpdateRuntimeSettingsVisibility();
         }
 
         private void BuildCharacterModelWarning()
@@ -67,6 +78,133 @@ namespace DuckovCustomModel.UI.Components
             if (aiCharacterNameKey == AICharacters.AllAICharactersKey ||
                 aiCharacterNameKey.StartsWith("Character_"))
                 CreateWarningRow();
+        }
+
+        private void BuildModelHeightSetting()
+        {
+            if (_content == null || _currentTarget == null) return;
+
+            _modelHeightRow = CreateSettingRow();
+
+            var label = UIFactory.CreateText("Label", _modelHeightRow.transform, Localization.ModelHeight, 18,
+                Color.white);
+            UIFactory.SetupLeftLabel(label);
+            UIFactory.SetupContentSizeFitter(label);
+            UIFactory.SetLocalizedText(label, () => Localization.ModelHeight);
+
+            var controlsContainer =
+                new GameObject("ControlsContainer", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+            controlsContainer.transform.SetParent(_modelHeightRow.transform, false);
+            UIFactory.SetupRightControl(controlsContainer, new(300, 30));
+            UIFactory.SetupHorizontalLayoutGroup(controlsContainer, 20f, new(0, 0, 0, 0), TextAnchor.MiddleRight);
+
+            var sliderContainer = new GameObject("SliderContainer", typeof(RectTransform), typeof(LayoutElement));
+            sliderContainer.transform.SetParent(controlsContainer.transform, false);
+            var sliderLayoutElement = sliderContainer.AddComponent<LayoutElement>();
+            sliderLayoutElement.preferredWidth = 200;
+            sliderLayoutElement.flexibleWidth = 0;
+
+            var slider = UIFactory.CreateSlider("ModelHeightSlider", sliderContainer.transform, 0.5f, 3.0f, 1.0f,
+                OnModelHeightChanged);
+            UIFactory.SetupRectTransform(slider.gameObject, Vector2.zero, Vector2.one, Vector2.zero);
+            _modelHeightSlider = slider;
+
+            var heightText = UIFactory.CreateText("HeightText", sliderContainer.transform,
+                "1.000", 14, Color.white, TextAnchor.MiddleRight);
+            UIFactory.SetupRightLabel(heightText, 35f, -10f);
+            _modelHeightText = heightText.GetComponent<TMP_Text>();
+
+            var resetButton = UIFactory.CreateButton("ResetHeightButton", controlsContainer.transform,
+                OnResetHeightClicked, new(0.3f, 0.35f, 0.4f, 1)).GetComponent<Button>();
+            var resetButtonLayoutElement = resetButton.gameObject.AddComponent<LayoutElement>();
+            resetButtonLayoutElement.preferredWidth = 60;
+            resetButtonLayoutElement.flexibleWidth = 0;
+            var resetButtonText = UIFactory.CreateText("Text", resetButton.transform,
+                Localization.Reset, 14, Color.white, TextAnchor.MiddleCenter);
+            UIFactory.SetupButtonText(resetButtonText);
+            UIFactory.SetLocalizedText(resetButtonText, () => Localization.Reset);
+            UIFactory.SetupButtonColors(resetButton, new(1, 1, 1, 1), new(0.5f, 0.6f, 0.7f, 1),
+                new(0.4f, 0.5f, 0.6f, 1), new(0.5f, 0.6f, 0.7f, 1));
+        }
+
+        private void BuildClearRuntimeDataButton()
+        {
+            if (_content == null || _currentTarget == null) return;
+
+            _clearRuntimeDataRow = CreateSettingRow();
+
+            var label = UIFactory.CreateText("Label", _clearRuntimeDataRow.transform, Localization.ClearRuntimeData, 18,
+                Color.white);
+            UIFactory.SetupLeftLabel(label);
+            UIFactory.SetupContentSizeFitter(label);
+            UIFactory.SetLocalizedText(label, () => Localization.ClearRuntimeData);
+
+            var clearButton = UIFactory.CreateButton("ClearRuntimeDataButton", _clearRuntimeDataRow.transform,
+                OnClearRuntimeDataClicked, new(0.5f, 0.2f, 0.2f, 1)).GetComponent<Button>();
+            UIFactory.SetupRightControl(clearButton.gameObject, new(100, 30));
+            var clearButtonText = UIFactory.CreateText("Text", clearButton.transform,
+                Localization.Clear, 14, Color.white, TextAnchor.MiddleCenter);
+            UIFactory.SetupButtonText(clearButtonText);
+            UIFactory.SetLocalizedText(clearButtonText, () => Localization.Clear);
+            UIFactory.SetupButtonColors(clearButton, new(1, 1, 1, 1), new(0.7f, 0.3f, 0.3f, 1),
+                new(0.6f, 0.2f, 0.2f, 1), new(0.7f, 0.3f, 0.3f, 1));
+        }
+
+        private void BuildRuntimeSettingsDivider()
+        {
+            if (_content == null) return;
+
+            var divider = new GameObject("RuntimeSettingsDivider", typeof(RectTransform), typeof(Image));
+            divider.transform.SetParent(_content.transform, false);
+
+            var dividerImage = divider.GetComponent<Image>();
+            dividerImage.color = new(0.3f, 0.35f, 0.4f, 0.8f);
+
+            UIFactory.SetupRectTransform(divider, new(0, 1), new(1, 1), Vector2.zero,
+                pivot: new Vector2(0.5f, 1));
+
+            var dividerLayoutElement = divider.AddComponent<LayoutElement>();
+            dividerLayoutElement.preferredHeight = 2;
+            dividerLayoutElement.flexibleWidth = 1;
+            dividerLayoutElement.flexibleHeight = 0;
+
+            _runtimeSettingsDivider = divider;
+        }
+
+        private void UpdateRuntimeSettingsVisibility()
+        {
+            if (_modelHeightRow == null || _currentTarget == null) return;
+
+            var targetTypeId = _currentTarget.GetTargetTypeId();
+            if (targetTypeId.Equals(ModelTargetType.AllAICharacters, StringComparison.OrdinalIgnoreCase))
+            {
+                _modelHeightRow.SetActive(false);
+                if (_clearRuntimeDataRow != null)
+                    _clearRuntimeDataRow.SetActive(false);
+                if (_runtimeSettingsDivider != null)
+                    _runtimeSettingsDivider.SetActive(false);
+                return;
+            }
+
+            var usingModel = ModEntry.UsingModel;
+            var modelID = usingModel?.GetModelID(targetTypeId);
+
+            if (string.IsNullOrWhiteSpace(modelID) && _currentTarget.IsAICharacter())
+                modelID = usingModel?.GetModelID(ModelTargetType.AllAICharacters);
+
+            var hasModel = !string.IsNullOrWhiteSpace(modelID);
+            var hasHelmetLocator = hasModel && ModelHeightManager.HasHelmetLocator(modelID!);
+
+            _modelHeightRow.SetActive(hasHelmetLocator);
+            if (_clearRuntimeDataRow != null)
+                _clearRuntimeDataRow.SetActive(hasModel);
+            if (_runtimeSettingsDivider != null)
+                _runtimeSettingsDivider.SetActive(hasModel || hasHelmetLocator);
+
+            if (!hasHelmetLocator || string.IsNullOrWhiteSpace(modelID)) return;
+            var currentHeight = ModelHeightManager.GetHeight(targetTypeId, modelID);
+            if (_modelHeightSlider != null) _modelHeightSlider.value = currentHeight;
+            if (_modelHeightText != null) _modelHeightText.text = $"{currentHeight:F3}";
         }
 
         private void BuildHideEquipmentSetting()
@@ -422,6 +560,70 @@ namespace DuckovCustomModel.UI.Components
                 _modelAudioVolumeText.text = $"{value:P0}";
 
             ConfigManager.SaveConfigToFile(modelAudioConfig, "ModelAudioConfig.json");
+        }
+
+        private void OnModelHeightChanged(float value)
+        {
+            if (_currentTarget == null) return;
+
+            var targetTypeId = _currentTarget.GetTargetTypeId();
+            var usingModel = ModEntry.UsingModel;
+            var modelID = usingModel?.GetModelID(targetTypeId);
+
+            if (string.IsNullOrWhiteSpace(modelID) && _currentTarget.IsAICharacter())
+                modelID = usingModel?.GetModelID(ModelTargetType.AllAICharacters);
+
+            if (string.IsNullOrWhiteSpace(modelID)) return;
+
+            ModelHeightManager.SetHeight(targetTypeId, modelID, value);
+
+            if (_modelHeightText != null)
+                _modelHeightText.text = $"{value:F3}";
+        }
+
+        private void OnResetHeightClicked()
+        {
+            if (_currentTarget == null) return;
+
+            var targetTypeId = _currentTarget.GetTargetTypeId();
+            var usingModel = ModEntry.UsingModel;
+            var modelID = usingModel?.GetModelID(targetTypeId);
+
+            if (string.IsNullOrWhiteSpace(modelID) && _currentTarget.IsAICharacter())
+                modelID = usingModel?.GetModelID(ModelTargetType.AllAICharacters);
+
+            if (string.IsNullOrWhiteSpace(modelID)) return;
+
+            ModelHeightManager.ResetHeight(targetTypeId, modelID);
+
+            var newHeight = ModelHeightManager.GetHeight(targetTypeId, modelID);
+            if (_modelHeightSlider != null)
+                _modelHeightSlider.value = newHeight;
+            if (_modelHeightText != null)
+                _modelHeightText.text = $"{newHeight:F3}";
+        }
+
+        private void OnClearRuntimeDataClicked()
+        {
+            if (_currentTarget == null) return;
+
+            var targetTypeId = _currentTarget.GetTargetTypeId();
+            var usingModel = ModEntry.UsingModel;
+            var modelID = usingModel?.GetModelID(targetTypeId);
+
+            if (string.IsNullOrWhiteSpace(modelID) && _currentTarget.IsAICharacter())
+                modelID = usingModel?.GetModelID(ModelTargetType.AllAICharacters);
+
+            if (string.IsNullOrWhiteSpace(modelID))
+                return;
+
+            ModelRuntimeDataManager.ClearRuntimeData(targetTypeId, modelID);
+
+            ModelHeightManager.ResetHeight(targetTypeId, modelID);
+
+            UpdateRuntimeSettingsVisibility();
+
+            ModLogger.Log($"Cleared runtime data for {targetTypeId}/{modelID}");
         }
     }
 }

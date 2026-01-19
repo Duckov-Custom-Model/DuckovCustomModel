@@ -114,37 +114,44 @@ namespace DuckovCustomModel.UI.Components
 
         public async void Refresh(bool forceRefresh = true)
         {
-            if (_content == null) return;
-
-            if (_currentRefreshTask != null)
+            try
             {
-                try
-                {
-                    await _currentRefreshTask.Task;
-                }
-                catch (OperationCanceledException)
-                {
-                }
-                catch
-                {
-                    // ignored
-                }
+                if (_content == null) return;
 
                 if (_currentRefreshTask != null)
-                    return;
+                {
+                    try
+                    {
+                        await _currentRefreshTask.Task;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
+
+                    if (_currentRefreshTask != null)
+                        return;
+                }
+
+                _refreshCancellationTokenSource?.Cancel();
+                _refreshCancellationTokenSource?.Dispose();
+
+                _refreshCancellationTokenSource = new();
+                var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+                    _refreshCancellationTokenSource.Token,
+                    this.GetCancellationTokenOnDestroy()
+                );
+
+                _currentRefreshTask = new();
+                RefreshModelListAsync(linkedCts.Token, linkedCts, forceRefresh).Forget();
             }
-
-            _refreshCancellationTokenSource?.Cancel();
-            _refreshCancellationTokenSource?.Dispose();
-
-            _refreshCancellationTokenSource = new();
-            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
-                _refreshCancellationTokenSource.Token,
-                this.GetCancellationTokenOnDestroy()
-            );
-
-            _currentRefreshTask = new();
-            RefreshModelListAsync(linkedCts.Token, linkedCts, forceRefresh).Forget();
+            catch
+            {
+                // ignored
+            }
         }
 
         private async UniTaskVoid RefreshModelListAsync(CancellationToken cancellationToken,
@@ -352,15 +359,19 @@ namespace DuckovCustomModel.UI.Components
 
             var usingModel = ModEntry.UsingModel;
             var isInUse = false;
+            var isFallback = false;
             if (_currentTarget != null && usingModel != null)
             {
                 var targetTypeId = _currentTarget.GetTargetTypeId();
 
                 isInUse = usingModel.GetModelID(targetTypeId) == model.ModelID;
+                isFallback = !isInUse && usingModel.GetModelID(ModelTargetType.AllAICharacters) == model.ModelID;
             }
 
-            Color baseColor = hasError ? new(0.22f, 0.15f, 0.15f, 0.8f) : new(0.15f, 0.18f, 0.22f, 0.8f);
+            Color baseColor;
             if (isInUse && !hasError) baseColor = new(0.15f, 0.22f, 0.18f, 0.8f);
+            else if (isFallback && !hasError) baseColor = new(0.18f, 0.15f, 0.22f, 0.8f);
+            else baseColor = hasError ? new(0.22f, 0.15f, 0.15f, 0.8f) : new(0.15f, 0.18f, 0.22f, 0.8f);
 
             var buttonObj = UIFactory.CreateButton($"ModelButton_{model.ModelID}", parent, null, baseColor)
                 .gameObject;
@@ -376,6 +387,8 @@ namespace DuckovCustomModel.UI.Components
             var outline = buttonObj.AddComponent<Outline>();
             if (isInUse && !hasError)
                 outline.effectColor = new(0.3f, 0.6f, 0.4f, 0.8f);
+            else if (isFallback && !hasError)
+                outline.effectColor = new(0.5f, 0.4f, 0.8f, 0.8f);
             else
                 outline.effectColor = hasError
                     ? new(0.6f, 0.3f, 0.3f, 0.8f)
@@ -519,6 +532,9 @@ namespace DuckovCustomModel.UI.Components
                 if (isInUse && !hasError)
                     UIFactory.SetupButtonColors(button, new(1, 1, 1, 1), new(0.5f, 0.8f, 0.6f, 1),
                         new(0.4f, 0.7f, 0.5f, 1), new(0.5f, 0.8f, 0.6f, 1));
+                else if (isFallback && !hasError)
+                    UIFactory.SetupButtonColors(button, new(1, 1, 1, 1), new(0.7f, 0.6f, 0.9f, 1),
+                        new(0.6f, 0.5f, 0.8f, 1), new(0.7f, 0.6f, 0.9f, 1));
                 else
                     UIFactory.SetupButtonColors(button, new(1, 1, 1, 1),
                         hasError ? new(0.7f, 0.5f, 0.5f, 1) : new(0.5f, 0.7f, 0.9f, 1),
@@ -604,11 +620,17 @@ namespace DuckovCustomModel.UI.Components
 
             var usingModel = ModEntry.UsingModel;
             var hasModelInUse = false;
+            var hasModelFallback = false;
             if (_currentTarget != null && usingModel != null)
             {
                 var targetTypeId = _currentTarget.GetTargetTypeId();
                 var currentModelID = usingModel.GetModelID(targetTypeId);
                 hasModelInUse = bundle.Models.Any(m => m.ModelID == currentModelID);
+                if (!hasModelInUse)
+                {
+                    currentModelID = usingModel.GetModelID(ModelTargetType.AllAICharacters);
+                    hasModelFallback = bundle.Models.Any(m => m.ModelID == currentModelID);
+                }
             }
 
             var bundleGroupObj = new GameObject($"BundleGroup_{bundleKey}", typeof(RectTransform));
@@ -619,9 +641,13 @@ namespace DuckovCustomModel.UI.Components
             bundleGroupLayoutElement.flexibleWidth = 1;
             UIFactory.SetupContentSizeFitter(bundleGroupObj, ContentSizeFitter.FitMode.Unconstrained);
 
-            var bundleHeaderColor = hasModelInUse
-                ? new(0.15f, 0.22f, 0.18f, 0.9f)
-                : new Color(0.18f, 0.2f, 0.25f, 0.9f);
+            Color bundleHeaderColor;
+            if (hasModelInUse)
+                bundleHeaderColor = new(0.15f, 0.22f, 0.18f, 0.9f);
+            else if (hasModelFallback)
+                bundleHeaderColor = new(0.18f, 0.15f, 0.22f, 0.9f);
+            else
+                bundleHeaderColor = new(0.18f, 0.2f, 0.25f, 0.9f);
             var bundleHeaderObj = UIFactory.CreateButton($"BundleHeader_{bundleKey}", bundleGroupObj.transform, null,
                 bundleHeaderColor).gameObject;
             UIFactory.SetupRectTransform(bundleHeaderObj, new(0, 0), new(1, 0), offsetMin: new(0, 0),
@@ -632,9 +658,12 @@ namespace DuckovCustomModel.UI.Components
             bundleHeaderLayoutElement.flexibleWidth = 1;
             bundleHeaderLayoutElement.flexibleHeight = 0;
             var bundleHeaderOutline = bundleHeaderObj.AddComponent<Outline>();
-            bundleHeaderOutline.effectColor = hasModelInUse
-                ? new(0.3f, 0.6f, 0.4f, 0.8f)
-                : new(0.3f, 0.35f, 0.4f, 0.6f);
+            if (hasModelInUse)
+                bundleHeaderOutline.effectColor = new(0.3f, 0.6f, 0.4f, 0.8f);
+            else if (hasModelFallback)
+                bundleHeaderOutline.effectColor = new(0.5f, 0.4f, 0.8f, 0.8f);
+            else
+                bundleHeaderOutline.effectColor = new(0.3f, 0.35f, 0.4f, 0.6f);
             bundleHeaderOutline.effectDistance = new(1, -1);
 
             var expandToggle = UIFactory.CreateToggle("ExpandToggle", bundleHeaderObj.transform, isExpanded,

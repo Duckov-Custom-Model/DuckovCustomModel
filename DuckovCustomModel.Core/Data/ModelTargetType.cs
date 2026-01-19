@@ -10,7 +10,7 @@ namespace DuckovCustomModel.Core.Data
         public const string Character = BuiltInPrefix + "Character";
         public const string Pet = BuiltInPrefix + "Pet";
         public const string AICharacterTemplate = BuiltInPrefix + "AICharacter_";
-        public const string AllAICharacters = AICharacterTemplate + "*";
+        public const string AllAICharacters = AICharacterTemplate + AICharacters.AllAICharactersKey;
 
         public static string CreateAICharacterTargetType(string aiCharacterName)
         {
