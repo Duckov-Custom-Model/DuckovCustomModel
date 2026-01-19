@@ -83,6 +83,13 @@ namespace DuckovCustomModel.MonoBehaviours
             UpdateBuffParams();
         }
 
+        private void OnEnable()
+        {
+            if (!Initialized || _customAnimator == null) return;
+
+            ReapplyAllParameters();
+        }
+
         private void OnDestroy()
         {
             if (CharacterModel != null) CharacterModel.OnAttackOrShootEvent -= OnAttack;
@@ -167,6 +174,27 @@ namespace DuckovCustomModel.MonoBehaviours
             if (_customAnimator != null) FindMeleeAttackLayerIndex();
             InitializeAnimatorParamCache();
             InitializeBuffParamCache();
+            ReapplyAllParameters();
+        }
+
+        private void ReapplyAllParameters()
+        {
+            if (_customAnimator == null) return;
+
+            foreach (var (hash, value) in _boolParams)
+                if (_validBoolParamHashes.Contains(hash))
+                    _customAnimator.SetBool(hash, value);
+
+            foreach (var (hash, value) in _intParams)
+                if (_validIntParamHashes.Contains(hash))
+                    _customAnimator.SetInteger(hash, value);
+
+            foreach (var (hash, value) in _floatParams)
+                if (_validFloatParamHashes.Contains(hash))
+                    _customAnimator.SetFloat(hash, value);
+
+            if (_attackLayerIndex >= 0 && AttackWeight > 0)
+                _customAnimator.SetLayerWeight(_attackLayerIndex, AttackWeight);
         }
 
         private void InitializeAnimatorParamCache()
