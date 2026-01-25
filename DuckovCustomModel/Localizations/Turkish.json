@@ -68,7 +68,7 @@
   "ModelAudioVolume": "Model ses seviyesi",
   "ModelHeight": "Model yüksekliği",
   "Reset": "Sıfırla",
-  "ClearRuntimeData": "Çalışma zamanı verilerini temizle",
+  "ClearCustomDataConfig": "Özel veri yapılandırmasını temizle",
   "EmotionModifierKey1": "Duygu değiştirici tuş 1",
   "EmotionModifierKey2": "Duygu değiştirici tuş 2",
   "EmotionModifierKeyWarning": "Uyarı: Değiştirici tuşlara basmak diğer tüm tuş girişlerini engelleyecektir, yalnızca F1~F8 kombinasyon tuş olaylarına yanıt verilecektir",

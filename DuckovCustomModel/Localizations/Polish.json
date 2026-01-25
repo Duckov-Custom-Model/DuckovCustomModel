@@ -68,7 +68,7 @@
   "ModelAudioVolume": "Głośność dźwięku modelu",
   "ModelHeight": "Wysokość modelu",
   "Reset": "Resetuj",
-  "ClearRuntimeData": "Wyczyść dane środowiska uruchomieniowego",
+  "ClearCustomDataConfig": "Wyczyść konfigurację danych niestandardowych",
   "EmotionModifierKey1": "Klawisz modyfikatora emocji 1",
   "EmotionModifierKey2": "Klawisz modyfikatora emocji 2",
   "EmotionModifierKeyWarning": "Ostrzeżenie: Naciśnięcie klawiszy modyfikujących zablokuje wszystkie inne wejścia klawiatury, tylko zdarzenia kombinacji klawiszy F1~F8 będą obsługiwane",

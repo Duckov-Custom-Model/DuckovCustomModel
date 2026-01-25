@@ -68,7 +68,7 @@
   "ModelAudioVolume": "Modell-Audio-Lautstärke",
   "ModelHeight": "Modellhöhe",
   "Reset": "Zurücksetzen",
-  "ClearRuntimeData": "Laufzeitdaten löschen",
+  "ClearCustomDataConfig": "Benutzerdefinierte Datenkonfiguration löschen",
   "EmotionModifierKey1": "Emotions-Modifikatortaste 1",
   "EmotionModifierKey2": "Emotions-Modifikatortaste 2",
   "EmotionModifierKeyWarning": "Warnung: Das Drücken von Modifikatortasten blockiert alle anderen Tasteneingaben, nur F1~F8 Kombinationstastenereignisse werden berücksichtigt",

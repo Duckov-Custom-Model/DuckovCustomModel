@@ -533,7 +533,7 @@ namespace DuckovCustomModel.MonoBehaviours
                     CharacterMainControl.RemoveVisual(_customModelSubVisuals);
 
                 RestoreToOriginalModelSockets();
-                UpdateColliderHeight();
+                UpdateCollider();
 
                 if (OriginalCharacterSoundMaker != null)
                     OriginalCharacterSoundMaker.enabled = true;
@@ -687,7 +687,7 @@ namespace DuckovCustomModel.MonoBehaviours
                 CharacterMainControl.AddSubVisuals(_customModelSubVisuals);
 
             ChangeToCustomModelSockets();
-            UpdateColliderHeight();
+            UpdateCollider();
 
             if (OriginalCharacterSoundMaker != null)
                 OriginalCharacterSoundMaker.enabled = false;
@@ -814,20 +814,31 @@ namespace DuckovCustomModel.MonoBehaviours
             OriginalCharacterSoundMaker = soundMaker;
         }
 
-        private void UpdateColliderHeight()
+        private void UpdateCollider()
         {
-            if (_headColliderObject == null || CharacterMainControl == null) return;
+            if (_headColliderObject == null || CharacterMainControl == null)
+                return;
 
-            var mainDamageReceiver = CharacterMainControl.mainDamageReceiver;
-            if (mainDamageReceiver == null) return;
+            var damageReceiver = CharacterMainControl.mainDamageReceiver;
+            if (damageReceiver == null) return;
 
-            var capsuleCollider = mainDamageReceiver.GetComponent<CapsuleCollider>();
-            if (capsuleCollider == null) return;
+            var collider = damageReceiver.GetComponent<CapsuleCollider>();
+            if (collider == null) return;
 
             var height = (float)(_headColliderObject.transform.localScale.y * 0.5 +
                 _headColliderObject.transform.position.y - CharacterMainControl.transform.position.y + 0.5);
-            capsuleCollider.height = height;
-            capsuleCollider.center = Vector3.up * (height * 0.5f);
+            collider.height = height;
+            collider.center = Vector3.up * (height * 0.5f);
+
+            if (CustomModelInstance != null && _currentHeight > 0 && _initialHelmetHeight > 0)
+            {
+                var scaleMultiplier = _currentHeight / _initialHelmetHeight;
+                collider.radius = 0.5f * scaleMultiplier;
+            }
+            else
+            {
+                collider.radius = 0.5f;
+            }
         }
 
         private void UpdateToCustomSocket(GameObject targetGameObject)
@@ -1526,7 +1537,7 @@ namespace DuckovCustomModel.MonoBehaviours
             _isScaleLocked = true;
 
             ApplyHeightScale();
-            UpdateColliderHeight();
+            UpdateCollider();
             ForceUpdateHealthBar();
         }
 

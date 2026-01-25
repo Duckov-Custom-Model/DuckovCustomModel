@@ -13,6 +13,13 @@ namespace DuckovCustomModel.UI.Utils
 
             var result = markdown;
 
+            // 解码 HTML 实体
+            result = result.Replace("&lt;", "<");
+            result = result.Replace("&gt;", ">");
+            result = result.Replace("&amp;", "&");
+            result = result.Replace("&quot;", "\"");
+            result = result.Replace("&apos;", "'");
+
             // 移除代码块
             result = Regex.Replace(result, @"```[\s\S]*?```", "", RegexOptions.Multiline);
             result = Regex.Replace(result, @"`([^`]+)`", "$1", RegexOptions.Multiline);

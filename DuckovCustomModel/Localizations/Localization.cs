@@ -188,7 +188,7 @@ namespace DuckovCustomModel.Localizations
         public static string ModelAudioVolume => GetText("ModelAudioVolume");
         public static string ModelHeight => GetText("ModelHeight");
         public static string Reset => GetText("Reset");
-        public static string ClearRuntimeData => GetText("ClearRuntimeData");
+        public static string ClearCustomDataConfig => GetText("ClearCustomDataConfig");
         public static string EmotionModifierKey1 => GetText("EmotionModifierKey1");
         public static string EmotionModifierKey2 => GetText("EmotionModifierKey2");
         public static string EmotionModifierKeyWarning => GetText("EmotionModifierKeyWarning");
