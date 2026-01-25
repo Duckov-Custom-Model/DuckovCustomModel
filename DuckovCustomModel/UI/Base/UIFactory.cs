@@ -1,5 +1,7 @@
 using System;
+using System.Globalization;
 using DuckovCustomModel.Localizations;
+using DuckovCustomModel.UI.Components;
 using DuckovCustomModel.UI.Utils;
 using TMPro;
 using UnityEngine;
@@ -533,6 +535,79 @@ namespace DuckovCustomModel.UI.Base
             scrollbar.handleRect = scrollbarHandle.GetComponent<RectTransform>();
 
             return scrollbar;
+        }
+
+        public static SliderWithInputToggle CreateSliderWithInputToggle(
+            string name,
+            Transform parent,
+            float minValue = 0f,
+            float maxValue = 1f,
+            float value = 1f,
+            string valueFormat = "F3",
+            UnityAction<float>? onValueChanged = null)
+        {
+            var containerObj = new GameObject(name, typeof(RectTransform), typeof(HorizontalLayoutGroup));
+            containerObj.transform.SetParent(parent, false);
+            SetupHorizontalLayoutGroup(containerObj, 4f, new(0, 0, 0, 0), TextAnchor.MiddleLeft, true);
+
+            var component = containerObj.AddComponent<SliderWithInputToggle>();
+
+            var toggleButtonObj =
+                CreateButton("ToggleButton", containerObj.transform, null, new(0.25f, 0.3f, 0.35f, 1));
+            var toggleButtonLayout = toggleButtonObj.AddComponent<LayoutElement>();
+            toggleButtonLayout.minWidth = 24;
+            toggleButtonLayout.preferredWidth = 24;
+            toggleButtonLayout.preferredHeight = 24;
+            toggleButtonLayout.flexibleWidth = 0;
+
+            var toggleButtonText = CreateText("Text", toggleButtonObj.transform, "#", 12, Color.white,
+                TextAnchor.MiddleCenter);
+            SetupRectTransform(toggleButtonText, Vector2.zero, Vector2.one, Vector2.zero);
+
+            var toggleButton = toggleButtonObj.GetComponent<Button>();
+            SetupButtonColors(toggleButton, new(1, 1, 1, 1), new(0.4f, 0.5f, 0.6f, 1),
+                new(0.3f, 0.4f, 0.5f, 1), new(0.4f, 0.5f, 0.6f, 1));
+
+            var sliderContainerObj = new GameObject("SliderContainer", typeof(RectTransform), typeof(LayoutElement));
+            sliderContainerObj.transform.SetParent(containerObj.transform, false);
+            var sliderLayout = sliderContainerObj.GetComponent<LayoutElement>();
+            sliderLayout.preferredWidth = 160;
+            sliderLayout.flexibleWidth = 1;
+
+            var slider = CreateSlider("Slider", sliderContainerObj.transform, minValue, maxValue, value);
+            SetupRectTransform(slider.gameObject, Vector2.zero, Vector2.one, Vector2.zero);
+
+            var valueText = CreateText("ValueText", sliderContainerObj.transform,
+                value.ToString(valueFormat, CultureInfo.InvariantCulture),
+                14, Color.white, TextAnchor.MiddleRight);
+            SetupRightLabel(valueText, 25f, -10f);
+
+            var inputContainerObj = new GameObject("InputContainer", typeof(RectTransform), typeof(LayoutElement));
+            inputContainerObj.transform.SetParent(containerObj.transform, false);
+            var inputLayout = inputContainerObj.GetComponent<LayoutElement>();
+            inputLayout.preferredWidth = 160;
+            inputLayout.flexibleWidth = 1;
+            inputContainerObj.SetActive(false);
+
+            var inputField = CreateInputField("InputField", inputContainerObj.transform);
+            SetupRectTransform(inputField.gameObject, Vector2.zero, Vector2.one, Vector2.zero);
+            inputField.text = value.ToString(valueFormat, CultureInfo.InvariantCulture);
+
+            component.Initialize(
+                toggleButton,
+                toggleButtonText.GetComponent<TMP_Text>(),
+                sliderContainerObj,
+                inputContainerObj,
+                slider,
+                inputField,
+                valueText.GetComponent<TMP_Text>(),
+                minValue,
+                maxValue,
+                value,
+                valueFormat,
+                onValueChanged);
+
+            return component;
         }
     }
 }

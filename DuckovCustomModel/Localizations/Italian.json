@@ -68,7 +68,7 @@
   "ModelAudioVolume": "Volume audio del modello",
   "ModelHeight": "Altezza del modello",
   "Reset": "Ripristina",
-  "ClearRuntimeData": "Cancella dati di runtime",
+  "ClearCustomDataConfig": "Cancella configurazione dati personalizzati",
   "EmotionModifierKey1": "Tasto modificatore emozione 1",
   "EmotionModifierKey2": "Tasto modificatore emozione 2",
   "EmotionModifierKeyWarning": "Avviso: Premere i tasti modificatori bloccherà tutti gli altri input di tasti, solo gli eventi di combinazione di tasti F1~F8 verranno risposti",

@@ -68,7 +68,7 @@
   "ModelAudioVolume": "モデル音声ボリューム",
   "ModelHeight": "モデルの高さ",
   "Reset": "リセット",
-  "ClearRuntimeData": "ランタイムデータをクリア",
+  "ClearCustomDataConfig": "カスタムデータ設定をクリア",
   "EmotionModifierKey1": "表情修飾キー 1",
   "EmotionModifierKey2": "表情修飾キー 2",
   "EmotionModifierKeyWarning": "警告：修飾キーを押すと、他のすべてのキー入力がブロックされ、F1~F8 の組み合わせキーイベントのみが応答されます",

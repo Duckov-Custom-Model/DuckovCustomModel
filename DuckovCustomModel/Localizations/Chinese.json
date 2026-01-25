@@ -68,7 +68,7 @@
   "ModelAudioVolume": "模型音效音量",
   "ModelHeight": "模型高度",
   "Reset": "重置",
-  "ClearRuntimeData": "清除运行时数据",
+  "ClearCustomDataConfig": "清除自定义数据配置",
   "EmotionModifierKey1": "表情修饰键 1",
   "EmotionModifierKey2": "表情修饰键 2",
   "EmotionModifierKeyWarning": "警告：按下修饰键时会屏蔽所有其他按键响应，只能响应 F1~F8 组合键事件",

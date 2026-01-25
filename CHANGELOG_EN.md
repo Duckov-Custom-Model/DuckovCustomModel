@@ -2,6 +2,14 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.6
+
+- Adjusted model scale slider functionality, now allows clicking the left button to switch to input box for more precise scale value setting
+- The model scale adjustment range has been changed to 0.5 to 10.0
+  - Note: Larger scale values may cause perspective grid display anomalies due to the game's material rendering mechanism limitations
+- fixed an issue where adjusting the scale only adjusted the object's collision height but not the collision width
+- corrected an inaccurate multilingual description text
+
 ## v1.10.5
 
 - Animator parameter display interface optimization

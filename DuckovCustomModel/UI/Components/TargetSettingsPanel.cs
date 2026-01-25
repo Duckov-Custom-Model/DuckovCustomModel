@@ -19,8 +19,7 @@ namespace DuckovCustomModel.UI.Components
         private TMP_InputField? _idleAudioMinIntervalInput;
         private TMP_Text? _modelAudioVolumeText;
         private GameObject? _modelHeightRow;
-        private Slider? _modelHeightSlider;
-        private TMP_Text? _modelHeightText;
+        private SliderWithInputToggle? _modelHeightSliderWithInput;
         private GameObject? _runtimeSettingsDivider;
         private int _settingRowIndex;
 
@@ -96,28 +95,29 @@ namespace DuckovCustomModel.UI.Components
                 new GameObject("ControlsContainer", typeof(RectTransform), typeof(HorizontalLayoutGroup));
             controlsContainer.transform.SetParent(_modelHeightRow.transform, false);
             UIFactory.SetupRightControl(controlsContainer, new(300, 30));
-            UIFactory.SetupHorizontalLayoutGroup(controlsContainer, 20f, new(0, 0, 0, 0), TextAnchor.MiddleRight);
+            UIFactory.SetupHorizontalLayoutGroup(controlsContainer, 8f, new(0, 0, 0, 0), TextAnchor.MiddleRight,
+                true);
 
-            var sliderContainer = new GameObject("SliderContainer", typeof(RectTransform), typeof(LayoutElement));
-            sliderContainer.transform.SetParent(controlsContainer.transform, false);
-            var sliderLayoutElement = sliderContainer.AddComponent<LayoutElement>();
-            sliderLayoutElement.preferredWidth = 200;
+            var sliderWithInputContainer =
+                new GameObject("SliderWithInputContainer", typeof(RectTransform), typeof(LayoutElement));
+            sliderWithInputContainer.transform.SetParent(controlsContainer.transform, false);
+            var sliderLayoutElement = sliderWithInputContainer.GetComponent<LayoutElement>();
+            sliderLayoutElement.preferredWidth = 150;
             sliderLayoutElement.flexibleWidth = 0;
 
-            var slider = UIFactory.CreateSlider("ModelHeightSlider", sliderContainer.transform, 0.5f, 3.0f, 1.0f,
+            _modelHeightSliderWithInput = UIFactory.CreateSliderWithInputToggle(
+                "ModelHeightSlider",
+                sliderWithInputContainer.transform,
+                0.5f, 10.0f, 1.0f,
+                "F3",
                 OnModelHeightChanged);
-            UIFactory.SetupRectTransform(slider.gameObject, Vector2.zero, Vector2.one, Vector2.zero);
-            _modelHeightSlider = slider;
-
-            var heightText = UIFactory.CreateText("HeightText", sliderContainer.transform,
-                "1.000", 14, Color.white, TextAnchor.MiddleRight);
-            UIFactory.SetupRightLabel(heightText, 35f, -10f);
-            _modelHeightText = heightText.GetComponent<TMP_Text>();
+            UIFactory.SetupRectTransform(_modelHeightSliderWithInput.gameObject, Vector2.zero, Vector2.one,
+                Vector2.zero);
 
             var resetButton = UIFactory.CreateButton("ResetHeightButton", controlsContainer.transform,
                 OnResetHeightClicked, new(0.3f, 0.35f, 0.4f, 1)).GetComponent<Button>();
             var resetButtonLayoutElement = resetButton.gameObject.AddComponent<LayoutElement>();
-            resetButtonLayoutElement.preferredWidth = 60;
+            resetButtonLayoutElement.preferredWidth = 100;
             resetButtonLayoutElement.flexibleWidth = 0;
             var resetButtonText = UIFactory.CreateText("Text", resetButton.transform,
                 Localization.Reset, 14, Color.white, TextAnchor.MiddleCenter);
@@ -133,11 +133,12 @@ namespace DuckovCustomModel.UI.Components
 
             _clearRuntimeDataRow = CreateSettingRow();
 
-            var label = UIFactory.CreateText("Label", _clearRuntimeDataRow.transform, Localization.ClearRuntimeData, 18,
+            var label = UIFactory.CreateText("Label", _clearRuntimeDataRow.transform,
+                Localization.ClearCustomDataConfig, 18,
                 Color.white);
             UIFactory.SetupLeftLabel(label);
             UIFactory.SetupContentSizeFitter(label);
-            UIFactory.SetLocalizedText(label, () => Localization.ClearRuntimeData);
+            UIFactory.SetLocalizedText(label, () => Localization.ClearCustomDataConfig);
 
             var clearButton = UIFactory.CreateButton("ClearRuntimeDataButton", _clearRuntimeDataRow.transform,
                 OnClearRuntimeDataClicked, new(0.5f, 0.2f, 0.2f, 1)).GetComponent<Button>();
@@ -203,8 +204,7 @@ namespace DuckovCustomModel.UI.Components
 
             if (!hasHelmetLocator || string.IsNullOrWhiteSpace(modelID)) return;
             var currentHeight = ModelHeightManager.GetHeight(targetTypeId, modelID);
-            if (_modelHeightSlider != null) _modelHeightSlider.value = currentHeight;
-            if (_modelHeightText != null) _modelHeightText.text = $"{currentHeight:F3}";
+            _modelHeightSliderWithInput?.SetValueWithoutNotify(currentHeight);
         }
 
         private void BuildHideEquipmentSetting()
@@ -576,9 +576,6 @@ namespace DuckovCustomModel.UI.Components
             if (string.IsNullOrWhiteSpace(modelID)) return;
 
             ModelHeightManager.SetHeight(targetTypeId, modelID, value);
-
-            if (_modelHeightText != null)
-                _modelHeightText.text = $"{value:F3}";
         }
 
         private void OnResetHeightClicked()
@@ -597,10 +594,7 @@ namespace DuckovCustomModel.UI.Components
             ModelHeightManager.ResetHeight(targetTypeId, modelID);
 
             var newHeight = ModelHeightManager.GetHeight(targetTypeId, modelID);
-            if (_modelHeightSlider != null)
-                _modelHeightSlider.value = newHeight;
-            if (_modelHeightText != null)
-                _modelHeightText.text = $"{newHeight:F3}";
+            _modelHeightSliderWithInput?.SetValueWithoutNotify(newHeight);
         }
 
         private void OnClearRuntimeDataClicked()

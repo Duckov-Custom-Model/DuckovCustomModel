@@ -68,7 +68,7 @@
   "ModelAudioVolume": "모델 오디오 볼륨",
   "ModelHeight": "모델 높이",
   "Reset": "재설정",
-  "ClearRuntimeData": "런타임 데이터 지우기",
+  "ClearCustomDataConfig": "사용자 지정 데이터 구성 지우기",
   "EmotionModifierKey1": "감정 수정 키 1",
   "EmotionModifierKey2": "감정 수정 키 2",
   "EmotionModifierKeyWarning": "경고: 수정 키를 누르면 다른 모든 키 입력이 차단되며, F1~F8 조합 키 이벤트만 응답됩니다",
