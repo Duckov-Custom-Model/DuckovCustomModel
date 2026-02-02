@@ -2,6 +2,16 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.10.7
+
+- 新增动画参数支持
+  - 新增 `Sleeping`（bool）：角色是否处于睡眠状态
+  - 新增 `IsVehicle`（bool）：角色是否为载具
+  - 新增 `IsControllingOtherCharacter`（bool）：角色是否正在控制其他角色
+  - 新增 `IsControllingVehicle`（bool）：角色是否正在控制载具（为 `true` 时，`IsControllingOtherCharacter` 必定为 `true`）
+- 新增动作类型支持
+  - 新增 `CA_ControlOtherCharacter`（控制其他角色）动作类型（ID: 10）
+
 ## v1.10.6
 
 - 调整了模型身高调整滑条功能，现在允许点击左侧按钮切换至输入框输入以更精确地设置数值

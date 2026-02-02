@@ -603,6 +603,10 @@ The Animator Controller can use the following parameters:
 - `BackpackEquip`: Whether there is equipment in the backpack slot (determined by equipment TypeID, `true` when TypeID > 0)
 - `MeleeWeaponEquip`: Whether there is equipment in the melee weapon slot (determined by equipment TypeID, `true` when TypeID > 0)
 - `HavePopText`: Whether there is pop text (checks if the pop text slot has child objects)
+- `Sleeping`: Whether the character is in sleeping state
+- `IsVehicle`: Whether the character is a vehicle
+- `IsControllingOtherCharacter`: Whether the character is controlling another character
+- `IsControllingVehicle`: Whether the character is controlling a vehicle (when `true`, `IsControllingOtherCharacter` is always `true`)
 
 #### Float Type Parameters
 
@@ -696,6 +700,7 @@ The Animator Controller can use the following parameters:
   - `7`: CA_Reload
   - `8`: CA_Skill
   - `9`: CA_UseItem
+  - `10`: CA_ControlOtherCharacter (control other character)
   - When `ActionRunning` is `true`, the action type can precisely determine what action type the character is performing
   - The action type definition library supports extensions, new action types can be registered via `CharacterActionDefinitions.RegisterActionType<T>(id)`
 - `ActionFishingRodTypeID`: TypeID of fishing rod used in fishing action (only valid when `ActionType` is `1` or `2`, otherwise `0`)

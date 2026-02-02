@@ -2,6 +2,16 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.10.7
+
+- Added new animator parameters support
+  - Added `Sleeping` (bool): Whether the character is in sleeping state
+  - Added `IsVehicle` (bool): Whether the character is a vehicle
+  - Added `IsControllingOtherCharacter` (bool): Whether the character is controlling another character
+  - Added `IsControllingVehicle` (bool): Whether the character is controlling a vehicle (when `true`, `IsControllingOtherCharacter` is always `true`)
+- Added new action type support
+  - Added `CA_ControlOtherCharacter` (control other character) action type (ID: 10)
+
 ## v1.10.6
 
 - Adjusted model scale slider functionality, now allows clicking the left button to switch to input box for more precise scale value setting

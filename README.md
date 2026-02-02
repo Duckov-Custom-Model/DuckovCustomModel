@@ -586,6 +586,10 @@ Animator Controller 可以使用以下参数：
 - `BackpackEquip`：背包槽位是否有装备（基于装备的 TypeID 判断，TypeID > 0 时为 `true`）
 - `MeleeWeaponEquip`：近战武器槽位是否有装备（基于装备的 TypeID 判断，TypeID > 0 时为 `true`）
 - `HavePopText`：是否有弹出文本（检测弹出文本槽位是否有子对象）
+- `Sleeping`：角色是否处于睡眠状态
+- `IsVehicle`：角色是否为载具
+- `IsControllingOtherCharacter`：角色是否正在控制其他角色
+- `IsControllingVehicle`：角色是否正在控制载具（为 `true` 时，`IsControllingOtherCharacter` 必定为 `true`）
 
 #### Float 类型参数
 
@@ -679,6 +683,7 @@ Animator Controller 可以使用以下参数：
   - `7`：CA_Reload（装弹）
   - `8`：CA_Skill（技能）
   - `9`：CA_UseItem（使用物品）
+  - `10`：CA_ControlOtherCharacter（控制其他角色）
   - 当 `ActionRunning` 为 `true` 时，动作类型可以精确判断角色正在执行的动作类型
   - 动作类型定义库支持扩展，可通过 `CharacterActionDefinitions.RegisterActionType<T>(id)` 注册新的动作类型
 - `ActionFishingRodTypeID`：钓鱼动作中使用的鱼竿 TypeID（仅在 `ActionType` 为 `1` 或 `2` 时有效，其他情况为 `0`）

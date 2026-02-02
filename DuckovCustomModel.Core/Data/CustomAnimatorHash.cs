@@ -102,6 +102,14 @@ namespace DuckovCustomModel.Core.Data
         public static readonly int EmotionValue1 = Animator.StringToHash("EmotionValue1"); // int
         public static readonly int EmotionValue2 = Animator.StringToHash("EmotionValue2"); // int
 
+        public static readonly int Sleeping = Animator.StringToHash("Sleeping"); // bool
+        public static readonly int IsVehicle = Animator.StringToHash("IsVehicle"); // bool
+
+        public static readonly int
+            IsControllingOtherCharacter = Animator.StringToHash("IsControllingOtherCharacter"); // bool
+
+        public static readonly int IsControllingVehicle = Animator.StringToHash("IsControllingVehicle"); // bool
+
         public static List<AnimatorParamInfo> GetAllParams()
         {
             return new List<AnimatorParamInfo>
@@ -192,6 +200,15 @@ namespace DuckovCustomModel.Core.Data
                 },
                 new() { Name = "EmotionValue1", Hash = EmotionValue1, Type = "int", InitialValue = 0 },
                 new() { Name = "EmotionValue2", Hash = EmotionValue2, Type = "int", InitialValue = 0 },
+                new() { Name = "Sleeping", Hash = Sleeping, Type = "bool", InitialValue = false },
+                new() { Name = "IsVehicle", Hash = IsVehicle, Type = "bool", InitialValue = false },
+                new()
+                {
+                    Name = "IsControllingOtherCharacter", Hash = IsControllingOtherCharacter, Type = "bool",
+                    InitialValue = false,
+                },
+                new()
+                    { Name = "IsControllingVehicle", Hash = IsControllingVehicle, Type = "bool", InitialValue = false },
             }.OrderBy(p => p.Name).ToList();
         }
     }
