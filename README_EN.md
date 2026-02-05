@@ -607,6 +607,7 @@ The Animator Controller can use the following parameters:
 - `IsVehicle`: Whether the character is a vehicle
 - `IsControllingOtherCharacter`: Whether the character is controlling another character
 - `IsControllingVehicle`: Whether the character is controlling a vehicle (when `true`, `IsControllingOtherCharacter` is always `true`)
+- `IsPlayerControlling`: Whether the player is currently controlling this character.
 
 #### Float Type Parameters
 

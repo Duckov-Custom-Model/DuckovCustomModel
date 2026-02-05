@@ -590,6 +590,7 @@ Animator Controller 可以使用以下参数：
 - `IsVehicle`：角色是否为载具
 - `IsControllingOtherCharacter`：角色是否正在控制其他角色
 - `IsControllingVehicle`：角色是否正在控制载具（为 `true` 时，`IsControllingOtherCharacter` 必定为 `true`）
+- `IsPlayerControlling`：角色是否为当前玩家正在操作的角色
 
 #### Float 类型参数
 

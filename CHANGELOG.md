@@ -9,6 +9,7 @@
   - 新增 `IsVehicle`（bool）：角色是否为载具
   - 新增 `IsControllingOtherCharacter`（bool）：角色是否正在控制其他角色
   - 新增 `IsControllingVehicle`（bool）：角色是否正在控制载具（为 `true` 时，`IsControllingOtherCharacter` 必定为 `true`）
+  - 新增 `IsPlayerControlling`（bool）：角色是否为当前玩家正在操作的角色
 - 新增动作类型支持
   - 新增 `CA_ControlOtherCharacter`（控制其他角色）动作类型（ID: 10）
 
