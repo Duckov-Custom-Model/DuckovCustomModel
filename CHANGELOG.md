@@ -13,6 +13,8 @@
   - 新增 `RidingVehicleType`（int）：角色正在骑乘的载具类型
 - 新增动作类型支持
   - 新增 `CA_ControlOtherCharacter`（控制其他角色）动作类型（ID: 10）
+- 新增 `VehicleLocator` 锚点，用于标识角色作为载具时的坐骑位置
+  - 该锚点的位置和朝向可以用来调整角色在骑乘状态下的位置和朝向
 
 ## v1.10.6
 

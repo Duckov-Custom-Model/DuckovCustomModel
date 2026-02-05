@@ -542,6 +542,7 @@ The model Prefab's child objects need to include Transforms with the following n
 - `BackpackLocator`: Backpack locator point for binding backpack equipment
 - `MeleeWeaponLocator`: Melee weapon locator point for binding melee weapon equipment
 - `PopTextLocator`: Pop text locator point for displaying pop text
+- `VehicleLocator`: Vehicle locator point for indicating the player's position when riding a vehicle
 
 ### Optional Locator Points
 

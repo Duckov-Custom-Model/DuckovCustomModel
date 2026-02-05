@@ -27,6 +27,7 @@ namespace DuckovCustomModel.Core.Data
         public const string Backpack = "BackpackLocator";
         public const string MeleeWeapon = "MeleeWeaponLocator";
         public const string PopText = "PopTextLocator";
+        public const string Vehicle = "VehicleLocator";
 
         public static readonly List<string> InternalSocketNames =
         [
@@ -38,6 +39,7 @@ namespace DuckovCustomModel.Core.Data
             Backpack,
             MeleeWeapon,
             PopText,
+            Vehicle,
         ];
 
         #endregion

@@ -525,6 +525,7 @@ UI 界面相关配置。
 - `BackpackLocator`：背包定位锚点，用于绑定背包装备
 - `MeleeWeaponLocator`：近战武器定位锚点，用于绑定近战武器装备
 - `PopTextLocator`：弹出文本定位锚点，用于显示弹出文本
+- `VehicleLocator`：载具定位锚点，用于指示玩家角色在载具中的位置
 
 ### 可选的定位锚点
 

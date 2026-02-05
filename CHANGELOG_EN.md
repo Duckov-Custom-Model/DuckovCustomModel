@@ -13,6 +13,8 @@ English | [中文](CHANGELOG.md)
   - Added `RidingVehicleType` (int): The type of vehicle the character is riding
 - Added new action type support
   - Added `CA_ControlOtherCharacter` (control other character) action type (ID: 10)
+- Added `VehicleLocator` anchor point for indicating the player's position when riding a vehicle
+  - The position and orientation of the anchor point can be used to adjust the character's position and orientation while riding
 
 ## v1.10.6
 
