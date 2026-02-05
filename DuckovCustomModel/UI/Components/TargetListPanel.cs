@@ -5,6 +5,7 @@ using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.UI.Base;
 using DuckovCustomModel.UI.Data;
+using Newtonsoft.Json.Linq;
 using SodaCraft.Localizations;
 using TMPro;
 using UnityEngine;
@@ -171,6 +172,17 @@ namespace DuckovCustomModel.UI.Components
 
         private void OnTargetButtonClicked(TargetInfo targetInfo)
         {
+            if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+            {
+                var info = new JObject
+                {
+                    ["DisplayName"] = targetInfo.DisplayName,
+                    ["TargetTypeId"] = targetInfo.TargetTypeId,
+                };
+                GUIUtility.systemCopyBuffer = info.ToString();
+                return;
+            }
+
             _selectedTarget = targetInfo;
             Refresh();
             OnTargetSelected?.Invoke(targetInfo);

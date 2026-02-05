@@ -15,6 +15,8 @@ English | [中文](CHANGELOG.md)
   - Added `CA_ControlOtherCharacter` (control other character) action type (ID: 10)
 - Added `VehicleLocator` anchor point for indicating the player's position when riding a vehicle
   - The position and orientation of the anchor point can be used to adjust the character's position and orientation while riding
+- Adjusted the target type selection button logic in the model selection interface
+  - When holding the Shift key, clicking the target type will copy its name and type ID to the clipboard, making it easier for developers to obtain information for debugging
 
 ## v1.10.6
 
