@@ -1,6 +1,7 @@
 {
   "Title": "Duckov Custom Model",
   "SearchPlaceholder": "搜尋模型...",
+  "SearchTarget": "搜尋目標...",
   "Refresh": "重新載入所有模型資訊",
   "Loading": "載入中...",
   "LoadingModelList": "正在載入模型清單...",

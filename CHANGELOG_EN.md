@@ -15,8 +15,16 @@ English | [中文](CHANGELOG.md)
   - Added `CA_ControlOtherCharacter` (control other character) action type (ID: 10)
 - Added `VehicleLocator` anchor point for indicating the player's position when riding a vehicle
   - The position and orientation of the anchor point can be used to adjust the character's position and orientation while riding
-- Adjusted the target type selection button logic in the model selection interface
-  - When holding the Shift key, clicking the target type will copy its name and type ID to the clipboard, making it easier for developers to obtain information for debugging
+- Optimized the model selection interface
+  - Now supports searching target types for quickly finding specific types for configuration
+  - When holding the `Shift` key, clicking the target type button will copy some data information to the clipboard for developers to obtain information
+    - DisplayName：Target type's multilingual display name
+    - TargetTypeId：Target type's string identifier
+    - ModelId：Currently set model ID
+    - FallbackModelId：Currently set fallback model ID
+  - Extension types registered by other mods to this mod are now sorted after "Character" and "Pet", but before "All AI Characters"
+  - Extension types registered by other mods to this mod are now displayed in indigo color to distinguish built-in types from extension types
+  - Fixed an issue where non-AI character target types incorrectly displayed fallback model color markings
 
 ## v1.10.6
 

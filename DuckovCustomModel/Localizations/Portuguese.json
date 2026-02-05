@@ -1,6 +1,7 @@
 {
   "Title": "Duckov Custom Model",
   "SearchPlaceholder": "Pesquisar modelos...",
+  "SearchTarget": "Pesquisar alvos...",
   "Refresh": "Recarregar todas as informações do modelo",
   "Loading": "Carregando...",
   "LoadingModelList": "Carregando lista de modelos...",

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Core.Managers;
+using DuckovCustomModel.Localizations;
 using DuckovCustomModel.UI.Base;
 using DuckovCustomModel.UI.Data;
 using Newtonsoft.Json.Linq;
@@ -17,6 +18,8 @@ namespace DuckovCustomModel.UI.Components
     {
         private readonly Dictionary<string, GameObject> _targetButtons = new();
         private GameObject? _content;
+        private TMP_InputField? _searchInputField;
+        private string _searchText = "";
 
         private TargetInfo? _selectedTarget;
 
@@ -24,8 +27,17 @@ namespace DuckovCustomModel.UI.Components
 
         public void Initialize(Transform parent)
         {
+            var searchInputField = UIFactory.CreateInputField("TargetSearchInput", parent,
+                Localization.SearchTarget);
+            UIFactory.SetupRectTransform(searchInputField.gameObject, new(0, 1), new(1, 1),
+                offsetMin: new(0, -40), offsetMax: new(0, 0));
+
+            _searchInputField = searchInputField;
+            _searchInputField.onValueChanged.AddListener(OnSearchTextChanged);
+
             var scrollView = UIFactory.CreateScrollView("TargetListScrollView", parent, out var content);
-            UIFactory.SetupRectTransform(scrollView.gameObject, Vector2.zero, Vector2.one, Vector2.zero);
+            UIFactory.SetupRectTransform(scrollView.gameObject, new(0, 0), new(1, 1),
+                offsetMin: new(0, 0), offsetMax: new(0, -50));
 
             var scrollViewImage = scrollView.GetComponent<Image>();
             if (scrollViewImage != null)
@@ -36,7 +48,7 @@ namespace DuckovCustomModel.UI.Components
 
             _content = content;
 
-            UIFactory.SetupVerticalLayoutGroup(_content, 10f, new(10, 20, 10, 10), TextAnchor.UpperLeft, true, false,
+            UIFactory.SetupVerticalLayoutGroup(_content, 10f, new(10, 20, 0, 0), TextAnchor.UpperLeft, true, false,
                 true);
             UIFactory.SetupContentSizeFitter(_content, ContentSizeFitter.FitMode.Unconstrained);
         }
@@ -46,28 +58,38 @@ namespace DuckovCustomModel.UI.Components
             if (_content == null) return;
 
             var targets = GetAllTargets();
+            var filteredTargets = FilterTargets(targets, _searchText);
 
-            foreach (var target in targets)
+            foreach (var target in filteredTargets)
                 target.IsSelected = _selectedTarget != null && _selectedTarget.Id == target.Id;
 
             var existingButtonIds = new HashSet<string>(_targetButtons.Keys);
-            var targetIds = new HashSet<string>(targets.Select(t => t.Id));
+            var targetIds = new HashSet<string>(filteredTargets.Select(t => t.Id));
 
-            foreach (var target in targets)
+            foreach (var target in filteredTargets)
                 if (_targetButtons.TryGetValue(target.Id, out var existingButton))
+                {
+                    existingButton.SetActive(true);
                     UpdateTargetButton(existingButton, target);
+                }
                 else
+                {
                     BuildTargetButton(target);
+                }
 
             foreach (var buttonId in existingButtonIds.Except(targetIds))
                 if (_targetButtons.TryGetValue(buttonId, out var button))
-                {
-                    Destroy(button);
-                    _targetButtons.Remove(buttonId);
-                }
+                    button.SetActive(false);
 
-            if (_selectedTarget != null || targets.Count <= 0) return;
-            _selectedTarget = targets[0];
+            for (var i = 0; i < filteredTargets.Count; i++)
+            {
+                var target = filteredTargets[i];
+                if (_targetButtons.TryGetValue(target.Id, out var button))
+                    button.transform.SetSiblingIndex(i);
+            }
+
+            if (_selectedTarget != null || filteredTargets.Count <= 0) return;
+            _selectedTarget = filteredTargets[0];
             _selectedTarget.IsSelected = true;
             if (_targetButtons.TryGetValue(_selectedTarget.Id, out var firstButton))
                 UpdateTargetButton(firstButton, _selectedTarget);
@@ -132,23 +154,52 @@ namespace DuckovCustomModel.UI.Components
             Color pressedColor;
             Color outlineColor;
 
+            var isExtension = targetInfo.IsExtension();
+
             if (targetInfo.HasModel)
             {
-                highlightedColor = new(0.5f, 0.8f, 0.6f, 1);
-                pressedColor = new(0.4f, 0.7f, 0.5f, 1);
-                outlineColor = new(0.3f, 0.6f, 0.4f, 0.8f);
+                if (isExtension)
+                {
+                    highlightedColor = new(0.3f, 0.65f, 0.65f, 1);
+                    pressedColor = new(0.25f, 0.55f, 0.55f, 1);
+                    outlineColor = new(0.2f, 0.45f, 0.45f, 0.8f);
+                }
+                else
+                {
+                    highlightedColor = new(0.5f, 0.8f, 0.6f, 1);
+                    pressedColor = new(0.4f, 0.7f, 0.5f, 1);
+                    outlineColor = new(0.3f, 0.6f, 0.4f, 0.8f);
+                }
             }
             else if (targetInfo.HasFallbackModel)
             {
-                highlightedColor = new(0.7f, 0.6f, 0.9f, 1);
-                pressedColor = new(0.6f, 0.5f, 0.8f, 1);
-                outlineColor = new(0.5f, 0.4f, 0.7f, 0.8f);
+                if (isExtension)
+                {
+                    highlightedColor = new(0.6f, 0.75f, 0.9f, 1);
+                    pressedColor = new(0.5f, 0.65f, 0.8f, 1);
+                    outlineColor = new(0.4f, 0.55f, 0.7f, 0.8f);
+                }
+                else
+                {
+                    highlightedColor = new(0.7f, 0.6f, 0.9f, 1);
+                    pressedColor = new(0.6f, 0.5f, 0.8f, 1);
+                    outlineColor = new(0.5f, 0.4f, 0.7f, 0.8f);
+                }
             }
             else
             {
-                highlightedColor = new(0.5f, 0.7f, 0.9f, 1);
-                pressedColor = new(0.4f, 0.6f, 0.8f, 1);
-                outlineColor = new(0.3f, 0.35f, 0.4f, 0.6f);
+                if (isExtension)
+                {
+                    highlightedColor = new(0.4f, 0.5f, 0.55f, 1);
+                    pressedColor = new(0.3f, 0.4f, 0.45f, 1);
+                    outlineColor = new(0.25f, 0.35f, 0.4f, 0.6f);
+                }
+                else
+                {
+                    highlightedColor = new(0.5f, 0.7f, 0.9f, 1);
+                    pressedColor = new(0.4f, 0.6f, 0.8f, 1);
+                    outlineColor = new(0.3f, 0.35f, 0.4f, 0.6f);
+                }
             }
 
             buttonImage.color = highlightedColor;
@@ -178,7 +229,10 @@ namespace DuckovCustomModel.UI.Components
                 {
                     ["DisplayName"] = targetInfo.DisplayName,
                     ["TargetTypeId"] = targetInfo.TargetTypeId,
+                    ["ModelId"] = targetInfo.UsingModel,
+                    ["FallbackModelId"] = targetInfo.UsingFallbackModel,
                 };
+
                 GUIUtility.systemCopyBuffer = info.ToString();
                 return;
             }
@@ -186,6 +240,24 @@ namespace DuckovCustomModel.UI.Components
             _selectedTarget = targetInfo;
             Refresh();
             OnTargetSelected?.Invoke(targetInfo);
+        }
+
+        private void OnSearchTextChanged(string searchText)
+        {
+            _searchText = searchText.Trim();
+            Refresh();
+        }
+
+        private static List<TargetInfo> FilterTargets(List<TargetInfo> targets, string searchText)
+        {
+            if (string.IsNullOrWhiteSpace(searchText))
+                return targets;
+
+            var searchLower = searchText.ToLower();
+            return targets.Where(t =>
+                t.DisplayName.ToLower().Contains(searchLower) ||
+                t.Id.ToLower().Contains(searchLower)
+            ).ToList();
         }
     }
 }

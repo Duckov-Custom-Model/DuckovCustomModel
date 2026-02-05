@@ -28,6 +28,7 @@ namespace DuckovCustomModel.Localizations
         {
             { "Title", "Duckov Custom Model" },
             { "SearchPlaceholder", "Search models..." },
+            { "SearchTarget", "Search targets..." },
             { "Refresh", "Reload All Model Information" },
             { "Loading", "Loading..." },
             { "LoadingModelList", "Loading model list..." },
@@ -121,6 +122,7 @@ namespace DuckovCustomModel.Localizations
 
         public static string Title => GetText("Title");
         public static string SearchPlaceholder => GetText("SearchPlaceholder");
+        public static string SearchTarget => GetText("SearchTarget");
         public static string Refresh => GetText("Refresh");
         public static string Loading => GetText("Loading");
         public static string LoadingModelList => GetText("LoadingModelList");

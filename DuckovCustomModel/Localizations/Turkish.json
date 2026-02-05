@@ -1,6 +1,7 @@
 {
   "Title": "Duckov Custom Model",
   "SearchPlaceholder": "Modelleri ara...",
+  "SearchTarget": "Hedefleri ara...",
   "Refresh": "Tüm model bilgilerini yeniden yükle",
   "Loading": "Yükleniyor...",
   "LoadingModelList": "Model listesi yükleniyor...",

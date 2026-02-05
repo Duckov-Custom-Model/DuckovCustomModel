@@ -362,10 +362,8 @@ namespace DuckovCustomModel.UI.Components
             var isFallback = false;
             if (_currentTarget != null && usingModel != null)
             {
-                var targetTypeId = _currentTarget.GetTargetTypeId();
-
-                isInUse = usingModel.GetModelID(targetTypeId) == model.ModelID;
-                isFallback = !isInUse && usingModel.GetModelID(ModelTargetType.AllAICharacters) == model.ModelID;
+                isInUse = _currentTarget.UsingModel == model.ModelID;
+                isFallback = _currentTarget.UsingFallbackModel == model.ModelID;
             }
 
             Color baseColor;
@@ -623,12 +621,11 @@ namespace DuckovCustomModel.UI.Components
             var hasModelFallback = false;
             if (_currentTarget != null && usingModel != null)
             {
-                var targetTypeId = _currentTarget.GetTargetTypeId();
-                var currentModelID = usingModel.GetModelID(targetTypeId);
+                var currentModelID = _currentTarget.UsingModel;
                 hasModelInUse = bundle.Models.Any(m => m.ModelID == currentModelID);
                 if (!hasModelInUse)
                 {
-                    currentModelID = usingModel.GetModelID(ModelTargetType.AllAICharacters);
+                    currentModelID = _currentTarget.UsingFallbackModel;
                     hasModelFallback = bundle.Models.Any(m => m.ModelID == currentModelID);
                 }
             }
