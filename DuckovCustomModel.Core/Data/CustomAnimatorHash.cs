@@ -112,6 +112,8 @@ namespace DuckovCustomModel.Core.Data
 
         public static readonly int IsPlayerControlling = Animator.StringToHash("IsPlayerControlling"); // bool
 
+        public static readonly int RidingVehicleType = Animator.StringToHash("RidingVehicleType"); // int
+
         public static List<AnimatorParamInfo> GetAllParams()
         {
             return new List<AnimatorParamInfo>
@@ -213,6 +215,7 @@ namespace DuckovCustomModel.Core.Data
                     { Name = "IsControllingVehicle", Hash = IsControllingVehicle, Type = "bool", InitialValue = false },
                 new()
                     { Name = "IsPlayerControlling", Hash = IsPlayerControlling, Type = "bool", InitialValue = false },
+                new() { Name = "RidingVehicleType", Hash = RidingVehicleType, Type = "int", InitialValue = 0 },
             }.OrderBy(p => p.Name).ToList();
         }
     }

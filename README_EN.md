@@ -723,6 +723,7 @@ The Animator Controller can use the following parameters:
 - `EmotionValue2`: Emotion parameter value 2 (int type, initial value 0)
   - Can be set via emotion shortcut functionality: Hold modifier key 2 (default period key `.`) + F1-F8 to set (value 0-7)
   - Modifier key 2 can be configured in the settings interface (`EmotionModifierKey2`)
+- `RidingVehicleType`: The type of vehicle the character is riding (int type, initial value 0)
 
 #### Mod Extension Parameters
 

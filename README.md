@@ -706,6 +706,7 @@ Animator Controller 可以使用以下参数：
 - `EmotionValue2`：表情参数值2（int 类型，初始值 0）
   - 可通过表情快捷键功能设置：按住修饰键2（默认句号键 `.`）+ F1-F8 设置（值为 0-7）
   - 可在设置界面中配置修饰键2（`EmotionModifierKey2`）
+- `RidingVehicleType`：角色正在骑乘的载具类型（int 类型，初始值 0）
 
 #### Mod 扩展参数
 

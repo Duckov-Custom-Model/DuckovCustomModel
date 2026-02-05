@@ -74,6 +74,8 @@ namespace DuckovCustomModel.Managers.Updaters
 
             control.SetParameterBool(CustomAnimatorHash.IsControllingOtherCharacter, isControlling);
             control.SetParameterBool(CustomAnimatorHash.IsControllingVehicle, isControllingVehicle);
+            control.SetParameterInteger(CustomAnimatorHash.RidingVehicleType,
+                control.CharacterMainControl.ridingVehicleType);
 
             var currentControlling = LevelManager.Instance.ControllingCharacter;
             var isCurrentlyControlling =

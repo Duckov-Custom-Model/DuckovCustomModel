@@ -9,7 +9,8 @@ English | [中文](CHANGELOG.md)
   - Added `IsVehicle` (bool): Whether the character is a vehicle
   - Added `IsControllingOtherCharacter` (bool): Whether the character is controlling another character
   - Added `IsControllingVehicle` (bool): Whether the character is controlling a vehicle (when `true`, `IsControllingOtherCharacter` is always `true`)
-  - Added `IsPlayerControlling` (bool): Whether the player is currently controlling this character.
+  - Added `IsPlayerControlling` (bool): Whether the player is currently controlling this character
+  - Added `RidingVehicleType` (int): The type of vehicle the character is riding
 - Added new action type support
   - Added `CA_ControlOtherCharacter` (control other character) action type (ID: 10)
 
