@@ -120,7 +120,7 @@ namespace DuckovCustomModel.UI.Tabs
             UpdateRefreshOverlay();
 
             _targetListPanel?.Refresh();
-            _modelListPanel?.Refresh();
+            _modelListPanel?.Refresh(true);
             _targetSettingsPanel?.Refresh();
         }
 
@@ -323,7 +323,7 @@ namespace DuckovCustomModel.UI.Tabs
         protected override void OnShow()
         {
             _targetListPanel?.Refresh();
-            _modelListPanel?.Refresh(false);
+            _modelListPanel?.Refresh();
             _targetSettingsPanel?.Refresh();
 
             UpdateRefreshOverlay();
@@ -332,7 +332,7 @@ namespace DuckovCustomModel.UI.Tabs
         protected override void OnRefresh()
         {
             _targetListPanel?.Refresh();
-            _modelListPanel?.Refresh();
+            _modelListPanel?.Refresh(true);
             _targetSettingsPanel?.Refresh();
         }
     }

@@ -25,6 +25,12 @@ English | [中文](CHANGELOG.md)
   - Extension types registered by other mods to this mod are now sorted after "Character" and "Pet", but before "All AI Characters"
   - Extension types registered by other mods to this mod are now displayed in indigo color to distinguish built-in types from extension types
   - Fixed an issue where non-AI character target types incorrectly displayed fallback model color markings
+- Added horse footstep sound tags and refactored logic to ensure future automatic support for more footstep sound tags
+    - `"footstep_horse_walk_light"`
+    - `"footstep_horse_walk_heavy"`
+    - `"footstep_horse_run_light"`
+    - `"footstep_horse_run_heavy"`
+- Refactored some logic to improve stability and performance when refreshing the model list
 
 ## v1.10.6
 

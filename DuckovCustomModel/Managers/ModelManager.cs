@@ -7,6 +7,7 @@ using DuckovCustomModel.Core;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.MonoBehaviours;
+using UnityEngine;
 
 namespace DuckovCustomModel.Managers
 {
@@ -15,6 +16,7 @@ namespace DuckovCustomModel.Managers
         public static readonly List<ModelBundleInfo> ModelBundles = [];
 
         private static readonly Dictionary<string, BundleHashInfo> BundleHashCache = [];
+        private static readonly Dictionary<string, Texture2D> ThumbnailCache = [];
         private static readonly HashSet<ModelHandler> RegisteredHandlers = [];
 
         public static string ModelsDirectory => Path.Combine(ConfigManager.ConfigBaseDirectory, "Models");
@@ -314,6 +316,35 @@ namespace DuckovCustomModel.Managers
                 select handler);
 
             return handlers;
+        }
+
+        #endregion
+
+        #region 缓存管理
+
+        public static bool TryGetThumbnail(string bundlePath, string modelID, out Texture2D? texture)
+        {
+            var cacheKey = $"{bundlePath}_{modelID}";
+            if (ThumbnailCache.TryGetValue(cacheKey, out var cachedTexture))
+            {
+                texture = cachedTexture;
+                return true;
+            }
+
+            texture = null;
+            return false;
+        }
+
+        public static void CacheThumbnail(string bundlePath, string modelID, Texture2D? texture)
+        {
+            if (texture == null) return;
+            var cacheKey = $"{bundlePath}_{modelID}";
+            ThumbnailCache[cacheKey] = texture;
+        }
+
+        public static void ClearThumbnailCache()
+        {
+            ThumbnailCache.Clear();
         }
 
         #endregion

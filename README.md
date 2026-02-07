@@ -866,6 +866,7 @@ Animator Controller 可以使用以下参数：
   - `"footstep_mech_walk_light"`、`"footstep_mech_walk_heavy"`、`"footstep_mech_run_light"`、`"footstep_mech_run_heavy"`：机械材质脚步声（轻/重步行、轻/重跑步）
   - `"footstep_danger_walk_light"`、`"footstep_danger_walk_heavy"`、`"footstep_danger_run_light"`、`"footstep_danger_run_heavy"`：危险材质脚步声（轻/重步行、轻/重跑步）
   - `"footstep_nosound_walk_light"`、`"footstep_nosound_walk_heavy"`、`"footstep_nosound_run_light"`、`"footstep_nosound_run_heavy"`：无声材质脚步声（轻/重步行、轻/重跑步）
+  - `"footstep_horse_walk_light"`、`"footstep_horse_walk_heavy"`、`"footstep_horse_run_light"`、`"footstep_horse_run_heavy"`：马匹脚步声（轻/重步行、轻/重跑步）
   - 可以同时包含多个标签，表示该音效可用于多个场景
   - 未指定标签时，默认为 `["normal"]`
 

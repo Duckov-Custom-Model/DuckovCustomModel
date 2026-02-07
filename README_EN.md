@@ -883,6 +883,7 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
   - `"footstep_mech_walk_light"`, `"footstep_mech_walk_heavy"`, `"footstep_mech_run_light"`, `"footstep_mech_run_heavy"`: Mechanical material footstep sounds (light/heavy walk, light/heavy run)
   - `"footstep_danger_walk_light"`, `"footstep_danger_walk_heavy"`, `"footstep_danger_run_light"`, `"footstep_danger_run_heavy"`: Danger material footstep sounds (light/heavy walk, light/heavy run)
   - `"footstep_nosound_walk_light"`, `"footstep_nosound_walk_heavy"`, `"footstep_nosound_run_light"`, `"footstep_nosound_run_heavy"`: No sound material footstep sounds (light/heavy walk, light/heavy run)
+  - `"footstep_horse_walk_light"`, `"footstep_horse_walk_heavy"`, `"footstep_horse_run_light"`, `"footstep_horse_run_heavy"`: Horse footstep sounds (light/heavy walk, light/heavy run)
   - Can contain multiple tags, indicating the sound can be used in multiple scenarios
   - Defaults to `["normal"]` when no tags are specified
 

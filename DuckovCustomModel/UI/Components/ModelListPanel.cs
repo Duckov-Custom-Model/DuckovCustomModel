@@ -25,10 +25,9 @@ namespace DuckovCustomModel.UI.Components
         private readonly Dictionary<string, Toggle> _bundleToggles = new();
         private readonly List<ModelBundleInfo> _filteredModelBundles = [];
         private readonly Dictionary<string, GameObject> _loadingPlaceholders = new();
-        private readonly Dictionary<string, Texture2D> _thumbnailCache = new();
         private GameObject? _content;
-        private UniTaskCompletionSource? _currentRefreshTask;
         private TargetInfo? _currentTarget;
+        private bool _isThumbnailLoadingInProgress;
         private CancellationTokenSource? _refreshCancellationTokenSource;
         private ScrollRect? _scrollRect;
         private string _searchText = string.Empty;
@@ -37,7 +36,6 @@ namespace DuckovCustomModel.UI.Components
         {
             _refreshCancellationTokenSource?.Cancel();
             _refreshCancellationTokenSource?.Dispose();
-            _currentRefreshTask?.TrySetCanceled();
         }
 
         public event Action? OnModelSelected;
@@ -103,110 +101,61 @@ namespace DuckovCustomModel.UI.Components
         public void SetTarget(TargetInfo? targetInfo)
         {
             _currentTarget = targetInfo;
-            Refresh(false);
+            Refresh();
         }
 
         public void SetSearchText(string searchText)
         {
             _searchText = searchText;
-            Refresh(false);
+            Refresh();
         }
 
-        public async void Refresh(bool forceRefresh = true)
+        public void Refresh(bool forceRefresh = false)
+        {
+            if (_content == null) return;
+
+            _refreshCancellationTokenSource?.Cancel();
+            _refreshCancellationTokenSource?.Dispose();
+
+            foreach (Transform child in _content.transform) Destroy(child.gameObject);
+            _bundleContainers.Clear();
+            _bundleToggles.Clear();
+            foreach (var placeholder in _loadingPlaceholders.Values.OfType<GameObject>())
+                Destroy(placeholder);
+            _loadingPlaceholders.Clear();
+            _filteredModelBundles.Clear();
+
+            _refreshCancellationTokenSource = new();
+            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+                _refreshCancellationTokenSource.Token,
+                this.GetCancellationTokenOnDestroy()
+            );
+
+            RefreshModelListAsync(linkedCts.Token, linkedCts, forceRefresh).Forget();
+        }
+
+        private async UniTaskVoid RefreshModelListAsync(CancellationToken cancellationToken,
+            CancellationTokenSource? linkedCts, bool forceFullRefresh)
         {
             try
             {
                 if (_content == null) return;
 
-                if (_currentRefreshTask != null)
-                {
-                    try
-                    {
-                        await _currentRefreshTask.Task;
-                    }
-                    catch (OperationCanceledException)
-                    {
-                    }
-                    catch
-                    {
-                        // ignored
-                    }
+                cancellationToken.ThrowIfCancellationRequested();
 
-                    if (_currentRefreshTask != null)
-                        return;
-                }
+                if (_scrollRect != null)
+                    _scrollRect.verticalNormalizedPosition = 1f;
 
-                _refreshCancellationTokenSource?.Cancel();
-                _refreshCancellationTokenSource?.Dispose();
+                if (forceFullRefresh) _bundleStatusCache.Clear();
 
-                _refreshCancellationTokenSource = new();
-                var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
-                    _refreshCancellationTokenSource.Token,
-                    this.GetCancellationTokenOnDestroy()
-                );
-
-                _currentRefreshTask = new();
-                RefreshModelListAsync(linkedCts.Token, linkedCts, forceRefresh).Forget();
-            }
-            catch
-            {
-                // ignored
-            }
-        }
-
-        private async UniTaskVoid RefreshModelListAsync(CancellationToken cancellationToken,
-            CancellationTokenSource? linkedCts, bool forceRefresh)
-        {
-            if (_content == null)
-            {
-                linkedCts?.Dispose();
-                _currentRefreshTask?.TrySetResult();
-                _currentRefreshTask = null;
-                return;
-            }
-
-            if (_scrollRect != null)
-                _scrollRect.verticalNormalizedPosition = 1f;
-
-            try
-            {
-                foreach (Transform child in _content.transform) Destroy(child.gameObject);
-
-                if (forceRefresh)
-                {
-                    _thumbnailCache.Clear();
-                    _bundleStatusCache.Clear();
-                }
-
-                _bundleContainers.Clear();
-                _bundleToggles.Clear();
-                foreach (var placeholder in _loadingPlaceholders.Values)
-                    if (placeholder != null)
-                        Destroy(placeholder);
-                _loadingPlaceholders.Clear();
-
-                _filteredModelBundles.Clear();
-
-                if (_currentTarget == null)
-                {
-                    linkedCts?.Dispose();
-                    _currentRefreshTask?.TrySetResult();
-                    _currentRefreshTask = null;
-                    return;
-                }
+                if (_currentTarget == null) return;
 
                 var targetTypeId = _currentTarget.GetTargetTypeId();
 
                 if (ModelTargetType.IsAICharacterTargetType(targetTypeId))
                 {
                     var nameKey = ModelTargetType.ExtractAICharacterName(targetTypeId);
-                    if (string.IsNullOrEmpty(nameKey))
-                    {
-                        linkedCts?.Dispose();
-                        _currentRefreshTask?.TrySetResult();
-                        _currentRefreshTask = null;
-                        return;
-                    }
+                    if (string.IsNullOrEmpty(nameKey)) return;
 
                     await BuildAICharacterModelListAsync(nameKey, targetTypeId, cancellationToken);
                 }
@@ -221,6 +170,7 @@ namespace DuckovCustomModel.UI.Components
                                                                             || m.ModelID.ToLowerInvariant()
                                                                                 .Contains(searchLower))))
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         var compatibleModels = bundle.Models
                             .Where(m => m.CompatibleWithTargetType(targetTypeId)).ToArray();
                         if (compatibleModels.Length <= 0) continue;
@@ -228,6 +178,7 @@ namespace DuckovCustomModel.UI.Components
                         _filteredModelBundles.Add(filteredBundle);
                     }
 
+                    cancellationToken.ThrowIfCancellationRequested();
                     var bundlesCopy = _filteredModelBundles.ToList();
 
                     foreach (var bundle in bundlesCopy)
@@ -256,6 +207,8 @@ namespace DuckovCustomModel.UI.Components
 
                 if (_scrollRect != null)
                     _scrollRect.verticalNormalizedPosition = 1f;
+
+                if (forceFullRefresh) await LoadThumbnailsAsync(cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -263,8 +216,33 @@ namespace DuckovCustomModel.UI.Components
             finally
             {
                 linkedCts?.Dispose();
-                _currentRefreshTask?.TrySetResult();
-                _currentRefreshTask = null;
+            }
+        }
+
+        private async UniTask LoadThumbnailsAsync(CancellationToken cancellationToken)
+        {
+            if (_isThumbnailLoadingInProgress) return;
+
+            _isThumbnailLoadingInProgress = true;
+            try
+            {
+                foreach (var bundle in ModelManager.ModelBundles)
+                foreach (var model in bundle.Models)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    if (!ModelManager.TryGetThumbnail(bundle.DirectoryPath, model.ModelID, out var texture))
+                    {
+                        texture = await AssetBundleManager.LoadThumbnailTextureAsync(bundle, model, cancellationToken);
+                        if (texture != null) ModelManager.CacheThumbnail(bundle.DirectoryPath, model.ModelID, texture);
+                    }
+
+                    if (bundle.Models.Length > 5) await UniTask.NextFrame(cancellationToken);
+                }
+            }
+            finally
+            {
+                _isThumbnailLoadingInProgress = false;
             }
         }
 
@@ -273,6 +251,7 @@ namespace DuckovCustomModel.UI.Components
         {
             if (_content == null) return;
 
+            cancellationToken.ThrowIfCancellationRequested();
             var searchLower = _searchText.ToLowerInvariant();
             foreach (var bundle in ModelManager.ModelBundles
                          .Where(bundle => string.IsNullOrEmpty(searchLower)
@@ -282,6 +261,7 @@ namespace DuckovCustomModel.UI.Components
                                                                     || m.ModelID.ToLowerInvariant()
                                                                         .Contains(searchLower))))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 ModelInfo[] compatibleModels;
                 if (nameKey == AICharacters.AllAICharactersKey)
                     compatibleModels = bundle.Models
@@ -296,6 +276,7 @@ namespace DuckovCustomModel.UI.Components
                 _filteredModelBundles.Add(filteredBundle);
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             var bundlesCopy = _filteredModelBundles.ToList();
 
             foreach (var bundle in bundlesCopy)
@@ -354,6 +335,8 @@ namespace DuckovCustomModel.UI.Components
                 _bundleStatusCache[statusKey] = statusResult;
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
+
             var (isValid, errorMessage) = statusResult;
             var hasError = !isValid;
 
@@ -405,13 +388,15 @@ namespace DuckovCustomModel.UI.Components
             thumbnailLayoutElement.flexibleHeight = 0;
             var thumbnailImageComponent = thumbnailImage.GetComponent<Image>();
 
-            var thumbnailKey = $"{bundle.DirectoryPath}_{model.ModelID}";
-
-            if (!_thumbnailCache.TryGetValue(thumbnailKey, out var texture))
+            Texture2D? texture;
+            if (ModelManager.TryGetThumbnail(bundle.DirectoryPath, model.ModelID, out var cachedTexture))
+            {
+                texture = cachedTexture;
+            }
+            else
             {
                 texture = await AssetBundleManager.LoadThumbnailTextureAsync(bundle, model, cancellationToken);
-                if (texture != null)
-                    _thumbnailCache[thumbnailKey] = texture;
+                if (texture != null) ModelManager.CacheThumbnail(bundle.DirectoryPath, model.ModelID, texture);
             }
 
             if (texture != null)
@@ -612,6 +597,7 @@ namespace DuckovCustomModel.UI.Components
         {
             if (_content == null) return;
 
+            cancellationToken.ThrowIfCancellationRequested();
             var bundleKey = string.IsNullOrEmpty(bundle.DirectoryPath) ? bundle.BundleName : bundle.DirectoryPath;
             _bundleExpandedStates.TryAdd(bundleKey, true);
             var isExpanded = _bundleExpandedStates[bundleKey];
@@ -715,6 +701,8 @@ namespace DuckovCustomModel.UI.Components
                 cancellationToken.ThrowIfCancellationRequested();
                 await BuildModelButtonAsync(bundle, model, modelsContainer.transform, cancellationToken);
             }
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (_content != null)
             {

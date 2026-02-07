@@ -25,6 +25,12 @@
   - 现在其他 Mod 向本 Mod 注册的扩展类型将会排序在 “角色”、“宠物” 之后，“所有AI角色” 之前
   - 现在其他 Mod 向本 Mod 注册的扩展类型将会以靛蓝色显示，以便于区分内置类型和扩展类型
   - 修复了非 AI 角色目标类型会错误的显示回退模型的颜色标注的问题
+- 增加了马匹脚步声标签，并重构逻辑以保证未来能自动支持更多脚步声标签
+    - `"footstep_horse_walk_light"`
+    - `"footstep_horse_walk_heavy"`
+    - `"footstep_horse_run_light"`
+    - `"footstep_horse_run_heavy"`
+- 重构了部分逻辑，优化了刷新模型列表时的稳定性和性能表现
 
 ## v1.10.6
 

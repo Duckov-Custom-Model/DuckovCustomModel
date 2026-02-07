@@ -78,42 +78,16 @@ namespace DuckovCustomModel.HarmonyPatches
                 if (!modelHandler.HasAnySounds()) return true;
                 if (!modelHandler.IsModelAudioEnabled) return true;
 
-                var soundTag = character.footStepMaterialType switch
+                var typeTag = type switch
                 {
-                    AudioManager.FootStepMaterialType.organic => type switch
-                    {
-                        CharacterSoundMaker.FootStepTypes.walkLight => SoundTags.FootStepOrganicWalkLight,
-                        CharacterSoundMaker.FootStepTypes.walkHeavy => SoundTags.FootStepOrganicWalkHeavy,
-                        CharacterSoundMaker.FootStepTypes.runLight => SoundTags.FootStepOrganicRunLight,
-                        CharacterSoundMaker.FootStepTypes.runHeavy => SoundTags.FootStepOrganicRunHeavy,
-                        _ => SoundTags.FootStepOrganicWalkLight,
-                    },
-                    AudioManager.FootStepMaterialType.mech => type switch
-                    {
-                        CharacterSoundMaker.FootStepTypes.walkLight => SoundTags.FootStepMechWalkLight,
-                        CharacterSoundMaker.FootStepTypes.walkHeavy => SoundTags.FootStepMechWalkHeavy,
-                        CharacterSoundMaker.FootStepTypes.runLight => SoundTags.FootStepMechRunLight,
-                        CharacterSoundMaker.FootStepTypes.runHeavy => SoundTags.FootStepMechRunHeavy,
-                        _ => SoundTags.FootStepMechWalkLight,
-                    },
-                    AudioManager.FootStepMaterialType.danger => type switch
-                    {
-                        CharacterSoundMaker.FootStepTypes.walkLight => SoundTags.FootStepDangerWalkLight,
-                        CharacterSoundMaker.FootStepTypes.walkHeavy => SoundTags.FootStepDangerWalkHeavy,
-                        CharacterSoundMaker.FootStepTypes.runLight => SoundTags.FootStepDangerRunLight,
-                        CharacterSoundMaker.FootStepTypes.runHeavy => SoundTags.FootStepDangerRunHeavy,
-                        _ => SoundTags.FootStepDangerWalkLight,
-                    },
-                    _ => type switch
-                    {
-                        CharacterSoundMaker.FootStepTypes.walkLight => SoundTags.FootStepNoSoundWalkLight,
-                        CharacterSoundMaker.FootStepTypes.walkHeavy => SoundTags.FootStepNoSoundWalkHeavy,
-                        CharacterSoundMaker.FootStepTypes.runLight => SoundTags.FootStepNoSoundRunLight,
-                        CharacterSoundMaker.FootStepTypes.runHeavy => SoundTags.FootStepNoSoundRunHeavy,
-                        _ => SoundTags.FootStepNoSoundWalkLight,
-                    },
+                    CharacterSoundMaker.FootStepTypes.walkLight => "walk_light",
+                    CharacterSoundMaker.FootStepTypes.walkHeavy => "walk_heavy",
+                    CharacterSoundMaker.FootStepTypes.runLight => "run_light",
+                    CharacterSoundMaker.FootStepTypes.runHeavy => "run_heavy",
+                    _ => "walk_light",
                 };
-
+                var soundTag = string.Format(SoundTags.FootStepFormat,
+                    character.footStepMaterialType.ToString().ToLowerInvariant(), typeTag);
                 var soundPath = modelHandler.GetRandomSoundByTag(soundTag, out var skippedByProbability);
                 if (string.IsNullOrEmpty(soundPath)) return true;
 
