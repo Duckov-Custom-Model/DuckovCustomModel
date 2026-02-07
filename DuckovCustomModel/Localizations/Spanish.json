@@ -84,6 +84,8 @@
   "OpenBundleFolder": "Abrir carpeta",
   "UnnamedBundle": "Bundle sin nombre",
   "ExpandAllBundles": "Expandir todo",
-  "CollapseAllBundles": "Contraer todo"
+  "CollapseAllBundles": "Contraer todo",
+  "ScrollToTop": "↑ Superior",
+  "ScrollToBottom": "Inferior ↓"
 }
 

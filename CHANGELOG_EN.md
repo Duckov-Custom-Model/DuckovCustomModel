@@ -31,6 +31,10 @@ English | [中文](CHANGELOG.md)
     - `"footstep_horse_run_light"`
     - `"footstep_horse_run_heavy"`
 - Refactored some logic to improve stability and performance when refreshing the model list
+- Optimized the operation logic of the model list
+  - Now attempts to preserve the current interface scroll position when switching models
+  - Attempts to center the currently used model when switching pages, refreshing the list, and other operations
+  - Added buttons for scrolling to the top and bottom to facilitate quick adjustment of the scroll position
 
 ## v1.10.6
 

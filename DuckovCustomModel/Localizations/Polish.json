@@ -84,6 +84,8 @@
   "OpenBundleFolder": "Otwórz folder",
   "UnnamedBundle": "Bez nazwy Bundle",
   "ExpandAllBundles": "Rozwiń wszystkie",
-  "CollapseAllBundles": "Zwiń wszystkie"
+  "CollapseAllBundles": "Zwiń wszystkie",
+  "ScrollToTop": "↑ Góra",
+  "ScrollToBottom": "Dół ↓"
 }
 

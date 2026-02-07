@@ -84,6 +84,8 @@
   "OpenBundleFolder": "打开文件夹",
   "UnnamedBundle": "未命名Bundle",
   "ExpandAllBundles": "全部展开",
-  "CollapseAllBundles": "全部折叠"
+  "CollapseAllBundles": "全部折叠",
+  "ScrollToTop": "↑ 顶部",
+  "ScrollToBottom": "底部 ↓"
 }
 

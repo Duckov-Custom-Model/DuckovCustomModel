@@ -84,6 +84,8 @@
   "OpenBundleFolder": "フォルダを開く",
   "UnnamedBundle": "名前なしBundle",
   "ExpandAllBundles": "すべて展開",
-  "CollapseAllBundles": "すべて折りたたむ"
+  "CollapseAllBundles": "すべて折りたたむ",
+  "ScrollToTop": "↑ 上",
+  "ScrollToBottom": "下 ↓"
 }
 

@@ -84,6 +84,8 @@
   "OpenBundleFolder": "Ouvrir le dossier",
   "UnnamedBundle": "Bundle sans nom",
   "ExpandAllBundles": "Tout développer",
-  "CollapseAllBundles": "Tout réduire"
+  "CollapseAllBundles": "Tout réduire",
+  "ScrollToTop": "↑ Haut",
+  "ScrollToBottom": "Bas ↓"
 }
 

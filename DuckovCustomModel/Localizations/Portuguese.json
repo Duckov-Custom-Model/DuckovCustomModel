@@ -84,6 +84,8 @@
   "OpenBundleFolder": "Abrir pasta",
   "UnnamedBundle": "Bundle sem nome",
   "ExpandAllBundles": "Expandir tudo",
-  "CollapseAllBundles": "Recolher tudo"
+  "CollapseAllBundles": "Recolher tudo",
+  "ScrollToTop": "↑ Topo",
+  "ScrollToBottom": "Fundo ↓"
 }
 

@@ -84,6 +84,8 @@
   "OpenBundleFolder": "Mở thư mục",
   "UnnamedBundle": "Bundle không tên",
   "ExpandAllBundles": "Mở rộng tất cả",
-  "CollapseAllBundles": "Thu gọn tất cả"
+  "CollapseAllBundles": "Thu gọn tất cả",
+  "ScrollToTop": "↑ Đầu",
+  "ScrollToBottom": "Cuối ↓"
 }
 

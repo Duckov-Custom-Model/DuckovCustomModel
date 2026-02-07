@@ -118,6 +118,8 @@ namespace DuckovCustomModel.Localizations
             { "UnnamedBundle", "Unnamed Bundle" },
             { "ExpandAllBundles", "Expand All" },
             { "CollapseAllBundles", "Collapse All" },
+            { "ScrollToTop", "↑ Top" },
+            { "ScrollToBottom", "Bottom ↓" },
         };
 
         public static string Title => GetText("Title");
@@ -206,6 +208,8 @@ namespace DuckovCustomModel.Localizations
         public static string UnnamedBundle => GetText("UnnamedBundle");
         public static string ExpandAllBundles => GetText("ExpandAllBundles");
         public static string CollapseAllBundles => GetText("CollapseAllBundles");
+        public static string ScrollToTop => GetText("ScrollToTop");
+        public static string ScrollToBottom => GetText("ScrollToBottom");
 
         public static event Action<SystemLanguage>? OnLanguageChangedEvent;
 

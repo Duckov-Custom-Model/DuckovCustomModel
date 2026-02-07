@@ -84,6 +84,8 @@
   "OpenBundleFolder": "Klasörü aç",
   "UnnamedBundle": "İsimsiz Bundle",
   "ExpandAllBundles": "Tümünü genişlet",
-  "CollapseAllBundles": "Tümünü daralt"
+  "CollapseAllBundles": "Tümünü daralt",
+  "ScrollToTop": "↑ Üst",
+  "ScrollToBottom": "Alt ↓"
 }
 

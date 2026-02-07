@@ -19,17 +19,27 @@ namespace DuckovCustomModel.UI.Components
 {
     public class ModelListPanel : MonoBehaviour
     {
+        public enum ScrollStrategy
+        {
+            PreservePosition,
+            ScrollToActiveModel,
+            ScrollToTop,
+        }
+
         private readonly Dictionary<string, GameObject> _bundleContainers = new();
         private readonly Dictionary<string, bool> _bundleExpandedStates = new();
         private readonly Dictionary<string, (bool isValid, string? errorMessage)> _bundleStatusCache = new();
         private readonly Dictionary<string, Toggle> _bundleToggles = new();
         private readonly List<ModelBundleInfo> _filteredModelBundles = [];
         private readonly Dictionary<string, GameObject> _loadingPlaceholders = new();
+        private readonly Dictionary<string, RectTransform> _modelButtonRects = new();
         private GameObject? _content;
         private TargetInfo? _currentTarget;
         private bool _isThumbnailLoadingInProgress;
         private CancellationTokenSource? _refreshCancellationTokenSource;
+        private float _savedScrollPosition;
         private ScrollRect? _scrollRect;
+        private ScrollStrategy _scrollStrategy = ScrollStrategy.ScrollToTop;
         private string _searchText = string.Empty;
 
         private void OnDestroy()
@@ -96,12 +106,40 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetLocalizedText(collapseAllTextObj, () => Localization.CollapseAllBundles);
             UIFactory.SetupButtonColors(collapseAllButton, new(1, 1, 1, 1), new(0.4f, 0.5f, 0.6f, 1),
                 new(0.3f, 0.4f, 0.5f, 1), new(0.4f, 0.5f, 0.6f, 1));
+
+            var scrollToTopButton = UIFactory.CreateButton("ScrollToTopButton", toolbar.transform,
+                ScrollToTop, new(0.2f, 0.3f, 0.4f, 1)).GetComponent<Button>();
+            UIFactory.SetupRectTransform(scrollToTopButton.gameObject, Vector2.zero, Vector2.zero, new(120, 0));
+            var scrollToTopButtonLayoutElement = scrollToTopButton.gameObject.AddComponent<LayoutElement>();
+            scrollToTopButtonLayoutElement.preferredWidth = 120;
+            scrollToTopButtonLayoutElement.flexibleWidth = 0;
+            scrollToTopButtonLayoutElement.flexibleHeight = 1;
+            var scrollToTopTextObj = UIFactory.CreateText("Text", scrollToTopButton.transform,
+                Localization.ScrollToTop, 16, Color.white, TextAnchor.MiddleCenter);
+            UIFactory.SetupButtonText(scrollToTopTextObj);
+            UIFactory.SetLocalizedText(scrollToTopTextObj, () => Localization.ScrollToTop);
+            UIFactory.SetupButtonColors(scrollToTopButton, new(1, 1, 1, 1), new(0.4f, 0.5f, 0.6f, 1),
+                new(0.3f, 0.4f, 0.5f, 1), new(0.4f, 0.5f, 0.6f, 1));
+
+            var scrollToBottomButton = UIFactory.CreateButton("ScrollToBottomButton", toolbar.transform,
+                ScrollToBottom, new(0.2f, 0.3f, 0.4f, 1)).GetComponent<Button>();
+            UIFactory.SetupRectTransform(scrollToBottomButton.gameObject, Vector2.zero, Vector2.zero, new(120, 0));
+            var scrollToBottomButtonLayoutElement = scrollToBottomButton.gameObject.AddComponent<LayoutElement>();
+            scrollToBottomButtonLayoutElement.preferredWidth = 120;
+            scrollToBottomButtonLayoutElement.flexibleWidth = 0;
+            scrollToBottomButtonLayoutElement.flexibleHeight = 1;
+            var scrollToBottomTextObj = UIFactory.CreateText("Text", scrollToBottomButton.transform,
+                Localization.ScrollToBottom, 16, Color.white, TextAnchor.MiddleCenter);
+            UIFactory.SetupButtonText(scrollToBottomTextObj);
+            UIFactory.SetLocalizedText(scrollToBottomTextObj, () => Localization.ScrollToBottom);
+            UIFactory.SetupButtonColors(scrollToBottomButton, new(1, 1, 1, 1), new(0.4f, 0.5f, 0.6f, 1),
+                new(0.3f, 0.4f, 0.5f, 1), new(0.4f, 0.5f, 0.6f, 1));
         }
 
         public void SetTarget(TargetInfo? targetInfo)
         {
             _currentTarget = targetInfo;
-            Refresh();
+            Refresh(ScrollStrategy.ScrollToActiveModel);
         }
 
         public void SetSearchText(string searchText)
@@ -110,9 +148,14 @@ namespace DuckovCustomModel.UI.Components
             Refresh();
         }
 
-        public void Refresh(bool forceRefresh = false)
+        public void Refresh(ScrollStrategy scrollStrategy = ScrollStrategy.ScrollToTop, bool forceRefresh = false)
         {
             if (_content == null) return;
+
+            if (scrollStrategy == ScrollStrategy.PreservePosition && _scrollRect != null)
+                _savedScrollPosition = _scrollRect.verticalNormalizedPosition;
+
+            _scrollStrategy = scrollStrategy;
 
             _refreshCancellationTokenSource?.Cancel();
             _refreshCancellationTokenSource?.Dispose();
@@ -120,6 +163,7 @@ namespace DuckovCustomModel.UI.Components
             foreach (Transform child in _content.transform) Destroy(child.gameObject);
             _bundleContainers.Clear();
             _bundleToggles.Clear();
+            _modelButtonRects.Clear();
             foreach (var placeholder in _loadingPlaceholders.Values.OfType<GameObject>())
                 Destroy(placeholder);
             _loadingPlaceholders.Clear();
@@ -142,9 +186,6 @@ namespace DuckovCustomModel.UI.Components
                 if (_content == null) return;
 
                 cancellationToken.ThrowIfCancellationRequested();
-
-                if (_scrollRect != null)
-                    _scrollRect.verticalNormalizedPosition = 1f;
 
                 if (forceFullRefresh) _bundleStatusCache.Clear();
 
@@ -205,10 +246,33 @@ namespace DuckovCustomModel.UI.Components
 
                 await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
 
-                if (_scrollRect != null)
-                    _scrollRect.verticalNormalizedPosition = 1f;
-
                 if (forceFullRefresh) await LoadThumbnailsAsync(cancellationToken);
+
+                await UniTask.NextFrame(cancellationToken);
+                await UniTask.NextFrame(cancellationToken);
+
+                if (_scrollRect != null)
+                {
+                    if (_content != null)
+                        LayoutRebuilder.ForceRebuildLayoutImmediate(_content.transform as RectTransform);
+                    Canvas.ForceUpdateCanvases();
+                    await UniTask.NextFrame(cancellationToken);
+
+                    switch (_scrollStrategy)
+                    {
+                        case ScrollStrategy.PreservePosition:
+                            _scrollRect.verticalNormalizedPosition = _savedScrollPosition;
+                            break;
+                        case ScrollStrategy.ScrollToActiveModel:
+                            if (!ScrollToActiveModel())
+                                _scrollRect.verticalNormalizedPosition = 1f;
+                            break;
+                        case ScrollStrategy.ScrollToTop:
+                        default:
+                            _scrollRect.verticalNormalizedPosition = 1f;
+                            break;
+                    }
+                }
             }
             catch (OperationCanceledException)
             {
@@ -358,6 +422,9 @@ namespace DuckovCustomModel.UI.Components
                 .gameObject;
 
             UIFactory.SetupRectTransform(buttonObj, new(0, 0), new(1, 0), new(0, 150), pivot: new(0.5f, 0.5f));
+
+            var buttonRect = buttonObj.GetComponent<RectTransform>();
+            _modelButtonRects[model.ModelID] = buttonRect;
 
             var layoutElement = buttonObj.AddComponent<LayoutElement>();
             layoutElement.minHeight = 150;
@@ -540,7 +607,7 @@ namespace DuckovCustomModel.UI.Components
             ModelListManager.SetModelInConfig(targetTypeId, model.ModelID);
 
             OnModelSelected?.Invoke();
-            Refresh();
+            Refresh(ScrollStrategy.PreservePosition);
         }
 
         private void OnNoneModelSelected()
@@ -554,7 +621,7 @@ namespace DuckovCustomModel.UI.Components
             ModelListManager.SetModelInConfig(targetTypeId, string.Empty);
 
             OnModelSelected?.Invoke();
-            Refresh();
+            Refresh(ScrollStrategy.PreservePosition);
         }
 
         private void CreateLoadingPlaceholder(string bundleKey, ModelBundleInfo bundle)
@@ -614,6 +681,18 @@ namespace DuckovCustomModel.UI.Components
                     currentModelID = _currentTarget.UsingFallbackModel;
                     hasModelFallback = bundle.Models.Any(m => m.ModelID == currentModelID);
                 }
+            }
+
+            if (_scrollStrategy == ScrollStrategy.ScrollToActiveModel && (hasModelInUse || hasModelFallback))
+            {
+                isExpanded = true;
+                _bundleExpandedStates[bundleKey] = true;
+            }
+
+            if (_scrollStrategy == ScrollStrategy.ScrollToActiveModel && (hasModelInUse || hasModelFallback))
+            {
+                isExpanded = true;
+                _bundleExpandedStates[bundleKey] = true;
             }
 
             var bundleGroupObj = new GameObject($"BundleGroup_{bundleKey}", typeof(RectTransform));
@@ -756,6 +835,72 @@ namespace DuckovCustomModel.UI.Components
             foreach (var bundleKey in _bundleExpandedStates.Keys.ToList()
                          .Where(bundleKey => _bundleExpandedStates[bundleKey]))
                 ToggleBundle(bundleKey, false).Forget();
+        }
+
+        public void ScrollToTop()
+        {
+            if (_scrollRect != null)
+                _scrollRect.verticalNormalizedPosition = 1f;
+        }
+
+        public void ScrollToBottom()
+        {
+            if (_scrollRect != null)
+                _scrollRect.verticalNormalizedPosition = 0f;
+        }
+
+        private bool ScrollToActiveModel()
+        {
+            if (_scrollRect == null || _currentTarget == null) return false;
+
+            var targetModelId = _currentTarget.UsingModel;
+            if (string.IsNullOrEmpty(targetModelId))
+                targetModelId = _currentTarget.UsingFallbackModel;
+
+            if (string.IsNullOrEmpty(targetModelId))
+                return false;
+
+            if (!_modelButtonRects.TryGetValue(targetModelId, out var buttonRect) || buttonRect == null)
+                return false;
+
+            var contentRect = _content?.GetComponent<RectTransform>();
+            if (contentRect == null)
+                return false;
+
+            var viewportRect = _scrollRect.viewport ?? _scrollRect.GetComponent<RectTransform>();
+            if (viewportRect == null)
+                return false;
+
+            Canvas.ForceUpdateCanvases();
+
+            var contentHeight = contentRect.rect.height;
+            var viewportHeight = viewportRect.rect.height;
+
+            if (contentHeight <= viewportHeight)
+            {
+                _scrollRect.verticalNormalizedPosition = 1f;
+                return true;
+            }
+
+            var buttonWorldPos = buttonRect.TransformPoint(Vector3.zero);
+            var buttonLocalPosInContent = contentRect.InverseTransformPoint(buttonWorldPos);
+
+            var buttonCenterFromTop = -buttonLocalPosInContent.y + buttonRect.rect.height / 2;
+            var viewportCenter = viewportHeight / 2;
+            var desiredViewportTop = buttonCenterFromTop - viewportCenter;
+
+            var scrollableHeight = contentHeight - viewportHeight;
+
+            if (scrollableHeight <= 0)
+            {
+                _scrollRect.verticalNormalizedPosition = 1f;
+                return true;
+            }
+
+            var normalizedPosition = Mathf.Clamp01(desiredViewportTop / scrollableHeight);
+            _scrollRect.verticalNormalizedPosition = 1f - normalizedPosition;
+
+            return true;
         }
 
         private static void OnOpenBundleFolderButtonClicked(ModelBundleInfo bundle)

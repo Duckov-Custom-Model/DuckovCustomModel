@@ -29,8 +29,6 @@ namespace DuckovCustomModel.Managers
             var prefab = AssetBundleManager.LoadAssetFromBundle<GameObject>(bundleInfo, modelInfo.PrefabPath);
             if (prefab == null) return 0f;
 
-            ModLogger.Log(prefab.name);
-
             var helmetLocator = SearchLocatorTransform(prefab.transform, SocketNames.Helmet);
             if (helmetLocator == null) return 0f;
 

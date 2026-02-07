@@ -84,6 +84,8 @@
   "OpenBundleFolder": "폴더 열기",
   "UnnamedBundle": "이름 없는 Bundle",
   "ExpandAllBundles": "모두 확장",
-  "CollapseAllBundles": "모두 접기"
+  "CollapseAllBundles": "모두 접기",
+  "ScrollToTop": "↑ 위",
+  "ScrollToBottom": "아래 ↓"
 }
 
