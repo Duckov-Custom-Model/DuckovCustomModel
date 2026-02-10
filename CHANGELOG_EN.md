@@ -2,7 +2,7 @@
 
 English | [中文](CHANGELOG.md)
 
-## v1.10.7
+## v1.11.0
 
 - Added new animator parameters support
   - Added `Sleeping` (bool): Whether the character is in sleeping state

@@ -2,7 +2,7 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
-## v1.10.7
+## v1.11.0
 
 - 新增动画参数支持
   - 新增 `Sleeping`（bool）：角色是否处于睡眠状态
