@@ -14,35 +14,36 @@ namespace DuckovCustomModel.UI.Data
 
         public bool IsSelected { get; set; }
 
-        public bool HasModel
+        public string UsingModel
         {
             get
             {
                 if (ModEntry.UsingModel == null)
-                    return false;
+                    return string.Empty;
 
                 var targetTypeId = GetTargetTypeId();
                 var modelID = ModEntry.UsingModel.GetModelID(targetTypeId);
-                return !string.IsNullOrWhiteSpace(modelID);
+                // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+                return modelID ?? string.Empty;
             }
         }
 
-        public bool HasFallbackModel
+        public string UsingFallbackModel
         {
             get
             {
-                if (ModEntry.UsingModel == null || HasModel)
-                    return false;
-
-                if (!IsAICharacter())
-                    return false;
+                if (ModEntry.UsingModel == null || !IsAICharacter())
+                    return string.Empty;
 
                 var fallbackModelID = ModEntry.UsingModel.GetModelID(ModelTargetType.AllAICharacters);
-                return !string.IsNullOrWhiteSpace(fallbackModelID);
+                // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+                return fallbackModelID ?? string.Empty;
             }
         }
 
-        public int ModelCount { get; set; }
+        public bool HasModel => !string.IsNullOrWhiteSpace(UsingModel);
+
+        public bool HasFallbackModel => !HasModel && !string.IsNullOrWhiteSpace(UsingFallbackModel);
 
         public static TargetInfo CreateCharacterTarget()
         {
@@ -152,6 +153,11 @@ namespace DuckovCustomModel.UI.Data
         public bool IsAICharacter()
         {
             return ModelTargetType.IsAICharacterTargetType(GetTargetTypeId());
+        }
+
+        public bool IsExtension()
+        {
+            return ModelTargetType.IsExtension(GetTargetTypeId());
         }
 
         #region 过时成员（向后兼容）

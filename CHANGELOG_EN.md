@@ -2,6 +2,40 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.11.0
+
+- Added new animator parameters support
+  - Added `Sleeping` (bool): Whether the character is in sleeping state
+  - Added `IsVehicle` (bool): Whether the character is a vehicle
+  - Added `IsControllingOtherCharacter` (bool): Whether the character is controlling another character
+  - Added `IsControllingVehicle` (bool): Whether the character is controlling a vehicle (when `true`, `IsControllingOtherCharacter` is always `true`)
+  - Added `IsPlayerControlling` (bool): Whether the player is currently controlling this character
+  - Added `RidingVehicleType` (int): The type of vehicle the character is riding
+- Added new action type support
+  - Added `CA_ControlOtherCharacter` (control other character) action type (ID: 10)
+- Added `VehicleLocator` anchor point for indicating the player's position when riding a vehicle
+  - The position and orientation of the anchor point can be used to adjust the character's position and orientation while riding
+- Optimized the model selection interface
+  - Now supports searching target types for quickly finding specific types for configuration
+  - When holding the `Shift` key, clicking the target type button will copy some data information to the clipboard for developers to obtain information
+    - DisplayName：Target type's multilingual display name
+    - TargetTypeId：Target type's string identifier
+    - ModelId：Currently set model ID
+    - FallbackModelId：Currently set fallback model ID
+  - Extension types registered by other mods to this mod are now sorted after "Character" and "Pet", but before "All AI Characters"
+  - Extension types registered by other mods to this mod are now displayed in indigo color to distinguish built-in types from extension types
+  - Fixed an issue where non-AI character target types incorrectly displayed fallback model color markings
+- Added horse footstep sound tags and refactored logic to ensure future automatic support for more footstep sound tags
+    - `"footstep_horse_walk_light"`
+    - `"footstep_horse_walk_heavy"`
+    - `"footstep_horse_run_light"`
+    - `"footstep_horse_run_heavy"`
+- Refactored some logic to improve stability and performance when refreshing the model list
+- Optimized the operation logic of the model list
+  - Now attempts to preserve the current interface scroll position when switching models
+  - Attempts to center the currently used model when switching pages, refreshing the list, and other operations
+  - Added buttons for scrolling to the top and bottom to facilitate quick adjustment of the scroll position
+
 ## v1.10.6
 
 - Adjusted model scale slider functionality, now allows clicking the left button to switch to input box for more precise scale value setting

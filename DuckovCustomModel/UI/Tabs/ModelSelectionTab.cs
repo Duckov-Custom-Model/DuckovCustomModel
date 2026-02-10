@@ -63,7 +63,8 @@ namespace DuckovCustomModel.UI.Tabs
             _targetSettingsPanel.Initialize(targetSettingsContainer.transform);
 
             _functionButtonBar.OnRefresh += () => { ModelListManager.RefreshModelList(); };
-            _functionButtonBar.OnResetInvalidModels += () => _modelListPanel?.Refresh();
+            _functionButtonBar.OnResetInvalidModels +=
+                () => _modelListPanel?.Refresh(ModelListPanel.ScrollStrategy.ScrollToActiveModel);
             _targetListPanel.OnTargetSelected += targetInfo =>
             {
                 _modelListPanel?.SetTarget(targetInfo);
@@ -120,7 +121,7 @@ namespace DuckovCustomModel.UI.Tabs
             UpdateRefreshOverlay();
 
             _targetListPanel?.Refresh();
-            _modelListPanel?.Refresh();
+            _modelListPanel?.Refresh(ModelListPanel.ScrollStrategy.ScrollToActiveModel, true);
             _targetSettingsPanel?.Refresh();
         }
 
@@ -323,7 +324,7 @@ namespace DuckovCustomModel.UI.Tabs
         protected override void OnShow()
         {
             _targetListPanel?.Refresh();
-            _modelListPanel?.Refresh(false);
+            _modelListPanel?.Refresh(ModelListPanel.ScrollStrategy.ScrollToActiveModel);
             _targetSettingsPanel?.Refresh();
 
             UpdateRefreshOverlay();
@@ -332,7 +333,7 @@ namespace DuckovCustomModel.UI.Tabs
         protected override void OnRefresh()
         {
             _targetListPanel?.Refresh();
-            _modelListPanel?.Refresh();
+            _modelListPanel?.Refresh(ModelListPanel.ScrollStrategy.ScrollToActiveModel, true);
             _targetSettingsPanel?.Refresh();
         }
     }

@@ -18,6 +18,7 @@ namespace DuckovCustomModel.Utils
             { SocketNames.Backpack, BackpackSocket },
             { SocketNames.MeleeWeapon, MeleeWeaponSocket },
             { SocketNames.PopText, PopTextSocket },
+            { SocketNames.Vehicle, VehicleSocket },
         };
 
         // ReSharper disable once StringLiteralTypo
@@ -38,6 +39,8 @@ namespace DuckovCustomModel.Utils
             AccessTools.Field(typeof(CharacterModel), "meleeWeaponSocket");
 
         public static FieldInfo PopTextSocket { get; } = AccessTools.Field(typeof(CharacterModel), "popTextSocket");
+
+        public static FieldInfo VehicleSocket { get; } = AccessTools.Field(typeof(CharacterModel), "vehicleSocket");
 
         public static Transform? GetLeftHandSocket(CharacterModel characterModel)
         {

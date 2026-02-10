@@ -28,6 +28,7 @@ namespace DuckovCustomModel.Localizations
         {
             { "Title", "Duckov Custom Model" },
             { "SearchPlaceholder", "Search models..." },
+            { "SearchTarget", "Search targets..." },
             { "Refresh", "Reload All Model Information" },
             { "Loading", "Loading..." },
             { "LoadingModelList", "Loading model list..." },
@@ -117,10 +118,13 @@ namespace DuckovCustomModel.Localizations
             { "UnnamedBundle", "Unnamed Bundle" },
             { "ExpandAllBundles", "Expand All" },
             { "CollapseAllBundles", "Collapse All" },
+            { "ScrollToTop", "↑ Top" },
+            { "ScrollToBottom", "Bottom ↓" },
         };
 
         public static string Title => GetText("Title");
         public static string SearchPlaceholder => GetText("SearchPlaceholder");
+        public static string SearchTarget => GetText("SearchTarget");
         public static string Refresh => GetText("Refresh");
         public static string Loading => GetText("Loading");
         public static string LoadingModelList => GetText("LoadingModelList");
@@ -204,6 +208,8 @@ namespace DuckovCustomModel.Localizations
         public static string UnnamedBundle => GetText("UnnamedBundle");
         public static string ExpandAllBundles => GetText("ExpandAllBundles");
         public static string CollapseAllBundles => GetText("CollapseAllBundles");
+        public static string ScrollToTop => GetText("ScrollToTop");
+        public static string ScrollToBottom => GetText("ScrollToBottom");
 
         public static event Action<SystemLanguage>? OnLanguageChangedEvent;
 

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Duckov.UI;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.MonoBehaviours;
@@ -10,22 +11,19 @@ namespace DuckovCustomModel.HarmonyPatches
     [HarmonyPatch]
     internal class ItemDisplayPatches
     {
-        private static readonly IReadOnlyDictionary<DisplayQuality, string> QualitySoundTags =
-            new Dictionary<DisplayQuality, string>
+        private static readonly Lazy<Dictionary<DisplayQuality, string>> QualitySoundTagsLazy
+            = new(() =>
             {
-                { DisplayQuality.None, SoundTags.SearchFoundItemQualityNone },
-                { DisplayQuality.White, SoundTags.SearchFoundItemQualityWhite },
-                { DisplayQuality.Green, SoundTags.SearchFoundItemQualityGreen },
-                { DisplayQuality.Blue, SoundTags.SearchFoundItemQualityBlue },
-                { DisplayQuality.Purple, SoundTags.SearchFoundItemQualityPurple },
-                { DisplayQuality.Orange, SoundTags.SearchFoundItemQualityOrange },
-                { DisplayQuality.Red, SoundTags.SearchFoundItemQualityRed },
-                { DisplayQuality.Q7, SoundTags.SearchFoundItemQualityQ7 },
-                { DisplayQuality.Q8, SoundTags.SearchFoundItemQualityQ8 },
-            };
+                var dic = new Dictionary<DisplayQuality, string>();
+                foreach (DisplayQuality quality in Enum.GetValues(typeof(DisplayQuality)))
+                    dic[quality] = string.Format(SoundTags.SearchFoundItemQualityFormat,
+                        quality.ToString().ToLowerInvariant());
+                return dic;
+            });
 
         private static readonly HashSet<Item> RecordedItems = [];
         private static DisplayQuality? _highestPlayedQuality;
+        private static IReadOnlyDictionary<DisplayQuality, string> QualitySoundTags => QualitySoundTagsLazy.Value;
 
         [HarmonyPatch(typeof(ItemDisplay), nameof(ItemDisplay.Setup))]
         [HarmonyPostfix]

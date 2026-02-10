@@ -11,7 +11,6 @@ namespace DuckovCustomModel.Managers
     public static class ModelListManager
     {
         private static CancellationTokenSource? _refreshCancellationTokenSource;
-        private static UniTaskCompletionSource? _refreshCompletionSource;
 
         public static bool IsRefreshing { get; private set; }
 
@@ -22,15 +21,13 @@ namespace DuckovCustomModel.Managers
         #region 私有方法
 
         private static async UniTaskVoid RefreshModelListAsync(CancellationToken cancellationToken,
-            CancellationTokenSource? linkedCts, UniTaskCompletionSource? completionSource,
             IEnumerable<string>? priorityModelIDs)
         {
-            IsRefreshing = true;
-
             foreach (var handler in ModelManager.GetAllHandlers())
                 if (handler.IsHiddenOriginalModel)
                     handler.CleanupCustomModel();
 
+            ModelManager.ClearThumbnailCache();
             OnRefreshStarted?.Invoke();
 
             var priorityModels = new List<(ModelBundleInfo bundle, ModelInfo model)>();
@@ -101,9 +98,8 @@ namespace DuckovCustomModel.Managers
             finally
             {
                 IsRefreshing = false;
-                completionSource?.TrySetResult();
-                _refreshCompletionSource = null;
-                linkedCts?.Dispose();
+                _refreshCancellationTokenSource?.Dispose();
+                _refreshCancellationTokenSource = null;
                 OnRefreshCompleted?.Invoke();
             }
         }
@@ -180,20 +176,24 @@ namespace DuckovCustomModel.Managers
         {
             if (IsRefreshing) return;
 
+            IsRefreshing = true;
             _refreshCancellationTokenSource = new();
-            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
-                _refreshCancellationTokenSource.Token,
-                CancellationToken.None
-            );
-
-            _refreshCompletionSource = new();
-            RefreshModelListAsync(linkedCts.Token, linkedCts, _refreshCompletionSource, priorityModelIDs).Forget();
+            RefreshModelListAsync(_refreshCancellationTokenSource.Token, priorityModelIDs).Forget();
         }
 
         public static void CancelRefresh()
         {
-            _refreshCancellationTokenSource?.Cancel();
-            _refreshCancellationTokenSource?.Dispose();
+            if (!IsRefreshing) return;
+
+            try
+            {
+                _refreshCancellationTokenSource?.Cancel();
+            }
+            finally
+            {
+                _refreshCancellationTokenSource?.Dispose();
+                _refreshCancellationTokenSource = null;
+            }
         }
 
         #endregion

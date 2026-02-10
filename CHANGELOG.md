@@ -2,6 +2,40 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.11.0
+
+- 新增动画参数支持
+  - 新增 `Sleeping`（bool）：角色是否处于睡眠状态
+  - 新增 `IsVehicle`（bool）：角色是否为载具
+  - 新增 `IsControllingOtherCharacter`（bool）：角色是否正在控制其他角色
+  - 新增 `IsControllingVehicle`（bool）：角色是否正在控制载具（为 `true` 时，`IsControllingOtherCharacter` 必定为 `true`）
+  - 新增 `IsPlayerControlling`（bool）：角色是否为当前玩家正在操作的角色
+  - 新增 `RidingVehicleType`（int）：角色正在骑乘的载具类型
+- 新增动作类型支持
+  - 新增 `CA_ControlOtherCharacter`（控制其他角色）动作类型（ID: 10）
+- 新增 `VehicleLocator` 锚点，用于标识角色作为载具时的坐骑位置
+  - 该锚点的位置和朝向可以用来调整角色在骑乘状态下的位置和朝向
+- 优化了模型选择界面
+  - 现在支持搜索目标类型，以便快速找到特定类型进行设置
+  - 按着 `Shift` 键时，点击目标类型按钮会将一些数据信息复制到剪贴板，以便于开发者获取信息
+    - DisplayName：目标类型的多语言显示名称
+    - TargetTypeId：目标类型的字符串标识符
+    - ModelId：当前设置的模型 ID
+    - FallbackModelId：当前设置的回退模型 ID
+  - 现在其他 Mod 向本 Mod 注册的扩展类型将会排序在 “角色”、“宠物” 之后，“所有AI角色” 之前
+  - 现在其他 Mod 向本 Mod 注册的扩展类型将会以靛蓝色显示，以便于区分内置类型和扩展类型
+  - 修复了非 AI 角色目标类型会错误的显示回退模型的颜色标注的问题
+- 增加了马匹脚步声标签，并重构逻辑以保证未来能自动支持更多脚步声标签
+    - `"footstep_horse_walk_light"`
+    - `"footstep_horse_walk_heavy"`
+    - `"footstep_horse_run_light"`
+    - `"footstep_horse_run_heavy"`
+- 重构了部分逻辑，优化了刷新模型列表时的稳定性和性能表现
+- 优化了模型列表的操作逻辑
+  - 现在切换模型时会尝试保留当前的界面滚动位置
+  - 切换页面、刷新列表等操作会尝试居中显示当前正在使用的模型
+  - 追加了跳转到顶部和跳转到底部的按钮，以便于快速调整滚动位置
+
 ## v1.10.6
 
 - 调整了模型身高调整滑条功能，现在允许点击左侧按钮切换至输入框输入以更精确地设置数值

@@ -525,6 +525,7 @@ UI 界面相关配置。
 - `BackpackLocator`：背包定位锚点，用于绑定背包装备
 - `MeleeWeaponLocator`：近战武器定位锚点，用于绑定近战武器装备
 - `PopTextLocator`：弹出文本定位锚点，用于显示弹出文本
+- `VehicleLocator`：载具定位锚点，用于指示玩家角色在载具中的位置
 
 ### 可选的定位锚点
 
@@ -586,6 +587,11 @@ Animator Controller 可以使用以下参数：
 - `BackpackEquip`：背包槽位是否有装备（基于装备的 TypeID 判断，TypeID > 0 时为 `true`）
 - `MeleeWeaponEquip`：近战武器槽位是否有装备（基于装备的 TypeID 判断，TypeID > 0 时为 `true`）
 - `HavePopText`：是否有弹出文本（检测弹出文本槽位是否有子对象）
+- `Sleeping`：角色是否处于睡眠状态
+- `IsVehicle`：角色是否为载具
+- `IsControllingOtherCharacter`：角色是否正在控制其他角色
+- `IsControllingVehicle`：角色是否正在控制载具（为 `true` 时，`IsControllingOtherCharacter` 必定为 `true`）
+- `IsPlayerControlling`：角色是否为当前玩家正在操作的角色
 
 #### Float 类型参数
 
@@ -679,6 +685,7 @@ Animator Controller 可以使用以下参数：
   - `7`：CA_Reload（装弹）
   - `8`：CA_Skill（技能）
   - `9`：CA_UseItem（使用物品）
+  - `10`：CA_ControlOtherCharacter（控制其他角色）
   - 当 `ActionRunning` 为 `true` 时，动作类型可以精确判断角色正在执行的动作类型
   - 动作类型定义库支持扩展，可通过 `CharacterActionDefinitions.RegisterActionType<T>(id)` 注册新的动作类型
 - `ActionFishingRodTypeID`：钓鱼动作中使用的鱼竿 TypeID（仅在 `ActionType` 为 `1` 或 `2` 时有效，其他情况为 `0`）
@@ -700,6 +707,7 @@ Animator Controller 可以使用以下参数：
 - `EmotionValue2`：表情参数值2（int 类型，初始值 0）
   - 可通过表情快捷键功能设置：按住修饰键2（默认句号键 `.`）+ F1-F8 设置（值为 0-7）
   - 可在设置界面中配置修饰键2（`EmotionModifierKey2`）
+- `RidingVehicleType`：角色正在骑乘的载具类型（int 类型，初始值 0）
 
 #### Mod 扩展参数
 
@@ -858,6 +866,7 @@ Animator Controller 可以使用以下参数：
   - `"footstep_mech_walk_light"`、`"footstep_mech_walk_heavy"`、`"footstep_mech_run_light"`、`"footstep_mech_run_heavy"`：机械材质脚步声（轻/重步行、轻/重跑步）
   - `"footstep_danger_walk_light"`、`"footstep_danger_walk_heavy"`、`"footstep_danger_run_light"`、`"footstep_danger_run_heavy"`：危险材质脚步声（轻/重步行、轻/重跑步）
   - `"footstep_nosound_walk_light"`、`"footstep_nosound_walk_heavy"`、`"footstep_nosound_run_light"`、`"footstep_nosound_run_heavy"`：无声材质脚步声（轻/重步行、轻/重跑步）
+  - `"footstep_horse_walk_light"`、`"footstep_horse_walk_heavy"`、`"footstep_horse_run_light"`、`"footstep_horse_run_heavy"`：马匹脚步声（轻/重步行、轻/重跑步）
   - 可以同时包含多个标签，表示该音效可用于多个场景
   - 未指定标签时，默认为 `["normal"]`
 

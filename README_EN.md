@@ -542,6 +542,7 @@ The model Prefab's child objects need to include Transforms with the following n
 - `BackpackLocator`: Backpack locator point for binding backpack equipment
 - `MeleeWeaponLocator`: Melee weapon locator point for binding melee weapon equipment
 - `PopTextLocator`: Pop text locator point for displaying pop text
+- `VehicleLocator`: Vehicle locator point for indicating the player's position when riding a vehicle
 
 ### Optional Locator Points
 
@@ -603,6 +604,11 @@ The Animator Controller can use the following parameters:
 - `BackpackEquip`: Whether there is equipment in the backpack slot (determined by equipment TypeID, `true` when TypeID > 0)
 - `MeleeWeaponEquip`: Whether there is equipment in the melee weapon slot (determined by equipment TypeID, `true` when TypeID > 0)
 - `HavePopText`: Whether there is pop text (checks if the pop text slot has child objects)
+- `Sleeping`: Whether the character is in sleeping state
+- `IsVehicle`: Whether the character is a vehicle
+- `IsControllingOtherCharacter`: Whether the character is controlling another character
+- `IsControllingVehicle`: Whether the character is controlling a vehicle (when `true`, `IsControllingOtherCharacter` is always `true`)
+- `IsPlayerControlling`: Whether the player is currently controlling this character.
 
 #### Float Type Parameters
 
@@ -696,6 +702,7 @@ The Animator Controller can use the following parameters:
   - `7`: CA_Reload
   - `8`: CA_Skill
   - `9`: CA_UseItem
+  - `10`: CA_ControlOtherCharacter (control other character)
   - When `ActionRunning` is `true`, the action type can precisely determine what action type the character is performing
   - The action type definition library supports extensions, new action types can be registered via `CharacterActionDefinitions.RegisterActionType<T>(id)`
 - `ActionFishingRodTypeID`: TypeID of fishing rod used in fishing action (only valid when `ActionType` is `1` or `2`, otherwise `0`)
@@ -717,6 +724,7 @@ The Animator Controller can use the following parameters:
 - `EmotionValue2`: Emotion parameter value 2 (int type, initial value 0)
   - Can be set via emotion shortcut functionality: Hold modifier key 2 (default period key `.`) + F1-F8 to set (value 0-7)
   - Modifier key 2 can be configured in the settings interface (`EmotionModifierKey2`)
+- `RidingVehicleType`: The type of vehicle the character is riding (int type, initial value 0)
 
 #### Mod Extension Parameters
 
@@ -875,6 +883,7 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
   - `"footstep_mech_walk_light"`, `"footstep_mech_walk_heavy"`, `"footstep_mech_run_light"`, `"footstep_mech_run_heavy"`: Mechanical material footstep sounds (light/heavy walk, light/heavy run)
   - `"footstep_danger_walk_light"`, `"footstep_danger_walk_heavy"`, `"footstep_danger_run_light"`, `"footstep_danger_run_heavy"`: Danger material footstep sounds (light/heavy walk, light/heavy run)
   - `"footstep_nosound_walk_light"`, `"footstep_nosound_walk_heavy"`, `"footstep_nosound_run_light"`, `"footstep_nosound_run_heavy"`: No sound material footstep sounds (light/heavy walk, light/heavy run)
+  - `"footstep_horse_walk_light"`, `"footstep_horse_walk_heavy"`, `"footstep_horse_run_light"`, `"footstep_horse_run_heavy"`: Horse footstep sounds (light/heavy walk, light/heavy run)
   - Can contain multiple tags, indicating the sound can be used in multiple scenarios
   - Defaults to `["normal"]` when no tags are specified
 

@@ -18,6 +18,7 @@ namespace DuckovCustomModel.Data
             RegisterActionType<CA_Reload>(7);
             RegisterActionType<CA_Skill>(8);
             RegisterActionType<CA_UseItem>(9);
+            RegisterActionType<CA_ControlOtherCharacter>(10);
         }
 
         public static IReadOnlyDictionary<Type, int> GetActionTypes()

@@ -29,6 +29,8 @@ namespace DuckovCustomModel.MonoBehaviours
         private static readonly IReadOnlyDictionary<string, FieldInfo> OriginalModelSocketFieldInfos =
             CharacterModelSocketUtils.AllSocketFields;
 
+        private readonly HashSet<CharacterMainControl> _currentRiders = [];
+
         private readonly HashSet<GameObject> _currentUsingCustomSocketObjects = [];
         private readonly Dictionary<string, Transform> _customModelLocators = [];
         private readonly Dictionary<FieldInfo, Transform> _customModelSockets = [];
@@ -127,6 +129,9 @@ namespace DuckovCustomModel.MonoBehaviours
         private void Update()
         {
             if (!IsInitialized || CharacterMainControl == null) return;
+
+            RefreshRiders();
+
             if (!HasIdleSounds()) return;
             if (CharacterMainControl.Health != null && CharacterMainControl.Health.IsDead) return;
 
@@ -511,6 +516,42 @@ namespace DuckovCustomModel.MonoBehaviours
         public Transform? GetCustomModelLocator(string locatorName)
         {
             return GetCustomSocketTransform(locatorName);
+        }
+
+        public void RegisterRider(CharacterMainControl rider)
+        {
+            if (rider == null) return;
+            _currentRiders.Add(rider);
+        }
+
+        public void UnregisterRider(CharacterMainControl rider)
+        {
+            if (rider == null) return;
+            _currentRiders.Remove(rider);
+        }
+
+        public void RefreshRiders()
+        {
+            if (_currentRiders.Count == 0) return;
+
+            _currentRiders.RemoveWhere(rider =>
+            {
+                if (rider == null) return true;
+                var action = rider.controlOtherCharacterAction;
+                if (action == null) return true;
+                return action.targetCharacter != CharacterMainControl;
+            });
+            if (_currentRiders.Count == 0) return;
+
+            if (OriginalCharacterModel == null) return;
+            var vehicleSocket = OriginalCharacterModel.VehicleSocket;
+            if (vehicleSocket == null) return;
+
+            foreach (var rider in _currentRiders) rider.controlOtherCharacterAction.vehicleSocket = vehicleSocket;
+        }
+
+        public void CheckRider(GameObject rider)
+        {
         }
 
         public void CleanupCustomModel()

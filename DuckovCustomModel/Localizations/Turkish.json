@@ -1,6 +1,7 @@
 {
   "Title": "Duckov Custom Model",
   "SearchPlaceholder": "Modelleri ara...",
+  "SearchTarget": "Hedefleri ara...",
   "Refresh": "Tüm model bilgilerini yeniden yükle",
   "Loading": "Yükleniyor...",
   "LoadingModelList": "Model listesi yükleniyor...",
@@ -83,6 +84,8 @@
   "OpenBundleFolder": "Klasörü aç",
   "UnnamedBundle": "İsimsiz Bundle",
   "ExpandAllBundles": "Tümünü genişlet",
-  "CollapseAllBundles": "Tümünü daralt"
+  "CollapseAllBundles": "Tümünü daralt",
+  "ScrollToTop": "↑ Üst",
+  "ScrollToBottom": "Alt ↓"
 }
 

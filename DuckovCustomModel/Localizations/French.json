@@ -1,6 +1,7 @@
 {
   "Title": "Duckov Custom Model",
   "SearchPlaceholder": "Rechercher des modèles...",
+  "SearchTarget": "Rechercher des cibles...",
   "Refresh": "Recharger toutes les informations des modèles",
   "Loading": "Chargement...",
   "LoadingModelList": "Chargement de la liste des modèles...",
@@ -83,6 +84,8 @@
   "OpenBundleFolder": "Ouvrir le dossier",
   "UnnamedBundle": "Bundle sans nom",
   "ExpandAllBundles": "Tout développer",
-  "CollapseAllBundles": "Tout réduire"
+  "CollapseAllBundles": "Tout réduire",
+  "ScrollToTop": "↑ Haut",
+  "ScrollToBottom": "Bas ↓"
 }
 

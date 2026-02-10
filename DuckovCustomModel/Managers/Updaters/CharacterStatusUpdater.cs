@@ -55,6 +55,32 @@ namespace DuckovCustomModel.Managers.Updaters
                     _ => (int)CharacterMainControl.WeightStates.light,
                 };
             control.SetParameterInteger(CustomAnimatorHash.WeightState, weightState);
+
+            control.SetParameterBool(CustomAnimatorHash.Sleeping, control.CharacterMainControl.Sleeping);
+
+            control.SetParameterBool(CustomAnimatorHash.IsVehicle, control.CharacterMainControl.isVehicle);
+
+            var isControlling = false;
+            var isControllingVehicle = false;
+            if (control.CharacterMainControl.controlOtherCharacterAction != null)
+            {
+                var haveTargetCharacter =
+                    control.CharacterMainControl.controlOtherCharacterAction.targetCharacter != null;
+                isControlling = haveTargetCharacter &&
+                                control.CharacterMainControl.controlOtherCharacterAction.Running;
+                isControllingVehicle = isControlling &&
+                                       control.CharacterMainControl.controlOtherCharacterAction.vehicleControl;
+            }
+
+            control.SetParameterBool(CustomAnimatorHash.IsControllingOtherCharacter, isControlling);
+            control.SetParameterBool(CustomAnimatorHash.IsControllingVehicle, isControllingVehicle);
+            control.SetParameterInteger(CustomAnimatorHash.RidingVehicleType,
+                control.CharacterMainControl.ridingVehicleType);
+
+            var currentControlling = LevelManager.Instance.ControllingCharacter;
+            var isCurrentlyControlling =
+                currentControlling != null && currentControlling == control.CharacterMainControl;
+            control.SetParameterBool(CustomAnimatorHash.IsPlayerControlling, isCurrentlyControlling);
         }
     }
 }

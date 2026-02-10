@@ -1,6 +1,7 @@
 {
   "Title": "Duckov Custom Model",
   "SearchPlaceholder": "Поиск моделей...",
+  "SearchTarget": "Поиск целей...",
   "Refresh": "Перезагрузить всю информацию о моделях",
   "Loading": "Загрузка...",
   "LoadingModelList": "Загрузка списка моделей...",
@@ -83,6 +84,8 @@
   "OpenBundleFolder": "Открыть папку",
   "UnnamedBundle": "Безымянный Bundle",
   "ExpandAllBundles": "Развернуть все",
-  "CollapseAllBundles": "Свернуть все"
+  "CollapseAllBundles": "Свернуть все",
+  "ScrollToTop": "↑ Вверх",
+  "ScrollToBottom": "Вниз ↓"
 }
 
