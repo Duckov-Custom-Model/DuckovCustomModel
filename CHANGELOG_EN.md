@@ -2,6 +2,17 @@
 
 English | [中文](CHANGELOG.md)
 
+## v1.11.1
+
+- Added a special audio replacement logic to allow replacing certain events
+  - These events use the game's native eventName as the audio tag, but are case-insensitive
+  - Events that can be replaced in this way include but are not limited to:
+    - `SFX/Actions/horse_mount`
+      - Triggered when performing the "mount" action on a "horse" unit and the progress bar is completed
+    - `SFX/Actions/horse_eat`
+      - Triggered when performing the "feed" action on a "horse" unit and the progress bar is completed
+    - Other available audio event tags can be found in the game's audio event definitions and are applicable to any events called through `AudioManager.Post(string eventName, GameObject gameObject)`
+
 ## v1.11.0
 
 - Added new animator parameters support
