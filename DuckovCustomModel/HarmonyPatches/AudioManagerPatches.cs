@@ -134,5 +134,46 @@ namespace DuckovCustomModel.HarmonyPatches
                 return false;
             }
         }
+
+        [HarmonyPatch]
+        internal static class AudioManagerPostEventWithGameObjectPatch
+        {
+            private static MethodBase TargetMethod()
+            {
+                return AccessTools.Method(typeof(AudioManager), nameof(AudioManager.Post),
+                    [typeof(string), typeof(GameObject)]);
+            }
+
+            private static bool Prefix(
+                string eventName,
+                GameObject gameObject,
+                // ReSharper disable once InconsistentNaming
+                ref EventInstance? __result)
+            {
+                if (gameObject == null) return true;
+
+                var characterMainControl = gameObject.GetComponentInParent<CharacterMainControl>(gameObject);
+                if (characterMainControl == null) return true;
+
+                var modelHandler = characterMainControl.GetComponent<ModelHandler>();
+                if (modelHandler == null || !modelHandler.IsInitialized) return true;
+
+                if (!modelHandler.HasAnySounds()) return true;
+                if (!modelHandler.IsModelAudioEnabled) return true;
+
+                var normalizedEventName = string.IsNullOrWhiteSpace(eventName)
+                    ? SoundTags.Normal
+                    : eventName.ToLowerInvariant().Trim();
+
+                var soundPath = modelHandler.GetRandomSoundByTag(normalizedEventName, out var skippedByProbability);
+                if (string.IsNullOrEmpty(soundPath)) return true;
+
+                if (skippedByProbability) return false;
+
+                modelHandler.PlaySound(normalizedEventName, soundPath, playMode: SoundPlayMode.StopPrevious);
+                __result = null;
+                return false;
+            }
+        }
     }
 }

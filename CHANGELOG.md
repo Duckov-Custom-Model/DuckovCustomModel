@@ -2,6 +2,17 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## v1.11.1
+
+- 补充了一个特殊的音频替换逻辑，以允许替换一些特定事件
+  - 此类事件使用游戏原生定义的 eventName 作为音频标签，但不区分大小写
+  - 可用此类方式进行替换的事件包括并不限于：
+    - `SFX/Actions/horse_mount`
+      - 对 “马” 单位执行 “骑” 操作，并读条完成后触发的音效事件
+    - `SFX/Actions/horse_eat`
+      - 对 “马” 单位执行 “喂” 操作，并读条完成后触发的音效事件
+    - 其它可用音效事件标签请自行查阅游戏内的音效事件定义，适用于任何通过 `AudioManager.Post(string eventName, GameObject gameObject)` 调用的事件
+
 ## v1.11.0
 
 - 新增动画参数支持
