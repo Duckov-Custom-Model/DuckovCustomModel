@@ -15,9 +15,9 @@ using HarmonyLib;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
+// ReSharper disable MemberCanBeMadeStatic.Local
 namespace DuckovCustomModel
 {
-    // ReSharper disable MemberCanBeMadeStatic.Local
     public static class ModEntry
     {
         private static ConfigWindow? _configWindow;
@@ -401,5 +401,5 @@ namespace DuckovCustomModel
             ModLogger.LogError($"Initialize ModelHandler to {characterName} failed: ModelHandler is null");
         }
     }
-    // ReSharper restore MemberCanBeMadeStatic.Local
 }
+// ReSharper restore MemberCanBeMadeStatic.Local

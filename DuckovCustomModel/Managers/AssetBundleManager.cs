@@ -395,5 +395,71 @@ namespace DuckovCustomModel.Managers
                 return null;
             }
         }
+
+        public static T[]? LoadSpriteAtlases<T>(ModelBundleInfo bundleInfo) where T : Object
+        {
+            if (bundleInfo.SpriteAtlasPaths == null || bundleInfo.SpriteAtlasPaths.Length == 0)
+                return null;
+
+            var bundle = GetOrLoadAssetBundle(bundleInfo);
+            if (bundle == null) return null;
+
+            var atlases = new List<T>();
+            foreach (var atlasPath in bundleInfo.SpriteAtlasPaths)
+            {
+                if (string.IsNullOrEmpty(atlasPath)) continue;
+
+                try
+                {
+                    var atlas = bundle.LoadAsset<T>(atlasPath);
+                    if (atlas != null)
+                        atlases.Add(atlas);
+                    else
+                        ModLogger.LogWarning(
+                            $"AssetBundleManager: Failed to load sprite atlas '{atlasPath}' from bundle '{bundleInfo.BundlePath}'");
+                }
+                catch (Exception ex)
+                {
+                    ModLogger.LogError(
+                        $"AssetBundleManager: Exception while loading sprite atlas '{atlasPath}' from bundle '{bundleInfo.BundlePath}'. Exception: {ex}");
+                }
+            }
+
+            return atlases.Count > 0 ? atlases.ToArray() : null;
+        }
+
+        public static async UniTask<T[]?> LoadSpriteAtlasesAsync<T>(ModelBundleInfo bundleInfo,
+            CancellationToken cancellationToken = default) where T : Object
+        {
+            if (bundleInfo.SpriteAtlasPaths == null || bundleInfo.SpriteAtlasPaths.Length == 0)
+                return null;
+
+            var bundle = await GetOrLoadAssetBundleAsync(bundleInfo, false, cancellationToken);
+            if (bundle == null) return null;
+
+            var atlases = new List<T>();
+            foreach (var atlasPath in bundleInfo.SpriteAtlasPaths)
+            {
+                if (string.IsNullOrEmpty(atlasPath)) continue;
+
+                try
+                {
+                    await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
+                    var atlas = bundle.LoadAsset<T>(atlasPath);
+                    if (atlas != null)
+                        atlases.Add(atlas);
+                    else
+                        ModLogger.LogWarning(
+                            $"AssetBundleManager: Failed to load sprite atlas '{atlasPath}' from bundle '{bundleInfo.BundlePath}'");
+                }
+                catch (Exception ex)
+                {
+                    ModLogger.LogError(
+                        $"AssetBundleManager: Exception while loading sprite atlas '{atlasPath}' from bundle '{bundleInfo.BundlePath}'. Exception: {ex}");
+                }
+            }
+
+            return atlases.Count > 0 ? atlases.ToArray() : null;
+        }
     }
 }

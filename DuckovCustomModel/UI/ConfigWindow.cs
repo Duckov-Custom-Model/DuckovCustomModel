@@ -219,13 +219,14 @@ namespace DuckovCustomModel.UI
 
             var titleBar =
                 UIFactory.CreateImage("TitleBar", _panelRoot.transform, new Color(0.15f, 0.18f, 0.22f, 0.9f));
-            UIFactory.SetupRectTransform(titleBar, new(0, 1), new(1, 1), new(0, 40),
+            UIFactory.SetupRectTransform(titleBar, new(0, 1), new(1, 1), new Vector2(0, 40),
                 pivot: new Vector2(0.5f, 1), anchoredPosition: new Vector2(0, 0));
 
             var titleContainer = new GameObject("TitleContainer", typeof(RectTransform));
             titleContainer.transform.SetParent(titleBar.transform, false);
-            UIFactory.SetupRectTransform(titleContainer, new(0, 0), new(1, 1), offsetMin: new(10, 0),
-                offsetMax: new(-10, 0));
+            UIFactory.SetupRectTransform(titleContainer, new(0, 0), new(1, 1),
+                offsetMin: new Vector2(10, 0),
+                offsetMax: new Vector2(-10, 0));
             UIFactory.SetupHorizontalLayoutGroup(titleContainer, 12f, new(0, 0, 0, 0), TextAnchor.MiddleCenter,
                 true, false, false, false);
 
@@ -234,17 +235,17 @@ namespace DuckovCustomModel.UI
                 Color.white, TextAnchor.MiddleCenter, FontStyle.Bold);
             UIFactory.SetLocalizedText(titleText, () => Localization.Title);
 
-            UIFactory.SetupRectTransform(titleText, Vector2.zero, Vector2.zero, new(0, 0));
+            UIFactory.SetupRectTransform(titleText, Vector2.zero, Vector2.zero, new Vector2(0, 0));
             UIFactory.SetupContentSizeFitter(titleText);
 
             var versionLabel = UIFactory.CreateText("Version", titleContainer.transform, $"v{Constant.ModVersion}", 14,
                 new Color(0.8f, 0.8f, 0.8f, 1));
-            UIFactory.SetupRectTransform(versionLabel, Vector2.zero, Vector2.zero, new(0, 0));
+            UIFactory.SetupRectTransform(versionLabel, Vector2.zero, Vector2.zero, new Vector2(0, 0));
             UIFactory.SetupContentSizeFitter(versionLabel);
 
             _updateIndicatorTitle = UIFactory.CreateText("UpdateIndicator", titleContainer.transform, "", 16,
                 new Color(1f, 0.6f, 0f, 1), TextAnchor.MiddleCenter, FontStyle.Bold);
-            UIFactory.SetupRectTransform(_updateIndicatorTitle, Vector2.zero, Vector2.zero, new(0, 0));
+            UIFactory.SetupRectTransform(_updateIndicatorTitle, Vector2.zero, Vector2.zero, new Vector2(0, 0));
             UIFactory.SetupContentSizeFitter(_updateIndicatorTitle);
             _updateIndicatorTitle.SetActive(false);
 
@@ -253,7 +254,7 @@ namespace DuckovCustomModel.UI
 
             var closeButton = UIFactory.CreateButton("CloseButton", titleBar.transform, HidePanel,
                 new Color(0.2f, 0.2f, 0.2f, 1));
-            UIFactory.SetupRectTransform(closeButton, new(1, 0.5f), new(1, 0.5f), new(36, 36),
+            UIFactory.SetupRectTransform(closeButton, new(1, 0.5f), new(1, 0.5f), new Vector2(36, 36),
                 pivot: new Vector2(1, 0.5f), anchoredPosition: new Vector2(-10, 0));
 
             var closeText = UIFactory.CreateText("Text", closeButton.transform, "×", 24, Color.white,
@@ -275,15 +276,17 @@ namespace DuckovCustomModel.UI
 
             var modelTabContainer = new GameObject("ModelTabContainer", typeof(RectTransform));
             modelTabContainer.transform.SetParent(_panelRoot.transform, false);
-            UIFactory.SetupRectTransform(modelTabContainer, new(0, 0), new(1, 1), offsetMin: new(10, 10),
-                offsetMax: new(-10, -100));
+            UIFactory.SetupRectTransform(modelTabContainer, new(0, 0), new(1, 1),
+                offsetMin: new Vector2(10, 10),
+                offsetMax: new Vector2(-10, -100));
 
             _modelSelectionTab = modelTabContainer.AddComponent<ModelSelectionTab>();
 
             var settingsTabContainer = new GameObject("SettingsTabContainer", typeof(RectTransform));
             settingsTabContainer.transform.SetParent(_panelRoot.transform, false);
-            UIFactory.SetupRectTransform(settingsTabContainer, new(0, 0), new(1, 1), offsetMin: new(10, 10),
-                offsetMax: new(-10, -100));
+            UIFactory.SetupRectTransform(settingsTabContainer, new(0, 0), new(1, 1),
+                offsetMin: new Vector2(10, 10),
+                offsetMax: new Vector2(-10, -100));
 
             _settingsTab = settingsTabContainer.AddComponent<SettingsTab>();
             _settingsTab.OnAnimatorParamsToggleChanged += SetAnimatorParamsWindowVisible;
@@ -469,8 +472,8 @@ namespace DuckovCustomModel.UI
                 new Color(0.2f, 0.25f, 0.3f, 0.9f));
 
             var anchorMin = GetAnchorValue(uiConfig.DCMButtonAnchor);
-            UIFactory.SetupRectTransform(_settingsButton, anchorMin, anchorMin, new(80, 50), pivot: anchorMin,
-                anchoredPosition: new(uiConfig.DCMButtonOffsetX, uiConfig.DCMButtonOffsetY));
+            UIFactory.SetupRectTransform(_settingsButton, anchorMin, anchorMin, new Vector2(80, 50), pivot: anchorMin,
+                anchoredPosition: new Vector2(uiConfig.DCMButtonOffsetX, uiConfig.DCMButtonOffsetY));
 
             var outline = _settingsButton.AddComponent<Outline>();
             outline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
@@ -482,15 +485,16 @@ namespace DuckovCustomModel.UI
 
             _updateIndicatorButton = UIFactory.CreateText("UpdateIndicator", _settingsButton.transform, "!", 16,
                 new Color(1f, 0.6f, 0f, 1), TextAnchor.MiddleCenter);
-            UIFactory.SetupRectTransform(_updateIndicatorButton, new(0.8f, 0.8f), new(1f, 1f), new(0, 0),
+            UIFactory.SetupRectTransform(_updateIndicatorButton, new(0.8f, 0.8f), new(1f, 1f),
+                new Vector2(0, 0),
                 pivot: new Vector2(1f, 1f), anchoredPosition: new Vector2(-2, -2));
             UIFactory.SetupContentSizeFitter(_updateIndicatorButton);
             _updateIndicatorButton.SetActive(false);
 
             UIFactory.SetupButtonColors(_settingsButton.GetComponent<Button>(),
-                new(0.2f, 0.25f, 0.3f, 0.9f),
-                new(0.3f, 0.35f, 0.4f, 0.9f),
-                new(0.15f, 0.2f, 0.25f, 0.9f));
+                new Color(0.2f, 0.25f, 0.3f, 0.9f),
+                new Color(0.3f, 0.35f, 0.4f, 0.9f),
+                new Color(0.15f, 0.2f, 0.25f, 0.9f));
 
             SetSettingsButtonVisible(false);
         }
@@ -525,8 +529,8 @@ namespace DuckovCustomModel.UI
             if (_settingsButton == null || UIConfig == null) return;
 
             var anchorMin = GetAnchorValue(UIConfig.DCMButtonAnchor);
-            UIFactory.SetupRectTransform(_settingsButton, anchorMin, anchorMin, new(80, 50), pivot: anchorMin,
-                anchoredPosition: new(UIConfig.DCMButtonOffsetX, UIConfig.DCMButtonOffsetY));
+            UIFactory.SetupRectTransform(_settingsButton, anchorMin, anchorMin, new Vector2(80, 50), pivot: anchorMin,
+                anchoredPosition: new Vector2(UIConfig.DCMButtonOffsetX, UIConfig.DCMButtonOffsetY));
 
             var buttonRect = _settingsButton.GetComponent<RectTransform>();
             if (buttonRect != null)

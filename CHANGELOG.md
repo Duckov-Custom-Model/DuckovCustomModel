@@ -2,6 +2,24 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
+## 未发布
+
+### 新增
+
+- 新增 TMP Sprite Atlas 支持
+  - 在 `bundleinfo.json` 中添加 `SpriteAtlasPaths` 字段，可指定 TextMeshPro Sprite Asset 路径
+  - 系统会自动加载并注册图集到 TMP 的全局 fallback sprite assets 列表
+  - 支持在 TMP 文本中使用 `<sprite name="sprite_name">` 语法引用自定义 Sprite
+  - Bundle 卸载时自动注销相关图集
+
+### API 变更
+
+- `ModelBundleInfo` 新增 `SpriteAtlasPaths` 属性（可选）
+- `AssetBundleManager` 新增方法：
+  - `LoadSpriteAtlases<T>(ModelBundleInfo)` - 同步加载图集
+  - `LoadSpriteAtlasesAsync<T>(ModelBundleInfo, CancellationToken)` - 异步加载图集
+- 新增 `TMPSpriteAtlasManager` 类，用于管理 TMP Sprite Asset 的生命周期
+
 ## v1.11.1
 
 - 补充了一个特殊的音频替换逻辑，以允许替换一些特定事件

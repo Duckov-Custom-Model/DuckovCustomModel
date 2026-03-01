@@ -403,6 +403,10 @@ Model Bundle Folder/
 {
   "BundleName": "Model Bundle Name",
   "BundlePath": "modelbundle.assetbundle",
+  "SpriteAtlasPaths": [
+    "Assets/Sprites/Emojis.asset",
+    "Assets/Sprites/Icons.asset"
+  ],
   "Models": [
     {
       "ModelID": "unique_model_id",
@@ -447,6 +451,17 @@ Model Bundle Folder/
 ```
 
 #### Field Descriptions
+
+**BundleName** (Required): Model bundle name for identification and display
+
+**BundlePath** (Required): AssetBundle file path, relative to the model bundle folder
+
+**SpriteAtlasPaths** (Optional): Array of TextMeshPro Sprite Asset paths for rendering custom sprites in TMP text
+- Paths are resource paths within the AssetBundle (e.g., `"Assets/Sprites/Emojis.asset"`)
+- System automatically loads and registers them to TMP's global fallback sprite assets list
+- Use `<sprite name="sprite_name">` syntax in TMP text to reference sprites
+
+**Models** (Required): Array of model information, can contain multiple models
 
 **BundleName** (required): Model bundle name, used for identification and display
 

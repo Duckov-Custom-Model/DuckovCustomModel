@@ -123,6 +123,8 @@ namespace DuckovCustomModel.Managers
                     }
                 }
 
+                TMPSpriteAtlasManager.UnregisterSpriteAssets(bundleKey);
+
                 var bundlePath = Path.Combine(bundleToUnload.DirectoryPath, bundleToUnload.BundlePath);
                 AssetBundleManager.UnloadAssetBundle(bundlePath);
             }
@@ -144,6 +146,7 @@ namespace DuckovCustomModel.Managers
                             modelInfo.BundleName = bundleKey;
 
                         ModelBundles.Add(bundleInfo);
+                        TMPSpriteAtlasManager.LoadAndRegisterSpriteAtlases(bundleInfo);
                     }
                     else
                     {
@@ -154,6 +157,7 @@ namespace DuckovCustomModel.Managers
                                 modelInfo.BundleName = bundleKey;
 
                             ModelBundles.Add(bundleInfo);
+                            TMPSpriteAtlasManager.LoadAndRegisterSpriteAtlases(bundleInfo);
                         }
                         else
                         {

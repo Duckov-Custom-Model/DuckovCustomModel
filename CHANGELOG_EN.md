@@ -2,6 +2,24 @@
 
 English | [中文](CHANGELOG.md)
 
+## Unreleased
+
+### Added
+
+- Added TMP Sprite Atlas support
+  - Add `SpriteAtlasPaths` field in `bundleinfo.json` to specify TextMeshPro Sprite Asset paths
+  - System automatically loads and registers atlases to TMP's global fallback sprite assets list
+  - Support using `<sprite name="sprite_name">` syntax in TMP text to reference custom sprites
+  - Automatically unregister atlases when bundle is unloaded
+
+### API Changes
+
+- `ModelBundleInfo` added `SpriteAtlasPaths` property (optional)
+- `AssetBundleManager` added methods:
+  - `LoadSpriteAtlases<T>(ModelBundleInfo)` - Synchronously load atlases
+  - `LoadSpriteAtlasesAsync<T>(ModelBundleInfo, CancellationToken)` - Asynchronously load atlases
+- Added `TMPSpriteAtlasManager` class for managing TMP Sprite Asset lifecycle
+
 ## v1.11.1
 
 - Added a special audio replacement logic to allow replacing certain events
