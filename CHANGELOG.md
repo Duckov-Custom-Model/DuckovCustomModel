@@ -2,7 +2,7 @@
 
 [English](CHANGELOG_EN.md) | 中文
 
-## 未发布
+## v1.11.2
 
 ### 新增
 

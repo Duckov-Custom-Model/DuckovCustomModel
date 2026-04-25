@@ -2,7 +2,7 @@
 
 English | [中文](CHANGELOG.md)
 
-## Unreleased
+## v1.11.2
 
 ### Added
 

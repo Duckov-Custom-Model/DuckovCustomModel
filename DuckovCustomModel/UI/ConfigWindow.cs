@@ -369,8 +369,24 @@ namespace DuckovCustomModel.UI
                 _playerInputWasActive = _playerInput.inputIsActive;
                 if (_playerInputWasActive)
                 {
-                    _playerInput.DeactivateInput();
-                    ModLogger.Log("PlayerInput deactivated (game input blocked).");
+                    var inputBlocker = InputBlocker.Instance;
+                    if (inputBlocker != null)
+                    {
+                        inputBlocker.IsExternalBlocking = true;
+                        ModLogger.Log("PlayerInput blocked by InputBlocker (external).");
+                    }
+                    else
+                    {
+                        try
+                        {
+                            _playerInput.DeactivateInput();
+                            ModLogger.Log("PlayerInput deactivated (game input blocked).");
+                        }
+                        catch (Exception e)
+                        {
+                            ModLogger.LogWarning($"DeactivateInput() failed when opening config window: {e}");
+                        }
+                    }
                 }
             }
 
@@ -395,10 +411,29 @@ namespace DuckovCustomModel.UI
             _charInput = null;
             _charInputWasEnabled = false;
 
-            if (_playerInput != null && _playerInputWasActive)
+            if (_playerInputWasActive)
             {
-                _playerInput.ActivateInput();
-                ModLogger.Log("PlayerInput reactivated (game input restored).");
+                var inputBlocker = InputBlocker.Instance;
+                if (inputBlocker != null)
+                {
+                    inputBlocker.IsExternalBlocking = false;
+                }
+                else
+                {
+                    var latestPlayerInput = PlayerInput;
+                    if (latestPlayerInput == null)
+                        ModLogger.LogWarning("PlayerInput is null when closing config window, skip ActivateInput().");
+                    else if (!latestPlayerInput.inputIsActive)
+                        try
+                        {
+                            latestPlayerInput.ActivateInput();
+                            ModLogger.Log("PlayerInput reactivated (game input restored).");
+                        }
+                        catch (Exception e)
+                        {
+                            ModLogger.LogWarning($"ActivateInput() failed when closing config window: {e}");
+                        }
+                }
             }
 
             _playerInput = null;
