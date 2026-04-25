@@ -386,6 +386,10 @@ UI 界面相关配置。
 {
   "BundleName": "模型包名称",
   "BundlePath": "modelbundle.assetbundle",
+  "SpriteAtlasPaths": [
+    "Assets/Sprites/Emojis.asset",
+    "Assets/Sprites/Icons.asset"
+  ],
   "Models": [
     {
       "ModelID": "unique_model_id",
@@ -434,6 +438,11 @@ UI 界面相关配置。
 **BundleName**（必需）：模型包名称，用于标识和显示
 
 **BundlePath**（必需）：AssetBundle 文件路径，相对于模型包文件夹的路径
+
+**SpriteAtlasPaths**（可选）：TextMeshPro Sprite Asset 路径数组，用于在 TMP 文本中渲染自定义 Sprite
+- 路径为 AssetBundle 内的资源路径（如 `"Assets/Sprites/Emojis.asset"`）
+- 系统会自动加载并注册到 TMP 的全局 fallback sprite assets 列表
+- 在 TMP 文本中使用 `<sprite name="sprite_name">` 语法引用
 
 **Models**（必需）：模型信息数组，可包含多个模型
 

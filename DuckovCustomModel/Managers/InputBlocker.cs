@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -6,6 +7,9 @@ namespace DuckovCustomModel.Managers
     public class InputBlocker : MonoBehaviour
     {
         internal static bool IsGettingRealInput;
+        private float _lastActionsNullLogTime;
+        private float _lastActivateFailLogTime;
+        private float _lastDeactivateFailLogTime;
         private PlayerInput? _playerInput;
         internal bool IsBlocked;
         internal bool IsBlockerCalling;
@@ -64,24 +68,76 @@ namespace DuckovCustomModel.Managers
 
             var shouldBeActive = !IsBlocked && !IsExternalBlocking;
 
-            if (shouldBeActive && !playerInput.inputIsActive)
+            var actions = playerInput.actions;
+            if (actions == null)
+            {
+                if (Time.unscaledTime - _lastActionsNullLogTime > 2f)
+                {
+                    _lastActionsNullLogTime = Time.unscaledTime;
+                    ModLogger.LogWarning("InputBlocker: PlayerInput.actions is null, skip input toggle this frame.");
+                }
+
+                return;
+            }
+
+            var actionsEnabled = actions.enabled;
+
+            if (shouldBeActive && !actionsEnabled)
             {
                 IsBlockerCalling = true;
                 try
                 {
-                    playerInput.ActivateInput();
+                    try
+                    {
+                        actions.Enable();
+                    }
+                    catch (Exception e)
+                    {
+                        if (Time.unscaledTime - _lastActivateFailLogTime > 2f)
+                        {
+                            _lastActivateFailLogTime = Time.unscaledTime;
+                            ModLogger.LogWarning($"InputBlocker actions.Enable() failed: {e}");
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    if (Time.unscaledTime - _lastActivateFailLogTime > 2f)
+                    {
+                        _lastActivateFailLogTime = Time.unscaledTime;
+                        ModLogger.LogWarning($"InputBlocker unexpected enable exception: {e}");
+                    }
                 }
                 finally
                 {
                     IsBlockerCalling = false;
                 }
             }
-            else if (!shouldBeActive && playerInput.inputIsActive)
+            else if (!shouldBeActive && actionsEnabled)
             {
                 IsBlockerCalling = true;
                 try
                 {
-                    playerInput.DeactivateInput();
+                    try
+                    {
+                        actions.Disable();
+                    }
+                    catch (Exception e)
+                    {
+                        if (Time.unscaledTime - _lastDeactivateFailLogTime > 2f)
+                        {
+                            _lastDeactivateFailLogTime = Time.unscaledTime;
+                            ModLogger.LogWarning($"InputBlocker actions.Disable() failed: {e}");
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    if (Time.unscaledTime - _lastDeactivateFailLogTime > 2f)
+                    {
+                        _lastDeactivateFailLogTime = Time.unscaledTime;
+                        ModLogger.LogWarning($"InputBlocker unexpected disable exception: {e}");
+                    }
                 }
                 finally
                 {

@@ -21,8 +21,9 @@ namespace DuckovCustomModel.UI.Components
         {
             _tabContainer = new("TabContainer", typeof(RectTransform), typeof(HorizontalLayoutGroup));
             _tabContainer.transform.SetParent(parent, false);
-            UIFactory.SetupRectTransform(_tabContainer, new(0, 1), new(1, 1), new(0, 60), pivot: new(0.5f, 1),
-                anchoredPosition: new(0, -40));
+            UIFactory.SetupRectTransform(_tabContainer, new(0, 1), new(1, 1), new Vector2(0, 60),
+                pivot: new Vector2(0.5f, 1),
+                anchoredPosition: new Vector2(0, -40));
             UIFactory.SetupHorizontalLayoutGroup(_tabContainer, 8f, new(10, 8, 10, 8));
         }
 
@@ -32,8 +33,8 @@ namespace DuckovCustomModel.UI.Components
 
             var tabIndex = _tabs.Count;
             var button = UIFactory.CreateButton($"Tab_{tabIndex}", _tabContainer.transform,
-                () => SwitchToTab(tabIndex), new(0.2f, 0.2f, 0.2f, 1)).GetComponent<Button>();
-            UIFactory.SetupRectTransform(button.gameObject, Vector2.zero, Vector2.zero, new(140, 60));
+                () => SwitchToTab(tabIndex), new Color(0.2f, 0.2f, 0.2f, 1)).GetComponent<Button>();
+            UIFactory.SetupRectTransform(button.gameObject, Vector2.zero, Vector2.zero, new Vector2(140, 60));
 
             var text = UIFactory.CreateText("Text", button.transform, tabName, 16, Color.white,
                 TextAnchor.MiddleCenter);
@@ -115,7 +116,7 @@ namespace DuckovCustomModel.UI.Components
                 }
 
                 var colors = tab.Button.colors;
-                colors.normalColor = isActive ? new(0.3f, 0.4f, 0.5f, 1) : new(0.2f, 0.2f, 0.2f, 1);
+                colors.normalColor = isActive ? new(0.3f, 0.4f, 0.5f, 1) : new Color(0.2f, 0.2f, 0.2f, 1);
                 tab.Button.colors = colors;
             }
 

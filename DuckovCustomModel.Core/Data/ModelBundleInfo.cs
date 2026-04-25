@@ -12,6 +12,8 @@ namespace DuckovCustomModel.Core.Data
 
         public ModelInfo[] Models { get; set; } = [];
 
+        public string[]? SpriteAtlasPaths { get; set; }
+
         [JsonIgnore] public string DirectoryPath { get; internal set; } = string.Empty;
 
         public static ModelBundleInfo? LoadFromDirectory(string directoryPath,
@@ -54,6 +56,7 @@ namespace DuckovCustomModel.Core.Data
                 BundlePath = BundlePath,
                 Models = filteredModels,
                 DirectoryPath = DirectoryPath,
+                SpriteAtlasPaths = SpriteAtlasPaths,
             };
             return copy;
         }

@@ -26,7 +26,7 @@ namespace DuckovCustomModel.UI.Tabs
 
         protected override void CreatePanel()
         {
-            PanelRoot = UIFactory.CreateImage("ModelSelectionPanel", transform, new(0.08f, 0.1f, 0.12f, 0.95f));
+            PanelRoot = UIFactory.CreateImage("ModelSelectionPanel", transform, new Color(0.08f, 0.1f, 0.12f, 0.95f));
             UIFactory.SetupRectTransform(PanelRoot, new(0, 0), new(1, 1), Vector2.zero);
         }
 
@@ -94,7 +94,7 @@ namespace DuckovCustomModel.UI.Tabs
         {
             if (PanelRoot == null) return;
 
-            _overlayPanel = UIFactory.CreateImage("OverlayPanel", PanelRoot.transform, new(0, 0, 0, 0.7f));
+            _overlayPanel = UIFactory.CreateImage("OverlayPanel", PanelRoot.transform, new Color(0, 0, 0, 0.7f));
             UIFactory.SetupRectTransform(_overlayPanel, Vector2.zero, Vector2.one, Vector2.zero);
             _overlayPanel.transform.SetAsLastSibling();
 
@@ -196,7 +196,8 @@ namespace DuckovCustomModel.UI.Tabs
 
         private static GameObject CreateMidContainer(GameObject parent)
         {
-            var container = UIFactory.CreateImage("MidContainer", parent.transform, new(0.1f, 0.12f, 0.14f, 0.95f));
+            var container =
+                UIFactory.CreateImage("MidContainer", parent.transform, new Color(0.1f, 0.12f, 0.14f, 0.95f));
             container.AddComponent<VerticalLayoutGroup>();
             container.AddComponent<LayoutElement>();
             UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);

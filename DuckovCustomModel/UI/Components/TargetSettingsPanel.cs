@@ -115,7 +115,7 @@ namespace DuckovCustomModel.UI.Components
                 Vector2.zero);
 
             var resetButton = UIFactory.CreateButton("ResetHeightButton", controlsContainer.transform,
-                OnResetHeightClicked, new(0.3f, 0.35f, 0.4f, 1)).GetComponent<Button>();
+                OnResetHeightClicked, new Color(0.3f, 0.35f, 0.4f, 1)).GetComponent<Button>();
             var resetButtonLayoutElement = resetButton.gameObject.AddComponent<LayoutElement>();
             resetButtonLayoutElement.preferredWidth = 100;
             resetButtonLayoutElement.flexibleWidth = 0;
@@ -123,8 +123,8 @@ namespace DuckovCustomModel.UI.Components
                 Localization.Reset, 14, Color.white, TextAnchor.MiddleCenter);
             UIFactory.SetupButtonText(resetButtonText);
             UIFactory.SetLocalizedText(resetButtonText, () => Localization.Reset);
-            UIFactory.SetupButtonColors(resetButton, new(1, 1, 1, 1), new(0.5f, 0.6f, 0.7f, 1),
-                new(0.4f, 0.5f, 0.6f, 1), new(0.5f, 0.6f, 0.7f, 1));
+            UIFactory.SetupButtonColors(resetButton, new Color(1, 1, 1, 1), new Color(0.5f, 0.6f, 0.7f, 1),
+                new Color(0.4f, 0.5f, 0.6f, 1), new Color(0.5f, 0.6f, 0.7f, 1));
         }
 
         private void BuildClearRuntimeDataButton()
@@ -141,14 +141,14 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetLocalizedText(label, () => Localization.ClearCustomDataConfig);
 
             var clearButton = UIFactory.CreateButton("ClearRuntimeDataButton", _clearRuntimeDataRow.transform,
-                OnClearRuntimeDataClicked, new(0.5f, 0.2f, 0.2f, 1)).GetComponent<Button>();
+                OnClearRuntimeDataClicked, new Color(0.5f, 0.2f, 0.2f, 1)).GetComponent<Button>();
             UIFactory.SetupRightControl(clearButton.gameObject, new(100, 30));
             var clearButtonText = UIFactory.CreateText("Text", clearButton.transform,
                 Localization.Clear, 14, Color.white, TextAnchor.MiddleCenter);
             UIFactory.SetupButtonText(clearButtonText);
             UIFactory.SetLocalizedText(clearButtonText, () => Localization.Clear);
-            UIFactory.SetupButtonColors(clearButton, new(1, 1, 1, 1), new(0.7f, 0.3f, 0.3f, 1),
-                new(0.6f, 0.2f, 0.2f, 1), new(0.7f, 0.3f, 0.3f, 1));
+            UIFactory.SetupButtonColors(clearButton, new Color(1, 1, 1, 1), new Color(0.7f, 0.3f, 0.3f, 1),
+                new Color(0.6f, 0.2f, 0.2f, 1), new Color(0.7f, 0.3f, 0.3f, 1));
         }
 
         private void BuildRuntimeSettingsDivider()
@@ -450,10 +450,11 @@ namespace DuckovCustomModel.UI.Components
 
             var rowImage = row.GetComponent<Image>();
             var isEven = _settingRowIndex % 2 == 0;
-            rowImage.color = isEven ? new(0.12f, 0.14f, 0.16f, 0.8f) : new(0.1f, 0.12f, 0.14f, 0.8f);
+            rowImage.color = isEven ? new(0.12f, 0.14f, 0.16f, 0.8f) : new Color(0.1f, 0.12f, 0.14f, 0.8f);
             _settingRowIndex++;
 
-            UIFactory.SetupAnchor(row, new(0, 1), new(1, 1), new(0.5f, 1), new(0, 50), Vector2.zero);
+            UIFactory.SetupAnchor(row, new(0, 1), new(1, 1), new Vector2(0.5f, 1), new Vector2(0, 50),
+                Vector2.zero);
 
             var rowLayoutElement = row.AddComponent<LayoutElement>();
             rowLayoutElement.preferredHeight = 50;
