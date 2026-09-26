@@ -46,6 +46,7 @@ namespace DuckovCustomModel.UI
         private TextMeshProUGUI? _lockText;
         private Button? _next;
         private string _openedModelId = string.Empty;
+        private string _shownAssetActionId = string.Empty;
         private ModelInfo? _openedModelInfo;
         private GameObject? _ownedEventSystem;
         private bool _ownsInput;
@@ -92,7 +93,7 @@ namespace DuckovCustomModel.UI
             if (_handler == null || !ReferenceEquals(_handler, CurrentHandler()) ||
                 !ReferenceEquals(_openedModelInfo, _handler.CurrentModelInfo) ||
                 (_runtime != null && (!_runtime.IsAvailable || !ReferenceEquals(_runtime, _handler.YsmRuntime))) ||
-                (IsAssetMenu && (_handler.YsmRuntime != null || _handler.RadialActions.Count == 0)) || OtherUiOpen)
+                (IsAssetMenu && (_handler.YsmRuntime != null || _handler.RadialMenuEntries.Count == 0)) || OtherUiOpen)
             {
                 HideImmediately();
                 return;
@@ -123,11 +124,15 @@ namespace DuckovCustomModel.UI
             var slot = IsAssetMenu
                 ? _assetState.HitTest(mouse.x / 2, -mouse.y / 2)
                 : _state.HitTest(mouse.x / 2, -mouse.y / 2);
-            var configSlot = IsAssetMenu ? -1 : _state.HitTest(mouse.x / 2, -mouse.y / 2, true);
+            var configSlot = IsAssetMenu
+                ? _assetState.HitTest(mouse.x / 2, -mouse.y / 2, true)
+                : _state.HitTest(mouse.x / 2, -mouse.y / 2, true);
             for (var i = 0; i < VisibleCount; i++)
             {
                 var selected = i == slot;
-                var hasConfig = !IsAssetMenu && _state.GetBinding(i).Button != null;
+                var hasConfig = IsAssetMenu
+                    ? _assetState.GetEntry(i).HasConfiguration
+                    : _state.GetBinding(i).Button != null;
                 SetRadii(_sectors[i], selected && hasConfig ? 100 : 50, selected ? 230 : 210);
                 _sectors[i].color = selected ? SelectedColor : IdleColor;
                 SetRadii(_configSectors[i], i == configSlot ? 30 : 50, 100);
@@ -210,7 +215,7 @@ namespace DuckovCustomModel.UI
             if (!isActiveAndEnabled || IsOpen || _ownsInput || OtherUiOpen || IsTyping()) return false;
             var handler = CurrentHandler();
             var runtime = handler?.YsmRuntime;
-            if (handler == null || (runtime == null && handler.RadialActions.Count == 0) ||
+            if (handler == null || (runtime == null && handler.RadialMenuEntries.Count == 0) ||
                 (runtime != null && !runtime.IsAvailable)) return false;
             var input = GameManager.MainPlayerInput;
             if (input == null || !input.inputIsActive || input.actions == null || !input.actions.enabled) return false;
@@ -228,10 +233,8 @@ namespace DuckovCustomModel.UI
             }
             else
             {
-                var entries = new List<RadialMenuEntry>(handler.RadialActions.Count);
-                foreach (var action in handler.RadialActions)
-                    entries.Add(new(action.Id, action.Name));
-                opened = _assetState.Open(entries, handler.CurrentModelInfo?.Name ?? "模型", _openedModelId);
+                opened = _assetState.Open(handler.RadialMenuEntries,
+                    handler.CurrentModelInfo?.Name ?? "模型", _openedModelId);
             }
 
             if (!opened)
@@ -255,11 +258,13 @@ namespace DuckovCustomModel.UI
         public void Hide()
         {
             SaveForms();
+            _handler?.SaveRadialForms();
             _state.Close();
             _assetState.Close();
             if (_root != null) _root.SetActive(false);
             ClearForms();
             _showingForms = false;
+            _shownAssetActionId = string.Empty;
             if (_ownsInput) _releaseAfterFrame = Time.frameCount;
             _runtime = null;
             _handler = null;
@@ -367,7 +372,11 @@ namespace DuckovCustomModel.UI
                     break;
                 case RadialMenuSelectionKind.Classification:
                 case RadialMenuSelectionKind.Returned:
+                    _showingForms = false;
                     Refresh();
+                    break;
+                case RadialMenuSelectionKind.Configuration:
+                    ShowAssetForms(selection.ActionId);
                     break;
             }
         }
@@ -394,12 +403,12 @@ namespace DuckovCustomModel.UI
             _previous!.interactable = pageIndex > 0;
             _next!.interactable = pageIndex + 1 < pageCount;
             _hintText!.text = IsAssetMenu
-                ? $"{OpenKey} / Esc 关闭 · 点击选择 · 左侧滚轮翻页 · 中心停止动作"
+                ? $"{OpenKey} / Esc 关闭 · 点击选择 · 左侧滚轮翻页 · 配置区滚轮滚动 · 中心停止动作"
                 : $"{OpenKey} / Esc 关闭 · 点击选择 · 左侧滚轮翻页 · 配置区滚轮滚动";
             if (_lockText != null)
                 _lockText.text = IsAssetMenu ? "停止动作" :
                     _runtime?.ExtraAnimationLocked == true ? "锁定：开" : "锁定：关";
-            if (_formScroll != null) _formScroll.gameObject.SetActive(!IsAssetMenu);
+            if (_formScroll != null) _formScroll.gameObject.SetActive(true);
             for (var i = 0; i < 8; i++)
             {
                 var visible = i < VisibleCount;
@@ -407,7 +416,9 @@ namespace DuckovCustomModel.UI
                 _labels[i].gameObject.SetActive(visible);
                 var binding = visible && !IsAssetMenu ? _state.GetBinding(i) : default;
                 var assetEntry = visible && IsAssetMenu ? _assetState.GetEntry(i) : null;
-                var hasConfig = visible && !IsAssetMenu && binding.Button != null;
+                var hasConfig = visible && (IsAssetMenu
+                    ? assetEntry?.HasConfiguration == true
+                    : binding.Button != null);
                 _configSectors[i].gameObject.SetActive(hasConfig);
                 _gears[i].gameObject.SetActive(hasConfig);
                 if (!visible) continue;
@@ -626,6 +637,101 @@ namespace DuckovCustomModel.UI
             }
         }
 
+        private void ShowAssetForms(string actionId, bool preservePosition = false)
+        {
+            if (_handler == null || !IsAssetMenu) return;
+            var forms = _handler.GetRadialActionForms(actionId);
+            if (forms.Count == 0) return;
+            var scrollPosition = preservePosition && _formScroll != null
+                ? _formScroll.verticalNormalizedPosition
+                : 1f;
+            ClearForms();
+            _showingForms = true;
+            _shownAssetActionId = actionId;
+            foreach (var form in forms)
+            {
+                FormLabel(form.Name);
+                if (!string.IsNullOrWhiteSpace(form.Description)) FormLabel(form.Description, 12);
+                CreateAssetForm(actionId, form);
+            }
+
+            var reset = UIFactory.CreateButton("ResetForms", _formContent!, () =>
+            {
+                _handler?.ResetRadialForms();
+                ShowAssetForms(actionId, true);
+            }, new Color(0.3f, 0.35f, 0.4f));
+            reset.AddComponent<LayoutElement>().preferredHeight = 32;
+            var text = UIFactory.CreateText("Label", reset.transform, "还原此模型配置",
+                alignment: TextAnchor.MiddleCenter);
+            UIFactory.SetupButtonText(text);
+            if (_formScroll != null && _formContent != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(_formContent);
+                _formScroll.StopMovement();
+                _formScroll.verticalNormalizedPosition = scrollPosition;
+            }
+        }
+
+        private void CreateAssetForm(string actionId, RadialFormInfo form)
+        {
+            if (_handler == null) return;
+            var value = _handler.GetRadialFormValue(form);
+            if (form.Mode == RadialActionInfo.BoolMode)
+            {
+                var row = new GameObject("CheckboxRow", typeof(RectTransform), typeof(LayoutElement));
+                row.transform.SetParent(_formContent!, false);
+                row.GetComponent<LayoutElement>().preferredHeight = 28;
+                var toggle = UIFactory.CreateToggle("Checkbox", row.transform, value > 0,
+                    selected => _handler?.SetRadialFormValue(actionId, form.Id, selected ? 1 : 0));
+                var toggleRect = toggle.GetComponent<RectTransform>();
+                toggleRect.anchorMin = toggleRect.anchorMax = new(0, 0.5f);
+                toggleRect.anchoredPosition = new(12, 0);
+            }
+            else if (form.Mode == RadialActionInfo.IntMode && form.Options.Length > 0)
+            {
+                foreach (var option in form.Options)
+                {
+                    var selectedValue = option.Value;
+                    var obj = UIFactory.CreateButton("Option", _formContent!, () =>
+                    {
+                        _handler?.SetRadialFormValue(actionId, form.Id, selectedValue);
+                        ShowAssetForms(actionId, true);
+                    }, (int)value == selectedValue ? new(0.1f, 0.5f, 0.65f) : IdleColor);
+                    obj.AddComponent<LayoutElement>().preferredHeight = 32;
+                    var label = UIFactory.CreateText("Label", obj.transform,
+                        MinecraftFormatting.ToTmp(option.Name), alignment: TextAnchor.MiddleCenter);
+                    UIFactory.SetupButtonText(label);
+                    label.GetComponent<TextMeshProUGUI>().richText = true;
+                }
+            }
+            else
+            {
+                var sliderObject = new GameObject("Range", typeof(RectTransform), typeof(Slider), typeof(LayoutElement));
+                sliderObject.transform.SetParent(_formContent!, false);
+                sliderObject.GetComponent<LayoutElement>().preferredHeight = 28;
+                var track = UIFactory.CreateImage("Track", sliderObject.transform, new Color(0.25f, 0.3f, 0.35f));
+                UIFactory.SetupRectTransform(track, new(0, 0.4f), new(1, 0.6f), Vector2.zero);
+                var handle = UIFactory.CreateImage("Handle", sliderObject.transform, new Color(0.2f, 0.75f, 0.9f));
+                var handleRect = handle.GetComponent<RectTransform>();
+                handleRect.sizeDelta = new(14, 28);
+                var slider = sliderObject.GetComponent<Slider>();
+                slider.handleRect = handleRect;
+                slider.targetGraphic = handle.GetComponent<Image>();
+                slider.minValue = form.Min;
+                slider.maxValue = form.Max;
+                slider.wholeNumbers = form.Mode == RadialActionInfo.IntMode;
+                slider.SetValueWithoutNotify((float)value);
+                var number = UIFactory.CreateText("Value", _formContent!, value.ToString("0.###"), 13)
+                    .GetComponent<TextMeshProUGUI>();
+                number.gameObject.AddComponent<LayoutElement>().preferredHeight = 22;
+                slider.onValueChanged.AddListener(selected =>
+                {
+                    if (_handler?.SetRadialFormValue(actionId, form.Id, selected) == true)
+                        number.text = _handler.GetRadialFormValue(form).ToString("0.###");
+                });
+            }
+        }
+
         private void CreateForm(YsmConfigForm form, YsmExtraAnimationButton button, int index)
         {
             var context = _runtime!.Simulation.Context;
@@ -808,6 +914,11 @@ namespace DuckovCustomModel.UI
         {
             if (targetTypeId == ModelTargetType.Character && modelId == _settingsModelId)
                 ResetForms();
+            if (_handler != null && _handler.TargetTypeId == targetTypeId && _openedModelId == modelId)
+            {
+                _handler.ResetRadialForms();
+                if (_shownAssetActionId.Length > 0) ShowAssetForms(_shownAssetActionId, true);
+            }
         }
     }
 }

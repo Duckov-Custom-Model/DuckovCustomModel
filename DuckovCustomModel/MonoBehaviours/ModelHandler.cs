@@ -16,6 +16,7 @@ using DuckovCustomModel.Utils;
 using FMOD.Studio;
 using ItemStatsSystem;
 using ItemStatsSystem.Items;
+using ModelRuntime;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -140,10 +141,22 @@ namespace DuckovCustomModel.MonoBehaviours
         public CustomAnimatorControl? CustomAnimatorControl { get; private set; }
         public YsmCharacterRuntime? YsmRuntime { get; private set; }
 
-        public IReadOnlyList<RadialActionInfo> RadialActions =>
-            _radialActionPlayer?.Actions ?? Array.Empty<RadialActionInfo>();
+        public IReadOnlyList<RadialMenuEntry> RadialMenuEntries =>
+            _radialActionPlayer?.Entries ?? Array.Empty<RadialMenuEntry>();
 
         public string? CurrentRadialActionId => _radialActionPlayer?.CurrentActionId;
+
+        public IReadOnlyList<RadialFormInfo> GetRadialActionForms(string actionId) =>
+            _radialActionPlayer?.GetForms(actionId) ?? Array.Empty<RadialFormInfo>();
+
+        public double GetRadialFormValue(RadialFormInfo form) => _radialActionPlayer?.GetFormValue(form) ?? 0;
+
+        public bool SetRadialFormValue(string actionId, string formId, double value) =>
+            _radialActionPlayer?.SetFormValue(actionId, formId, value) == true;
+
+        public void SaveRadialForms() => _radialActionPlayer?.SaveForms();
+
+        public void ResetRadialForms() => _radialActionPlayer?.ResetForms();
 
         private void Update()
         {
@@ -258,6 +271,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
         public bool StopRadialAction()
         {
+            _radialActionPlayer?.SaveForms();
             return _radialActionPlayer?.Stop() == true;
         }
 
@@ -868,8 +882,8 @@ namespace DuckovCustomModel.MonoBehaviours
 
             // Get the Animator component from the custom model
             CustomAnimator = YsmRuntime == null ? CustomModelInstance.GetComponent<Animator>() : null;
-            _radialActionPlayer = CustomAnimator != null && modelInfo.RadialActions is { Length: > 0 }
-                ? new AssetBundleRadialActionPlayer(CustomAnimator, modelInfo)
+            _radialActionPlayer = CustomAnimator != null && modelInfo.RadialMenus is { Length: > 0 }
+                ? new AssetBundleRadialActionPlayer(CustomAnimator, modelInfo, TargetTypeId)
                 : null;
             if (CustomAnimatorControl != null)
                 if (CustomAnimator != null)

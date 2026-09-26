@@ -38,7 +38,7 @@ namespace DuckovCustomModel.Core.Data
 
         public Dictionary<string, BuffCondition[]>? BuffAnimatorParams { get; set; }
 
-        public RadialActionInfo[] RadialActions { get; set; } = [];
+        public RadialMenuInfo[] RadialMenus { get; set; } = [];
 
         public bool Validate()
         {
@@ -101,17 +101,40 @@ namespace DuckovCustomModel.Core.Data
             {
                 var actionIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var actionParameters = new HashSet<string>(StringComparer.Ordinal);
-                RadialActions = (RadialActions ?? [])
-                    .Where(action => action != null && action.Validate() && actionIds.Add(action.Id)
-                                     && actionParameters.Add(action.Parameter))
-                    .ToArray();
+                RadialMenus = ValidateRadialMenus(RadialMenus, actionIds, actionParameters,
+                    new HashSet<string>(StringComparer.OrdinalIgnoreCase), 0);
             }
             else
             {
-                RadialActions = [];
+                RadialMenus = [];
             }
 
             return true;
+        }
+
+        private static RadialActionInfo[] ValidateRadialActions(RadialActionInfo[]? actions,
+            HashSet<string> actionIds, HashSet<string> actionParameters)
+        {
+            return (actions ?? [])
+                .Where(action => action != null && action.Validate() && actionIds.Add(action.Id)
+                                 && actionParameters.Add(action.Parameter))
+                .ToArray();
+        }
+
+        private static RadialMenuInfo[] ValidateRadialMenus(RadialMenuInfo[]? menus,
+            HashSet<string> actionIds, HashSet<string> actionParameters, HashSet<string> menuIds, int depth)
+        {
+            if (depth >= 5) return [];
+            var valid = new List<RadialMenuInfo>();
+            foreach (var menu in menus ?? [])
+            {
+                if (menu == null || !menu.Validate() || !menuIds.Add(menu.Id)) continue;
+                menu.Actions = ValidateRadialActions(menu.Actions, actionIds, actionParameters);
+                menu.Menus = ValidateRadialMenus(menu.Menus, actionIds, actionParameters, menuIds, depth + 1);
+                if (menu.Actions.Length > 0 || menu.Menus.Length > 0) valid.Add(menu);
+            }
+
+            return valid.ToArray();
         }
 
         public bool CompatibleWithTargetType(string targetTypeId)
