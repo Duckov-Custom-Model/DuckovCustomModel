@@ -15,10 +15,10 @@ jobs:
     
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7.0.1
     
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v6.0.0
       with:
         dotnet-version: '10.x'
     
@@ -42,7 +42,7 @@ jobs:
       shell: pwsh
     
     - name: Upload Release Artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7.0.1
       with:
         name: release-package
         path: DuckovCustomModel/bin/Release/DuckovCustomModel.zip
@@ -57,7 +57,7 @@ jobs:
     
     - name: Create GitHub Release
       id: create_release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v3.0.3
       with:
         files: DuckovCustomModel/bin/Release/DuckovCustomModel.zip
         body: ${{ steps.prepare_release_body.outputs.release_body }}
@@ -76,7 +76,7 @@ jobs:
     
     - name: Setup SteamCMD
       if: steps.check_steam_secrets.outputs.steam_enabled == 'true'
-      uses: buildalon/setup-steamcmd@v1
+      uses: buildalon/setup-steamcmd@v1.4.1
     
     - name: Prepare Workshop Content
       if: steps.check_steam_secrets.outputs.steam_enabled == 'true'
@@ -87,7 +87,7 @@ jobs:
     - name: Upload to Steam Workshop
       if: steps.check_steam_secrets.outputs.steam_enabled == 'true'
       id: upload_steam
-      uses: buildalon/upload-steam@v1
+      uses: buildalon/upload-steam@v2.1.0
       with:
         username: ${{ secrets.STEAM_USERNAME }}
         password: ${{ secrets.STEAM_PASSWORD }}
