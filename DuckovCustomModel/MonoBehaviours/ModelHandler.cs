@@ -756,9 +756,13 @@ namespace DuckovCustomModel.MonoBehaviours
         public void InitializeCustomModel(ModelBundleInfo modelBundleInfo, ModelInfo modelInfo)
         {
             if (CharacterMainControl == null || OriginalCharacterModel == null) return;
-            if (YsmRuntime != null && CurrentModelInfo?.ModelID == modelInfo.ModelID &&
-                CurrentModelInfo.SourceRevision == modelInfo.SourceRevision &&
-                _currentModelBundleInfo?.DirectoryPath == modelBundleInfo.DirectoryPath) return;
+            if (YsmModelSource.IsYsm(modelInfo)
+                    ? YsmRuntime != null && CurrentModelInfo?.ModelID == modelInfo.ModelID &&
+                      CurrentModelInfo.SourceRevision == modelInfo.SourceRevision &&
+                      _currentModelBundleInfo?.DirectoryPath == modelBundleInfo.DirectoryPath
+                    : YsmRuntime == null && CustomModelInstance != null &&
+                      ReferenceEquals(CurrentModelInfo, modelInfo) &&
+                      ReferenceEquals(_currentModelBundleInfo, modelBundleInfo)) return;
             GameObject? candidate = null;
             YsmCharacterRuntime? runtime = null;
             // Parse, bake, build materials and evaluate the first pose before touching the current model.
@@ -774,8 +778,8 @@ namespace DuckovCustomModel.MonoBehaviours
                     var prefab = AssetBundleManager.LoadModelPrefab(modelBundleInfo, modelInfo);
                     if (prefab == null) throw new InvalidOperationException("Failed to load custom model prefab.");
                     candidate = Instantiate(prefab, OriginalCharacterModel.transform);
-                    candidate.SetActive(false);
                     candidate.name = CustomModelInstanceName;
+                    if (!candidate.activeSelf) candidate.SetActive(true);
                 }
             }
             catch (Exception exception)
@@ -923,7 +927,7 @@ namespace DuckovCustomModel.MonoBehaviours
             var customFaceInstance = GetOriginalCustomFaceInstance();
             if (customFaceInstance != null) customFaceInstance.gameObject.SetActive(false);
 
-            CustomModelInstance.SetActive(true);
+            if (YsmRuntime != null) CustomModelInstance.SetActive(true);
 
             ModelHeightManager.InitializeHeightForHandler(this);
             ModelHeightManager.ApplyHeightToHandler(this);

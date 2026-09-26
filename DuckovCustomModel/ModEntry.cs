@@ -11,6 +11,7 @@ using DuckovCustomModel.HarmonyPatches;
 using DuckovCustomModel.Integrations.Ysm;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
+using DuckovCustomModel.MonoBehaviours;
 using DuckovCustomModel.UI;
 using HarmonyLib;
 using UnityEngine;
@@ -142,6 +143,7 @@ namespace DuckovCustomModel
             CleanupInputBlocker();
 
             AnimatorParameterUpdaterManager.Cleanup();
+            CustomAnimatorControl.ResetCoreUpdaters();
 
             _initialized = false;
 

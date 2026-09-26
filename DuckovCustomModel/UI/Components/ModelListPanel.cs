@@ -222,6 +222,7 @@ namespace DuckovCustomModel.UI.Components
                     }
 
                     cancellationToken.ThrowIfCancellationRequested();
+                    GroupYsmModels();
                     var bundlesCopy = _filteredModelBundles.ToList();
 
                     foreach (var bundle in bundlesCopy)
@@ -342,6 +343,7 @@ namespace DuckovCustomModel.UI.Components
             }
 
             cancellationToken.ThrowIfCancellationRequested();
+            GroupYsmModels();
             var bundlesCopy = _filteredModelBundles.ToList();
 
             foreach (var bundle in bundlesCopy)
@@ -676,6 +678,18 @@ namespace DuckovCustomModel.UI.Components
                 : bundle.DirectoryPath;
         }
 
+        private void GroupYsmModels()
+        {
+            var firstIndex = _filteredModelBundles.FindIndex(YsmModelSource.IsYsm);
+            if (firstIndex < 0) return;
+
+            var models = _filteredModelBundles.Where(YsmModelSource.IsYsm)
+                .SelectMany(bundle => bundle.Models).ToArray();
+            _filteredModelBundles.RemoveAll(YsmModelSource.IsYsm);
+            _filteredModelBundles.Insert(firstIndex,
+                ModelBundleInfo.CreateSourceBundle(ModelManager.ModelsDirectory, "YSM", "Ysm", models));
+        }
+
         private async UniTask BuildBundleGroupAsync(ModelBundleInfo bundle, CancellationToken cancellationToken)
         {
             if (_content == null) return;
@@ -794,7 +808,11 @@ namespace DuckovCustomModel.UI.Components
             foreach (var model in bundle.Models.ToList())
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await BuildModelCardAsync(bundle, model, gridObject.transform, cancellationToken);
+                var sourceBundle = bundle.BundleName == "YSM" && YsmModelSource.IsYsm(bundle)
+                    ? ModelManager.ModelBundles.FirstOrDefault(candidate => candidate.BundleName == model.BundleName)
+                      ?? bundle
+                    : bundle;
+                await BuildModelCardAsync(sourceBundle, model, gridObject.transform, cancellationToken);
             }
 
             cancellationToken.ThrowIfCancellationRequested();

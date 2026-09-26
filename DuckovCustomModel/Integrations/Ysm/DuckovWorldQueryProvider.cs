@@ -24,6 +24,21 @@ namespace DuckovCustomModel.Integrations.Ysm
                 return true;
             }
 
+            if (GameClock.Instance != null)
+            {
+                if (name == "query.day_number")
+                {
+                    result = GameClock.Day;
+                    return true;
+                }
+
+                if (name == "query.moon_phase")
+                {
+                    result = (GameClock.Day % 8 + 8) % 8;
+                    return true;
+                }
+            }
+
             var time = TimeOfDayController.Instance;
             if (time == null) return false;
             switch (name)

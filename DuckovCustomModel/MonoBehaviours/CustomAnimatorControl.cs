@@ -167,6 +167,11 @@ namespace DuckovCustomModel.MonoBehaviours
             _coreUpdatersRegistered = true;
         }
 
+        internal static void ResetCoreUpdaters()
+        {
+            _coreUpdatersRegistered = false;
+        }
+
         public void SetCustomAnimator(Animator? animator)
         {
             _customAnimator = animator;
