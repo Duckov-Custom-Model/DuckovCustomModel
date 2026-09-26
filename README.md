@@ -454,8 +454,10 @@ UI 界面相关配置。
 - `Description`（可选）：模型描述信息
 - `Version`（可选）：模型版本号
 - `ThumbnailPath`（可选）：缩略图路径，相对于模型包文件夹的外部文件路径（如 `"thumbnail.png"`）
-- `PrefabPath`（必需）：模型 Prefab 在 AssetBundle 内的资源路径（如 `"Assets/Model.prefab"`）
+- `SourceKind`（可选）：`AssetBundle`（默认）或 `Ysm`。选择 `Ysm` 时用 `SourcePath` 指定 `.ysm` 文件；先读取同包内的 `TextAsset`（可用 `.bytes` 导入），找不到时读取 AssetBundle 文件所在目录的相对路径
+- `PrefabPath`（Prefab 模型必需）：模型 Prefab 在 AssetBundle 内的资源路径（如 `"Assets/Model.prefab"`）
 - `DeathLootBoxPrefabPath`（可选）：死亡战利品箱 Prefab 在 AssetBundle 内的资源路径（如 `"Assets/DeathLootBox.prefab"`）
+- `DeathLootBoxYsmPath`（可选）：死亡战利品箱使用另一个 `.ysm` 文件；先查同包，再查 AssetBundle 文件所在目录的相对路径。可用 `DeathLootBoxAnimation` 指定展示动作；同时指定 Prefab 时优先使用 Prefab。YSM 模型也可反向指定 `DeathLootBoxPrefabPath`
   - 当角色使用该模型并死亡时，如果配置了此字段，死亡战利品箱会使用自定义的 Prefab 替换默认模型
   - 如果未配置此字段，死亡战利品箱将使用默认模型
 - `TargetTypes`（可选）：模型适用的目标类型 ID 数组（默认：`["built-in:Character"]`）
@@ -517,6 +519,46 @@ UI 界面相关配置。
     }
     ```
   - 配置的 Buff 参数会在调试界面中显示，位于自定义参数和动画器参数之后
+
+### AssetBundle 模型的动作轮盘
+
+在 AssetBundle 模型的 `bundleinfo.json` 中，为需要轮盘的 `Models` 项添加 `RadialMenus`。每个菜单可包含动作和子菜单；Prefab 的 Animator Controller 必须包含对应的参数和动画状态过渡。例如：
+
+```json
+{
+  "RadialMenus": [
+    {
+      "Id": "gestures", "Name": "动作",
+      "Actions": [
+        {
+          "Id": "wave", "Name": "挥手", "Parameter": "Wave", "Mode": "Trigger",
+          "Forms": [
+            { "Id": "style", "Name": "动作风格", "Parameter": "Style", "Mode": "Int",
+              "Options": [{ "Name": "普通", "Value": 0 }, { "Name": "活泼", "Value": 1 }] },
+            { "Id": "speed", "Name": "速度", "Parameter": "Speed", "Mode": "Float",
+              "Min": 0.5, "Max": 2.0, "Step": 0.1 }
+          ]
+        }
+      ],
+      "Menus": [
+        {
+          "Id": "poses", "Name": "姿势",
+          "Actions": [
+            { "Id": "pose", "Name": "摆姿势", "Parameter": "Pose", "Mode": "Bool" },
+            { "Id": "mood", "Name": "表情 2", "Parameter": "Mood", "Mode": "Int", "Value": 2 }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+菜单和动作各有 `Id` 与 `Name`。`Id` 在同类项目中须唯一，`Name` 是轮盘上的文字。动作的 `Parameter` 是 Animator 参数名；`Mode` 可为 `Trigger`（默认）、`Bool`、`Int` 或 `Float`。`Int`／`Float` 动作点击时将 `Value` 写入 Animator。选择另一动作或点击中心停止会把当前 `Bool`／`Int`／`Float` 参数还原为 Animator 默认值；`Trigger` 的结束与返回由 Animator 状态机控制。关闭轮盘不会停止动作。
+
+动作可包含 `Forms` 以在扇区内侧打开右侧配置列表。表单绑定 `Bool` 时显示开关；`Int` 带 `Options` 时显示单选项，否则用 `Min`／`Max` 显示整数滑杆；`Float` 用 `Min`／`Max`／`Step` 显示范围滑杆。表单设置按目标和模型保存，可在列表中一键还原为 Animator 默认值。
+
+参数名不能与模组驱动的 Animator 参数或 `BuffAnimatorParams` 重复；类型不匹配、缺少参数及重复的 `Id`／`Parameter` 会使对应动作从轮盘中被过滤，空菜单也不会显示。最多可嵌套五层菜单。选用模型后按 **Z** 打开轮盘（可在设置页改键），每页显示八项，滚轮翻页，点击菜单进入、返回上级，Esc 关闭。未配置有效动作时不显示动作轮盘。
 
 ## 定位锚点
 
@@ -583,7 +625,13 @@ Animator Controller 可以使用以下参数：
 - `Reloading`：是否正在装弹
 - `RightHandOut`：右手是否伸出
 - `ActionRunning`：是否正在执行动作（由 `CharacterMainControl.CurrentAction` 决定）
+- `UsingItem`：是否正在执行使用物品动作
 - `Hidden`：角色是否处于隐藏状态
+- `Invisible`：角色是否处于隐身状态
+- `BodyInWater`：身体是否在水中
+- `HeadInWater`：头部是否在水中
+- `FootInWater`：脚部是否在水中
+- `Swimming`：角色是否正在游泳
 - `ThermalOn`：热成像是否开启
 - `InAds`：是否正在瞄准（ADS - Aim Down Sights）
 - `HideOriginalEquipment`：是否隐藏原有装备（由 `HideEquipmentConfig.json` 中对应目标类型 ID 的配置控制）
@@ -616,8 +664,18 @@ Animator Controller 可以使用以下参数：
 - `AimDirZ`：瞄准方向 Z 分量
 - `AdsValue`：瞄准值（0.0 - 1.0，瞄准进度）
 - `AmmoRate`：弹药比率（0.0 - 1.0，当前弹药数 / 最大弹药容量）
+- `Health`：当前生命值
+- `MaxHealth`：最大生命值
 - `HealthRate`：生命值比率（0.0 - 1.0，当前生命值 / 最大生命值）
+- `Energy`：当前能量值
+- `MaxEnergy`：最大能量值
+- `EnergyRate`：能量比率（当前能量值 / 最大能量值）
+- `FoodLevel`：与 MC 饱食度对应的数值（能量比率 × 20，范围 0 - 20）
+- `Water`：当前水分值
+- `MaxWater`：最大水分值
 - `WaterRate`：水分比率（0.0 - 1.0，当前水分 / 最大水分）
+- `Weight`：当前总重量（包括搬运中的物品）
+- `MaxWeight`：最大负重
 - `WeightRate`：重量比率（当前总重量 / 最大负重，可能大于 1.0）
 - `ActionProgress`：动作进度百分比（0.0 - 1.0，当前动作的进度，由 `IProgress.GetProgress().progress` 获取）
 - `Time`：当前 24 小时时间（0.0 - 24.0，由 `TimeOfDayController.Instance.Time` 获取，不可用时为 -1.0）
@@ -651,6 +709,8 @@ Animator Controller 可以使用以下参数：
   - `3`：连发每发冷却（burstEachShotCooling）
   - `4`：空弹（empty）
   - `5`：装弹中（reloading）
+- `Ammo`：当前枪械弹药数（未持枪时为 `0`）
+- `MaxAmmo`：当前枪械最大弹药容量（未持枪时为 `0`）
 - `AimType`：瞄准类型（由 `CharacterMainControl.AimType` 决定）
   - `0`：正常瞄准（normalAim）
   - `1`：角色技能（characterSkill）
