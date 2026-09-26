@@ -14,9 +14,15 @@ namespace DuckovCustomModel.Core.Data
         public string Description { get; set; } = string.Empty;
         public string Version { get; set; } = string.Empty;
         public string ThumbnailPath { get; set; } = string.Empty;
+        [JsonIgnore] public byte[]? ThumbnailData { get; set; }
         public string PrefabPath { get; set; } = string.Empty;
+        public string SourceKind { get; set; } = "AssetBundle";
+        public string SourcePath { get; set; } = string.Empty;
+        [JsonIgnore] public string SourceRevision { get; set; } = string.Empty;
 
         public string? DeathLootBoxPrefabPath { get; set; }
+        public string DeathLootBoxYsmPath { get; set; } = string.Empty;
+        public string DeathLootBoxAnimation { get; set; } = string.Empty;
 
         public SoundInfo[] CustomSounds { get; set; } = [];
 
@@ -34,11 +40,21 @@ namespace DuckovCustomModel.Core.Data
 
         public Dictionary<string, BuffCondition[]>? BuffAnimatorParams { get; set; }
 
+        public RadialMenuInfo[] RadialMenus { get; set; } = [];
+
         public bool Validate()
         {
             if (string.IsNullOrWhiteSpace(ModelID)) return false;
             if (string.IsNullOrWhiteSpace(Name)) return false;
-            if (string.IsNullOrWhiteSpace(PrefabPath)) return false;
+            if (string.Equals(SourceKind, "Ysm", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(SourcePath)) return false;
+            }
+            else if (!string.Equals(SourceKind, "AssetBundle", StringComparison.OrdinalIgnoreCase)
+                     || string.IsNullOrWhiteSpace(PrefabPath))
+            {
+                return false;
+            }
 
             if (string.IsNullOrWhiteSpace(DeathLootBoxPrefabPath)) DeathLootBoxPrefabPath = null;
 
@@ -83,7 +99,44 @@ namespace DuckovCustomModel.Core.Data
             Features = features.ToArray();
             CustomSounds = soundInfos.ToArray();
 
+            if (string.Equals(SourceKind, "AssetBundle", StringComparison.OrdinalIgnoreCase))
+            {
+                var actionIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var actionParameters = new HashSet<string>(StringComparer.Ordinal);
+                RadialMenus = ValidateRadialMenus(RadialMenus, actionIds, actionParameters,
+                    new HashSet<string>(StringComparer.OrdinalIgnoreCase), 0);
+            }
+            else
+            {
+                RadialMenus = [];
+            }
+
             return true;
+        }
+
+        private static RadialActionInfo[] ValidateRadialActions(RadialActionInfo[]? actions,
+            HashSet<string> actionIds, HashSet<string> actionParameters)
+        {
+            return (actions ?? [])
+                .Where(action => action != null && action.Validate() && actionIds.Add(action.Id)
+                                 && actionParameters.Add(action.Parameter))
+                .ToArray();
+        }
+
+        private static RadialMenuInfo[] ValidateRadialMenus(RadialMenuInfo[]? menus,
+            HashSet<string> actionIds, HashSet<string> actionParameters, HashSet<string> menuIds, int depth)
+        {
+            if (depth >= 5) return [];
+            var valid = new List<RadialMenuInfo>();
+            foreach (var menu in menus ?? [])
+            {
+                if (menu == null || !menu.Validate() || !menuIds.Add(menu.Id)) continue;
+                menu.Actions = ValidateRadialActions(menu.Actions, actionIds, actionParameters);
+                menu.Menus = ValidateRadialMenus(menu.Menus, actionIds, actionParameters, menuIds, depth + 1);
+                if (menu.Actions.Length > 0 || menu.Menus.Length > 0) valid.Add(menu);
+            }
+
+            return valid.ToArray();
         }
 
         public bool CompatibleWithTargetType(string targetTypeId)

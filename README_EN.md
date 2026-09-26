@@ -477,8 +477,10 @@ Model Bundle Folder/
 - `Description` (optional): Model description information
 - `Version` (optional): Model version number
 - `ThumbnailPath` (optional): Thumbnail path, external file path relative to the model bundle folder (e.g., `"thumbnail.png"`)
-- `PrefabPath` (required): Model Prefab resource path inside the AssetBundle (e.g., `"Assets/Model.prefab"`)
+- `SourceKind` (optional): `AssetBundle` (default) or `Ysm`. For `Ysm`, set `SourcePath` to a `.ysm` file. A `TextAsset` in the same bundle is preferred (import via `.bytes`); otherwise the path is resolved relative to the AssetBundle file directory
+- `PrefabPath` (required for Prefab models): Model Prefab resource path inside the AssetBundle (e.g., `"Assets/Model.prefab"`)
 - `DeathLootBoxPrefabPath` (optional): Death loot box Prefab resource path inside the AssetBundle (e.g., `"Assets/DeathLootBox.prefab"`)
+- `DeathLootBoxYsmPath` (optional): Separate `.ysm` file for the death loot box; the same bundle is checked first, then a path relative to the AssetBundle file directory. `DeathLootBoxAnimation` selects an optional display animation. A configured Prefab takes precedence. YSM models can also reference `DeathLootBoxPrefabPath`
   - When a character using this model dies, if this field is configured, the death loot box will use the custom Prefab to replace the default model
   - If this field is not configured, the death loot box will use the default model
 - `TargetTypes` (optional): Array of target type IDs the model applies to (default: `["built-in:Character"]`)
@@ -540,6 +542,46 @@ Model Bundle Folder/
     }
     ```
   - Configured Buff parameters will be displayed in the debug interface, after custom parameters and animator parameters
+
+### Action Wheel for AssetBundle Models
+
+Add `RadialMenus` to the relevant `Models` entry in the AssetBundle model's `bundleinfo.json`. Each menu can contain actions and nested menus. The Prefab's Animator Controller must contain matching parameters and state transitions. For example:
+
+```json
+{
+  "RadialMenus": [
+    {
+      "Id": "gestures", "Name": "Gestures",
+      "Actions": [
+        {
+          "Id": "wave", "Name": "Wave", "Parameter": "Wave", "Mode": "Trigger",
+          "Forms": [
+            { "Id": "style", "Name": "Style", "Parameter": "Style", "Mode": "Int",
+              "Options": [{ "Name": "Normal", "Value": 0 }, { "Name": "Lively", "Value": 1 }] },
+            { "Id": "speed", "Name": "Speed", "Parameter": "Speed", "Mode": "Float",
+              "Min": 0.5, "Max": 2.0, "Step": 0.1 }
+          ]
+        }
+      ],
+      "Menus": [
+        {
+          "Id": "poses", "Name": "Poses",
+          "Actions": [
+            { "Id": "pose", "Name": "Pose", "Parameter": "Pose", "Mode": "Bool" },
+            { "Id": "mood", "Name": "Mood 2", "Parameter": "Mood", "Mode": "Int", "Value": 2 }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+Menus and actions each have an `Id` and `Name`. IDs must be unique within their respective kind. An action's `Parameter` names the Animator parameter. `Mode` can be `Trigger` (default), `Bool`, `Int`, or `Float`. An `Int` or `Float` action writes `Value` to the Animator when selected. Selecting another action or the center Stop button restores the current `Bool`/`Int`/`Float` parameter to its Animator default. Animator transitions control how a `Trigger` action ends and returns. Closing the wheel does not stop an action.
+
+An action can have `Forms` opened from the inner part of its sector. A `Bool` form shows a toggle; an `Int` form shows choices when `Options` is present, otherwise an integer slider constrained by `Min`/`Max`; a `Float` form shows a slider with `Min`/`Max`/`Step`. Form values are saved per target and model and can be reset to Animator defaults from the list.
+
+Do not reuse parameters driven by the mod or listed in `BuffAnimatorParams`. Actions with missing or wrong-type Animator parameters or duplicate `Id`/`Parameter` values are filtered out; empty menus are hidden. Menus can be nested up to five levels. After selecting the model, press **Z** to open the wheel (rebindable in settings). Eight entries appear per page; scroll to change pages, select a menu to enter it, return to the parent menu, or press Esc to close. The wheel does not open without valid actions.
 
 ## Locator Points
 

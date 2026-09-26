@@ -7,6 +7,7 @@
   "LoadingModelList": "Model listesi yükleniyor...",
   "Hotkey": "Kısayol",
   "AnimatorParamsHotkey": "Animator parametreleri kısayolu",
+  "YsmRadialMenuHotkey": "YSM eylem çarkı kısayolu",
   "None": "Yok",
   "Clear": "Temizle",
   "PressAnyKey": "Herhangi bir tuşa basın...",
@@ -86,6 +87,15 @@
   "ExpandAllBundles": "Tümünü genişlet",
   "CollapseAllBundles": "Tümünü daralt",
   "ScrollToTop": "↑ Üst",
-  "ScrollToBottom": "Alt ↓"
+  "ScrollToBottom": "Alt ↓",
+  "RadialModel": "Model",
+  "RadialLockOn": "Kilitli",
+  "RadialLockOff": "Serbest",
+  "RadialStop": "Durdur",
+  "RadialBack": "Geri",
+  "RadialHint": "Esc kapatır · tıklama seçer · solda tekerlek: sayfalar · ayarlarda tekerlek: kaydırma",
+  "RadialHintStop": " · orta: eylemi durdur",
+  "RadialUnavailable": "Bu ayar kullanılamıyor",
+  "RadialResetConfig": "Bu modelin ayarlarını sıfırla"
 }
 

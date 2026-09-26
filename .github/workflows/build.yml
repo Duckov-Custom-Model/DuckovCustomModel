@@ -12,10 +12,10 @@ jobs:
       packages: read
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7.0.1
     
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v6.0.0
       with:
         dotnet-version: '10.x'
     
@@ -39,7 +39,7 @@ jobs:
       continue-on-error: true
     
     - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7.0.1
       with:
         name: DuckovCustomModel
         path: DuckovCustomModel/bin/Release/netstandard2.1

@@ -9,11 +9,11 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<DuckovPath>E:\SteamLibrary\steamapps\common\Escape from Duckov</DuckovPath>
+		<DuckovPath Condition="'$(DuckovPath)' == ''">E:\SteamLibrary\steamapps\common\Escape from Duckov</DuckovPath>
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<UseGameLibsFromNuGet Condition="'$(CI)' == 'true' OR '$(GITHUB_ACTIONS)' == 'true' OR '$(UseGameLibsFromNuGet)' == 'true'">true</UseGameLibsFromNuGet>
+		<UseGameLibsFromNuGet Condition="'$(UseGameLibsFromNuGet)' == '' AND ('$(CI)' == 'true' OR '$(GITHUB_ACTIONS)' == 'true')">true</UseGameLibsFromNuGet>
 		<UseGameLibsFromNuGet Condition="'$(UseGameLibsFromNuGet)' == ''">false</UseGameLibsFromNuGet>
 	</PropertyGroup>
 
@@ -24,10 +24,10 @@
 
 	<!-- 本地开发使用游戏目录 -->
 	<ItemGroup Condition="'$(UseGameLibsFromNuGet)' == 'false'">
-		<Reference Include="$(DuckovPath)\Duckov_Data\Managed\Unity*">
+		<Reference Include="$(DuckovManagedPath)\Unity*.dll">
 			<Private>False</Private>
 		</Reference>
-		<Reference Include="$(DuckovPath)\Duckov_Data\Managed\Newtonsoft.Json.dll">
+		<Reference Include="$(DuckovManagedPath)\Newtonsoft.Json.dll">
 			<Private>False</Private>
 		</Reference>
 	</ItemGroup>

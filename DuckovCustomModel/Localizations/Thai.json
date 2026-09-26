@@ -7,6 +7,7 @@
   "LoadingModelList": "กำลังโหลดรายการโมเดล...",
   "Hotkey": "ปุ่มลัด",
   "AnimatorParamsHotkey": "ปุ่มลัดพารามิเตอร์แอนิเมเตอร์",
+  "YsmRadialMenuHotkey": "ปุ่มลัดวงล้อแอ็กชัน YSM",
   "None": "ไม่มี",
   "Clear": "ล้าง",
   "PressAnyKey": "กดปุ่มใดก็ได้...",
@@ -86,6 +87,15 @@
   "ExpandAllBundles": "ขยายทั้งหมด",
   "CollapseAllBundles": "ย่อทั้งหมด",
   "ScrollToTop": "↑ ด้านบน",
-  "ScrollToBottom": "ด้านล่าง ↓"
+  "ScrollToBottom": "ด้านล่าง ↓",
+  "RadialModel": "โมเดล",
+  "RadialLockOn": "ล็อก",
+  "RadialLockOff": "ปลดล็อก",
+  "RadialStop": "หยุด",
+  "RadialBack": "กลับ",
+  "RadialHint": "Esc ปิด · คลิกเพื่อเลือก · ล้อเมาส์ด้านซ้าย: เปลี่ยนหน้า · ล้อเมาส์ในตั้งค่า: เลื่อน",
+  "RadialHintStop": " · ตรงกลาง: หยุดแอ็กชัน",
+  "RadialUnavailable": "ใช้การตั้งค่านี้ไม่ได้",
+  "RadialResetConfig": "รีเซ็ตการตั้งค่าของโมเดลนี้"
 }
 

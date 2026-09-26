@@ -7,6 +7,7 @@
   "LoadingModelList": "正在加载模型列表...",
   "Hotkey": "快捷键",
   "AnimatorParamsHotkey": "动画器参数快捷键",
+  "YsmRadialMenuHotkey": "YSM 动作轮盘快捷键",
   "None": "无",
   "Clear": "清除",
   "PressAnyKey": "按任意键...",
@@ -86,6 +87,15 @@
   "ExpandAllBundles": "全部展开",
   "CollapseAllBundles": "全部折叠",
   "ScrollToTop": "↑ 顶部",
-  "ScrollToBottom": "底部 ↓"
+  "ScrollToBottom": "底部 ↓",
+  "RadialModel": "模型",
+  "RadialLockOn": "已锁定",
+  "RadialLockOff": "未锁定",
+  "RadialStop": "停止",
+  "RadialBack": "返回",
+  "RadialHint": "Esc 关闭 · 点击选择 · 左侧滚轮翻页 · 配置区滚轮滚动",
+  "RadialHintStop": " · 中心停止动作",
+  "RadialUnavailable": "此配置不可用",
+  "RadialResetConfig": "还原此模型配置"
 }
 

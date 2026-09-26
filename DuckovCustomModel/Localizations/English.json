@@ -7,6 +7,7 @@
   "LoadingModelList": "Loading model list...",
   "Hotkey": "Hotkey",
   "AnimatorParamsHotkey": "Animator Parameters Hotkey",
+  "YsmRadialMenuHotkey": "YSM Action Wheel Hotkey",
   "None": "None",
   "Clear": "Clear",
   "PressAnyKey": "Press any key...",
@@ -86,6 +87,14 @@
   "ExpandAllBundles": "Expand All",
   "CollapseAllBundles": "Collapse All",
   "ScrollToTop": "↑ Top",
-  "ScrollToBottom": "Bottom ↓"
+  "ScrollToBottom": "Bottom ↓",
+  "RadialModel": "Model",
+  "RadialLockOn": "Locked",
+  "RadialLockOff": "Free",
+  "RadialStop": "Stop",
+  "RadialBack": "Back",
+  "RadialHint": "Esc close · click to select · wheel on left to change page · wheel on settings to scroll",
+  "RadialHintStop": " · center stops action",
+  "RadialUnavailable": "This setting is unavailable",
+  "RadialResetConfig": "Reset this model's settings"
 }
-

@@ -7,6 +7,7 @@
   "LoadingModelList": "モデルリストを読み込み中...",
   "Hotkey": "ショートカット",
   "AnimatorParamsHotkey": "アニメーターパラメータショートカット",
+  "YsmRadialMenuHotkey": "YSMアクションホイールのショートカット",
   "None": "なし",
   "Clear": "クリア",
   "PressAnyKey": "任意のキーを押してください...",
@@ -86,6 +87,15 @@
   "ExpandAllBundles": "すべて展開",
   "CollapseAllBundles": "すべて折りたたむ",
   "ScrollToTop": "↑ 上",
-  "ScrollToBottom": "下 ↓"
+  "ScrollToBottom": "下 ↓",
+  "RadialModel": "モデル",
+  "RadialLockOn": "ロック中",
+  "RadialLockOff": "解除",
+  "RadialStop": "停止",
+  "RadialBack": "戻る",
+  "RadialHint": "Escで閉じる · クリックで選択 · 左側でホイール：ページ切替 · 設定欄でホイール：スクロール",
+  "RadialHintStop": " · 中央でアクション停止",
+  "RadialUnavailable": "この設定は利用できません",
+  "RadialResetConfig": "このモデルの設定をリセット"
 }
 

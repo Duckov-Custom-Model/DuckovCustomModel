@@ -200,11 +200,14 @@ namespace DuckovCustomModel.UI.Tabs
                 UIFactory.CreateImage("MidContainer", parent.transform, new Color(0.1f, 0.12f, 0.14f, 0.95f));
             container.AddComponent<VerticalLayoutGroup>();
             container.AddComponent<LayoutElement>();
+            container.AddComponent<RectMask2D>();
             UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
             UIFactory.SetupVerticalLayoutGroup(container, 10f, new(0, 0, 0, 0), TextAnchor.UpperCenter,
                 true, true, true);
 
             var layoutElement = container.GetComponent<LayoutElement>();
+            layoutElement.minWidth = 0;
+            layoutElement.preferredWidth = 0;
             layoutElement.flexibleWidth = 1;
             layoutElement.flexibleHeight = 1;
 
@@ -218,6 +221,7 @@ namespace DuckovCustomModel.UI.Tabs
             UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
 
             var layoutElement = container.GetComponent<LayoutElement>();
+            layoutElement.minWidth = 500;
             layoutElement.preferredWidth = 500;
             layoutElement.flexibleWidth = 0;
             layoutElement.flexibleHeight = 1;

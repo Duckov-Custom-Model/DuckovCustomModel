@@ -7,6 +7,7 @@
   "LoadingModelList": "Carregando lista de modelos...",
   "Hotkey": "Atalho",
   "AnimatorParamsHotkey": "Atalho de parâmetros do animador",
+  "YsmRadialMenuHotkey": "Atalho da roda de ações YSM",
   "None": "Nenhum",
   "Clear": "Limpar",
   "PressAnyKey": "Pressione qualquer tecla...",
@@ -86,6 +87,15 @@
   "ExpandAllBundles": "Expandir tudo",
   "CollapseAllBundles": "Recolher tudo",
   "ScrollToTop": "↑ Topo",
-  "ScrollToBottom": "Fundo ↓"
+  "ScrollToBottom": "Fundo ↓",
+  "RadialModel": "Modelo",
+  "RadialLockOn": "Bloqueado",
+  "RadialLockOff": "Livre",
+  "RadialStop": "Parar",
+  "RadialBack": "Voltar",
+  "RadialHint": "Esc fecha · clique seleciona · roda à esquerda: páginas · roda nas configurações: rolar",
+  "RadialHintStop": " · centro: parar ação",
+  "RadialUnavailable": "Esta configuração está indisponível",
+  "RadialResetConfig": "Redefinir as configurações deste modelo"
 }
 

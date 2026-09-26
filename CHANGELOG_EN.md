@@ -2,6 +2,25 @@
 
 English | [中文](CHANGELOG.md)
 
+## v2.0.0
+
+### Added
+
+- Added YSM model loading and playback, animated previews, and a radial menu. AssetBundle models can also declare radial actions.
+- Added model package metadata, Minecraft color formatting, and more character state mappings.
+- Added AssetBundle/YSM model interoperability: bundled YSM sources, bundled corpse Prefabs for YSM models, and separate YSM corpse visuals.
+- Added nested AssetBundle wheel menus and a settings list for Boolean, integer, and floating-point parameters.
+
+### Fixed and improved
+
+- Improved model list layout, tooltips, and input handling.
+- Corrected YSM rendering, item sockets, and action state handling.
+- Added per-model persistence and one-click reset for wheel settings, and preserved scroll position when changing an option.
+- Matched roll animation duration to the game action and used the model controller's exit transition.
+- Mapped character energy to YSM food level and populated texture name and camera distance queries.
+- Added energy, thirst, health, weight, ammo, and related state parameters for AssetBundle model animators.
+- Updated build and packaging workflows to include the required dependencies and assets.
+
 ## v1.11.2
 
 ### Added

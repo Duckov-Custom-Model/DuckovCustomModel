@@ -43,11 +43,23 @@ namespace DuckovCustomModel.Core.Data
         public static readonly int ShootMode = Animator.StringToHash("ShootMode"); // int
         public static readonly int Loaded = Animator.StringToHash("Loaded"); // bool
         public static readonly int Reloading = Animator.StringToHash("Reloading"); // bool
+        public static readonly int Ammo = Animator.StringToHash("Ammo"); // int
+        public static readonly int MaxAmmo = Animator.StringToHash("MaxAmmo"); // int
         public static readonly int AmmoRate = Animator.StringToHash("AmmoRate"); // float
         public static readonly int RightHandOut = Animator.StringToHash("RightHandOut"); // bool
 
         public static readonly int HealthRate = Animator.StringToHash("HealthRate"); // float
+        public static readonly int Health = Animator.StringToHash("Health"); // float
+        public static readonly int MaxHealth = Animator.StringToHash("MaxHealth"); // float
+        public static readonly int Energy = Animator.StringToHash("Energy"); // float
+        public static readonly int MaxEnergy = Animator.StringToHash("MaxEnergy"); // float
+        public static readonly int EnergyRate = Animator.StringToHash("EnergyRate"); // float
+        public static readonly int FoodLevel = Animator.StringToHash("FoodLevel"); // float
+        public static readonly int Water = Animator.StringToHash("Water"); // float
+        public static readonly int MaxWater = Animator.StringToHash("MaxWater"); // float
         public static readonly int WaterRate = Animator.StringToHash("WaterRate"); // float
+        public static readonly int Weight = Animator.StringToHash("Weight"); // float
+        public static readonly int MaxWeight = Animator.StringToHash("MaxWeight"); // float
         public static readonly int WeightState = Animator.StringToHash("WeightState"); // int
         public static readonly int WeightRate = Animator.StringToHash("WeightRate"); // float
 
@@ -73,6 +85,11 @@ namespace DuckovCustomModel.Core.Data
         public static readonly int MeleeWeaponTypeID = Animator.StringToHash("MeleeWeaponTypeID"); // int
 
         public static readonly int Hidden = Animator.StringToHash("Hidden"); // bool
+        public static readonly int Invisible = Animator.StringToHash("Invisible"); // bool
+        public static readonly int BodyInWater = Animator.StringToHash("BodyInWater"); // bool
+        public static readonly int HeadInWater = Animator.StringToHash("HeadInWater"); // bool
+        public static readonly int FootInWater = Animator.StringToHash("FootInWater"); // bool
+        public static readonly int Swimming = Animator.StringToHash("Swimming"); // bool
         public static readonly int VelocityMagnitude = Animator.StringToHash("VelocityMagnitude"); // float
         public static readonly int VelocityX = Animator.StringToHash("VelocityX"); // float
         public static readonly int VelocityY = Animator.StringToHash("VelocityY"); // float
@@ -85,6 +102,7 @@ namespace DuckovCustomModel.Core.Data
         public static readonly int AdsValue = Animator.StringToHash("AdsValue"); // float
         public static readonly int AimType = Animator.StringToHash("AimType"); // int
         public static readonly int ActionRunning = Animator.StringToHash("ActionRunning"); // bool
+        public static readonly int UsingItem = Animator.StringToHash("UsingItem"); // bool
         public static readonly int ActionProgress = Animator.StringToHash("ActionProgress"); // float
         public static readonly int ActionPriority = Animator.StringToHash("ActionPriority"); // int
         public static readonly int ActionType = Animator.StringToHash("ActionType"); // int
@@ -144,10 +162,22 @@ namespace DuckovCustomModel.Core.Data
                 new() { Name = "ShootMode", Hash = ShootMode, Type = "int", InitialValue = -1 },
                 new() { Name = "Loaded", Hash = Loaded, Type = "bool", InitialValue = false },
                 new() { Name = "Reloading", Hash = Reloading, Type = "bool", InitialValue = false },
+                new() { Name = "Ammo", Hash = Ammo, Type = "int", InitialValue = 0 },
+                new() { Name = "MaxAmmo", Hash = MaxAmmo, Type = "int", InitialValue = 0 },
                 new() { Name = "AmmoRate", Hash = AmmoRate, Type = "float", InitialValue = 0f },
                 new() { Name = "RightHandOut", Hash = RightHandOut, Type = "bool", InitialValue = false },
                 new() { Name = "HealthRate", Hash = HealthRate, Type = "float", InitialValue = 0f },
+                new() { Name = "Health", Hash = Health, Type = "float", InitialValue = 20f },
+                new() { Name = "MaxHealth", Hash = MaxHealth, Type = "float", InitialValue = 20f },
+                new() { Name = "Energy", Hash = Energy, Type = "float", InitialValue = 0f },
+                new() { Name = "MaxEnergy", Hash = MaxEnergy, Type = "float", InitialValue = 0f },
+                new() { Name = "EnergyRate", Hash = EnergyRate, Type = "float", InitialValue = 1f },
+                new() { Name = "FoodLevel", Hash = FoodLevel, Type = "float", InitialValue = 20f },
+                new() { Name = "Water", Hash = Water, Type = "float", InitialValue = 0f },
+                new() { Name = "MaxWater", Hash = MaxWater, Type = "float", InitialValue = 0f },
                 new() { Name = "WaterRate", Hash = WaterRate, Type = "float", InitialValue = 0f },
+                new() { Name = "Weight", Hash = Weight, Type = "float", InitialValue = 0f },
+                new() { Name = "MaxWeight", Hash = MaxWeight, Type = "float", InitialValue = 0f },
                 new() { Name = "WeightState", Hash = WeightState, Type = "int", InitialValue = 0 },
                 new() { Name = "WeightRate", Hash = WeightRate, Type = "float", InitialValue = 0f },
                 new()
@@ -173,6 +203,11 @@ namespace DuckovCustomModel.Core.Data
                 new() { Name = "BackpackTypeID", Hash = BackpackTypeID, Type = "int", InitialValue = 0 },
                 new() { Name = "MeleeWeaponTypeID", Hash = MeleeWeaponTypeID, Type = "int", InitialValue = 0 },
                 new() { Name = "Hidden", Hash = Hidden, Type = "bool", InitialValue = false },
+                new() { Name = "Invisible", Hash = Invisible, Type = "bool", InitialValue = false },
+                new() { Name = "BodyInWater", Hash = BodyInWater, Type = "bool", InitialValue = false },
+                new() { Name = "HeadInWater", Hash = HeadInWater, Type = "bool", InitialValue = false },
+                new() { Name = "FootInWater", Hash = FootInWater, Type = "bool", InitialValue = false },
+                new() { Name = "Swimming", Hash = Swimming, Type = "bool", InitialValue = false },
                 new() { Name = "VelocityMagnitude", Hash = VelocityMagnitude, Type = "float", InitialValue = 0f },
                 new() { Name = "VelocityX", Hash = VelocityX, Type = "float", InitialValue = 0f },
                 new() { Name = "VelocityY", Hash = VelocityY, Type = "float", InitialValue = 0f },
@@ -185,6 +220,7 @@ namespace DuckovCustomModel.Core.Data
                 new() { Name = "AdsValue", Hash = AdsValue, Type = "float", InitialValue = 0f },
                 new() { Name = "AimType", Hash = AimType, Type = "int", InitialValue = 0 },
                 new() { Name = "ActionRunning", Hash = ActionRunning, Type = "bool", InitialValue = false },
+                new() { Name = "UsingItem", Hash = UsingItem, Type = "bool", InitialValue = false },
                 new() { Name = "ActionProgress", Hash = ActionProgress, Type = "float", InitialValue = 0f },
                 new() { Name = "ActionPriority", Hash = ActionPriority, Type = "int", InitialValue = 0 },
                 new() { Name = "ActionType", Hash = ActionType, Type = "int", InitialValue = -1 },

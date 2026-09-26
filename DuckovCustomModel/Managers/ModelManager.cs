@@ -3,11 +3,16 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using DuckovCustomModel.Core;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Core.Managers;
+using DuckovCustomModel.Integrations.Ysm;
 using DuckovCustomModel.MonoBehaviours;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace DuckovCustomModel.Managers
 {
@@ -21,12 +26,15 @@ namespace DuckovCustomModel.Managers
 
         public static string ModelsDirectory => Path.Combine(ConfigManager.ConfigBaseDirectory, "Models");
 
-        public static HashSet<string> UpdateModelBundles()
+        public static HashSet<string> UpdateModelBundles(bool includeYsm = true)
         {
             if (!Directory.Exists(ModelsDirectory))
                 Directory.CreateDirectory(ModelsDirectory);
 
             var modelBundleDirectories = Directory.GetDirectories(ModelsDirectory);
+            var parsedBundles = new Dictionary<string, ModelBundleInfo>(StringComparer.OrdinalIgnoreCase);
+            var missingBundleDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var renamedBundleNames = new HashSet<string>(StringComparer.Ordinal);
             var bundlesToUnload = new HashSet<string>();
             var bundlesToReload = new HashSet<string>();
 
@@ -34,25 +42,53 @@ namespace DuckovCustomModel.Managers
                 try
                 {
                     var infoFilePath = Path.Combine(modelBundleDir, "bundleinfo.json");
-                    if (!File.Exists(infoFilePath)) continue;
+                    if (!File.Exists(infoFilePath))
+                    {
+                        missingBundleDirectories.Add(modelBundleDir);
+                        continue;
+                    }
 
                     var bundleInfo = ModelBundleInfo.LoadFromDirectory(modelBundleDir, JsonSettings.Default);
                     if (bundleInfo == null) continue;
 
                     var bundlePath = Path.Combine(bundleInfo.DirectoryPath, bundleInfo.BundlePath);
-                    if (!File.Exists(bundlePath)) continue;
+                    if (!File.Exists(bundlePath))
+                    {
+                        missingBundleDirectories.Add(modelBundleDir);
+                        continue;
+                    }
 
                     var configContent = File.ReadAllText(infoFilePath);
                     var configHash = BundleHashInfo.CalculateStringHash(configContent);
-                    var bundleHash = BundleHashInfo.CalculateFileHash(bundlePath);
+                    var fileInfo = new FileInfo(bundlePath);
 
                     var bundleKey = Path.GetFileName(modelBundleDir);
                     if (string.IsNullOrEmpty(bundleKey))
                         bundleKey = modelBundleDir;
+                    BundleHashCache.TryGetValue(bundleKey, out var cachedHash);
+                    var bundleHash = cachedHash != null
+                                     && cachedHash.BundleHash.Length != 0
+                                     && cachedHash.BundlePath == bundleInfo.BundlePath
+                                     && cachedHash.LastModified == fileInfo.LastWriteTimeUtc
+                                     && cachedHash.FileLength == fileInfo.Length
+                        ? cachedHash.BundleHash
+                        : BundleHashInfo.CalculateFileHash(bundlePath);
+                    if (bundleHash.Length == 0) throw new IOException("Cannot hash AssetBundle: " + bundlePath);
+                    parsedBundles[modelBundleDir] = bundleInfo;
+                    var previousInDirectory = ModelBundles.FirstOrDefault(b => !YsmModelSource.IsYsm(b)
+                                                                               && string.Equals(b.DirectoryPath,
+                                                                                   modelBundleDir,
+                                                                                   StringComparison.OrdinalIgnoreCase));
+                    if (previousInDirectory != null && previousInDirectory.BundleName != bundleInfo.BundleName)
+                    {
+                        bundlesToUnload.Add(previousInDirectory.BundleName);
+                        bundlesToReload.Add(bundleInfo.BundleName);
+                        renamedBundleNames.Add(previousInDirectory.BundleName);
+                    }
 
                     var needsReload = false;
 
-                    if (BundleHashCache.TryGetValue(bundleKey, out var cachedHash))
+                    if (cachedHash != null)
                     {
                         if (cachedHash.ConfigHash != configHash || cachedHash.BundleHash != bundleHash)
                         {
@@ -78,7 +114,8 @@ namespace DuckovCustomModel.Managers
                         BundlePath = bundleInfo.BundlePath,
                         BundleHash = bundleHash,
                         ConfigHash = configHash,
-                        LastModified = File.GetLastWriteTime(bundlePath),
+                        LastModified = fileInfo.LastWriteTimeUtc,
+                        FileLength = fileInfo.Length,
                     };
                     BundleHashCache[bundleKey] = hashInfo;
                 }
@@ -91,16 +128,17 @@ namespace DuckovCustomModel.Managers
             var existingBundles = ModelBundles.ToList();
             foreach (var existingBundle in existingBundles)
             {
+                if (YsmModelSource.IsYsm(existingBundle)) continue;
                 var bundleDir = existingBundle.DirectoryPath;
-                if (!string.IsNullOrEmpty(bundleDir) && Directory.Exists(bundleDir)) continue;
+                var directoryRemoved = string.IsNullOrEmpty(bundleDir) || !Directory.Exists(bundleDir);
+                var sourceMissing = !directoryRemoved && missingBundleDirectories.Contains(bundleDir);
+                if (!directoryRemoved && !sourceMissing &&
+                    !renamedBundleNames.Contains(existingBundle.BundleName)) continue;
                 var bundleKey = Path.GetFileName(bundleDir);
-                if (string.IsNullOrEmpty(bundleKey))
-                    bundleKey = bundleDir;
+                if (string.IsNullOrEmpty(bundleKey)) bundleKey = bundleDir;
 
                 bundlesToUnload.Add(existingBundle.BundleName);
-                ModelBundles.Remove(existingBundle);
-                BundleHashCache.Remove(bundleKey);
-                ModLogger.Log($"Bundle '{existingBundle.BundleName}' removed");
+                if (directoryRemoved || sourceMissing) BundleHashCache.Remove(bundleKey);
             }
 
             foreach (var bundleKey in bundlesToUnload)
@@ -127,13 +165,20 @@ namespace DuckovCustomModel.Managers
 
                 var bundlePath = Path.Combine(bundleToUnload.DirectoryPath, bundleToUnload.BundlePath);
                 AssetBundleManager.UnloadAssetBundle(bundlePath);
+                if (string.IsNullOrEmpty(bundleToUnload.DirectoryPath)
+                    || !Directory.Exists(bundleToUnload.DirectoryPath)
+                    || missingBundleDirectories.Contains(bundleToUnload.DirectoryPath)
+                    || renamedBundleNames.Contains(bundleToUnload.BundleName))
+                {
+                    ModelBundles.Remove(bundleToUnload);
+                    ModLogger.Log($"Bundle '{bundleToUnload.BundleName}' removed");
+                }
             }
 
             foreach (var modelBundleDir in modelBundleDirectories)
                 try
                 {
-                    var bundleInfo = ModelBundleInfo.LoadFromDirectory(modelBundleDir, JsonSettings.Default);
-                    if (bundleInfo == null) continue;
+                    if (!parsedBundles.TryGetValue(modelBundleDir, out var bundleInfo)) continue;
 
                     var bundleKey = bundleInfo.BundleName;
                     if (bundlesToReload.Contains(bundleKey))
@@ -172,9 +217,25 @@ namespace DuckovCustomModel.Managers
                     ModLogger.LogException(ex);
                 }
 
+            if (includeYsm) YsmModelSource.UpdateDiscoveredModels(ModelsDirectory, ModelBundles, bundlesToReload);
             CheckDuplicateModelIDs();
 
             return bundlesToReload;
+        }
+
+        internal static async UniTask<HashSet<string>> UpdateYsmModelBundlesAsync(CancellationToken cancellationToken)
+        {
+            var directory = ModelsDirectory;
+            var snapshot = ModelBundles.Where(YsmModelSource.IsYsm).ToList();
+            var changed = new HashSet<string>();
+            await Task.Run(() => YsmModelSource.UpdateDiscoveredModels(directory, snapshot, changed, cancellationToken),
+                cancellationToken);
+            await UniTask.SwitchToMainThread(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            ModelBundles.RemoveAll(YsmModelSource.IsYsm);
+            ModelBundles.AddRange(snapshot);
+            CheckDuplicateModelIDs();
+            return changed;
         }
 
         public static IReadOnlyDictionary<string, List<string>> GetDuplicateModelIDs()
@@ -326,9 +387,14 @@ namespace DuckovCustomModel.Managers
 
         #region 缓存管理
 
-        public static bool TryGetThumbnail(string bundlePath, string modelID, out Texture2D? texture)
+        private static string ThumbnailKey(string bundlePath, ModelInfo model)
         {
-            var cacheKey = $"{bundlePath}_{modelID}";
+            return $"{bundlePath}|{model.ModelID}|{model.SourceRevision}";
+        }
+
+        public static bool TryGetThumbnail(string bundlePath, ModelInfo model, out Texture2D? texture)
+        {
+            var cacheKey = ThumbnailKey(bundlePath, model);
             if (ThumbnailCache.TryGetValue(cacheKey, out var cachedTexture))
             {
                 texture = cachedTexture;
@@ -339,16 +405,26 @@ namespace DuckovCustomModel.Managers
             return false;
         }
 
-        public static void CacheThumbnail(string bundlePath, string modelID, Texture2D? texture)
+        public static void CacheThumbnail(string bundlePath, ModelInfo model, Texture2D? texture)
         {
             if (texture == null) return;
-            var cacheKey = $"{bundlePath}_{modelID}";
+            var cacheKey = ThumbnailKey(bundlePath, model);
+            if (ThumbnailCache.TryGetValue(cacheKey, out var previous) && previous != texture)
+                Object.Destroy(previous);
             ThumbnailCache[cacheKey] = texture;
         }
 
         public static void ClearThumbnailCache()
         {
-            ThumbnailCache.Clear();
+            var currentYsm = new HashSet<string>(ModelBundles
+                .Where(bundle => string.Equals(bundle.SourceKind, "Ysm", StringComparison.OrdinalIgnoreCase))
+                .SelectMany(bundle => bundle.Models.Select(model => ThumbnailKey(bundle.DirectoryPath, model))));
+            foreach (var entry in ThumbnailCache.ToArray())
+            {
+                if (currentYsm.Contains(entry.Key)) continue;
+                Object.Destroy(entry.Value);
+                ThumbnailCache.Remove(entry.Key);
+            }
         }
 
         #endregion

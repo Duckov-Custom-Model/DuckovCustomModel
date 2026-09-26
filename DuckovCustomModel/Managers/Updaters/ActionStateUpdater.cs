@@ -23,6 +23,8 @@ namespace DuckovCustomModel.Managers.Updaters
             }
 
             control.SetParameterBool(CustomAnimatorHash.ActionRunning, isActionRunning);
+            control.SetParameterBool(CustomAnimatorHash.UsingItem,
+                isActionRunning && currentAction is CA_UseItem);
             control.SetParameterFloat(CustomAnimatorHash.ActionProgress, actionProgress);
             control.SetParameterInteger(CustomAnimatorHash.ActionPriority, actionPriority);
         }

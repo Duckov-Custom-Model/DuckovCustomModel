@@ -1,7 +1,10 @@
 using System;
 using System.Linq;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.Integrations.Ysm;
 using DuckovCustomModel.MonoBehaviours;
+using ModelRuntime;
+using ModelRuntime.Media;
 using UnityEngine;
 
 namespace DuckovCustomModel.Managers
@@ -26,6 +29,9 @@ namespace DuckovCustomModel.Managers
 
             if (!ModelManager.FindModelByID(modelID, out var bundleInfo, out var modelInfo)) return 0f;
 
+            if (YsmModelSource.IsYsm(modelInfo))
+                return GetYsmHeight(bundleInfo, modelInfo);
+
             var prefab = AssetBundleManager.LoadAssetFromBundle<GameObject>(bundleInfo, modelInfo.PrefabPath);
             if (prefab == null) return 0f;
 
@@ -41,6 +47,13 @@ namespace DuckovCustomModel.Managers
             if (string.IsNullOrWhiteSpace(modelID) ||
                 !ModelManager.FindModelByID(modelID, out var bundleInfo, out var modelInfo))
                 return Vector3.one;
+
+            if (YsmModelSource.IsYsm(modelInfo))
+            {
+                using var lease = YsmModelSource.Acquire(bundleInfo, modelInfo);
+                var scale = lease.Package.Models[lease.Profile.ModelTarget].DisplayScale;
+                return new Vector3(scale.X, scale.Y, scale.Z) * lease.Profile.Scale;
+            }
 
             var prefab = AssetBundleManager.LoadAssetFromBundle<GameObject>(bundleInfo, modelInfo.PrefabPath);
             return prefab == null ? Vector3.one : prefab.transform.localScale;
@@ -103,7 +116,7 @@ namespace DuckovCustomModel.Managers
             if (string.IsNullOrWhiteSpace(targetTypeId) || string.IsNullOrWhiteSpace(modelID))
                 return;
 
-            GetHelmetHeightFromPrefab(modelID);
+            if (handler.YsmRuntime == null) GetHelmetHeightFromPrefab(modelID);
             ApplyHeightToHandler(handler);
         }
 
@@ -118,6 +131,16 @@ namespace DuckovCustomModel.Managers
             if (string.IsNullOrWhiteSpace(targetTypeId) || string.IsNullOrWhiteSpace(modelID))
                 return;
 
+            if (handler.YsmRuntime != null)
+            {
+                var runtime = handler.YsmRuntime;
+                var requested = ModelRuntimeDataManager.LoadRuntimeData(targetTypeId, modelID)
+                    .GetValue<float>("UserHeight");
+                handler.ApplyHeightFromRuntimeData(requested > 0 ? requested : runtime.NaturalHeight,
+                    runtime.NaturalHeight, runtime.InitialRootScale);
+                return;
+            }
+
             var userHeight = GetHeight(targetTypeId, modelID);
             var initialHeight = GetHelmetHeightFromPrefab(modelID);
             var initialRootScale = GetInitialRootScaleFromPrefab(modelID);
@@ -126,6 +149,49 @@ namespace DuckovCustomModel.Managers
                 return;
 
             handler.ApplyHeightFromRuntimeData(userHeight, initialHeight, initialRootScale);
+        }
+
+        private static float GetYsmHeight(ModelBundleInfo bundleInfo, ModelInfo modelInfo)
+        {
+            foreach (var handler in ModelManager.GetAllHandlers())
+                if (handler.CurrentModelInfo?.ModelID == modelInfo.ModelID && handler.YsmRuntime != null)
+                    return handler.YsmRuntime.NaturalHeight;
+            var pixels = new StandardTexturePixelSource();
+            try
+            {
+                using var lease = YsmModelSource.Acquire(bundleInfo, modelInfo);
+                var document = lease.Package.Models[lease.Profile.ModelTarget];
+                var pose = new PoseEvaluator(document);
+                pose.Evaluate(ReadOnlySpan<AnimationLayer>.Empty, new());
+                var heightScale = Math.Abs(document.DisplayScale.Y * lease.Profile.Scale) / 16f;
+                var locator = lease.Profile.LocatorMappings.TryGetValue(SocketNames.Helmet, out var mapped)
+                    ? mapped
+                    : SocketNames.Helmet;
+                if (!string.IsNullOrEmpty(locator) && pose.TryGetLocatorTransform(locator, out var transform) &&
+                    transform.M42 > 0)
+                    return transform.M42 * heightScale;
+                var mesh = MeshBaker.Bake(document, pixels);
+                var minimum = 0f;
+                var maximum = 0f;
+                for (var i = 0; i < mesh.Positions.Length; i++)
+                {
+                    var position =
+                        System.Numerics.Vector3.Transform(mesh.Positions[i], pose.Matrices[mesh.BoneIndices[i]]);
+                    minimum = Math.Min(minimum, position.Y);
+                    maximum = Math.Max(maximum, position.Y);
+                }
+
+                return (maximum - minimum) * heightScale;
+            }
+            catch (Exception exception)
+            {
+                ModLogger.LogWarning($"Unable to measure YSM model height: {exception.Message}");
+                return 0;
+            }
+            finally
+            {
+                pixels.Clear();
+            }
         }
     }
 }
