@@ -36,6 +36,10 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupVerticalLayoutGroup(_content, 10f, new(10, 10, 10, 10), TextAnchor.UpperCenter,
                 true, true, true);
             UIFactory.SetupContentSizeFitter(_content, ContentSizeFitter.FitMode.Unconstrained);
+            var contentLayoutElement = _content.AddComponent<LayoutElement>();
+            contentLayoutElement.minWidth = 0;
+            contentLayoutElement.preferredWidth = 0;
+            contentLayoutElement.flexibleWidth = 1;
         }
 
         public void SetTarget(TargetInfo? targetInfo)
@@ -48,7 +52,11 @@ namespace DuckovCustomModel.UI.Components
         {
             if (_content == null) return;
 
-            foreach (Transform child in _content.transform) Destroy(child.gameObject);
+            foreach (Transform child in _content.transform)
+            {
+                child.gameObject.SetActive(false);
+                Destroy(child.gameObject);
+            }
 
             if (_currentTarget == null) return;
 
@@ -63,6 +71,11 @@ namespace DuckovCustomModel.UI.Components
             BuildEnableIdleAudioSetting();
             BuildIdleAudioIntervalSettings();
 
+            UpdateRuntimeSettingsVisibility();
+        }
+
+        public void RefreshModelSelection()
+        {
             UpdateRuntimeSettingsVisibility();
         }
 
@@ -87,8 +100,7 @@ namespace DuckovCustomModel.UI.Components
 
             var label = UIFactory.CreateText("Label", _modelHeightRow.transform, Localization.ModelHeight, 18,
                 Color.white);
-            UIFactory.SetupLeftLabel(label);
-            UIFactory.SetupContentSizeFitter(label);
+            UIFactory.SetupBoundedLeftLabel(label, 340);
             UIFactory.SetLocalizedText(label, () => Localization.ModelHeight);
 
             var controlsContainer =
@@ -136,8 +148,7 @@ namespace DuckovCustomModel.UI.Components
             var label = UIFactory.CreateText("Label", _clearRuntimeDataRow.transform,
                 Localization.ClearCustomDataConfig, 18,
                 Color.white);
-            UIFactory.SetupLeftLabel(label);
-            UIFactory.SetupContentSizeFitter(label);
+            UIFactory.SetupBoundedLeftLabel(label, 140);
             UIFactory.SetLocalizedText(label, () => Localization.ClearCustomDataConfig);
 
             var clearButton = UIFactory.CreateButton("ClearRuntimeDataButton", _clearRuntimeDataRow.transform,
@@ -222,8 +233,7 @@ namespace DuckovCustomModel.UI.Components
             var label = UIFactory.CreateText("Label", settingRow.transform,
                 string.Format(Localization.HideEquipment, displayName),
                 18, Color.white);
-            UIFactory.SetupLeftLabel(label);
-            UIFactory.SetupContentSizeFitter(label);
+            UIFactory.SetupBoundedLeftLabel(label, 60);
 
             UIFactory.SetLocalizedText(label, () =>
                 string.Format(Localization.HideEquipment, displayName));
@@ -257,8 +267,7 @@ namespace DuckovCustomModel.UI.Components
 
             var label = UIFactory.CreateText("Label", settingRow.transform, Localization.EnableModelAudio, 18,
                 Color.white);
-            UIFactory.SetupLeftLabel(label);
-            UIFactory.SetupContentSizeFitter(label);
+            UIFactory.SetupBoundedLeftLabel(label, 60);
             UIFactory.SetLocalizedText(label, () => Localization.EnableModelAudio);
 
             var isOn = true;
@@ -282,8 +291,7 @@ namespace DuckovCustomModel.UI.Components
 
             var label = UIFactory.CreateText("Label", settingRow.transform, Localization.ModelAudioVolume, 18,
                 Color.white);
-            UIFactory.SetupLeftLabel(label);
-            UIFactory.SetupContentSizeFitter(label);
+            UIFactory.SetupBoundedLeftLabel(label, 240);
             UIFactory.SetLocalizedText(label, () => Localization.ModelAudioVolume);
 
             var volume = 1f;
@@ -316,8 +324,7 @@ namespace DuckovCustomModel.UI.Components
 
             var label = UIFactory.CreateText("Label", settingRow.transform, Localization.EnableIdleAudio, 18,
                 Color.white);
-            UIFactory.SetupLeftLabel(label);
-            UIFactory.SetupContentSizeFitter(label);
+            UIFactory.SetupBoundedLeftLabel(label, 60);
             UIFactory.SetLocalizedText(label, () => Localization.EnableIdleAudio);
 
             var isOn = false;
@@ -345,8 +352,7 @@ namespace DuckovCustomModel.UI.Components
             var minIntervalRow = CreateSettingRow();
             var minLabel = UIFactory.CreateText("Label", minIntervalRow.transform,
                 $"{Localization.IdleAudioInterval} {Localization.Seconds} ({Localization.MinValue})", 18, Color.white);
-            UIFactory.SetupLeftLabel(minLabel);
-            UIFactory.SetupContentSizeFitter(minLabel);
+            UIFactory.SetupBoundedLeftLabel(minLabel, 140);
             UIFactory.SetLocalizedText(minLabel, () =>
                 $"{Localization.IdleAudioInterval} {Localization.Seconds} ({Localization.MinValue})");
 
@@ -362,8 +368,7 @@ namespace DuckovCustomModel.UI.Components
             var maxIntervalRow = CreateSettingRow();
             var maxLabel = UIFactory.CreateText("Label", maxIntervalRow.transform,
                 $"{Localization.IdleAudioInterval} {Localization.Seconds} ({Localization.MaxValue})", 18, Color.white);
-            UIFactory.SetupLeftLabel(maxLabel);
-            UIFactory.SetupContentSizeFitter(maxLabel);
+            UIFactory.SetupBoundedLeftLabel(maxLabel, 140);
             UIFactory.SetLocalizedText(maxLabel, () =>
                 $"{Localization.IdleAudioInterval} {Localization.Seconds} ({Localization.MaxValue})");
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DuckovCustomModel.Core.Data;
@@ -30,19 +31,49 @@ namespace DuckovCustomModel.UI.Components
 
         private readonly Dictionary<string, GameObject> _bundleContainers = new();
         private readonly Dictionary<string, bool> _bundleExpandedStates = new();
+
+        private readonly Dictionary<string, (ModelBundleInfo bundle, Image image, Outline outline)> _bundleHeaders =
+            new();
+
         private readonly Dictionary<string, (bool isValid, string? errorMessage)> _bundleStatusCache = new();
         private readonly Dictionary<string, Toggle> _bundleToggles = new();
         private readonly List<ModelBundleInfo> _filteredModelBundles = [];
         private readonly Dictionary<string, GameObject> _loadingPlaceholders = new();
         private readonly Dictionary<string, RectTransform> _modelButtonRects = new();
+        private readonly Dictionary<string, (Image image, Outline outline, bool isValid)> _modelCards = new();
+        private string _builtTargetTypeId = string.Empty;
         private GameObject? _content;
         private TargetInfo? _currentTarget;
+        private string _displayedFallbackId = string.Empty;
+        private string _displayedSelectedId = string.Empty;
+        private bool _hasBuiltList;
         private bool _isThumbnailLoadingInProgress;
+        private float _nextContentCheckAt;
         private CancellationTokenSource? _refreshCancellationTokenSource;
         private float _savedScrollPosition;
         private ScrollRect? _scrollRect;
         private ScrollStrategy _scrollStrategy = ScrollStrategy.ScrollToTop;
         private string _searchText = string.Empty;
+        private string _sourceSignature = string.Empty;
+
+        private void LateUpdate()
+        {
+            if (!_hasBuiltList || Time.unscaledTime < _nextContentCheckAt) return;
+            _nextContentCheckAt = Time.unscaledTime + .5f;
+            if (_builtTargetTypeId != _currentTarget?.GetTargetTypeId() ||
+                _sourceSignature != GetSourceSignature())
+            {
+                Refresh(ScrollStrategy.PreservePosition);
+                return;
+            }
+
+            if (_displayedSelectedId != _currentTarget?.UsingModel ||
+                _displayedFallbackId != _currentTarget?.UsingFallbackModel)
+            {
+                RefreshSelection();
+                OnModelSelected?.Invoke();
+            }
+        }
 
         private void OnDestroy()
         {
@@ -66,6 +97,8 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupRectTransform(_content, new(0, 1), new(1, 1), Vector2.zero, pivot: new(0, 1),
                 anchoredPosition: Vector2.zero);
             var contentLayoutElement = _content.AddComponent<LayoutElement>();
+            contentLayoutElement.minWidth = 0;
+            contentLayoutElement.preferredWidth = 0;
             contentLayoutElement.flexibleWidth = 1;
 
             UIFactory.SetupVerticalLayoutGroup(_content, 10f, new(10, 10, 10, 10), TextAnchor.UpperLeft);
@@ -79,7 +112,8 @@ namespace DuckovCustomModel.UI.Components
         {
             var toolbar = UIFactory.CreateImage("BundleToolbar", parent, new(0.15f, 0.18f, 0.22f, 0.9f));
             UIFactory.SetupRectTransform(toolbar, Vector2.zero, Vector2.one, Vector2.zero);
-            UIFactory.SetupHorizontalLayoutGroup(toolbar, 10f, new(10, 10, 10, 10));
+            UIFactory.SetupHorizontalLayoutGroup(toolbar, 10f, new(10, 10, 10, 10),
+                childControlWidth: true);
 
             var expandAllButton = UIFactory.CreateButton("ExpandAllBundlesButton", toolbar.transform,
                 ExpandAllBundles, new(0.2f, 0.3f, 0.4f, 1)).GetComponent<Button>();
@@ -140,19 +174,77 @@ namespace DuckovCustomModel.UI.Components
 
         public void SetTarget(TargetInfo? targetInfo)
         {
+            var sameTargetType = _currentTarget?.GetTargetTypeId() == targetInfo?.GetTargetTypeId();
             _currentTarget = targetInfo;
+            if (sameTargetType && _hasBuiltList)
+            {
+                RefreshSelection();
+                ScrollToActiveModel();
+                return;
+            }
+
             Refresh(ScrollStrategy.ScrollToActiveModel);
         }
 
         public void SetSearchText(string searchText)
         {
+            if (_searchText == searchText) return;
             _searchText = searchText;
             Refresh();
+        }
+
+        public void RefreshSelection()
+        {
+            if (_hasBuiltList && (_builtTargetTypeId != _currentTarget?.GetTargetTypeId() ||
+                                  _sourceSignature != GetSourceSignature()))
+            {
+                Refresh(ScrollStrategy.ScrollToActiveModel);
+                return;
+            }
+
+            if (!_hasBuiltList)
+            {
+                if (_refreshCancellationTokenSource == null || _refreshCancellationTokenSource.IsCancellationRequested)
+                    Refresh(ScrollStrategy.ScrollToActiveModel);
+                return;
+            }
+
+            var selectedId = _currentTarget?.UsingModel;
+            var fallbackId = _currentTarget?.UsingFallbackModel;
+            foreach (var (modelId, card) in _modelCards)
+            {
+                var inUse = card.isValid && modelId == selectedId;
+                var fallback = card.isValid && !inUse && modelId == fallbackId;
+                card.image.color = !card.isValid ? new(.22f, .15f, .15f, .95f)
+                    : inUse ? new(.15f, .22f, .18f, .95f)
+                    : fallback ? new(.18f, .15f, .22f, .95f)
+                    : new(.15f, .18f, .22f, .95f);
+                card.outline.effectColor = inUse ? new(.3f, .6f, .4f, .8f)
+                    : fallback ? new(.5f, .4f, .8f, .8f)
+                    : new(.3f, .35f, .4f, .7f);
+            }
+
+            foreach (var header in _bundleHeaders.Values)
+            {
+                var inUse = header.bundle.Models.Any(model => model.ModelID == selectedId);
+                var fallback = !inUse && header.bundle.Models.Any(model => model.ModelID == fallbackId);
+                header.image.color = inUse ? new(.15f, .22f, .18f, .9f)
+                    : fallback ? new(.18f, .15f, .22f, .9f)
+                    : new(.18f, .2f, .25f, .9f);
+                header.outline.effectColor = inUse ? new(.3f, .6f, .4f, .8f)
+                    : fallback ? new(.5f, .4f, .8f, .8f)
+                    : new(.3f, .35f, .4f, .6f);
+            }
+
+            _displayedSelectedId = selectedId ?? string.Empty;
+            _displayedFallbackId = fallbackId ?? string.Empty;
         }
 
         public void Refresh(ScrollStrategy scrollStrategy = ScrollStrategy.ScrollToTop, bool forceRefresh = false)
         {
             if (_content == null) return;
+
+            _hasBuiltList = false;
 
             if (scrollStrategy == ScrollStrategy.PreservePosition && _scrollRect != null)
                 _savedScrollPosition = _scrollRect.verticalNormalizedPosition;
@@ -162,10 +254,17 @@ namespace DuckovCustomModel.UI.Components
             _refreshCancellationTokenSource?.Cancel();
             _refreshCancellationTokenSource?.Dispose();
 
-            foreach (Transform child in _content.transform) Destroy(child.gameObject);
+            foreach (Transform child in _content.transform)
+            {
+                child.gameObject.SetActive(false);
+                Destroy(child.gameObject);
+            }
+
             _bundleContainers.Clear();
             _bundleToggles.Clear();
             _modelButtonRects.Clear();
+            _modelCards.Clear();
+            _bundleHeaders.Clear();
             foreach (var placeholder in _loadingPlaceholders.Values.OfType<GameObject>())
                 Destroy(placeholder);
             _loadingPlaceholders.Clear();
@@ -192,6 +291,7 @@ namespace DuckovCustomModel.UI.Components
                 if (forceFullRefresh) _bundleStatusCache.Clear();
 
                 if (_currentTarget == null) return;
+                var sourceSignature = GetSourceSignature();
 
                 var targetTypeId = _currentTarget.GetTargetTypeId();
 
@@ -274,6 +374,13 @@ namespace DuckovCustomModel.UI.Components
                             break;
                     }
                 }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                _sourceSignature = sourceSignature;
+                _builtTargetTypeId = targetTypeId;
+                _displayedSelectedId = _currentTarget.UsingModel;
+                _displayedFallbackId = _currentTarget.UsingFallbackModel;
+                _hasBuiltList = true;
             }
             catch (OperationCanceledException)
             {
@@ -282,6 +389,30 @@ namespace DuckovCustomModel.UI.Components
             {
                 linkedCts?.Dispose();
             }
+        }
+
+        private static string GetSourceSignature()
+        {
+            var signature = new StringBuilder();
+            foreach (var bundle in ModelManager.ModelBundles)
+            {
+                signature.Append(bundle.DirectoryPath).Append('\0').Append(bundle.BundleName).Append('\0')
+                    .Append(bundle.BundlePath).Append('\0').Append(bundle.SourceKind).Append('\0')
+                    .Append(bundle.Models.Length).Append('\0');
+                foreach (var model in bundle.Models)
+                {
+                    signature.Append(model.ModelID).Append('\0').Append(model.SourceRevision).Append('\0')
+                        .Append(model.Name).Append('\0').Append(model.Author).Append('\0')
+                        .Append(model.Version).Append('\0').Append(model.Description).Append('\0')
+                        .Append(model.SourceKind).Append('\0').Append(model.SourcePath).Append('\0')
+                        .Append(model.PrefabPath).Append('\0').Append(model.ThumbnailPath).Append('\0');
+                    foreach (var targetType in model.TargetTypes)
+                        signature.Append(targetType).Append('\0');
+                    signature.Append('\n');
+                }
+            }
+
+            return signature.ToString();
         }
 
         private async UniTask LoadThumbnailsAsync(CancellationToken cancellationToken)
@@ -618,7 +749,7 @@ namespace DuckovCustomModel.UI.Components
             ModelListManager.SetModelInConfig(targetTypeId, model.ModelID);
 
             OnModelSelected?.Invoke();
-            Refresh(ScrollStrategy.PreservePosition);
+            RefreshSelection();
         }
 
         private void OnNoneModelSelected()
@@ -632,7 +763,7 @@ namespace DuckovCustomModel.UI.Components
             ModelListManager.SetModelInConfig(targetTypeId, string.Empty);
 
             OnModelSelected?.Invoke();
-            Refresh(ScrollStrategy.PreservePosition);
+            RefreshSelection();
         }
 
         private void CreateLoadingPlaceholder(string bundleKey, ModelBundleInfo bundle)
@@ -645,6 +776,8 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupVerticalLayoutGroup(placeholderObj, 0f, new(0, 0, 0, 0), TextAnchor.UpperLeft, true, false,
                 true);
             var placeholderLayoutElement = placeholderObj.AddComponent<LayoutElement>();
+            placeholderLayoutElement.minWidth = 0;
+            placeholderLayoutElement.preferredWidth = 0;
             placeholderLayoutElement.flexibleWidth = 1;
             UIFactory.SetupContentSizeFitter(placeholderObj, ContentSizeFitter.FitMode.Unconstrained);
 
@@ -724,6 +857,8 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupVerticalLayoutGroup(bundleGroupObj, 0f, new(0, 0, 0, 0), TextAnchor.UpperLeft, true, false,
                 true);
             var bundleGroupLayoutElement = bundleGroupObj.AddComponent<LayoutElement>();
+            bundleGroupLayoutElement.minWidth = 0;
+            bundleGroupLayoutElement.preferredWidth = 0;
             bundleGroupLayoutElement.flexibleWidth = 1;
             UIFactory.SetupContentSizeFitter(bundleGroupObj, ContentSizeFitter.FitMode.Unconstrained);
 
@@ -751,9 +886,10 @@ namespace DuckovCustomModel.UI.Components
             else
                 bundleHeaderOutline.effectColor = new(0.3f, 0.35f, 0.4f, 0.6f);
             bundleHeaderOutline.effectDistance = new(1, -1);
+            _bundleHeaders[bundleKey] = (bundle, bundleHeaderObj.GetComponent<Image>(), bundleHeaderOutline);
 
             var expandToggle = UIFactory.CreateToggle("ExpandToggle", bundleHeaderObj.transform, isExpanded,
-                value => ToggleBundle(bundleKey, value).Forget());
+                value => ToggleBundle(bundleKey, value));
             _bundleToggles[bundleKey] = expandToggle;
             UIFactory.SetupRectTransform(expandToggle.gameObject, new(0, 0.5f), new(0, 0.5f), new(30, 30),
                 pivot: new(0, 0.5f), anchoredPosition: new(10, 0));
@@ -796,15 +932,21 @@ namespace DuckovCustomModel.UI.Components
                 false, true);
             UIFactory.SetupContentSizeFitter(modelsContainer, ContentSizeFitter.FitMode.Unconstrained);
             var modelsContainerLayoutElement = modelsContainer.AddComponent<LayoutElement>();
+            modelsContainerLayoutElement.minWidth = 0;
+            modelsContainerLayoutElement.preferredWidth = 0;
             modelsContainerLayoutElement.flexibleWidth = 1;
             _bundleContainers[bundleKey] = modelsContainer;
             modelsContainer.SetActive(isExpanded);
 
             var gridObject = new GameObject("ModelCardGrid", typeof(RectTransform),
-                typeof(GridLayoutGroup), typeof(LayoutElement), typeof(ModelCardGridLayout));
+                typeof(LayoutElement), typeof(ModelCardGridLayout));
             gridObject.transform.SetParent(modelsContainer.transform, false);
             UIFactory.SetupRectTransform(gridObject, new(0, 1), new(1, 1),
                 Vector2.zero, pivot: new Vector2(.5f, 1));
+            var gridLayoutElement = gridObject.GetComponent<LayoutElement>();
+            gridLayoutElement.minWidth = 0;
+            gridLayoutElement.preferredWidth = 0;
+            gridLayoutElement.flexibleWidth = 1;
             foreach (var model in bundle.Models.ToList())
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -839,7 +981,7 @@ namespace DuckovCustomModel.UI.Components
             }
         }
 
-        private async UniTaskVoid ToggleBundle(string bundleKey, bool isExpanded)
+        private void ToggleBundle(string bundleKey, bool isExpanded)
         {
             _bundleExpandedStates[bundleKey] = isExpanded;
             if (_bundleToggles.TryGetValue(bundleKey, out var toggle))
@@ -858,23 +1000,22 @@ namespace DuckovCustomModel.UI.Components
             container.SetActive(isExpanded);
             container.GetComponentInChildren<ModelCardGridLayout>(true)?.SetExpanded(isExpanded);
 
-            await UniTask.NextFrame();
             if (_content != null)
-                LayoutRebuilder.ForceRebuildLayoutImmediate(_content.transform as RectTransform);
+                LayoutRebuilder.MarkLayoutForRebuild(_content.transform as RectTransform);
         }
 
         public void ExpandAllBundles()
         {
             foreach (var bundleKey in _bundleExpandedStates.Keys.ToList()
                          .Where(bundleKey => !_bundleExpandedStates[bundleKey]))
-                ToggleBundle(bundleKey, true).Forget();
+                ToggleBundle(bundleKey, true);
         }
 
         public void CollapseAllBundles()
         {
             foreach (var bundleKey in _bundleExpandedStates.Keys.ToList()
                          .Where(bundleKey => _bundleExpandedStates[bundleKey]))
-                ToggleBundle(bundleKey, false).Forget();
+                ToggleBundle(bundleKey, false);
         }
 
         public void ScrollToTop()
@@ -995,6 +1136,7 @@ namespace DuckovCustomModel.UI.Components
                 : isFallback ? new Color(.5f, .4f, .8f, .8f)
                 : new Color(.3f, .35f, .4f, .7f);
             outline.effectDistance = new(1, -1);
+            _modelCards[model.ModelID] = (card.GetComponent<Image>(), outline, status.isValid);
 
             var previewBackground = UIFactory.CreateImage("PreviewBackground", card.transform,
                 new Color(.11f, .14f, .18f, 1));
@@ -1103,10 +1245,12 @@ namespace DuckovCustomModel.UI.Components
 
     internal sealed class ModelCardGridLayout : MonoBehaviour
     {
+        private const float CardWidth = 130;
+        private const float CardHeight = 225;
+        private const float Spacing = 8;
         private RectTransform? _bundleGroup;
         private LayoutElement? _bundleLayout;
         private bool _expanded;
-        private GridLayoutGroup? _grid;
         private int _lastCount = -1;
         private float _lastWidth = -1;
         private LayoutElement? _layout;
@@ -1141,24 +1285,29 @@ namespace DuckovCustomModel.UI.Components
 
         private void ApplyHeights(bool force)
         {
-            _grid ??= GetComponent<GridLayoutGroup>();
             _layout ??= GetComponent<LayoutElement>();
-            if (_grid == null || _layout == null || _modelsContainer == null ||
+            if (_layout == null || _modelsContainer == null ||
                 _modelsLayout == null || _bundleGroup == null || _bundleLayout == null) return;
-            var width = _modelsContainer.rect.width;
+            var width = _modelsContainer.rect.width - Spacing;
+            if (width <= 0) return;
             var count = transform.childCount;
             if (!force && Mathf.Approximately(width, _lastWidth) && count == _lastCount) return;
             _lastWidth = width;
             _lastCount = count;
-            _grid.cellSize = new(130, 225);
-            _grid.spacing = new(8, 8);
-            _grid.padding = new(0, 0, 0, 0);
-            _grid.childAlignment = TextAnchor.UpperLeft;
-            _grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            var columns = Mathf.Max(1, Mathf.FloorToInt((width + 8) / 138));
-            _grid.constraintCount = columns;
+            var cardWidth = Mathf.Min(CardWidth, width);
+            var columns = Mathf.Max(1, Mathf.FloorToInt((width + Spacing) / (CardWidth + Spacing)));
+            for (var i = 0; i < count; i++)
+            {
+                if (transform.GetChild(i) is not RectTransform card) continue;
+                card.anchorMin = card.anchorMax = new(0, 1);
+                card.pivot = new(0, 1);
+                card.sizeDelta = new(cardWidth, CardHeight);
+                card.anchoredPosition = new(i % columns * (CardWidth + Spacing),
+                    -i / columns * (CardHeight + Spacing));
+            }
+
             var rows = Mathf.CeilToInt(count / (float)columns);
-            var gridHeight = rows == 0 ? 0 : rows * 225 + (rows - 1) * 8;
+            var gridHeight = rows == 0 ? 0 : rows * CardHeight + (rows - 1) * Spacing;
             _layout.minHeight = _layout.preferredHeight = gridHeight;
             _layout.flexibleWidth = 1;
             ((RectTransform)transform).SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, gridHeight);

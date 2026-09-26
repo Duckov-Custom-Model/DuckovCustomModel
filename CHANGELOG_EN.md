@@ -2,6 +2,14 @@
 
 English | [中文](CHANGELOG.md)
 
+## Version TBD
+
+### Fixed and improved
+
+- Reduced repeated work in YSM animation sampling, pose composition, and transparent-mesh rendering.
+- Sized model cards to the available width; model selection and group toggles now update only affected UI, while model-content changes rebuild the list and preserve scroll position.
+- Constrained the model selection, toolbar, and settings layouts to prevent first-display overflow and long labels from widening the interface.
+
 ## v2.0.1
 
 ### Fixed and improved

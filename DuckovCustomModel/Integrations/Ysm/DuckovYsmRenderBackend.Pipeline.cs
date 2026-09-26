@@ -72,8 +72,12 @@ namespace DuckovCustomModel.Integrations.Ysm
                               $"ambientMode={RenderSettings.ambientMode}, sun={(sun ? sun.name : "none")}");
             }
 
-            var frustum = GeometryUtility.CalculateFrustumPlanes(camera);
-            foreach (var instance in Instances) instance.SortTransparency(camera, frustum);
+            Plane[]? frustum = null;
+            foreach (var instance in Instances)
+            {
+                if (instance.graphics == null || instance.graphics.TransparentCount == 0) continue;
+                instance.SortTransparency(camera, frustum ??= GeometryUtility.CalculateFrustumPlanes(camera));
+            }
         }
 
         private void SortTransparency(Camera camera, Plane[] frustum)
@@ -160,7 +164,8 @@ namespace DuckovCustomModel.Integrations.Ysm
         {
             var state = graphics;
             if (state == null) return;
-            SortTransparency(camera, GeometryUtility.CalculateFrustumPlanes(camera));
+            if (state.TransparentCount > 0)
+                SortTransparency(camera, GeometryUtility.CalculateFrustumPlanes(camera));
             commands.Clear();
             commands.SetRenderTarget(target);
             commands.ClearRenderTarget(true, true, camera.backgroundColor);

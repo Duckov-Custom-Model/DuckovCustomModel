@@ -203,11 +203,7 @@ namespace DuckovCustomModel.Integrations.Ysm
             if (colorsChanged) state.Mesh.colors = state.Colors;
             if (glowChanged) state.Mesh.uv2 = state.Glow;
             state.Mesh.RecalculateBounds();
-            state.TransparentMesh.vertices = state.Vertices;
-            state.TransparentMesh.normals = state.Normals;
-            if (colorsChanged) state.TransparentMesh.colors = state.Colors;
-            if (glowChanged) state.TransparentMesh.uv2 = state.Glow;
-            state.TransparentMesh.bounds = state.Mesh.bounds;
+            var hadTransparency = state.TransparentCount > 0;
             state.ColorsUploaded = true;
             state.GlowUploaded = true;
             state.TransparentCount = 0;
@@ -243,6 +239,19 @@ namespace DuckovCustomModel.Integrations.Ysm
                 if (state.SolidCounts[partition] != solid) indicesChanged = true;
                 state.SolidCounts[partition] = solid;
                 if (indicesChanged) state.Mesh.SetTriangles(indices, 0, solid, partition, false);
+            }
+
+            if (state.TransparentCount > 0)
+            {
+                state.TransparentMesh.vertices = state.Vertices;
+                state.TransparentMesh.normals = state.Normals;
+                if (colorsChanged || !hadTransparency) state.TransparentMesh.colors = state.Colors;
+                if (glowChanged || !hadTransparency) state.TransparentMesh.uv2 = state.Glow;
+                state.TransparentMesh.bounds = state.Mesh.bounds;
+            }
+            else
+            {
+                state.TransparentRenderer.enabled = false;
             }
 
             BindTextureFrames(state);

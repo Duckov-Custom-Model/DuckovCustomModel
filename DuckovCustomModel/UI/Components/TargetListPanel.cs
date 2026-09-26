@@ -18,6 +18,7 @@ namespace DuckovCustomModel.UI.Components
     public class TargetListPanel : MonoBehaviour
     {
         private readonly Dictionary<string, GameObject> _targetButtons = new();
+        private readonly Dictionary<string, TargetInfo> _targetsById = new();
         private GameObject? _content;
         private TMP_InputField? _searchInputField;
         private string _searchText = "";
@@ -52,6 +53,10 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupVerticalLayoutGroup(_content, 10f, new(10, 20, 0, 0), TextAnchor.UpperLeft, true, false,
                 true);
             UIFactory.SetupContentSizeFitter(_content, ContentSizeFitter.FitMode.Unconstrained);
+            var contentLayoutElement = _content.AddComponent<LayoutElement>();
+            contentLayoutElement.minWidth = 0;
+            contentLayoutElement.preferredWidth = 0;
+            contentLayoutElement.flexibleWidth = 1;
         }
 
         public void Refresh()
@@ -60,6 +65,17 @@ namespace DuckovCustomModel.UI.Components
 
             var targets = GetAllTargets();
             var filteredTargets = FilterTargets(targets, _searchText);
+            _targetsById.Clear();
+            foreach (var target in targets)
+                _targetsById[target.Id] = target;
+
+            var selectedTargetTypeId = _selectedTarget?.TargetTypeId;
+            var selectedDisplayName = _selectedTarget?.DisplayName;
+            if (_selectedTarget != null)
+                _targetsById.TryGetValue(_selectedTarget.Id, out _selectedTarget);
+            var selectedTargetChanged = _selectedTarget != null &&
+                                        (selectedTargetTypeId != _selectedTarget.TargetTypeId ||
+                                         selectedDisplayName != _selectedTarget.DisplayName);
 
             foreach (var target in filteredTargets)
                 target.IsSelected = _selectedTarget != null && _selectedTarget.Id == target.Id;
@@ -89,8 +105,14 @@ namespace DuckovCustomModel.UI.Components
                     button.transform.SetSiblingIndex(i);
             }
 
-            if (_selectedTarget != null || filteredTargets.Count <= 0) return;
-            _selectedTarget = filteredTargets[0];
+            if (_selectedTarget != null)
+            {
+                if (selectedTargetChanged) OnTargetSelected?.Invoke(_selectedTarget);
+                return;
+            }
+
+            _selectedTarget = filteredTargets.FirstOrDefault() ?? targets.FirstOrDefault();
+            if (_selectedTarget == null) return;
             _selectedTarget.IsSelected = true;
             if (_targetButtons.TryGetValue(_selectedTarget.Id, out var firstButton))
                 UpdateTargetButton(firstButton, _selectedTarget);
@@ -125,7 +147,7 @@ namespace DuckovCustomModel.UI.Components
             if (_content == null) return;
 
             var buttonObj = UIFactory.CreateButton($"TargetButton_{targetInfo.Id}", _content.transform,
-                () => OnTargetButtonClicked(targetInfo)).gameObject;
+                () => OnTargetButtonClicked(targetInfo.Id)).gameObject;
             UIFactory.SetupRectTransform(buttonObj, new(0, 0), new(1, 0), new(0, 50));
 
             var layoutElement = buttonObj.AddComponent<LayoutElement>();
@@ -222,8 +244,9 @@ namespace DuckovCustomModel.UI.Components
                 text.text = targetInfo.DisplayName;
         }
 
-        private void OnTargetButtonClicked(TargetInfo targetInfo)
+        private void OnTargetButtonClicked(string targetId)
         {
+            if (!_targetsById.TryGetValue(targetId, out var targetInfo)) return;
             if (InputBlocker.GetRealKey(KeyCode.LeftShift) || InputBlocker.GetRealKey(KeyCode.RightShift))
             {
                 var info = new JObject

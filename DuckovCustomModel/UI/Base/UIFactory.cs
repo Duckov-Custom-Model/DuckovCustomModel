@@ -251,6 +251,19 @@ namespace DuckovCustomModel.UI.Base
             SetupAnchor(obj, new(0, 0.5f), new(0, 0.5f), new(0, 0.5f), new(0, height), new(leftOffset, 0));
         }
 
+        public static void SetupBoundedLeftLabel(GameObject obj, float reservedRight, float height = 30f)
+        {
+            SetupRectTransform(obj, new(0, .5f), new(1, .5f),
+                offsetMin: new(20, -height / 2), offsetMax: new(-reservedRight, height / 2));
+            var text = obj.GetComponent<TextMeshProUGUI>();
+            if (text == null) return;
+            text.enableWordWrapping = false;
+            text.enableAutoSizing = true;
+            text.fontSizeMin = 12;
+            text.fontSizeMax = 18;
+            text.overflowMode = TextOverflowModes.Ellipsis;
+        }
+
         public static void SetupRightControl(GameObject obj, Vector2 sizeDelta, float rightOffset = -20f)
         {
             SetupAnchor(obj, new(1, 0.5f), new(1, 0.5f), new(1, 0.5f), sizeDelta, new(rightOffset, 0));
