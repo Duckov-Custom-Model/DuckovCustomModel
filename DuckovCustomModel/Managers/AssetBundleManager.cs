@@ -18,7 +18,7 @@ namespace DuckovCustomModel.Managers
 
         public static AssetBundle? GetOrLoadAssetBundle(ModelBundleInfo bundleInfo, bool forceReload = false)
         {
-            if (YsmModelSource.IsYsm(bundleInfo)) return null;
+            if (string.IsNullOrWhiteSpace(bundleInfo.BundlePath)) return null;
             var bundlePath = Path.Combine(bundleInfo.DirectoryPath, bundleInfo.BundlePath);
             if (string.IsNullOrEmpty(bundlePath) || !File.Exists(bundlePath))
             {
@@ -58,7 +58,7 @@ namespace DuckovCustomModel.Managers
         public static async UniTask<AssetBundle?> GetOrLoadAssetBundleAsync(ModelBundleInfo bundleInfo,
             bool forceReload = false, CancellationToken cancellationToken = default)
         {
-            if (YsmModelSource.IsYsm(bundleInfo)) return null;
+            if (string.IsNullOrWhiteSpace(bundleInfo.BundlePath)) return null;
             var bundlePath = Path.Combine(bundleInfo.DirectoryPath, bundleInfo.BundlePath);
             if (string.IsNullOrEmpty(bundlePath) || !File.Exists(bundlePath))
             {
@@ -179,6 +179,58 @@ namespace DuckovCustomModel.Managers
             }
         }
 
+        internal static string? FindYsmAssetPath(ModelBundleInfo bundleInfo, string assetPath)
+        {
+            if (string.IsNullOrWhiteSpace(bundleInfo.BundlePath)) return null;
+            if (!File.Exists(Path.Combine(bundleInfo.DirectoryPath, bundleInfo.BundlePath))) return null;
+            var bundle = GetOrLoadAssetBundle(bundleInfo);
+            if (bundle == null) return null;
+            var normalized = assetPath.Replace('\\', '/').TrimStart('/');
+            if (!AssetNames.TryGetValue(bundle, out var names))
+            {
+                names = new(bundle.GetAllAssetNames(), StringComparer.OrdinalIgnoreCase);
+                AssetNames.Add(bundle, names);
+            }
+
+            var candidates = new List<string>();
+            if (YsmModelSource.IsYsm(bundleInfo))
+            {
+                var bundleDirectory = Path.GetDirectoryName(
+                    Path.GetFullPath(Path.Combine(bundleInfo.DirectoryPath, bundleInfo.BundlePath)))!;
+                var prefix = Path.GetRelativePath(bundleInfo.DirectoryPath, bundleDirectory).Replace('\\', '/');
+                if (prefix != "." && normalized.StartsWith(prefix + "/", StringComparison.OrdinalIgnoreCase))
+                {
+                    var relative = normalized.Substring(prefix.Length + 1);
+                    candidates.Add(relative);
+                    candidates.Add(relative + ".bytes");
+                }
+            }
+
+            candidates.Add(normalized);
+            candidates.Add(normalized + ".bytes");
+
+            foreach (var candidate in candidates)
+            {
+                if (!names.Contains(candidate)) continue;
+                return candidate;
+            }
+
+            return null;
+        }
+
+        internal static byte[] LoadYsmBytes(ModelBundleInfo bundleInfo, string assetPath)
+        {
+            var bundle = GetOrLoadAssetBundle(bundleInfo)
+                         ?? throw new FileNotFoundException("YSM AssetBundle could not be loaded.", bundleInfo.BundlePath);
+            var asset = bundle.LoadAsset<TextAsset>(assetPath);
+            if (asset == null)
+                throw new InvalidDataException("YSM bundle asset must be a TextAsset: " + assetPath);
+            var bytes = asset.bytes;
+            if (bytes.Length > new ModelRuntime.LoadLimits().MaxFileBytes)
+                throw new InvalidDataException("YSM bundle asset exceeds the loading budget: " + assetPath);
+            return bytes;
+        }
+
         public static GameObject? LoadModelPrefab(ModelBundleInfo bundleInfo, ModelInfo modelInfo)
         {
             return LoadAssetFromBundle<GameObject>(bundleInfo, modelInfo.PrefabPath);
@@ -279,6 +331,13 @@ namespace DuckovCustomModel.Managers
         public static (bool isValid, string? errorMessage) CheckBundleStatus(ModelBundleInfo bundleInfo,
             ModelInfo modelInfo)
         {
+            if (YsmModelSource.IsYsm(modelInfo))
+            {
+                try { return YsmModelSource.HasSource(bundleInfo, modelInfo)
+                    ? (true, null) : (false, "YSM source was not found"); }
+                catch (Exception ex) { return (false, ex.Message); }
+            }
+
             var bundlePath = Path.Combine(bundleInfo.DirectoryPath, bundleInfo.BundlePath);
             if (string.IsNullOrEmpty(bundlePath) || !File.Exists(bundlePath))
                 return (false, $"AssetBundle file not found: {bundleInfo.BundlePath}");
@@ -309,11 +368,8 @@ namespace DuckovCustomModel.Managers
                 cancellationToken.ThrowIfCancellationRequested();
                 try
                 {
-                    // Discovery already validates the package. UI status checks never decode it again.
-                    YsmModelSource.GetSourcePath(bundleInfo, modelInfo);
-                    return string.IsNullOrEmpty(modelInfo.SourceRevision)
-                        ? (false, "Refresh the model list to validate this YSM source")
-                        : (true, null);
+                    return YsmModelSource.HasSource(bundleInfo, modelInfo)
+                        ? (true, null) : (false, "YSM source was not found");
                 }
                 catch (Exception ex)
                 {

@@ -15,6 +15,10 @@ namespace DuckovCustomModel.Integrations.Ysm
         public string Author { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public string ThumbnailPath { get; set; } = string.Empty;
+        public string BundlePath { get; set; } = string.Empty;
+        public string DeathLootBoxPrefabPath { get; set; } = string.Empty;
+        public string DeathLootBoxYsmPath { get; set; } = string.Empty;
+        public string DeathLootBoxAnimation { get; set; } = string.Empty;
         public string[] TargetTypes { get; set; } = [];
         public float Scale { get; set; } = 1f;
         public float TeleportDistance { get; set; } = 8f;

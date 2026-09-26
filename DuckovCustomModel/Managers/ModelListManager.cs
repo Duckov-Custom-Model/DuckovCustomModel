@@ -48,7 +48,7 @@ namespace DuckovCustomModel.Managers
                     if (priorityModels.Count > 0)
                         foreach (var (priorityBundle, _) in priorityModels)
                         {
-                            if (YsmModelSource.IsYsm(priorityBundle)) continue;
+                            if (string.IsNullOrWhiteSpace(priorityBundle.BundlePath)) continue;
                             cancellationToken.ThrowIfCancellationRequested();
                             await AssetBundleManager.GetOrLoadAssetBundleAsync(priorityBundle, false,
                                 cancellationToken);
@@ -58,7 +58,6 @@ namespace DuckovCustomModel.Managers
                     if (priorityModels.Count > 0)
                         foreach (var (priorityBundle, priorityModel) in priorityModels)
                         {
-                            if (YsmModelSource.IsYsm(priorityModel)) continue;
                             var priorityBundleInList =
                                 ModelManager.ModelBundles.FirstOrDefault(b => b == priorityBundle);
                             var priorityModelInList =
@@ -75,8 +74,7 @@ namespace DuckovCustomModel.Managers
                     foreach (var bundle in ModelManager.ModelBundles)
                     foreach (var model in bundle.Models)
                     {
-                        // YSM discovery already decodes and validates changed packages.
-                        if (YsmModelSource.IsYsm(model)) continue;
+                        if (YsmModelSource.IsYsm(bundle)) continue;
                         if (priorityModels.Any(pm => pm.bundle == bundle && pm.model == model))
                             continue;
 

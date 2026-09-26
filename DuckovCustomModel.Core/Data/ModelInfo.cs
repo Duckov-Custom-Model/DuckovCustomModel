@@ -21,6 +21,8 @@ namespace DuckovCustomModel.Core.Data
         [JsonIgnore] public string SourceRevision { get; set; } = string.Empty;
 
         public string? DeathLootBoxPrefabPath { get; set; }
+        public string DeathLootBoxYsmPath { get; set; } = string.Empty;
+        public string DeathLootBoxAnimation { get; set; } = string.Empty;
 
         public SoundInfo[] CustomSounds { get; set; } = [];
 

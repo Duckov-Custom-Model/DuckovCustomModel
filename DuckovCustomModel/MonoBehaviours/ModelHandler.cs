@@ -543,12 +543,16 @@ namespace DuckovCustomModel.MonoBehaviours
 
         public bool HaveCustomDeathLootBox()
         {
-            return _deathLootBoxPrefab != null;
+            return _deathLootBoxPrefab != null ||
+                   CurrentModelInfo is { DeathLootBoxYsmPath.Length: > 0 };
         }
 
         public GameObject? CreateCustomDeathLootBoxInstance()
         {
-            if (_deathLootBoxPrefab == null) return null;
+            if (_deathLootBoxPrefab == null)
+                return _currentModelBundleInfo != null && CurrentModelInfo != null
+                    ? YsmDeathLootBoxVisual.Create(_currentModelBundleInfo, CurrentModelInfo)
+                    : null;
             var instance = Instantiate(_deathLootBoxPrefab);
             instance.name = "DeathLootBox_CustomModel";
 
@@ -796,7 +800,7 @@ namespace DuckovCustomModel.MonoBehaviours
                 _currentModelBundleInfo = modelBundleInfo;
                 CurrentModelInfo = modelInfo;
                 InitSoundFilePath(modelBundleInfo, modelInfo);
-                if (runtime == null) InitializeDeathLootBoxPrefab(modelBundleInfo, modelInfo);
+                InitializeDeathLootBoxPrefab(modelBundleInfo, modelInfo);
                 InitializeCustomModelInternal(candidate, modelInfo);
             }
             catch (Exception exception)

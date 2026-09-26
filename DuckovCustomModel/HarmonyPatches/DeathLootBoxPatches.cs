@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using DuckovCustomModel.MonoBehaviours;
+using DuckovCustomModel.Integrations.Ysm;
 using HarmonyLib;
 using ItemStatsSystem;
 using UnityEngine;
@@ -69,33 +70,58 @@ namespace DuckovCustomModel.HarmonyPatches
             if (!modelHandler.HaveCustomDeathLootBox())
                 return;
 
-            // Instantiate custom model
-            var customModel = modelHandler.CreateCustomDeathLootBoxInstance();
+            GameObject? customModel;
+            try
+            {
+                customModel = modelHandler.CreateCustomDeathLootBoxInstance();
+            }
+            catch (System.Exception exception)
+            {
+                ModLogger.LogWarning($"Death loot box visual could not load: {exception.Message}");
+                return;
+            }
             if (customModel == null)
                 return;
-
-            // Disable default model
-            foreach (Transform child in modelRoot) child.gameObject.SetActive(false);
-
-            customModel.transform.SetParent(modelRoot, false);
-            customModel.transform.localPosition = Vector3.zero;
-            customModel.transform.localRotation = Quaternion.identity;
-            customModel.transform.localScale = Vector3.one;
-
-            var destroyAdapter = customModel.GetComponent<OnDestroyAdapter>();
-            if (destroyAdapter == null)
-                destroyAdapter = customModel.AddComponent<OnDestroyAdapter>();
-
-            destroyAdapter.OnDestroyEvent += _ =>
+            var originals = new List<GameObject>();
+            var originalActive = new List<bool>();
+            foreach (Transform child in modelRoot)
             {
-                if (modelRoot == null)
-                    return;
+                originals.Add(child.gameObject);
+                originalActive.Add(child.gameObject.activeSelf);
+            }
+            try
+            {
+                customModel.SetActive(false);
+                customModel.transform.SetParent(modelRoot, false);
+                customModel.transform.localPosition = Vector3.zero;
+                customModel.transform.localRotation = Quaternion.identity;
+                var ysmVisual = customModel.GetComponent<YsmDeathLootBoxVisual>();
+                if (ysmVisual == null)
+                    customModel.transform.localScale = Vector3.one;
+                else
+                    ysmVisual.MatchLayer(modelRoot.gameObject.layer);
 
-                // Re-enable default model
-                foreach (Transform child in modelRoot)
-                    if (child != null)
-                        child.gameObject.SetActive(true);
-            };
+                var destroyAdapter = customModel.GetComponent<OnDestroyAdapter>();
+                if (destroyAdapter == null)
+                    destroyAdapter = customModel.AddComponent<OnDestroyAdapter>();
+                destroyAdapter.OnDestroyEvent += _ =>
+                {
+                    for (var index = 0; index < originals.Count; index++)
+                        if (originals[index] != null)
+                            originals[index].SetActive(originalActive[index]);
+                };
+
+                foreach (var original in originals) original.SetActive(false);
+                customModel.SetActive(true);
+            }
+            catch (System.Exception exception)
+            {
+                for (var index = 0; index < originals.Count; index++)
+                    if (originals[index] != null)
+                        originals[index].SetActive(originalActive[index]);
+                UnityEngine.Object.Destroy(customModel);
+                ModLogger.LogWarning($"Death loot box visual could not attach: {exception.Message}");
+            }
         }
     }
 }
