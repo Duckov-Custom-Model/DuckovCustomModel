@@ -1,0 +1,7 @@
+ManifestFileVersion: 0
+CRC: 450426035
+AssetBundleManifest:
+  AssetBundleInfos:
+    Info_0:
+      Name: ysm-rendering.bundle
+      Dependencies: {}

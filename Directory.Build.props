@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <DuckovPath Condition="'$(DuckovPath)' == ''">E:\SteamLibrary\steamapps\common\Escape from Duckov</DuckovPath>
+    <DuckovManagedPath Condition="'$(DuckovManagedPath)' == ''">$(DuckovPath)\Duckov_Data\Managed</DuckovManagedPath>
+  </PropertyGroup>
+</Project>

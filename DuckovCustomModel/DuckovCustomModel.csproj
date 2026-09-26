@@ -7,14 +7,19 @@
 		<RootNamespace>DuckovCustomModel</RootNamespace>
 		<AssemblyName>DuckovCustomModel.GameModules</AssemblyName>
 		<PackageName>DuckovCustomModel</PackageName>
+		<ModelRuntimeBinaryRoot Condition="'$(ModelRuntimeBinaryRoot)' == ''">$(MSBuildProjectDirectory)\..\lib</ModelRuntimeBinaryRoot>
+		<CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+		<PackageMod Condition="'$(PackageMod)' == '' AND '$(Configuration)' == 'Release' AND '$(CI)' != 'true' AND '$(GITHUB_ACTIONS)' != 'true'">true</PackageMod>
+		<PackageMod Condition="'$(PackageMod)' == ''">false</PackageMod>
+		<PwshExecutable Condition="'$(PwshExecutable)' == ''">pwsh</PwshExecutable>
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<DuckovPath>E:\SteamLibrary\steamapps\common\Escape from Duckov</DuckovPath>
+		<DuckovPath Condition="'$(DuckovPath)' == ''">E:\SteamLibrary\steamapps\common\Escape from Duckov</DuckovPath>
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<UseGameLibsFromNuGet Condition="'$(CI)' == 'true' OR '$(GITHUB_ACTIONS)' == 'true' OR '$(UseGameLibsFromNuGet)' == 'true'">true</UseGameLibsFromNuGet>
+		<UseGameLibsFromNuGet Condition="'$(UseGameLibsFromNuGet)' == '' AND ('$(CI)' == 'true' OR '$(GITHUB_ACTIONS)' == 'true')">true</UseGameLibsFromNuGet>
 		<UseGameLibsFromNuGet Condition="'$(UseGameLibsFromNuGet)' == ''">false</UseGameLibsFromNuGet>
 	</PropertyGroup>
 
@@ -25,25 +30,25 @@
 
 	<!-- 本地开发使用游戏目录 -->
 	<ItemGroup Condition="'$(UseGameLibsFromNuGet)' == 'false'">
-		<Reference Include="$(DuckovPath)\Duckov_Data\Managed\TeamSoda.*">
+		<Reference Include="$(DuckovManagedPath)\TeamSoda.*.dll">
 			<Private>False</Private>
 		</Reference>
-		<Reference Include="$(DuckovPath)\Duckov_Data\Managed\ItemStatsSystem.dll">
+		<Reference Include="$(DuckovManagedPath)\ItemStatsSystem.dll">
 			<Private>False</Private>
 		</Reference>
-		<Reference Include="$(DuckovPath)\Duckov_Data\Managed\SodaLocalization.dll">
+		<Reference Include="$(DuckovManagedPath)\SodaLocalization.dll">
 			<Private>False</Private>
 		</Reference>
-		<Reference Include="$(DuckovPath)\Duckov_Data\Managed\Unity*">
+		<Reference Include="$(DuckovManagedPath)\Unity*.dll">
 			<Private>False</Private>
 		</Reference>
-		<Reference Include="$(DuckovPath)\Duckov_Data\Managed\FMODUnity.dll">
+		<Reference Include="$(DuckovManagedPath)\FMODUnity.dll">
 			<Private>False</Private>
 		</Reference>
-		<Reference Include="$(DuckovPath)\Duckov_Data\Managed\UniTask.dll">
+		<Reference Include="$(DuckovManagedPath)\UniTask.dll">
 			<Private>False</Private>
 		</Reference>
-		<Reference Include="$(DuckovPath)\Duckov_Data\Managed\Newtonsoft.Json.dll">
+		<Reference Include="$(DuckovManagedPath)\Newtonsoft.Json.dll">
 			<Private>False</Private>
 		</Reference>
 	</ItemGroup>
@@ -69,6 +74,9 @@
 		<None Update="preview.png">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
+		<None Update="Resources\ysm-rendering.bundle">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Update="Localizations\*.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<TargetPath>Localizations\%(Filename)%(Extension)</TargetPath>
@@ -76,6 +84,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Reference Include="ModelRuntime"><HintPath>$(ModelRuntimeBinaryRoot)\ModelRuntime.dll</HintPath></Reference>
+		<Reference Include="ModelRuntime.Adapters"><HintPath>$(ModelRuntimeBinaryRoot)\ModelRuntime.Adapters.dll</HintPath></Reference>
+		<Reference Include="ModelRuntime.Media"><HintPath>$(ModelRuntimeBinaryRoot)\ModelRuntime.Media.dll</HintPath></Reference>
+		<Reference Include="ModelRuntime.Ysm"><HintPath>$(ModelRuntimeBinaryRoot)\ModelRuntime.Ysm.dll</HintPath></Reference>
+		<Reference Include="StbImageSharp"><HintPath>$(ModelRuntimeBinaryRoot)\StbImageSharp.dll</HintPath></Reference>
+		<Reference Include="ZstdSharp"><HintPath>$(ModelRuntimeBinaryRoot)\ZstdSharp.dll</HintPath></Reference>
+		<Reference Include="System.Runtime.CompilerServices.Unsafe"><HintPath>$(ModelRuntimeBinaryRoot)\System.Runtime.CompilerServices.Unsafe.dll</HintPath></Reference>
 		<ProjectReference Include="..\DuckovCustomModel.Core\DuckovCustomModel.Core.csproj"/>
 		<ProjectReference Include="..\DuckovCustomModel.ModLoader\DuckovCustomModel.ModLoader.csproj">
 			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
@@ -83,10 +98,9 @@
 		</ProjectReference>
 	</ItemGroup>
 
-	<Target Name="BuildModLoader" BeforeTargets="BeforeBuild">
-		<MSBuild Projects="..\DuckovCustomModel.ModLoader\DuckovCustomModel.ModLoader.csproj"
-				 Properties="Configuration=$(Configuration);Platform=$(Platform)"
-				 Targets="Build"/>
+	<Target Name="ValidateModelRuntimeBinaries" BeforeTargets="PrepareForBuild">
+		<Error Condition="!Exists('$(ModelRuntimeBinaryRoot)\ModelRuntime.dll') Or !Exists('$(ModelRuntimeBinaryRoot)\ModelRuntime.Adapters.dll') Or !Exists('$(ModelRuntimeBinaryRoot)\ModelRuntime.Media.dll') Or !Exists('$(ModelRuntimeBinaryRoot)\ModelRuntime.Ysm.dll')"
+			   Text="The four precompiled ModelRuntime DLLs are required in ModelRuntimeBinaryRoot."/>
 	</Target>
 
 	<Target Name="CopyModLoaderOutput" AfterTargets="Build">
@@ -114,45 +128,9 @@
 		<Warning Text="未找到 ModLoader 输出文件。请确保 ModLoader 项目已成功构建。" Condition="!Exists('$(ModLoaderOutputPath)')"/>
 	</Target>
 
-	<Target Name="GenerateVersionFile" AfterTargets="Build">
-		<PropertyGroup>
-			<ConstantFile>$(MSBuildProjectDirectory)\Constant.cs</ConstantFile>
-			<VersionFile>$(OutputPath)version.txt</VersionFile>
-		</PropertyGroup>
-
-		<Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$line = Get-Content '$(ConstantFile)' | Where-Object { $_ -like '*ModVersion*' }; if ($line -match 'ModVersion\s*=\s*\x22([^\x22]+)\x22') { $matches[1] | Out-File '$(VersionFile)' -Encoding utf8 -NoNewline }&quot;"
-			  Condition="Exists('$(ConstantFile)')"
-			  ContinueOnError="true"/>
-
-		<Warning Text="未找到 Constant.cs 文件，无法生成版本号文件。" Condition="!Exists('$(ConstantFile)')"/>
-	</Target>
-
-	<Target Name="PackageRelease" BeforeTargets="PostBuildEvent" Condition="'$(Configuration)' == 'Release' AND '$(CI)' != 'true' AND '$(GITHUB_ACTIONS)' != 'true'"
-			Inputs="$(OutputPath)**\*"
-			Outputs="$([System.IO.Path]::Combine($([System.IO.Path]::GetFullPath($(OutputPath)..\)), '$(AssemblyName).zip'))">
-		<PropertyGroup>
-			<AssemblyName Condition="'$(AssemblyName)' == ''">$(MSBuildProjectName)</AssemblyName>
-			<ParentOutputPath>$([System.IO.Path]::GetFullPath($(OutputPath)..\))</ParentOutputPath>
-			<PackageDir>$([System.IO.Path]::Combine($(ParentOutputPath), 'PackageTemp'))</PackageDir>
-			<ZipFileName>$(PackageName).zip</ZipFileName>
-			<ZipPath>$([System.IO.Path]::Combine($(ParentOutputPath), $(ZipFileName)))</ZipPath>
-		</PropertyGroup>
-
-		<Message Text="开始打包 Release 版本..." Importance="high"/>
-		<Message Text="输出目录: $(OutputPath)" Importance="normal"/>
-		<Message Text="父目录: $(ParentOutputPath)" Importance="normal"/>
-		<Message Text="打包目录: $(PackageDir)" Importance="normal"/>
-		<Message Text="ZIP 文件: $(ZipPath)" Importance="normal"/>
-
-		<MakeDir Directories="$(PackageDir)"/>
-
-		<Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$outputPath = [System.IO.Path]::GetFullPath('$(OutputPath)'); $packageDir = [System.IO.Path]::GetFullPath('$(PackageDir)'); Get-ChildItem -Path $outputPath -Recurse -File | ForEach-Object { $relativePath = $_.FullName.Substring($outputPath.Length).TrimStart('\', '/'); $destPath = Join-Path $packageDir $relativePath; $destDir = Split-Path $destPath -Parent; if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }; Copy-Item $_.FullName -Destination $destPath -Force }&quot;"/>
-
-		<Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$zipPath = [System.IO.Path]::GetFullPath('$(ZipPath)'); $packageDir = [System.IO.Path]::GetFullPath('$(PackageDir)'); if (Test-Path $zipPath) { Remove-Item $zipPath -Force }; Compress-Archive -Path (Join-Path $packageDir '*') -DestinationPath $zipPath -Force&quot;"/>
-
-		<RemoveDir Directories="$(PackageDir)"/>
-
-		<Message Text="打包完成: $(ZipPath)" Importance="high"/>
+	<!-- Packaging is opt-in and only writes beneath this project's bin directory. -->
+	<Target Name="PackageRelease" AfterTargets="CopyModLoaderOutput" Condition="'$(PackageMod)' == 'true'">
+		<Exec Command="&quot;$(PwshExecutable)&quot; -NoProfile -File &quot;$(MSBuildProjectDirectory)\..\scripts\Package-Mod.ps1&quot; -OutputDirectory &quot;$(MSBuildProjectDirectory)\bin\$(Configuration)\netstandard2.1&quot;"/>
 	</Target>
 
 </Project>
