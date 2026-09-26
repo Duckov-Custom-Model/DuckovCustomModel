@@ -4,6 +4,7 @@ using Duckov.UI;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Integrations.Ysm;
+using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.MonoBehaviours;
 using DuckovCustomModel.UI.Base;
@@ -234,7 +235,7 @@ namespace DuckovCustomModel.UI
             else
             {
                 opened = _assetState.Open(handler.RadialMenuEntries,
-                    handler.CurrentModelInfo?.Name ?? "模型", _openedModelId);
+                    handler.CurrentModelInfo?.Name ?? Localization.RadialModel, _openedModelId);
             }
 
             if (!opened)
@@ -350,7 +351,8 @@ namespace DuckovCustomModel.UI
                     break;
                 case YsmRadialMenuSelectionKind.MovementLock:
                     if (_runtime != null) _runtime.ExtraAnimationLocked = selection.MovementLocked;
-                    if (_lockText != null) _lockText.text = selection.MovementLocked ? "锁定：开" : "锁定：关";
+                    if (_lockText != null) _lockText.text = selection.MovementLocked
+                        ? Localization.RadialLockOn : Localization.RadialLockOff;
                     break;
             }
         }
@@ -402,12 +404,12 @@ namespace DuckovCustomModel.UI
             _pageText!.text = $"{pageIndex + 1} / {pageCount}";
             _previous!.interactable = pageIndex > 0;
             _next!.interactable = pageIndex + 1 < pageCount;
-            _hintText!.text = IsAssetMenu
-                ? $"{OpenKey} / Esc 关闭 · 点击选择 · 左侧滚轮翻页 · 配置区滚轮滚动 · 中心停止动作"
-                : $"{OpenKey} / Esc 关闭 · 点击选择 · 左侧滚轮翻页 · 配置区滚轮滚动";
+            _hintText!.text = $"{OpenKey} / {Localization.RadialHint}"
+                               + (IsAssetMenu ? Localization.RadialHintStop : string.Empty);
             if (_lockText != null)
-                _lockText.text = IsAssetMenu ? "停止动作" :
-                    _runtime?.ExtraAnimationLocked == true ? "锁定：开" : "锁定：关";
+                _lockText.text = IsAssetMenu ? Localization.RadialStop :
+                    _runtime?.ExtraAnimationLocked == true
+                        ? Localization.RadialLockOn : Localization.RadialLockOff;
             if (_formScroll != null) _formScroll.gameObject.SetActive(true);
             for (var i = 0; i < 8; i++)
             {
@@ -492,11 +494,15 @@ namespace DuckovCustomModel.UI
             lockRect.sizeDelta = new(80, 40);
             lockRect.anchoredPosition = new(-145, 0);
             lockBackground.GetComponent<Image>().raycastTarget = false;
-            _lockText = Text("Label", lockBackground.transform, "锁定：关", Vector2.zero, new(74, 38), 16);
+            _lockText = Text("Label", lockBackground.transform, Localization.RadialLockOff,
+                Vector2.zero, new(74, 38), 16);
+            _lockText.enableAutoSizing = true;
+            _lockText.fontSizeMin = 10;
+            _lockText.fontSizeMax = 16;
             _previous = Button("Previous", "<", new(145, 184), new(48, 42), () => ChangePage(-1));
             _next = Button("Next", ">", new(405, 184), new(48, 42), () => ChangePage(1));
             _pageText = Text("Page", _root.transform, "", new(275, 184), new(190, 42), 21);
-            Button("Back", "返回", new(275, 132), new(308, 40), Back);
+            Button("Back", Localization.RadialBack, new(275, 132), new(308, 40), Back);
             _hintText = Text("Hint", _root.transform, "", new(0, -285), new(1050, 40), 17);
             var forms = UIFactory.CreateScrollView("Configuration", _root.transform, out var content);
             _formScroll = forms;
@@ -612,7 +618,7 @@ namespace DuckovCustomModel.UI
                 catch (Exception exception)
                 {
                     ModLogger.LogWarning($"YSM form '{form.Title}': {exception.Message}");
-                    FormLabel("此配置不可用", 12);
+                    FormLabel(Localization.RadialUnavailable, 12);
                 }
             }
 
@@ -624,7 +630,7 @@ namespace DuckovCustomModel.UI
                     ShowForms(button, true);
                 }, new Color(0.3f, 0.35f, 0.4f));
                 reset.AddComponent<LayoutElement>().preferredHeight = 32;
-                var text = UIFactory.CreateText("Label", reset.transform, "还原此模型配置",
+                var text = UIFactory.CreateText("Label", reset.transform, Localization.RadialResetConfig,
                     alignment: TextAnchor.MiddleCenter);
                 UIFactory.SetupButtonText(text);
             }
@@ -661,7 +667,7 @@ namespace DuckovCustomModel.UI
                 ShowAssetForms(actionId, true);
             }, new Color(0.3f, 0.35f, 0.4f));
             reset.AddComponent<LayoutElement>().preferredHeight = 32;
-            var text = UIFactory.CreateText("Label", reset.transform, "还原此模型配置",
+            var text = UIFactory.CreateText("Label", reset.transform, Localization.RadialResetConfig,
                 alignment: TextAnchor.MiddleCenter);
             UIFactory.SetupButtonText(text);
             if (_formScroll != null && _formContent != null)

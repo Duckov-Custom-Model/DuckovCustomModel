@@ -98,6 +98,9 @@ namespace DuckovCustomModel.Localizations
                 "Some characters use building models, so not all instances of this character may be correctly replaced with the set model"
             },
             { "ModelAudioVolume", "Model Audio Volume" },
+            { "ModelHeight", "Model Height" },
+            { "Reset", "Reset" },
+            { "ClearCustomDataConfig", "Clear Custom Data Config" },
             { "EmotionModifierKey1", "Emotion Modifier Key 1" },
             { "EmotionModifierKey2", "Emotion Modifier Key 2" },
             {
@@ -121,6 +124,15 @@ namespace DuckovCustomModel.Localizations
             { "CollapseAllBundles", "Collapse All" },
             { "ScrollToTop", "↑ Top" },
             { "ScrollToBottom", "Bottom ↓" },
+            { "RadialModel", "Model" },
+            { "RadialLockOn", "Locked" },
+            { "RadialLockOff", "Free" },
+            { "RadialStop", "Stop" },
+            { "RadialBack", "Back" },
+            { "RadialHint", "Esc close · click to select · wheel on left to change page · wheel on settings to scroll" },
+            { "RadialHintStop", " · center stops action" },
+            { "RadialUnavailable", "This setting is unavailable" },
+            { "RadialResetConfig", "Reset this model's settings" },
         };
 
         public static string Title => GetText("Title");
@@ -212,6 +224,15 @@ namespace DuckovCustomModel.Localizations
         public static string CollapseAllBundles => GetText("CollapseAllBundles");
         public static string ScrollToTop => GetText("ScrollToTop");
         public static string ScrollToBottom => GetText("ScrollToBottom");
+        public static string RadialModel => GetText("RadialModel");
+        public static string RadialLockOn => GetText("RadialLockOn");
+        public static string RadialLockOff => GetText("RadialLockOff");
+        public static string RadialStop => GetText("RadialStop");
+        public static string RadialBack => GetText("RadialBack");
+        public static string RadialHint => GetText("RadialHint");
+        public static string RadialHintStop => GetText("RadialHintStop");
+        public static string RadialUnavailable => GetText("RadialUnavailable");
+        public static string RadialResetConfig => GetText("RadialResetConfig");
 
         public static event Action<SystemLanguage>? OnLanguageChangedEvent;
 

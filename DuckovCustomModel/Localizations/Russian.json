@@ -7,6 +7,7 @@
   "LoadingModelList": "Загрузка списка моделей...",
   "Hotkey": "Горячая клавиша",
   "AnimatorParamsHotkey": "Горячая клавиша параметров аниматора",
+  "YsmRadialMenuHotkey": "Горячая клавиша колеса действий YSM",
   "None": "Нет",
   "Clear": "Очистить",
   "PressAnyKey": "Нажмите любую клавишу...",
@@ -86,6 +87,15 @@
   "ExpandAllBundles": "Развернуть все",
   "CollapseAllBundles": "Свернуть все",
   "ScrollToTop": "↑ Вверх",
-  "ScrollToBottom": "Вниз ↓"
+  "ScrollToBottom": "Вниз ↓",
+  "RadialModel": "Модель",
+  "RadialLockOn": "Блок.",
+  "RadialLockOff": "Свободно",
+  "RadialStop": "Стоп",
+  "RadialBack": "Назад",
+  "RadialHint": "Esc — закрыть · щелчок — выбрать · колесо слева — страницы · колесо в настройках — прокрутка",
+  "RadialHintStop": " · центр — остановить действие",
+  "RadialUnavailable": "Эта настройка недоступна",
+  "RadialResetConfig": "Сбросить настройки этой модели"
 }
 

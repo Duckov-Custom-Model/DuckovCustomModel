@@ -7,6 +7,7 @@
   "LoadingModelList": "Đang tải danh sách mô hình...",
   "Hotkey": "Phím tắt",
   "AnimatorParamsHotkey": "Phím tắt tham số animator",
+  "YsmRadialMenuHotkey": "Phím tắt vòng chọn hành động YSM",
   "None": "Không có",
   "Clear": "Xóa",
   "PressAnyKey": "Nhấn phím bất kỳ...",
@@ -86,6 +87,15 @@
   "ExpandAllBundles": "Mở rộng tất cả",
   "CollapseAllBundles": "Thu gọn tất cả",
   "ScrollToTop": "↑ Đầu",
-  "ScrollToBottom": "Cuối ↓"
+  "ScrollToBottom": "Cuối ↓",
+  "RadialModel": "Mô hình",
+  "RadialLockOn": "Đã khóa",
+  "RadialLockOff": "Mở khóa",
+  "RadialStop": "Dừng",
+  "RadialBack": "Quay lại",
+  "RadialHint": "Esc để đóng · nhấp để chọn · cuộn bên trái: đổi trang · cuộn vùng cài đặt: di chuyển",
+  "RadialHintStop": " · giữa: dừng hành động",
+  "RadialUnavailable": "Không thể dùng cài đặt này",
+  "RadialResetConfig": "Đặt lại cài đặt của mô hình này"
 }
 

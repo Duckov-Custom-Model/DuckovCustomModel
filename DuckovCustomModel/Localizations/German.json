@@ -7,6 +7,7 @@
   "LoadingModelList": "Modellliste wird geladen...",
   "Hotkey": "Tastenkürzel",
   "AnimatorParamsHotkey": "Animator-Parameter Tastenkürzel",
+  "YsmRadialMenuHotkey": "Tastenkürzel für das YSM-Aktionsrad",
   "None": "Keine",
   "Clear": "Löschen",
   "PressAnyKey": "Beliebige Taste drücken...",
@@ -86,6 +87,15 @@
   "ExpandAllBundles": "Alle erweitern",
   "CollapseAllBundles": "Alle einklappen",
   "ScrollToTop": "↑ Oben",
-  "ScrollToBottom": "Unten ↓"
+  "ScrollToBottom": "Unten ↓",
+  "RadialModel": "Modell",
+  "RadialLockOn": "Gesperrt",
+  "RadialLockOff": "Frei",
+  "RadialStop": "Stopp",
+  "RadialBack": "Zurück",
+  "RadialHint": "Esc schließen · klicken zum Auswählen · Mausrad links: Seiten · Mausrad bei Einstellungen: scrollen",
+  "RadialHintStop": " · Mitte: Aktion stoppen",
+  "RadialUnavailable": "Diese Einstellung ist nicht verfügbar",
+  "RadialResetConfig": "Einstellungen dieses Modells zurücksetzen"
 }
 

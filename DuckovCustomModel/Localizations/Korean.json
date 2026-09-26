@@ -7,6 +7,7 @@
   "LoadingModelList": "모델 목록 로딩 중...",
   "Hotkey": "단축키",
   "AnimatorParamsHotkey": "애니메이터 매개변수 단축키",
+  "YsmRadialMenuHotkey": "YSM 액션 휠 단축키",
   "None": "없음",
   "Clear": "지우기",
   "PressAnyKey": "아무 키나 누르세요...",
@@ -86,6 +87,15 @@
   "ExpandAllBundles": "모두 확장",
   "CollapseAllBundles": "모두 접기",
   "ScrollToTop": "↑ 위",
-  "ScrollToBottom": "아래 ↓"
+  "ScrollToBottom": "아래 ↓",
+  "RadialModel": "모델",
+  "RadialLockOn": "잠금",
+  "RadialLockOff": "해제",
+  "RadialStop": "중지",
+  "RadialBack": "뒤로",
+  "RadialHint": "Esc 닫기 · 클릭하여 선택 · 왼쪽에서 휠: 페이지 전환 · 설정 영역에서 휠: 스크롤",
+  "RadialHintStop": " · 가운데에서 동작 중지",
+  "RadialUnavailable": "이 설정을 사용할 수 없습니다",
+  "RadialResetConfig": "이 모델의 설정 초기화"
 }
 
