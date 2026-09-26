@@ -2,6 +2,14 @@
 
 English | [中文](CHANGELOG.md)
 
+## v2.0.1
+
+### Fixed and improved
+
+- Restored animation updates after switching regular models and grouped standalone YSM models in the model list.
+- Activated YSM state controllers only in matching character states and filled default grounding, world time, item use, hurt, equipment, and movement input values.
+- Reduced per-frame work for zero-area geometry in complex YSM models and removed the initial physics-bone kick.
+
 ## v2.0.0
 
 ### Added
