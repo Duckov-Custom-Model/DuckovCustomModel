@@ -313,31 +313,38 @@ namespace DuckovCustomModel.Integrations.Ysm
                                      && (category == "pistol" || category == "rpg")
                 ? category
                 : "rifle";
-            var aiming = holdingGun && character.IsInAdsInput;
-            var firing = holdingGun && elapsed - shotStarted < profile.AttackDurationSeconds;
-            state.Queries["ctrl.tac_hold_gun"] = new(holdingGun);
-            state.Queries["ctrl.tac_gun_type"] = holdingGun ? gunType : string.Empty;
+            var selectedDash = string.IsNullOrEmpty(profile.DashAnimation) ? dashClip : Clip(profile.DashAnimation);
+            var dashActive = (flags & EntityFlags.Dead) == 0 && !string.IsNullOrEmpty(selectedDash)
+                                                             && actionRunning && action is CA_Dash;
+            var fallbackRoll = dashActive && document != null
+                                          && selectedDash.StartsWith("parcool:roll_", StringComparison.Ordinal)
+                                          && YsmModelSource.IsFallbackAnimation(document, selectedDash);
+            var dashAction = action as CA_Dash;
+            var dashDuration = dashAction?.dashTime ?? 0;
+            var motionDuration = fallbackRoll && dashDuration > 0
+                ? dashDuration - Math.Min(.15, dashDuration * .3)
+                : dashDuration;
+            var dashPlaying = dashActive && (!fallbackRoll || dashAction!.GetProgress().current < motionDuration);
+            var suppressHold = dashActive;
+            var aiming = holdingGun && !suppressHold && character.IsInAdsInput;
+            var firing = holdingGun && !suppressHold && elapsed - shotStarted < profile.AttackDurationSeconds;
+            state.Queries["ctrl.tac_hold_gun"] = new(holdingGun && !suppressHold);
+            state.Queries["ctrl.tac_gun_type"] = holdingGun && !suppressHold ? gunType : string.Empty;
             state.Queries["ctrl.tac_gun_id"] = string.Empty;
             state.Queries["ctrl.tac_is_fire"] = new(firing);
             state.Queries["ctrl.tac_is_aim"] = new(aiming);
-            state.Queries["ctrl.tac_is_reload"] = new(holdingGun && reloading);
+            state.Queries["ctrl.tac_is_reload"] = new(holdingGun && !suppressHold && reloading);
             state.Queries["ctrl.tac_is_melee"] = new(false);
             state.Queries["ctrl.tac_is_draw"] = new(false);
             state.Queries["ctrl.tac_fire_mode"] = string.Empty;
-            var selectedDash = string.IsNullOrEmpty(profile.DashAnimation) ? dashClip : Clip(profile.DashAnimation);
-            var dashPlaying = (flags & EntityFlags.Dead) == 0 && !string.IsNullOrEmpty(selectedDash)
-                                                              && actionRunning && action is CA_Dash;
             state.ControllerTimeScales.Remove("player.parcool");
             state.ControllerTimeScales.Remove("player.main");
-            if (dashPlaying && action is CA_Dash dashAction && dashAction.dashTime > 0
+            if (fallbackRoll && dashPlaying && motionDuration > 0
                 && document != null && document.Animations.TryGetValue(selectedDash, out var dashAnimation)
                 && dashAnimation.Length > 0)
             {
-                var dashSlot = string.IsNullOrEmpty(profile.DashAnimation)
-                               && document.Controllers.ContainsKey("player.parcool")
-                    ? "player.parcool"
-                    : "player.main";
-                state.ControllerTimeScales[dashSlot] = dashAnimation.Length / dashAction.dashTime;
+                var dashSlot = string.IsNullOrEmpty(profile.DashAnimation) ? "player.parcool" : "player.main";
+                state.ControllerTimeScales[dashSlot] = Math.Min(dashAnimation.Length, .5) / motionDuration;
             }
 
             state.Queries["ctrl.parcool_state"] = dashPlaying && string.IsNullOrEmpty(profile.DashAnimation)
@@ -345,20 +352,31 @@ namespace DuckovCustomModel.Integrations.Ysm
                 : string.Empty;
 
             Override(state, "player.fire", profile.FireAnimation,
-                elapsed - shotStarted < ClipDuration(profile.FireAnimation, profile.AttackDurationSeconds),
+                !suppressHold && elapsed - shotStarted < ClipDuration(profile.FireAnimation, profile.AttackDurationSeconds),
                 shootSequence != renderedShotSequence, LoopMode.Once);
-            Override(state, "player.use", profile.ReloadAnimation, reloading,
+            Override(state, "player.use", profile.ReloadAnimation, !suppressHold && reloading,
                 reloadSequence != renderedReloadSequence, LoopMode.Loop);
             var hasParcoolController = document != null && document.Controllers.ContainsKey("player.parcool");
-            Override(state, "player.main", hasParcoolController && string.IsNullOrEmpty(profile.DashAnimation)
-                    ? string.Empty
-                    : selectedDash, dashPlaying,
-                dashSequence != renderedDashSequence, LoopMode.Once);
+            var parcoolOwnsDash = hasParcoolController && string.IsNullOrEmpty(profile.DashAnimation);
+            if (string.IsNullOrEmpty(profile.DashAnimation) && !hasParcoolController)
+                Override(state, "player.parcool", selectedDash, dashPlaying,
+                    dashSequence != renderedDashSequence, fallbackRoll ? LoopMode.Once : null);
+            if (string.IsNullOrEmpty(profile.DashAnimation) && dashPlaying)
+                state.ControllerCommands["player.main"] = ControllerCommand.Stop;
+            else
+                Override(state, "player.main", parcoolOwnsDash ? string.Empty : selectedDash, dashPlaying,
+                    dashSequence != renderedDashSequence, fallbackRoll ? LoopMode.Once : null);
             var vehicle = character.controlOtherCharacterAction;
             var riding = vehicle != null && vehicle.Running && vehicle.vehicleControl
                          && vehicle.targetCharacter != null;
             state.ControllerCommands.Remove("player.hold_mainhand");
-            if (holdingGun && !riding && (flags & (EntityFlags.Dead | EntityFlags.Sleeping)) == 0)
+            state.ControllerCommands.Remove("player.hold_offhand");
+            if (suppressHold)
+            {
+                state.ControllerCommands["player.hold_mainhand"] = ControllerCommand.Stop;
+                state.ControllerCommands["player.hold_offhand"] = ControllerCommand.Stop;
+            }
+            if (holdingGun && !suppressHold && !riding && (flags & (EntityFlags.Dead | EntityFlags.Sleeping)) == 0)
             {
                 var grounded = (flags & EntityFlags.OnGround) != 0;
                 if (grounded && !dashPlaying)
@@ -408,7 +426,7 @@ namespace DuckovCustomModel.Integrations.Ysm
             state.Queries["query.duckov_riding_vehicle_type"] = character.ridingVehicleType;
         }
 
-        private void Override(EntityState state, string slot, string animation, bool active, bool reload, LoopMode loop)
+        private void Override(EntityState state, string slot, string animation, bool active, bool reload, LoopMode? loop)
         {
             state.ControllerCommands.Remove(slot);
             if (active && !string.IsNullOrEmpty(animation) && document != null &&
