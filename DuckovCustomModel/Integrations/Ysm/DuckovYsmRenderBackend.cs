@@ -160,46 +160,63 @@ namespace DuckovCustomModel.Integrations.Ysm
         private void UpdatePose(GraphicsState state, PoseEvaluator pose)
         {
             var baked = state.Geometry;
-            baked.Transform(pose, state.CpuVertices, state.CpuNormals);
-            for (var i = 0; i < state.Vertices.Length; i++)
-            {
-                state.Vertices[i] = DuckovYsmCoordinates.ToUnityPosition(state.CpuVertices[i]);
-                state.Normals[i] = DuckovYsmCoordinates.ToUnityDirection(state.CpuNormals[i]);
-                var bone = baked.BoneIndices[i];
-                var color = pose.Colors[bone];
-                state.Colors[i] = new(color.X, color.Y, color.Z, color.W);
-                state.Glow[i] = new(pose.Glow[bone] >= 0 ? pose.Glow[bone] : pose.FullBright[bone] ? 15 : -1, 0);
-            }
-
             for (var bone = 0; bone < state.Collapsed.Length; bone++)
             {
-                state.Collapsed[bone] = false;
-                for (var ancestor = bone; ancestor >= 0; ancestor = state.Document.Bones[ancestor].Parent)
-                {
-                    var scale = pose.Scales[ancestor];
-                    if ((scale.X == 0 ? 1 : 0) + (scale.Y == 0 ? 1 : 0) + (scale.Z == 0 ? 1 : 0) >= 2)
+                var matrix = pose.Matrices[bone];
+                var collapsed = CollapsedToLine(matrix);
+                if (!collapsed)
+                    for (var ancestor = bone; ancestor >= 0; ancestor = state.Document.Bones[ancestor].Parent)
                     {
-                        state.Collapsed[bone] = true;
+                        var scale = pose.Scales[ancestor];
+                        if ((scale.X == 0 ? 1 : 0) + (scale.Y == 0 ? 1 : 0) + (scale.Z == 0 ? 1 : 0) < 2)
+                            continue;
+                        collapsed = true;
                         break;
                     }
-                }
+
+                state.Collapsed[bone] = collapsed;
+                state.RequiresTriangleCheck[bone] = !collapsed && !HasVolume(matrix);
+            }
+
+            baked.Transform(pose, state.CpuVertices, state.CpuNormals, state.Collapsed);
+            var colorsChanged = !state.ColorsUploaded;
+            var glowChanged = !state.GlowUploaded;
+            for (var i = 0; i < state.Vertices.Length; i++)
+            {
+                var bone = baked.BoneIndices[i];
+                if (state.Collapsed[bone]) continue;
+                state.Vertices[i] = DuckovYsmCoordinates.ToUnityPosition(state.CpuVertices[i]);
+                state.Normals[i] = DuckovYsmCoordinates.ToUnityDirection(state.CpuNormals[i]);
+                var color = pose.Colors[bone];
+                var nextColor = new Color(color.X, color.Y, color.Z, color.W);
+                var previousColor = state.Colors[i];
+                if (previousColor.r != nextColor.r || previousColor.g != nextColor.g ||
+                    previousColor.b != nextColor.b || previousColor.a != nextColor.a) colorsChanged = true;
+                state.Colors[i] = nextColor;
+                var nextGlow = new Vector2(pose.Glow[bone] >= 0 ? pose.Glow[bone] : pose.FullBright[bone] ? 15 : -1, 0);
+                if (state.Glow[i].x != nextGlow.x) glowChanged = true;
+                state.Glow[i] = nextGlow;
             }
 
             state.Mesh.vertices = state.Vertices;
             state.Mesh.normals = state.Normals;
-            state.Mesh.colors = state.Colors;
-            state.Mesh.uv2 = state.Glow;
+            if (colorsChanged) state.Mesh.colors = state.Colors;
+            if (glowChanged) state.Mesh.uv2 = state.Glow;
             state.Mesh.RecalculateBounds();
             state.TransparentMesh.vertices = state.Vertices;
             state.TransparentMesh.normals = state.Normals;
-            state.TransparentMesh.colors = state.Colors;
-            state.TransparentMesh.uv2 = state.Glow;
+            if (colorsChanged) state.TransparentMesh.colors = state.Colors;
+            if (glowChanged) state.TransparentMesh.uv2 = state.Glow;
             state.TransparentMesh.bounds = state.Mesh.bounds;
+            state.ColorsUploaded = true;
+            state.GlowUploaded = true;
             state.TransparentCount = 0;
             for (var partition = 0; partition < baked.Partitions.Length; partition++)
             {
                 var source = baked.Partitions[partition];
+                var indices = state.SolidIndices[partition];
                 var solid = 0;
+                var indicesChanged = state.SolidCounts[partition] < 0;
                 for (var triangle = 0; triangle < source.Indices.Length; triangle += 3)
                 {
                     int a = source.Indices[triangle],
@@ -207,12 +224,15 @@ namespace DuckovCustomModel.Integrations.Ysm
                         c = source.Indices[triangle + 2];
                     var bone = baked.BoneIndices[a];
                     if (state.Collapsed[bone] || pose.Colors[bone].W <= 0 ||
-                        !baked.IsTriangleRenderable(pose, a, b, c)) continue;
+                        (state.RequiresTriangleCheck[bone] || baked.BoneIndices[b] != bone ||
+                         baked.BoneIndices[c] != bone) && !baked.IsTriangleRenderable(pose, a, b, c)) continue;
                     if (source.AlphaMode == MeshAlphaMode.Opaque && pose.Colors[bone].W >= 1)
                     {
-                        state.SolidIndices[partition][solid++] = c;
-                        state.SolidIndices[partition][solid++] = b;
-                        state.SolidIndices[partition][solid++] = a;
+                        if (indices[solid] != c || indices[solid + 1] != b || indices[solid + 2] != a)
+                            indicesChanged = true;
+                        indices[solid++] = c;
+                        indices[solid++] = b;
+                        indices[solid++] = a;
                     }
                     else
                     {
@@ -220,7 +240,9 @@ namespace DuckovCustomModel.Integrations.Ysm
                     }
                 }
 
-                state.Mesh.SetTriangles(state.SolidIndices[partition], 0, solid, partition, false);
+                if (state.SolidCounts[partition] != solid) indicesChanged = true;
+                state.SolidCounts[partition] = solid;
+                if (indicesChanged) state.Mesh.SetTriangles(indices, 0, solid, partition, false);
             }
 
             BindTextureFrames(state);
@@ -244,6 +266,28 @@ namespace DuckovCustomModel.Integrations.Ysm
                               $"rendererEnabled={state.Renderer.enabled}, forceOff={state.Renderer.forceRenderingOff}, " +
                               $"opaqueQueue/Src/Dst/ZWrite={opaqueState}, transparentQueue/Src/Dst/ZWrite={transparentState}");
             }
+        }
+
+        private static bool CollapsedToLine(System.Numerics.Matrix4x4 matrix)
+        {
+            return !HasArea(matrix.M11, matrix.M12, matrix.M13, matrix.M21, matrix.M22, matrix.M23) &&
+                   !HasArea(matrix.M11, matrix.M12, matrix.M13, matrix.M31, matrix.M32, matrix.M33) &&
+                   !HasArea(matrix.M21, matrix.M22, matrix.M23, matrix.M31, matrix.M32, matrix.M33);
+        }
+
+        private static bool HasVolume(System.Numerics.Matrix4x4 matrix)
+        {
+            double translation = (double)matrix.M41 + matrix.M42 + matrix.M43;
+            double determinant = matrix.M11 * ((double)matrix.M22 * matrix.M33 - (double)matrix.M23 * matrix.M32) -
+                                 matrix.M12 * ((double)matrix.M21 * matrix.M33 - (double)matrix.M23 * matrix.M31) +
+                                 matrix.M13 * ((double)matrix.M21 * matrix.M32 - (double)matrix.M22 * matrix.M31);
+            return determinant != 0 && !double.IsNaN(determinant) && !double.IsInfinity(determinant) &&
+                   !double.IsNaN(translation) && !double.IsInfinity(translation);
+        }
+
+        private static bool HasArea(double ax, double ay, double az, double bx, double by, double bz)
+        {
+            return ay * bz - az * by != 0 || az * bx - ax * bz != 0 || ax * by - ay * bx != 0;
         }
 
         private GraphicsState BuildGraphics(ModelDocument document, MeshData geometry, int selected)
@@ -509,6 +553,7 @@ namespace DuckovCustomModel.Integrations.Ysm
         private sealed class GraphicsState : IDisposable
         {
             internal readonly bool[] Collapsed;
+            internal readonly bool[] RequiresTriangleCheck;
             internal readonly Color[] Colors;
             internal readonly NVector[] CpuVertices, CpuNormals;
             internal readonly ModelDocument Document;
@@ -517,6 +562,7 @@ namespace DuckovCustomModel.Integrations.Ysm
             internal readonly TriangleDepth[] Order;
             internal readonly List<TransparentRun> Runs = new();
             internal readonly int[][] SolidIndices;
+            internal readonly int[] SolidCounts;
             internal readonly Material[] SolidMaterials, TransparentMaterials;
             internal readonly int[] SortedIndices, TextureBindings;
             internal readonly List<Texture2D> Textures = new();
@@ -527,6 +573,7 @@ namespace DuckovCustomModel.Integrations.Ysm
             internal Material[] RunMaterials = Array.Empty<Material>();
             internal int TransparentCount;
             internal bool TransparentIndicesInitialized;
+            internal bool ColorsUploaded, GlowUploaded;
 
             internal GraphicsState(ModelDocument document, MeshData geometry)
             {
@@ -540,10 +587,13 @@ namespace DuckovCustomModel.Integrations.Ysm
                 Colors = new Color[count];
                 Glow = new Vector2[count];
                 Collapsed = new bool[document.Bones.Count];
+                RequiresTriangleCheck = new bool[document.Bones.Count];
                 int partitions = geometry.Partitions.Length, triangles = 0;
                 SolidIndices = new int[partitions][];
+                SolidCounts = new int[partitions];
                 for (var i = 0; i < partitions; i++)
                 {
+                    SolidCounts[i] = -1;
                     SolidIndices[i] = new int[geometry.Partitions[i].Indices.Length];
                     triangles += SolidIndices[i].Length / 3;
                 }
