@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.Integrations.Ysm;
 using DuckovCustomModel.MonoBehaviours;
 
 namespace DuckovCustomModel.Managers
@@ -23,11 +24,7 @@ namespace DuckovCustomModel.Managers
         private static async UniTaskVoid RefreshModelListAsync(CancellationToken cancellationToken,
             IEnumerable<string>? priorityModelIDs)
         {
-            foreach (var handler in ModelManager.GetAllHandlers())
-                if (handler.IsHiddenOriginalModel)
-                    handler.CleanupCustomModel();
-
-            ModelManager.ClearThumbnailCache();
+            // Refresh registrations before replacing instances. Failed YSM candidates keep the active model.
             OnRefreshStarted?.Invoke();
 
             var priorityModels = new List<(ModelBundleInfo bundle, ModelInfo model)>();
@@ -42,13 +39,16 @@ namespace DuckovCustomModel.Managers
 
             try
             {
-                var bundlesToReload = ModelManager.UpdateModelBundles();
+                var bundlesToReload = ModelManager.UpdateModelBundles(false);
+                bundlesToReload.UnionWith(await ModelManager.UpdateYsmModelBundlesAsync(cancellationToken));
+                ModelManager.ClearThumbnailCache();
 
                 if (bundlesToReload.Count > 0)
                 {
                     if (priorityModels.Count > 0)
                         foreach (var (priorityBundle, _) in priorityModels)
                         {
+                            if (YsmModelSource.IsYsm(priorityBundle)) continue;
                             cancellationToken.ThrowIfCancellationRequested();
                             await AssetBundleManager.GetOrLoadAssetBundleAsync(priorityBundle, false,
                                 cancellationToken);
@@ -58,6 +58,7 @@ namespace DuckovCustomModel.Managers
                     if (priorityModels.Count > 0)
                         foreach (var (priorityBundle, priorityModel) in priorityModels)
                         {
+                            if (YsmModelSource.IsYsm(priorityModel)) continue;
                             var priorityBundleInList =
                                 ModelManager.ModelBundles.FirstOrDefault(b => b == priorityBundle);
                             var priorityModelInList =
@@ -74,6 +75,8 @@ namespace DuckovCustomModel.Managers
                     foreach (var bundle in ModelManager.ModelBundles)
                     foreach (var model in bundle.Models)
                     {
+                        // YSM discovery already decodes and validates changed packages.
+                        if (YsmModelSource.IsYsm(model)) continue;
                         if (priorityModels.Any(pm => pm.bundle == bundle && pm.model == model))
                             continue;
 

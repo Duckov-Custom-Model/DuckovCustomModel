@@ -9,6 +9,8 @@ using Duckov.Buffs;
 using Duckov.UI;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Core.MonoBehaviours.Animators;
+using DuckovCustomModel.Integrations.AssetBundles;
+using DuckovCustomModel.Integrations.Ysm;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.Utils;
 using FMOD.Studio;
@@ -29,6 +31,11 @@ namespace DuckovCustomModel.MonoBehaviours
         private static readonly IReadOnlyDictionary<string, FieldInfo> OriginalModelSocketFieldInfos =
             CharacterModelSocketUtils.AllSocketFields;
 
+        private static readonly FieldInfo? CurrentUsingSocketCacheField = typeof(ItemAgentHolder).GetField(
+            "_currentUsingSocketCache", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        public readonly SortedDictionary<int, string> ModelPriorityList = [];
+
         private readonly HashSet<CharacterMainControl> _currentRiders = [];
 
         private readonly HashSet<GameObject> _currentUsingCustomSocketObjects = [];
@@ -39,10 +46,8 @@ namespace DuckovCustomModel.MonoBehaviours
         private readonly Dictionary<FieldInfo, Transform> _originalModelSockets = [];
 
         private readonly Dictionary<string, List<EventInstance>> _playingSoundInstances = [];
-        private readonly Dictionary<string, List<string>> _soundsByTag = [];
         private readonly Dictionary<string, float> _soundTagPlayChance = [];
-
-        public readonly SortedDictionary<int, string> ModelPriorityList = [];
+        private readonly Dictionary<string, List<string>> _soundsByTag = [];
         private Renderer[]? _cachedCustomModelRenderers;
         private float _currentHeight;
 
@@ -56,9 +61,17 @@ namespace DuckovCustomModel.MonoBehaviours
         private bool _isScaleLocked;
 
         private float _nextIdleAudioTime;
+        private CapsuleCollider? _originalBodyCollider;
+        private Vector3 _originalColliderCenter;
+        private float _originalColliderHeight, _originalColliderRadius;
+        private bool _originalFaceActive = true, _originalSoundEnabled = true;
+        private AssetBundleRadialActionPlayer? _radialActionPlayer;
+        private int _ysmRendererVersion;
+        private DuckovItemAgent? _ysmSocketAgent;
 
-        private bool ReplaceShader => CurrentModelInfo is not { Features: { Length: > 0 } }
-                                      || !CurrentModelInfo.Features.Contains(ModelFeatures.NoAutoShaderReplace);
+        private bool ReplaceShader => YsmRuntime == null && (CurrentModelInfo is not { Features: { Length: > 0 } }
+                                                             || !CurrentModelInfo.Features.Contains(ModelFeatures
+                                                                 .NoAutoShaderReplace));
 
         public CharacterMainControl? CharacterMainControl { get; private set; }
         public CharacterModel? OriginalCharacterModel { get; private set; }
@@ -125,6 +138,12 @@ namespace DuckovCustomModel.MonoBehaviours
         public GameObject? CustomModelInstance { get; private set; }
         public Animator? CustomAnimator { get; private set; }
         public CustomAnimatorControl? CustomAnimatorControl { get; private set; }
+        public YsmCharacterRuntime? YsmRuntime { get; private set; }
+
+        public IReadOnlyList<RadialActionInfo> RadialActions =>
+            _radialActionPlayer?.Actions ?? Array.Empty<RadialActionInfo>();
+
+        public string? CurrentRadialActionId => _radialActionPlayer?.CurrentActionId;
 
         private void Update()
         {
@@ -149,6 +168,32 @@ namespace DuckovCustomModel.MonoBehaviours
             RefreshPlayingSounds();
 
             if (CharacterMainControl == null || OriginalCharacterModel == null) return;
+
+            if (YsmRuntime != null)
+                try
+                {
+                    var socketsChanged = YsmRuntime.Tick(Time.deltaTime);
+                    var heldAgent = CharacterMainControl.CurrentHoldItemAgent;
+                    if (_ysmSocketAgent != heldAgent)
+                    {
+                        _ysmSocketAgent = heldAgent;
+                        socketsChanged = true;
+                    }
+
+                    if (socketsChanged)
+                    {
+                        RecordCustomModelSockets();
+                        ChangeToCustomModelSockets();
+                    }
+
+                    if (_ysmRendererVersion != YsmRuntime.RendererVersion)
+                        RefreshYsmRenderers();
+                }
+                catch (Exception exception)
+                {
+                    ModLogger.LogError($"YSM instance stopped: {exception.Message}");
+                    CleanupCustomModel();
+                }
 
             if (_isScaleLocked && CustomModelInstance != null)
             {
@@ -181,6 +226,16 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void OnDestroy()
         {
+            ModelHeightManager.OnHeightChanged -= OnHeightChangedEvent;
+            try
+            {
+                CleanupCustomModel();
+            }
+            catch (Exception exception)
+            {
+                ModLogger.LogError($"Model cleanup failed: {exception.Message}");
+            }
+
             ModelSoundTrigger.OnSoundTriggered -= OnSoundTriggered;
             ModelSoundStopTrigger.OnSoundStopTriggered -= OnSoundStopTriggered;
 
@@ -194,6 +249,16 @@ namespace DuckovCustomModel.MonoBehaviours
             if (CharacterMainControl.Health == null) return;
             CharacterMainControl.Health.OnHurtEvent.RemoveListener(OnHurt);
             CharacterMainControl.Health.OnDeadEvent.RemoveListener(OnDeath);
+        }
+
+        public bool TryPlayRadialAction(string actionId)
+        {
+            return _radialActionPlayer?.TryPlay(actionId) == true;
+        }
+
+        public bool StopRadialAction()
+        {
+            return _radialActionPlayer?.Stop() == true;
         }
 
         public string GetTargetTypeId()
@@ -249,6 +314,18 @@ namespace DuckovCustomModel.MonoBehaviours
             RecordOriginalModelOcclusionBody();
             RecordOriginalHeadCollider();
             RecordOriginalSoundMaker();
+            var originalFace = GetOriginalCustomFaceInstance();
+            _originalFaceActive = originalFace == null || originalFace.gameObject.activeSelf;
+            _originalSoundEnabled = OriginalCharacterSoundMaker == null || OriginalCharacterSoundMaker.enabled;
+            _originalBodyCollider = CharacterMainControl.mainDamageReceiver != null
+                ? CharacterMainControl.mainDamageReceiver.GetComponent<CapsuleCollider>()
+                : null;
+            if (_originalBodyCollider != null)
+            {
+                _originalColliderHeight = _originalBodyCollider.height;
+                _originalColliderRadius = _originalBodyCollider.radius;
+                _originalColliderCenter = _originalBodyCollider.center;
+            }
 
             if (CharacterMainControl.Health != null)
             {
@@ -315,10 +392,11 @@ namespace DuckovCustomModel.MonoBehaviours
         {
             InitializeModelPriorityList();
 
-            if (IsHiddenOriginalModel || CustomModelInstance != null)
+            if (ModelPriorityList.Count == 0)
+            {
                 CleanupCustomModel();
-
-            if (ModelPriorityList.Count == 0) return;
+                return;
+            }
 
             foreach (var priority in ModelPriorityList.Keys.Reverse())
             {
@@ -356,6 +434,7 @@ namespace DuckovCustomModel.MonoBehaviours
                 var targetTypeId = sourceHandler.GetTargetTypeId();
                 Initialize(characterMainControl, targetTypeId);
                 if (!IsInitialized) return;
+                CopyOriginalStateFrom(sourceHandler);
 
                 if (sourceHandler is not { _currentModelBundleInfo: not null, CurrentModelInfo: not null }) return;
                 InitializeCustomModel(sourceHandler._currentModelBundleInfo, sourceHandler.CurrentModelInfo);
@@ -385,6 +464,7 @@ namespace DuckovCustomModel.MonoBehaviours
             var targetTypeId2 = sourceHandler.GetTargetTypeId();
             Initialize(characterMainControl, targetTypeId2);
             if (!IsInitialized) return;
+            CopyOriginalStateFrom(sourceHandler);
             if (CharacterMainControl == null || OriginalCharacterModel == null) return;
 
             if (sourceHandler is not { _currentModelBundleInfo: not null, CurrentModelInfo: not null }) return;
@@ -394,6 +474,9 @@ namespace DuckovCustomModel.MonoBehaviours
         private static void RestoreSocketsFromSource(ModelHandler sourceHandler, CharacterModel newCharacterModel)
         {
             if (sourceHandler.OriginalCharacterModel == null) return;
+            if (sourceHandler.YsmRuntime != null)
+                newCharacterModel.autoSyncRightHandRotation =
+                    sourceHandler.YsmRuntime.OriginalAutoSyncRightHandRotation;
 
             var sourceRoot = sourceHandler.OriginalCharacterModel.transform;
             var myRoot = newCharacterModel.transform;
@@ -556,19 +639,12 @@ namespace DuckovCustomModel.MonoBehaviours
 
         public void CleanupCustomModel()
         {
-            if (OriginalCharacterModel == null)
-            {
-                ModLogger.LogError("OriginalCharacterModel is not set.");
-                return;
-            }
-
-            if (CharacterMainControl == null)
-            {
-                ModLogger.LogError("CharacterMainControl is not set.");
-                return;
-            }
-
-            if (IsHiddenOriginalModel)
+            var notifyRestored = IsHiddenOriginalModel;
+            StopRadialAction();
+            _radialActionPlayer = null;
+            StopAllSounds();
+            YsmRuntime?.Deactivate();
+            if (IsHiddenOriginalModel && OriginalCharacterModel != null && CharacterMainControl != null)
             {
                 if (_customModelSubVisuals != null)
                     CharacterMainControl.RemoveVisual(_customModelSubVisuals);
@@ -577,32 +653,36 @@ namespace DuckovCustomModel.MonoBehaviours
                 UpdateCollider();
 
                 if (OriginalCharacterSoundMaker != null)
-                    OriginalCharacterSoundMaker.enabled = true;
+                    OriginalCharacterSoundMaker.enabled = _originalSoundEnabled;
 
                 var customFaceInstance = GetOriginalCustomFaceInstance();
-                if (customFaceInstance != null) customFaceInstance.gameObject.SetActive(true);
+                if (customFaceInstance != null) customFaceInstance.gameObject.SetActive(_originalFaceActive);
                 if (CustomModelInstance != null) CustomModelInstance.SetActive(false);
 
                 ForceUpdateHealthBar();
 
                 ModLogger.Log("Restored to original model.");
                 IsHiddenOriginalModel = false;
-
-                NotifyModelChanged(true);
             }
 
             CurrentModelInfo = null;
             _currentModelBundleInfo = null;
+
+            YsmRuntime?.Dispose();
+            YsmRuntime = null;
+            _customModelSubVisuals = null;
 
             if (CustomModelInstance != null)
             {
                 CustomAnimator = null;
 
                 DestroyImmediate(CustomModelInstance);
-                CustomModelInstance = null;
             }
 
+            CustomModelInstance = null;
+
             _cachedCustomModelRenderers = null;
+            CustomAnimator = null;
 
             _initialHelmetHeight = 0f;
             _initialRootScale = Vector3.one;
@@ -619,6 +699,7 @@ namespace DuckovCustomModel.MonoBehaviours
             }
 
             foreach (var destroyAdapter in _modifiedDeathLootBoxes
+                         .Where(deathLootBox => deathLootBox != null)
                          .Select(deathLootBox => deathLootBox.GetComponent<OnDestroyAdapter>())
                          .Where(destroyAdapter => destroyAdapter != null))
             {
@@ -631,32 +712,119 @@ namespace DuckovCustomModel.MonoBehaviours
             _customModelLocators.Clear();
             _customModelSockets.Clear();
             _soundsByTag.Clear();
+            _soundTagPlayChance.Clear();
+            _modifiedDeathLootBoxes.Clear();
             IsHiddenOriginalModel = false;
+            // Collider restoration must observe cleared height state.
+            if (_originalBodyCollider != null)
+            {
+                _originalBodyCollider.height = _originalColliderHeight;
+                _originalBodyCollider.radius = _originalColliderRadius;
+                _originalBodyCollider.center = _originalColliderCenter;
+            }
+
+            if (notifyRestored) NotifyModelChanged(true);
+        }
+
+        private void CopyOriginalStateFrom(ModelHandler source)
+        {
+            _originalFaceActive = source._originalFaceActive;
+            _originalSoundEnabled = source._originalSoundEnabled;
+            _originalColliderHeight = source._originalColliderHeight;
+            _originalColliderRadius = source._originalColliderRadius;
+            _originalColliderCenter = source._originalColliderCenter;
         }
 
         public void InitializeCustomModel(ModelBundleInfo modelBundleInfo, ModelInfo modelInfo)
         {
-            if (IsHiddenOriginalModel || CustomModelInstance != null)
-                CleanupCustomModel();
-
-            var prefab = AssetBundleManager.LoadModelPrefab(modelBundleInfo, modelInfo);
-            if (prefab == null)
+            if (CharacterMainControl == null || OriginalCharacterModel == null) return;
+            if (YsmRuntime != null && CurrentModelInfo?.ModelID == modelInfo.ModelID &&
+                CurrentModelInfo.SourceRevision == modelInfo.SourceRevision &&
+                _currentModelBundleInfo?.DirectoryPath == modelBundleInfo.DirectoryPath) return;
+            GameObject? candidate = null;
+            YsmCharacterRuntime? runtime = null;
+            // Parse, bake, build materials and evaluate the first pose before touching the current model.
+            try
             {
-                ModLogger.LogError("Failed to load custom model prefab.");
+                if (YsmModelSource.IsYsm(modelInfo))
+                {
+                    runtime = new(this, modelBundleInfo, modelInfo);
+                    candidate = runtime.Root;
+                }
+                else
+                {
+                    var prefab = AssetBundleManager.LoadModelPrefab(modelBundleInfo, modelInfo);
+                    if (prefab == null) throw new InvalidOperationException("Failed to load custom model prefab.");
+                    candidate = Instantiate(prefab, OriginalCharacterModel.transform);
+                    candidate.SetActive(false);
+                    candidate.name = CustomModelInstanceName;
+                }
+            }
+            catch (Exception exception)
+            {
+                runtime?.Dispose();
+                if (candidate != null) DestroyImmediate(candidate);
+                ModLogger.LogError($"Model switch failed; current model retained: {exception.Message}");
                 return;
             }
 
-            _currentModelBundleInfo = modelBundleInfo;
-            CurrentModelInfo = modelInfo;
-            InitSoundFilePath(modelBundleInfo, modelInfo);
-            InitializeDeathLootBoxPrefab(modelBundleInfo, modelInfo);
-            InitializeCustomModelInternal(prefab, modelInfo);
+            var previous = new RetainedModel(this);
+            try
+            {
+                DetachForSwitch();
+                CustomModelInstance = candidate;
+                YsmRuntime = runtime;
+                _customModelSubVisuals = null;
+                _deathLootBoxPrefab = null;
+                _isScaleLocked = false;
+                _currentHeight = _initialHelmetHeight = 0;
+                _initialRootScale = Vector3.one;
+                _currentModelBundleInfo = modelBundleInfo;
+                CurrentModelInfo = modelInfo;
+                InitSoundFilePath(modelBundleInfo, modelInfo);
+                if (runtime == null) InitializeDeathLootBoxPrefab(modelBundleInfo, modelInfo);
+                InitializeCustomModelInternal(candidate, modelInfo);
+            }
+            catch (Exception exception)
+            {
+                DetachForSwitch();
+                runtime?.Dispose();
+                if (candidate != null) DestroyImmediate(candidate);
+                previous.Restore(this);
+                if (CustomModelInstance != null && CurrentModelInfo != null)
+                {
+                    InitSoundFilePath(_currentModelBundleInfo!, CurrentModelInfo);
+                    InitializeCustomModelInternal(CustomModelInstance, CurrentModelInfo);
+                }
 
+                ModLogger.LogError($"Model switch failed; previous model restored: {exception.Message}");
+                return;
+            }
+
+            StopAllSounds();
+            previous.Dispose();
             NotifyModelChanged(false);
-
-            if (!HasIdleSounds()) return;
-            if (ModEntry.IdleAudioConfig == null || ModEntry.IdleAudioConfig.IsIdleAudioEnabled(TargetTypeId))
+            if (HasIdleSounds() && (ModEntry.IdleAudioConfig == null ||
+                                    ModEntry.IdleAudioConfig.IsIdleAudioEnabled(TargetTypeId)))
                 ScheduleNextIdleAudio();
+        }
+
+        private void DetachForSwitch()
+        {
+            StopRadialAction();
+            _radialActionPlayer = null;
+            YsmRuntime?.Deactivate();
+            if (_customModelSubVisuals != null && CharacterMainControl != null)
+                CharacterMainControl.RemoveVisual(_customModelSubVisuals);
+            RestoreToOriginalModelSockets();
+            if (CustomModelInstance != null) CustomModelInstance.SetActive(false);
+            var face = GetOriginalCustomFaceInstance();
+            if (face != null) face.gameObject.SetActive(_originalFaceActive);
+            if (OriginalCharacterSoundMaker != null) OriginalCharacterSoundMaker.enabled = _originalSoundEnabled;
+            CustomAnimatorControl?.SetCustomAnimator(null);
+            IsHiddenOriginalModel = false;
+            _customModelLocators.Clear();
+            _customModelSockets.Clear();
         }
 
         private void InitializeDeathLootBoxPrefab(ModelBundleInfo modelBundleInfo, ModelInfo modelInfo)
@@ -672,7 +840,7 @@ namespace DuckovCustomModel.MonoBehaviours
             ModLogger.Log($"Death loot box prefab initialized: {prefab.name}");
         }
 
-        private void InitializeCustomModelInternal(GameObject customModelPrefab, ModelInfo modelInfo)
+        private void InitializeCustomModelInternal(GameObject preparedInstance, ModelInfo modelInfo)
         {
             if (CharacterMainControl == null)
             {
@@ -686,13 +854,10 @@ namespace DuckovCustomModel.MonoBehaviours
                 return;
             }
 
-            if (CustomModelInstance != null) CleanupCustomModel();
-
-            // Instantiate the custom model prefab
-            CustomModelInstance = Instantiate(customModelPrefab, OriginalCharacterModel.transform);
-            CustomModelInstance.name = CustomModelInstanceName;
+            CustomModelInstance = preparedInstance;
 
             _cachedCustomModelRenderers = GetAllRenderers(CustomModelInstance);
+            _ysmRendererVersion = YsmRuntime?.RendererVersion ?? 0;
             ReplaceRenderersLayer(_cachedCustomModelRenderers);
             if (ReplaceShader)
                 ReplaceRenderersShader(_cachedCustomModelRenderers);
@@ -702,7 +867,10 @@ namespace DuckovCustomModel.MonoBehaviours
             InitializeCustomCharacterSoundMaker(modelInfo);
 
             // Get the Animator component from the custom model
-            CustomAnimator = CustomModelInstance.GetComponent<Animator>();
+            CustomAnimator = YsmRuntime == null ? CustomModelInstance.GetComponent<Animator>() : null;
+            _radialActionPlayer = CustomAnimator != null && modelInfo.RadialActions is { Length: > 0 }
+                ? new AssetBundleRadialActionPlayer(CustomAnimator, modelInfo)
+                : null;
             if (CustomAnimatorControl != null)
                 if (CustomAnimator != null)
                 {
@@ -710,13 +878,13 @@ namespace DuckovCustomModel.MonoBehaviours
                 }
                 else
                 {
-                    ModLogger.LogError("No Animator component found on custom model instance.");
+                    if (YsmRuntime == null) ModLogger.LogError("No Animator component found on custom model instance.");
                     CustomAnimatorControl.SetCustomAnimator(null);
                 }
 
             RecordCustomModelSockets();
 
-            ModLogger.Log($"Custom model initialized: {customModelPrefab.name}");
+            ModLogger.Log($"Custom model initialized: {preparedInstance.name}");
 
             if (CharacterMainControl == null)
             {
@@ -728,6 +896,7 @@ namespace DuckovCustomModel.MonoBehaviours
                 CharacterMainControl.AddSubVisuals(_customModelSubVisuals);
 
             ChangeToCustomModelSockets();
+            YsmRuntime?.Activate();
             UpdateCollider();
 
             if (OriginalCharacterSoundMaker != null)
@@ -778,6 +947,24 @@ namespace DuckovCustomModel.MonoBehaviours
             if (OriginalCharacterModel == null) return;
 
             _customModelSockets.Clear();
+            _customModelLocators.Clear();
+
+            if (YsmRuntime != null)
+            {
+                foreach (var pair in YsmRuntime.Locators)
+                {
+                    _customModelLocators[pair.Key] = pair.Value;
+                    if (OriginalModelSocketFieldInfos.TryGetValue(pair.Key, out var field))
+                        _customModelSockets[field] = pair.Value;
+                }
+
+                var held = CharacterMainControl?.CurrentHoldItemAgent;
+                if (held is ItemAgent_Gun && held.Item != null &&
+                    YsmRuntime.GetGunLocator(held.Item.TypeID) is { } gunLocator &&
+                    OriginalModelSocketFieldInfos.TryGetValue(SocketNames.RightHand, out var rightHandField))
+                    _customModelSockets[rightHandField] = gunLocator;
+                return;
+            }
 
             var socketFields = OriginalModelSocketFieldInfos.ToArray();
             foreach (var locatorName in SocketNames.InternalSocketNames)
@@ -985,10 +1172,18 @@ namespace DuckovCustomModel.MonoBehaviours
                 child.localRotation = Quaternion.identity;
                 child.localPosition = Vector3.zero;
             }
+
+            // ItemAgentHolder caches the socket selected when an item was equipped. A model
+            // switch moves the already equipped agent, so its aim origin must move too.
+            var holder = CharacterMainControl?.agentHolder;
+            if (holder != null && CurrentUsingSocketCacheField?.GetValue(holder) is Transform cached
+                               && cached == originalSocket)
+                CurrentUsingSocketCacheField.SetValue(holder, newSocket);
         }
 
         private void SetShowBackMaterial()
         {
+            if (YsmRuntime != null) return;
             if (CurrentModelInfo is { Features.Length: > 0 }
                 && CurrentModelInfo.Features.Contains(ModelFeatures.SkipShowBackMaterial))
                 return;
@@ -1179,6 +1374,23 @@ namespace DuckovCustomModel.MonoBehaviours
             _customModelSubVisuals.SetRenderers();
         }
 
+        private void RefreshYsmRenderers()
+        {
+            if (CustomModelInstance == null || YsmRuntime == null) return;
+            // Remove using the old renderer array before SetRenderers replaces that array.
+            if (_customModelSubVisuals != null && CharacterMainControl != null)
+                CharacterMainControl.RemoveVisual(_customModelSubVisuals);
+            _cachedCustomModelRenderers = GetAllRenderers(CustomModelInstance);
+            if (_customModelSubVisuals != null)
+            {
+                _customModelSubVisuals.SetRenderers();
+                if (CharacterMainControl != null) CharacterMainControl.AddSubVisuals(_customModelSubVisuals);
+            }
+
+            OriginalCharacterModel?.SyncHiddenToMainCharacter();
+            _ysmRendererVersion = YsmRuntime.RendererVersion;
+        }
+
         private void InitializeCustomCharacterSoundMaker(ModelInfo? modelInfo = null)
         {
             if (CharacterMainControl == null || CustomModelInstance == null) return;
@@ -1297,6 +1509,55 @@ namespace DuckovCustomModel.MonoBehaviours
                     if (material == null) continue;
                     material.shader = shader;
                 }
+        }
+
+        private sealed class RetainedModel : IDisposable
+        {
+            private readonly ModelBundleInfo? _bundle;
+            private readonly float _height, _initialHeight;
+            private readonly ModelInfo? _info;
+            private readonly Vector3 _initialScale;
+            private readonly GameObject? _loot;
+            private readonly GameObject? _root;
+            private readonly YsmCharacterRuntime? _runtime;
+            private readonly bool _scaleLocked;
+            private readonly CharacterSubVisuals? _visuals;
+
+            public RetainedModel(ModelHandler handler)
+            {
+                _root = handler.CustomModelInstance;
+                _runtime = handler.YsmRuntime;
+                _bundle = handler._currentModelBundleInfo;
+                _info = handler.CurrentModelInfo;
+                _loot = handler._deathLootBoxPrefab;
+                _visuals = handler._customModelSubVisuals;
+                _height = handler._currentHeight;
+                _initialHeight = handler._initialHelmetHeight;
+                _initialScale = handler._initialRootScale;
+                _scaleLocked = handler._isScaleLocked;
+            }
+
+            public void Dispose()
+            {
+                _runtime?.Dispose();
+                if (_root != null) DestroyImmediate(_root);
+            }
+
+            public void Restore(ModelHandler handler)
+            {
+                handler.CustomModelInstance = _root;
+                handler.YsmRuntime = _runtime;
+                handler._currentModelBundleInfo = _bundle;
+                handler.CurrentModelInfo = _info;
+                handler._deathLootBoxPrefab = _loot;
+                handler._customModelSubVisuals = _visuals;
+                handler._cachedCustomModelRenderers = null;
+                handler.CustomAnimator = null;
+                handler._currentHeight = _height;
+                handler._initialHelmetHeight = _initialHeight;
+                handler._initialRootScale = _initialScale;
+                handler._isScaleLocked = _scaleLocked;
+            }
         }
 
         #region Shader Constants

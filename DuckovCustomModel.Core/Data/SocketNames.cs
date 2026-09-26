@@ -21,6 +21,8 @@ namespace DuckovCustomModel.Core.Data
 
         public const string LeftHand = "LeftHandLocator";
         public const string RightHand = "RightHandLocator";
+        public const string Rifle = "RifleLocator";
+        public const string Pistol = "PistolLocator";
         public const string Armor = "ArmorLocator";
         public const string Helmet = "HelmetLocator";
         public const string Face = "FaceLocator";

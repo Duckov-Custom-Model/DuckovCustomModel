@@ -13,6 +13,8 @@ namespace DuckovCustomModel.Managers.Updaters
             var isGunReady = false;
             var isReloading = false;
             var ammoRate = 0.0f;
+            var ammo = 0;
+            var maxAmmo = 0;
             var shootMode = -1;
             var gunState = -1;
             if (gunAgent != null)
@@ -21,13 +23,16 @@ namespace DuckovCustomModel.Managers.Updaters
                 isGunReady = gunAgent.BulletCount > 0 && !isReloading;
                 shootMode = (int)gunAgent.GunItemSetting.triggerMode;
                 gunState = (int)gunAgent.GunState;
-                var maxAmmo = gunAgent.Capacity;
+                ammo = gunAgent.BulletCount;
+                maxAmmo = gunAgent.Capacity;
                 if (maxAmmo > 0)
-                    ammoRate = (float)gunAgent.BulletCount / maxAmmo;
+                    ammoRate = (float)ammo / maxAmmo;
             }
 
             control.SetParameterInteger(CustomAnimatorHash.GunState, gunState);
             control.SetParameterInteger(CustomAnimatorHash.ShootMode, shootMode);
+            control.SetParameterInteger(CustomAnimatorHash.Ammo, ammo);
+            control.SetParameterInteger(CustomAnimatorHash.MaxAmmo, maxAmmo);
             control.SetParameterFloat(CustomAnimatorHash.AmmoRate, ammoRate);
             control.SetParameterBool(CustomAnimatorHash.Reloading, isReloading);
             control.SetParameterBool(CustomAnimatorHash.GunReady, isGunReady);

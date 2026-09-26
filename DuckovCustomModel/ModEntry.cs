@@ -8,6 +8,7 @@ using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.Extensions.ShoulderSurfing;
 using DuckovCustomModel.HarmonyPatches;
+using DuckovCustomModel.Integrations.Ysm;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.UI;
@@ -21,6 +22,7 @@ namespace DuckovCustomModel
     public static class ModEntry
     {
         private static ConfigWindow? _configWindow;
+        private static YsmRadialMenu? _ysmRadialMenu;
         private static Harmony? _harmony;
         public static HideEquipmentConfig? HideEquipmentConfig;
         public static IdleAudioConfig? IdleAudioConfig;
@@ -59,6 +61,7 @@ namespace DuckovCustomModel
             InitializeConfigWindow();
             InitializeUpdateChecker();
             InitializeInputBlocker();
+            InitializeYsmRadialMenu();
 
             UpdateChecker.OnUpdateCheckCompleted += OnUpdateCheckCompleted;
             GameVersionDisplayPatches.Initialize();
@@ -89,6 +92,29 @@ namespace DuckovCustomModel
 
             ModLogger.Log($"Unloading {Constant.ModName}...");
 
+            if (_ysmRadialMenu != null)
+            {
+                _ysmRadialMenu.HideImmediately();
+                Object.Destroy(_ysmRadialMenu.gameObject);
+                _ysmRadialMenu = null;
+            }
+
+            ModelListManager.CancelRefresh();
+            foreach (var handler in ModelManager.GetAllHandlers())
+            {
+                if (handler.YsmRuntime == null) continue;
+                try
+                {
+                    handler.CleanupCustomModel();
+                }
+                catch (Exception exception)
+                {
+                    ModLogger.LogException(exception);
+                }
+            }
+
+            YsmModelSource.ClearCache();
+
             UnloadConfig();
 
             var unpatched = UnpatchAll();
@@ -108,6 +134,7 @@ namespace DuckovCustomModel
 
             if (_configWindow != null)
             {
+                if (_configWindow.IsOpen) _configWindow.HidePanel();
                 Object.Destroy(_configWindow.gameObject);
                 _configWindow = null;
             }
@@ -336,6 +363,14 @@ namespace DuckovCustomModel
             updateCheckerObject.AddComponent<UpdateChecker>();
             Object.DontDestroyOnLoad(updateCheckerObject);
             ModLogger.Log("UpdateChecker initialized.");
+        }
+
+        private static void InitializeYsmRadialMenu()
+        {
+            if (_ysmRadialMenu != null) return;
+            var uiObject = new GameObject("YsmRadialMenu");
+            _ysmRadialMenu = uiObject.AddComponent<YsmRadialMenu>();
+            Object.DontDestroyOnLoad(uiObject);
         }
 
         private static void InitializeInputBlocker()

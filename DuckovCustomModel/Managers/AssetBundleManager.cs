@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.Integrations.Ysm;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -14,9 +14,11 @@ namespace DuckovCustomModel.Managers
     {
         private static readonly Dictionary<string, AssetBundle> LoadedBundles = [];
         private static readonly Dictionary<string, UniTask<AssetBundle?>> LoadingTasks = [];
+        private static readonly Dictionary<AssetBundle, HashSet<string>> AssetNames = [];
 
         public static AssetBundle? GetOrLoadAssetBundle(ModelBundleInfo bundleInfo, bool forceReload = false)
         {
+            if (YsmModelSource.IsYsm(bundleInfo)) return null;
             var bundlePath = Path.Combine(bundleInfo.DirectoryPath, bundleInfo.BundlePath);
             if (string.IsNullOrEmpty(bundlePath) || !File.Exists(bundlePath))
             {
@@ -28,18 +30,18 @@ namespace DuckovCustomModel.Managers
 
             try
             {
-                var bundleData = File.ReadAllBytes(bundlePath);
-                var assetBundle = AssetBundle.LoadFromMemory(bundleData);
+                if (forceReload && LoadedBundles.TryGetValue(bundlePath, out var oldBundleToUnload))
+                {
+                    AssetNames.Remove(oldBundleToUnload);
+                    oldBundleToUnload.Unload(true);
+                    LoadedBundles.Remove(bundlePath);
+                }
+
+                var assetBundle = AssetBundle.LoadFromFile(bundlePath);
                 if (assetBundle == null)
                 {
                     ModLogger.LogError($"AssetBundleManager: Failed to load AssetBundle from path: {bundlePath}");
                     return null;
-                }
-
-                if (LoadedBundles.TryGetValue(bundlePath, out var oldBundle))
-                {
-                    oldBundle.Unload(true);
-                    LoadedBundles.Remove(bundlePath);
                 }
 
                 LoadedBundles[bundlePath] = assetBundle;
@@ -56,6 +58,7 @@ namespace DuckovCustomModel.Managers
         public static async UniTask<AssetBundle?> GetOrLoadAssetBundleAsync(ModelBundleInfo bundleInfo,
             bool forceReload = false, CancellationToken cancellationToken = default)
         {
+            if (YsmModelSource.IsYsm(bundleInfo)) return null;
             var bundlePath = Path.Combine(bundleInfo.DirectoryPath, bundleInfo.BundlePath);
             if (string.IsNullOrEmpty(bundlePath) || !File.Exists(bundlePath))
             {
@@ -92,38 +95,21 @@ namespace DuckovCustomModel.Managers
             {
                 if (forceReload && LoadedBundles.TryGetValue(bundlePath, out var oldBundleToUnload))
                 {
+                    AssetNames.Remove(oldBundleToUnload);
                     oldBundleToUnload.Unload(true);
                     LoadedBundles.Remove(bundlePath);
                     await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
                 }
 
-                const int bufferSize = 64 * 1024;
-                byte[] bundleData;
-                await using (var fileStream =
-                             new FileStream(bundlePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true))
+                var request = AssetBundle.LoadFromFileAsync(bundlePath);
+                await request.ToUniTask();
+                var assetBundle = request.assetBundle;
+                if (cancellationToken.IsCancellationRequested)
                 {
-                    bundleData = new byte[fileStream.Length];
-                    var bytesRead = 0;
-
-                    while (bytesRead < bundleData.Length)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        var remaining = bundleData.Length - bytesRead;
-                        var toRead = Math.Min(bufferSize, remaining);
-                        var read = await fileStream.ReadAsync(bundleData, bytesRead, toRead, cancellationToken)
-                            .ConfigureAwait(false);
-                        if (read == 0) break;
-
-                        bytesRead += read;
-
-                        if (bytesRead % (512 * 1024) == 0)
-                            await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
-                    }
+                    if (assetBundle != null) assetBundle.Unload(true);
+                    cancellationToken.ThrowIfCancellationRequested();
                 }
 
-                await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
-
-                var assetBundle = AssetBundle.LoadFromMemory(bundleData);
                 if (assetBundle == null)
                 {
                     ModLogger.LogError($"AssetBundleManager: Failed to load AssetBundle from path: {bundlePath}");
@@ -132,6 +118,7 @@ namespace DuckovCustomModel.Managers
 
                 if (LoadedBundles.TryGetValue(bundlePath, out var oldBundle))
                 {
+                    AssetNames.Remove(oldBundle);
                     oldBundle.Unload(true);
                     LoadedBundles.Remove(bundlePath);
                 }
@@ -153,6 +140,7 @@ namespace DuckovCustomModel.Managers
 
             if (LoadedBundles.TryGetValue(bundlePath, out var bundle))
             {
+                AssetNames.Remove(bundle);
                 bundle.Unload(true);
                 LoadedBundles.Remove(bundlePath);
             }
@@ -165,6 +153,7 @@ namespace DuckovCustomModel.Managers
             foreach (var bundle in LoadedBundles.Values) bundle.Unload(unloadAllLoadedObjects);
             LoadedBundles.Clear();
             LoadingTasks.Clear();
+            AssetNames.Clear();
         }
 
         public static T? LoadAssetFromBundle<T>(ModelBundleInfo bundleInfo, string assetPath) where T : Object
@@ -227,6 +216,7 @@ namespace DuckovCustomModel.Managers
 
         public static Texture2D? LoadThumbnailTexture(ModelBundleInfo bundleInfo, ModelInfo modelInfo)
         {
+            if (modelInfo.ThumbnailData is { Length: > 0 }) return LoadThumbnailBytes(modelInfo.ThumbnailData);
             if (string.IsNullOrEmpty(modelInfo.ThumbnailPath)) return null;
 
             try
@@ -247,7 +237,14 @@ namespace DuckovCustomModel.Managers
         public static async UniTask<Texture2D?> LoadThumbnailTextureAsync(ModelBundleInfo bundleInfo,
             ModelInfo modelInfo, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(modelInfo.ThumbnailPath)) return null;
+            if (modelInfo.ThumbnailData is { Length: > 0 })
+            {
+                var embedded = LoadThumbnailBytes(modelInfo.ThumbnailData);
+                if (embedded != null || !YsmModelSource.IsYsm(modelInfo)) return embedded;
+            }
+
+            if (string.IsNullOrEmpty(modelInfo.ThumbnailPath))
+                return null;
 
             try
             {
@@ -258,6 +255,10 @@ namespace DuckovCustomModel.Managers
                 return File.Exists(externalPath)
                     ? await LoadTextureFromFileAsync(externalPath, cancellationToken)
                     : null;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -303,6 +304,23 @@ namespace DuckovCustomModel.Managers
             ModelBundleInfo bundleInfo,
             ModelInfo modelInfo, CancellationToken cancellationToken = default)
         {
+            if (YsmModelSource.IsYsm(modelInfo))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    // Discovery already validates the package. UI status checks never decode it again.
+                    YsmModelSource.GetSourcePath(bundleInfo, modelInfo);
+                    return string.IsNullOrEmpty(modelInfo.SourceRevision)
+                        ? (false, "Refresh the model list to validate this YSM source")
+                        : (true, null);
+                }
+                catch (Exception ex)
+                {
+                    return (false, ex.Message);
+                }
+            }
+
             var bundlePath = Path.Combine(bundleInfo.DirectoryPath, bundleInfo.BundlePath);
             if (string.IsNullOrEmpty(bundlePath) || !File.Exists(bundlePath))
                 return (false, $"AssetBundle file not found: {bundleInfo.BundlePath}");
@@ -326,8 +344,22 @@ namespace DuckovCustomModel.Managers
 
         private static bool CheckAssetExistsInBundle(AssetBundle bundle, string assetPath)
         {
-            var assetNames = bundle.GetAllAssetNames();
-            return assetNames.Any(name => string.Equals(name, assetPath, StringComparison.OrdinalIgnoreCase));
+            if (!AssetNames.TryGetValue(bundle, out var assetNames))
+            {
+                assetNames = new(bundle.GetAllAssetNames(), StringComparer.OrdinalIgnoreCase);
+                AssetNames.Add(bundle, assetNames);
+            }
+
+            return assetNames.Contains(assetPath);
+        }
+
+        private static Texture2D? LoadThumbnailBytes(byte[] bytes)
+        {
+            var texture = new Texture2D(2, 2);
+            if (texture.LoadImage(bytes)) return texture;
+            Object.Destroy(texture);
+            ModLogger.LogWarning("YSM thumbnail could not be decoded by Unity.");
+            return null;
         }
 
         private static Texture2D? LoadTextureFromFile(string filePath)
@@ -373,11 +405,16 @@ namespace DuckovCustomModel.Managers
                              new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true))
                 {
                     fileData = new byte[fileStream.Length];
-                    var readAsync = await fileStream.ReadAsync(fileData, 0, fileData.Length, cancellationToken)
-                        .ConfigureAwait(false);
-                    if (readAsync != fileData.Length)
-                        throw new IOException(
-                            $"Failed to read the complete file. Expected {fileData.Length} bytes, but read {readAsync} bytes.");
+                    var offset = 0;
+                    while (offset < fileData.Length)
+                    {
+                        var count = await fileStream.ReadAsync(fileData, offset, fileData.Length - offset,
+                            cancellationToken).ConfigureAwait(false);
+                        if (count == 0)
+                            throw new EndOfStreamException(
+                                $"Thumbnail ended after {offset} of {fileData.Length} bytes.");
+                        offset += count;
+                    }
                 }
 
                 await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
@@ -387,6 +424,10 @@ namespace DuckovCustomModel.Managers
                 ModLogger.LogError($"AssetBundleManager: Failed to load image from file: {filePath}");
                 Object.Destroy(texture);
                 return null;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {

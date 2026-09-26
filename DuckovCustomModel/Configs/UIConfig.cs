@@ -19,6 +19,7 @@ namespace DuckovCustomModel.Configs
     {
         public KeyCode ToggleKey { get; set; } = KeyCode.Backslash;
         public KeyCode AnimatorParamsToggleKey { get; set; } = KeyCode.None;
+        public KeyCode YsmRadialMenuKey { get; set; } = KeyCode.Z;
         public KeyCode EmotionModifierKey1 { get; set; } = KeyCode.Comma;
         public KeyCode EmotionModifierKey2 { get; set; } = KeyCode.Period;
         public bool ShowDCMButton { get; set; } = true;
@@ -30,6 +31,7 @@ namespace DuckovCustomModel.Configs
         {
             ToggleKey = KeyCode.Backslash;
             AnimatorParamsToggleKey = KeyCode.None;
+            YsmRadialMenuKey = KeyCode.Z;
             EmotionModifierKey1 = KeyCode.Comma;
             EmotionModifierKey2 = KeyCode.Period;
             ShowDCMButton = true;
@@ -48,6 +50,7 @@ namespace DuckovCustomModel.Configs
             if (other is not UIConfig otherSetting) return;
             ToggleKey = otherSetting.ToggleKey;
             AnimatorParamsToggleKey = otherSetting.AnimatorParamsToggleKey;
+            YsmRadialMenuKey = otherSetting.YsmRadialMenuKey;
             EmotionModifierKey1 = otherSetting.EmotionModifierKey1;
             EmotionModifierKey2 = otherSetting.EmotionModifierKey2;
             ShowDCMButton = otherSetting.ShowDCMButton;

@@ -7,49 +7,38 @@ namespace DuckovCustomModel
     public static class ModLoader
     {
         private static Assembly? _loadedAssembly;
+
         private static string? _modDirectory;
+
+        // Mono cannot unload individual assemblies. Retain their identity/provenance
+        // across disable/enable so byte-loaded assemblies are not loaded a second time.
+        private static ModDependencyResolver? _dependencyResolver;
 
         public static void Initialize()
         {
             Uninitialize();
             _modDirectory = Path.GetDirectoryName(typeof(ModLoader).Assembly.Location);
-            AppDomain.CurrentDomain.AssemblyResolve += OnAssemblyResolve;
+            if (_modDirectory == null)
+            {
+                ModLogger.LogError("Failed to get assembly directory.");
+                return;
+            }
+
+            if (_dependencyResolver == null || !_dependencyResolver.IsDirectory(_modDirectory))
+                _dependencyResolver = new(_modDirectory);
+            AppDomain.CurrentDomain.AssemblyResolve += _dependencyResolver.Resolve;
             HarmonyLoader.OnReadyToPatch += OnReadyToPatch;
+            if (ModBehaviour.Instance != null) ModBehaviour.Instance.OnModDisabled += OnModDisabled;
         }
 
         public static void Uninitialize()
         {
-            HarmonyLoader.OnReadyToPatch -= OnReadyToPatch;
-            AppDomain.CurrentDomain.AssemblyResolve -= OnAssemblyResolve;
-
             OnModDisabled();
-        }
-
-        private static Assembly? OnAssemblyResolve(object? sender, ResolveEventArgs args)
-        {
-            if (_modDirectory == null) return null;
-
-            var assemblyName = new AssemblyName(args.Name);
-            var assemblyFileName = $"{assemblyName.Name}.dll";
-            var assemblyPath = Path.Combine(_modDirectory, assemblyFileName);
-
-            if (!File.Exists(assemblyPath)) return null;
-            try
-            {
-                ModLogger.Log($"Resolving assembly: {assemblyFileName} from {assemblyPath}");
-                var bytes = File.ReadAllBytes(assemblyPath);
-                return Assembly.Load(bytes);
-            }
-            catch (Exception ex)
-            {
-                ModLogger.LogError($"Failed to load assembly {assemblyFileName}: {ex}");
-            }
-
-            return null;
         }
 
         private static void OnReadyToPatch()
         {
+            if (_loadedAssembly != null || _modDirectory == null || _dependencyResolver == null) return;
             var path = Path.GetDirectoryName(typeof(ModLoader).Assembly.Location);
             if (path == null)
             {
@@ -68,9 +57,19 @@ namespace DuckovCustomModel
             {
                 ModLogger.Log($"Loading Assembly from: {targetAssemblyFile}");
 
-                var bytes = File.ReadAllBytes(targetAssemblyFile);
-                var targetAssembly = Assembly.Load(bytes);
-                _loadedAssembly = targetAssembly;
+                // Unity Mono can resolve field types without a RequestingAssembly. Load our
+                // exact local dependencies first so those metadata lookups need no callback.
+                foreach (var dependency in new[]
+                         {
+                             "System.Runtime.CompilerServices.Unsafe.dll",
+                             "StbImageSharp.dll", "ZstdSharp.dll",
+                             "ModelRuntime.dll", "ModelRuntime.Media.dll",
+                             "ModelRuntime.Ysm.dll", "ModelRuntime.Adapters.dll",
+                             "DuckovCustomModel.Core.dll",
+                         })
+                    _dependencyResolver.LoadModule(dependency);
+
+                _loadedAssembly = _dependencyResolver.LoadModule(Constant.TargetAssemblyName);
 
                 ModLogger.Log("Invoking ModEntry.Initialize...");
 
@@ -92,16 +91,22 @@ namespace DuckovCustomModel
 
         private static void OnModDisabled()
         {
-            if (_loadedAssembly == null) return;
-
+            HarmonyLoader.OnReadyToPatch -= OnReadyToPatch;
             if (ModBehaviour.Instance != null) ModBehaviour.Instance.OnModDisabled -= OnModDisabled;
-
-            ModLogger.Log("Uninitializing Mod...");
-
-            InvokeModEntryMethodUninitialize();
-            _loadedAssembly = null;
-
-            ModLogger.Log("Mod uninitialization complete.");
+            try
+            {
+                if (_loadedAssembly == null) return;
+                ModLogger.Log("Uninitializing Mod...");
+                InvokeModEntryMethodUninitialize();
+                ModLogger.Log("Mod uninitialization complete.");
+            }
+            finally
+            {
+                if (_dependencyResolver != null)
+                    AppDomain.CurrentDomain.AssemblyResolve -= _dependencyResolver.Resolve;
+                _loadedAssembly = null;
+                _modDirectory = null;
+            }
         }
 
         private static void InvokeModEntryMethodInitialize()

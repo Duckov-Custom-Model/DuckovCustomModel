@@ -1,3 +1,4 @@
+using System;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.MonoBehaviours;
 
@@ -5,27 +6,63 @@ namespace DuckovCustomModel.Managers.Updaters
 {
     public class CharacterStatusUpdater : IAnimatorParameterUpdater
     {
+        private static readonly Func<CharacterMainControl, bool>? ReadInvisible =
+            CreateOptionalBooleanGetter("Invisible");
+
+        private static readonly Func<CharacterMainControl, bool>? ReadBodyInWater =
+            CreateOptionalBooleanGetter("BodyInWater");
+
+        private static readonly Func<CharacterMainControl, bool>? ReadHeadInWater =
+            CreateOptionalBooleanGetter("HeadInWater");
+
+        private static readonly Func<CharacterMainControl, bool>? ReadFootInWater =
+            CreateOptionalBooleanGetter("FootInWater");
+
+        private static readonly Func<CharacterMainControl, bool>? ReadSwimming =
+            CreateOptionalBooleanGetter("Swimming");
+
         public void UpdateParameters(CustomAnimatorControl control)
         {
             if (!control.Initialized || control.CharacterMainControl == null) return;
 
-            var hidden = control.CharacterMainControl.Hidden;
+            var character = control.CharacterMainControl;
+            var hidden = character.Hidden;
             control.SetParameterBool(CustomAnimatorHash.Hidden, hidden);
+            control.SetParameterBool(CustomAnimatorHash.Invisible, GetOptionalBoolean(character, ReadInvisible));
+            control.SetParameterBool(CustomAnimatorHash.BodyInWater, GetOptionalBoolean(character, ReadBodyInWater));
+            control.SetParameterBool(CustomAnimatorHash.HeadInWater, GetOptionalBoolean(character, ReadHeadInWater));
+            control.SetParameterBool(CustomAnimatorHash.FootInWater, GetOptionalBoolean(character, ReadFootInWater));
+            control.SetParameterBool(CustomAnimatorHash.Swimming, GetOptionalBoolean(character, ReadSwimming));
 
-            if (control.CharacterMainControl.Health != null)
+            if (character.Health != null)
             {
-                var currentHealth = control.CharacterMainControl.Health.CurrentHealth;
-                var maxHealth = control.CharacterMainControl.Health.MaxHealth;
+                var currentHealth = character.Health.CurrentHealth;
+                var maxHealth = character.Health.MaxHealth;
                 var healthRate = maxHealth > 0 ? currentHealth / maxHealth : 0.0f;
+                control.SetParameterFloat(CustomAnimatorHash.Health, currentHealth);
+                control.SetParameterFloat(CustomAnimatorHash.MaxHealth, maxHealth);
                 control.SetParameterFloat(CustomAnimatorHash.HealthRate, healthRate);
             }
             else
             {
+                control.SetParameterFloat(CustomAnimatorHash.Health, 20f);
+                control.SetParameterFloat(CustomAnimatorHash.MaxHealth, 20f);
                 control.SetParameterFloat(CustomAnimatorHash.HealthRate, 1.0f);
             }
 
-            var currentWater = control.CharacterMainControl.CurrentWater;
-            var maxWater = control.CharacterMainControl.MaxWater;
+            var currentEnergy = character.CurrentEnergy;
+            var maxEnergy = character.MaxEnergy;
+            control.SetParameterFloat(CustomAnimatorHash.Energy, currentEnergy);
+            control.SetParameterFloat(CustomAnimatorHash.MaxEnergy, maxEnergy);
+            var energyRate = maxEnergy > 0 ? currentEnergy / maxEnergy : 1f;
+            control.SetParameterFloat(CustomAnimatorHash.EnergyRate, energyRate);
+            control.SetParameterFloat(CustomAnimatorHash.FoodLevel,
+                Math.Max(0f, Math.Min(20f, 20f * energyRate)));
+
+            var currentWater = character.CurrentWater;
+            var maxWater = character.MaxWater;
+            control.SetParameterFloat(CustomAnimatorHash.Water, currentWater);
+            control.SetParameterFloat(CustomAnimatorHash.MaxWater, maxWater);
             if (maxWater > 0)
             {
                 var waterRate = currentWater / maxWater;
@@ -36,11 +73,14 @@ namespace DuckovCustomModel.Managers.Updaters
                 control.SetParameterFloat(CustomAnimatorHash.WaterRate, 1.0f);
             }
 
-            var totalWeight = control.CharacterMainControl.CharacterItem.TotalWeight;
-            if (control.CharacterMainControl.carryAction.Running)
-                totalWeight += control.CharacterMainControl.carryAction.GetWeight();
+            var totalWeight = character.CharacterItem.TotalWeight;
+            if (character.carryAction.Running)
+                totalWeight += character.carryAction.GetWeight();
 
-            var weightRate = totalWeight / control.CharacterMainControl.MaxWeight;
+            var maxWeight = character.MaxWeight;
+            var weightRate = maxWeight > 0 ? totalWeight / maxWeight : 0f;
+            control.SetParameterFloat(CustomAnimatorHash.Weight, totalWeight);
+            control.SetParameterFloat(CustomAnimatorHash.MaxWeight, maxWeight);
             control.SetParameterFloat(CustomAnimatorHash.WeightRate, weightRate);
 
             int weightState;
@@ -81,6 +121,30 @@ namespace DuckovCustomModel.Managers.Updaters
             var isCurrentlyControlling =
                 currentControlling != null && currentControlling == control.CharacterMainControl;
             control.SetParameterBool(CustomAnimatorHash.IsPlayerControlling, isCurrentlyControlling);
+        }
+
+        private static Func<CharacterMainControl, bool>? CreateOptionalBooleanGetter(string name)
+        {
+            var type = typeof(CharacterMainControl);
+            var getter = type.GetProperty(name)?.GetGetMethod();
+            if (getter != null && getter.ReturnType == typeof(bool))
+                return (Func<CharacterMainControl, bool>)Delegate.CreateDelegate(
+                    typeof(Func<CharacterMainControl, bool>), getter);
+            var field = type.GetField(name);
+            return field != null && field.FieldType == typeof(bool) ? target => (bool)field.GetValue(target)! : null;
+        }
+
+        private static bool GetOptionalBoolean(CharacterMainControl character, Func<CharacterMainControl, bool>? getter)
+        {
+            if (getter == null) return false;
+            try
+            {
+                return getter(character);
+            }
+            catch (NullReferenceException)
+            {
+                return false;
+            }
         }
     }
 }

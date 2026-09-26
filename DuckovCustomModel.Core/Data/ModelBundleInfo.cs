@@ -9,12 +9,23 @@ namespace DuckovCustomModel.Core.Data
     {
         public string BundleName { get; set; } = string.Empty;
         public string BundlePath { get; set; } = string.Empty;
+        public string SourceKind { get; set; } = "AssetBundle";
 
         public ModelInfo[] Models { get; set; } = [];
 
         public string[]? SpriteAtlasPaths { get; set; }
 
         [JsonIgnore] public string DirectoryPath { get; internal set; } = string.Empty;
+
+        public static ModelBundleInfo CreateSourceBundle(string directoryPath, string bundleName,
+            string sourceKind, ModelInfo[] models)
+        {
+            return new()
+            {
+                DirectoryPath = Path.GetFullPath(directoryPath), BundleName = bundleName,
+                SourceKind = sourceKind, Models = models,
+            };
+        }
 
         public static ModelBundleInfo? LoadFromDirectory(string directoryPath,
             JsonSerializerSettings? jsonSettings = null)
@@ -54,6 +65,7 @@ namespace DuckovCustomModel.Core.Data
             {
                 BundleName = BundleName,
                 BundlePath = BundlePath,
+                SourceKind = SourceKind,
                 Models = filteredModels,
                 DirectoryPath = DirectoryPath,
                 SpriteAtlasPaths = SpriteAtlasPaths,

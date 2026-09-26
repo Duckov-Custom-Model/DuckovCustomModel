@@ -13,6 +13,7 @@ namespace DuckovCustomModel.Core.Data
         public string BundleHash { get; set; } = string.Empty;
         public string ConfigHash { get; set; } = string.Empty;
         public DateTime LastModified { get; set; }
+        public long FileLength { get; set; }
 
         public static string CalculateFileHash(string filePath)
         {

@@ -7,7 +7,7 @@ namespace DuckovCustomModel.Configs
     {
         void LoadDefault();
         void LoadFromFile(string filePath, bool autoSaveOnLoad = true);
-        void SaveToFile(string filePath, bool withBackup = true);
+        void SaveToFile(string filePath, bool withBackup = false);
         void CopyFrom(IConfigBase other);
     }
 }

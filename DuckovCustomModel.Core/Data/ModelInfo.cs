@@ -14,7 +14,11 @@ namespace DuckovCustomModel.Core.Data
         public string Description { get; set; } = string.Empty;
         public string Version { get; set; } = string.Empty;
         public string ThumbnailPath { get; set; } = string.Empty;
+        [JsonIgnore] public byte[]? ThumbnailData { get; set; }
         public string PrefabPath { get; set; } = string.Empty;
+        public string SourceKind { get; set; } = "AssetBundle";
+        public string SourcePath { get; set; } = string.Empty;
+        [JsonIgnore] public string SourceRevision { get; set; } = string.Empty;
 
         public string? DeathLootBoxPrefabPath { get; set; }
 
@@ -34,11 +38,21 @@ namespace DuckovCustomModel.Core.Data
 
         public Dictionary<string, BuffCondition[]>? BuffAnimatorParams { get; set; }
 
+        public RadialActionInfo[] RadialActions { get; set; } = [];
+
         public bool Validate()
         {
             if (string.IsNullOrWhiteSpace(ModelID)) return false;
             if (string.IsNullOrWhiteSpace(Name)) return false;
-            if (string.IsNullOrWhiteSpace(PrefabPath)) return false;
+            if (string.Equals(SourceKind, "Ysm", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(SourcePath)) return false;
+            }
+            else if (!string.Equals(SourceKind, "AssetBundle", StringComparison.OrdinalIgnoreCase)
+                     || string.IsNullOrWhiteSpace(PrefabPath))
+            {
+                return false;
+            }
 
             if (string.IsNullOrWhiteSpace(DeathLootBoxPrefabPath)) DeathLootBoxPrefabPath = null;
 
@@ -82,6 +96,20 @@ namespace DuckovCustomModel.Core.Data
 
             Features = features.ToArray();
             CustomSounds = soundInfos.ToArray();
+
+            if (string.Equals(SourceKind, "AssetBundle", StringComparison.OrdinalIgnoreCase))
+            {
+                var actionIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var actionParameters = new HashSet<string>(StringComparer.Ordinal);
+                RadialActions = (RadialActions ?? [])
+                    .Where(action => action != null && action.Validate() && actionIds.Add(action.Id)
+                                     && actionParameters.Add(action.Parameter))
+                    .ToArray();
+            }
+            else
+            {
+                RadialActions = [];
+            }
 
             return true;
         }

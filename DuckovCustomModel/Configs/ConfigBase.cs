@@ -39,7 +39,7 @@ namespace DuckovCustomModel.Configs
             }
         }
 
-        public virtual void SaveToFile(string filePath, bool withBackup = true)
+        public virtual void SaveToFile(string filePath, bool withBackup = false)
         {
             try
             {
