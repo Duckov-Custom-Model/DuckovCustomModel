@@ -140,6 +140,13 @@ namespace DuckovCustomModel.Integrations.Ysm
                 : character.characterPreset != null
                     ? "duckov:" + character.characterPreset.nameKey
                     : "duckov:character";
+            var camera = Camera.main;
+            destination.CameraDistance = camera != null
+                ? Vector3.Distance(camera.transform.position, character.transform.position)
+                : null;
+            destination.WorldDayTime = GameClock.Instance != null
+                ? (long)Math.Floor((GameClock.Now.TotalHours - 6d) * 1000d)
+                : null;
             CaptureMovement(destination, dt, isPlayer);
             CaptureAim(destination);
 
@@ -167,9 +174,9 @@ namespace DuckovCustomModel.Integrations.Ysm
                 ? Math.Max(0, Math.Min(20, 20.0 * character.CurrentEnergy / character.MaxEnergy))
                 : 20;
             destination.Queries.Remove("ysm.food_level");
-            destination.Queries["ysm.armor_value"] = default;
-            destination.Queries["ysm.frozen_ticks"] = default;
-            destination.Queries["ysm.arrow_count"] = default;
+            destination.Queries.Remove("ysm.armor_value");
+            destination.Queries.Remove("ysm.frozen_ticks");
+            destination.Queries.Remove("ysm.arrow_count");
             CaptureItems(destination);
             CaptureActions(destination, ref flags);
             CaptureVehicle(destination, ref flags);
@@ -222,6 +229,7 @@ namespace DuckovCustomModel.Integrations.Ysm
             var localInput = playerInputActive
                 ? body.InverseTransformDirection(inputManager!.WorldMoveInput)
                 : Vector3.zero;
+            state.MovementInput = new NVector3(localInput.x, localInput.y, localInput.z);
             state.CancelExtraAnimationInput = playerInputActive && inputManager!.MoveAxisInput.sqrMagnitude > .0004f;
             state.Queries["ysm.input_horizontal"] = localInput.x;
             state.Queries["ysm.input_vertical"] = localInput.z;
@@ -278,10 +286,19 @@ namespace DuckovCustomModel.Integrations.Ysm
             state.SwingSequence = swingSequence;
             state.SwingProgress = swinging ? Math.Min(1, Math.Max(0, attackAge / profile.AttackDurationSeconds)) : 0;
             state.AttackProgress = state.SwingProgress;
+            state.HurtTime = (int)Math.Ceiling(Math.Max(0, profile.HurtDurationSeconds - (elapsed - hurtStarted)) * 20);
             var action = character.CurrentAction;
             var actionRunning = action != null && action.Running;
             var usingItem = actionRunning && action is CA_UseItem;
             if (usingItem) flags |= IsOffHand(heldAgent) ? EntityFlags.UsingOffHand : EntityFlags.UsingMainHand;
+            state.ItemUseDuration = state.ItemMaxUseDuration = 0;
+            if (usingItem && action is IProgress itemProgressSource)
+            {
+                var itemProgress = itemProgressSource.GetProgress();
+                state.ItemUseDuration = Math.Max(0, itemProgress.current);
+                state.ItemMaxUseDuration = Math.Max(0, itemProgress.total);
+            }
+
             state.UseSequence = useSequence;
             state.Queries["query.duckov_action_running"] = new(actionRunning);
             state.Queries["query.duckov_action_progress"] = actionRunning && action is IProgress progress
@@ -352,7 +369,8 @@ namespace DuckovCustomModel.Integrations.Ysm
                 : string.Empty;
 
             Override(state, "player.fire", profile.FireAnimation,
-                !suppressHold && elapsed - shotStarted < ClipDuration(profile.FireAnimation, profile.AttackDurationSeconds),
+                !suppressHold && elapsed - shotStarted <
+                ClipDuration(profile.FireAnimation, profile.AttackDurationSeconds),
                 shootSequence != renderedShotSequence, LoopMode.Once);
             Override(state, "player.use", profile.ReloadAnimation, !suppressHold && reloading,
                 reloadSequence != renderedReloadSequence, LoopMode.Loop);
@@ -376,6 +394,7 @@ namespace DuckovCustomModel.Integrations.Ysm
                 state.ControllerCommands["player.hold_mainhand"] = ControllerCommand.Stop;
                 state.ControllerCommands["player.hold_offhand"] = ControllerCommand.Stop;
             }
+
             if (holdingGun && !suppressHold && !riding && (flags & (EntityFlags.Dead | EntityFlags.Sleeping)) == 0)
             {
                 var grounded = (flags & EntityFlags.OnGround) != 0;
@@ -426,7 +445,8 @@ namespace DuckovCustomModel.Integrations.Ysm
             state.Queries["query.duckov_riding_vehicle_type"] = character.ridingVehicleType;
         }
 
-        private void Override(EntityState state, string slot, string animation, bool active, bool reload, LoopMode? loop)
+        private void Override(EntityState state, string slot, string animation, bool active, bool reload,
+            LoopMode? loop)
         {
             state.ControllerCommands.Remove(slot);
             if (active && !string.IsNullOrEmpty(animation) && document != null &&
