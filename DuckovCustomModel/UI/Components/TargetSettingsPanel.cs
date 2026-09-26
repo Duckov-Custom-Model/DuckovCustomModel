@@ -613,6 +613,7 @@ namespace DuckovCustomModel.UI.Components
                 return;
 
             ModelRuntimeDataManager.ClearRuntimeData(targetTypeId, modelID);
+            YsmRadialMenu.Instance?.ResetCurrentFormSettings(targetTypeId, modelID);
 
             ModelHeightManager.ResetHeight(targetTypeId, modelID);
 

@@ -25,6 +25,7 @@ namespace DuckovCustomModel.UI.Tabs
         private bool _isWaitingForModifierKey2Input;
 
         private bool _isWaitingForUIKeyInput;
+        private bool _isWaitingForYsmRadialMenuKeyInput;
         private GameObject? _keyButton;
         private float _lastUpdateInfoRefreshTime;
         private GameObject? _modifierKey1Button;
@@ -33,16 +34,17 @@ namespace DuckovCustomModel.UI.Tabs
         private int _settingRowIndex;
         private LocalizedText? _updateCheckButtonText;
         private LocalizedText? _updateInfoLocalizedText;
+        private GameObject? _ysmRadialMenuKeyButton;
 
         private static UIConfig? UIConfig => ModEntry.UIConfig;
 
         public bool IsWaitingForKeyInput => _isWaitingForUIKeyInput || _isWaitingForAnimatorParamsKeyInput ||
-                                            _isWaitingForModifierKey1Input || _isWaitingForModifierKey2Input;
+                                            _isWaitingForModifierKey1Input || _isWaitingForModifierKey2Input ||
+                                            _isWaitingForYsmRadialMenuKeyInput;
 
         private void Update()
         {
-            if (_isWaitingForUIKeyInput || _isWaitingForAnimatorParamsKeyInput ||
-                _isWaitingForModifierKey1Input || _isWaitingForModifierKey2Input)
+            if (IsWaitingForKeyInput)
                 HandleKeyInputCapture();
 
             if (_updateInfoLocalizedText == null || !(Time.time - _lastUpdateInfoRefreshTime > 30f)) return;
@@ -99,6 +101,7 @@ namespace DuckovCustomModel.UI.Tabs
 
             BuildKeySetting(contentArea);
             BuildAnimatorParamsKeySetting(contentArea);
+            BuildYsmRadialMenuKeySetting(contentArea);
             BuildModifierKeySettings(contentArea);
             BuildAnimatorParamsToggle(contentArea);
             BuildShowDCMButtonToggle(contentArea);
@@ -166,6 +169,32 @@ namespace DuckovCustomModel.UI.Tabs
                 _isWaitingForAnimatorParamsKeyInput
                     ? Localization.PressAnyKey
                     : GetKeyCodeDisplayName(UIConfig?.AnimatorParamsToggleKey ?? KeyCode.None));
+        }
+
+        private void BuildYsmRadialMenuKeySetting(GameObject parent)
+        {
+            var row = CreateSettingRow(parent);
+            var label = UIFactory.CreateText("YsmWheelKeyLabel", row.transform,
+                Localization.YsmRadialMenuHotkey, 18, Color.white);
+            UIFactory.SetupLeftLabel(label);
+            UIFactory.SetLocalizedText(label, () => Localization.YsmRadialMenuHotkey);
+            var button = UIFactory.CreateButton("YsmWheelKeyButton", row.transform, () =>
+            {
+                if (UIConfig == null) return;
+                _isWaitingForUIKeyInput = _isWaitingForAnimatorParamsKeyInput = false;
+                _isWaitingForModifierKey1Input = _isWaitingForModifierKey2Input = false;
+                _isWaitingForYsmRadialMenuKeyInput = true;
+                RefreshAllKeyButtons();
+            }, new(0.2f, 0.2f, 0.2f, 1));
+            _ysmRadialMenuKeyButton = button;
+            UIFactory.SetupRightControl(button, new(100, 30));
+            var text = UIFactory.CreateText("Text", button.transform,
+                GetKeyCodeDisplayName(UIConfig?.YsmRadialMenuKey ?? KeyCode.Z), 18, Color.white,
+                TextAnchor.MiddleCenter);
+            UIFactory.SetupButtonText(text);
+            UIFactory.SetLocalizedText(text, () => _isWaitingForYsmRadialMenuKeyInput
+                ? Localization.PressAnyKey
+                : GetKeyCodeDisplayName(UIConfig?.YsmRadialMenuKey ?? KeyCode.Z));
         }
 
         private void BuildModifierKeySettings(GameObject parent)
@@ -495,6 +524,7 @@ namespace DuckovCustomModel.UI.Tabs
         private void OnKeyButtonClicked()
         {
             if (UIConfig == null) return;
+            _isWaitingForYsmRadialMenuKeyInput = false;
             _isWaitingForUIKeyInput = true;
             _isWaitingForAnimatorParamsKeyInput = false;
             _isWaitingForModifierKey1Input = false;
@@ -505,6 +535,7 @@ namespace DuckovCustomModel.UI.Tabs
         private void OnAnimatorParamsKeyButtonClicked()
         {
             if (UIConfig == null) return;
+            _isWaitingForYsmRadialMenuKeyInput = false;
             _isWaitingForAnimatorParamsKeyInput = true;
             _isWaitingForUIKeyInput = false;
             _isWaitingForModifierKey1Input = false;
@@ -523,6 +554,7 @@ namespace DuckovCustomModel.UI.Tabs
         private void OnModifierKey1ButtonClicked()
         {
             if (UIConfig == null) return;
+            _isWaitingForYsmRadialMenuKeyInput = false;
             _isWaitingForModifierKey1Input = true;
             _isWaitingForUIKeyInput = false;
             _isWaitingForAnimatorParamsKeyInput = false;
@@ -533,6 +565,7 @@ namespace DuckovCustomModel.UI.Tabs
         private void OnModifierKey2ButtonClicked()
         {
             if (UIConfig == null) return;
+            _isWaitingForYsmRadialMenuKeyInput = false;
             _isWaitingForModifierKey2Input = true;
             _isWaitingForUIKeyInput = false;
             _isWaitingForAnimatorParamsKeyInput = false;
@@ -542,27 +575,34 @@ namespace DuckovCustomModel.UI.Tabs
 
         private void HandleKeyInputCapture()
         {
-            if ((!_isWaitingForUIKeyInput && !_isWaitingForAnimatorParamsKeyInput &&
-                 !_isWaitingForModifierKey1Input && !_isWaitingForModifierKey2Input) || UIConfig == null) return;
+            if (!IsWaitingForKeyInput || UIConfig == null) return;
 
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (InputBlocker.GetRealKeyDown(KeyCode.Escape))
             {
                 _isWaitingForUIKeyInput = false;
                 _isWaitingForAnimatorParamsKeyInput = false;
                 _isWaitingForModifierKey1Input = false;
                 _isWaitingForModifierKey2Input = false;
+                _isWaitingForYsmRadialMenuKeyInput = false;
                 RefreshAllKeyButtons();
                 return;
             }
 
             foreach (KeyCode keyCode in Enum.GetValues(typeof(KeyCode)))
-                if (Input.GetKeyDown(keyCode))
+                if (InputBlocker.GetRealKeyDown(keyCode))
                 {
                     if (keyCode is KeyCode.Mouse0 or KeyCode.Mouse1 or KeyCode.Mouse2 or KeyCode.Mouse3
                         or KeyCode.Mouse4 or KeyCode.Mouse5 or KeyCode.Mouse6)
                         continue;
 
-                    if (_isWaitingForUIKeyInput)
+                    if (_isWaitingForYsmRadialMenuKeyInput)
+                    {
+                        UIConfig.YsmRadialMenuKey = keyCode;
+                        ConfigManager.SaveConfigToFile(UIConfig, "UIConfig.json");
+                        _isWaitingForYsmRadialMenuKeyInput = false;
+                        RefreshKeyButton(_ysmRadialMenuKeyButton);
+                    }
+                    else if (_isWaitingForUIKeyInput)
                     {
                         UIConfig.ToggleKey = keyCode;
                         ConfigManager.SaveConfigToFile(UIConfig, "UIConfig.json");
@@ -599,6 +639,7 @@ namespace DuckovCustomModel.UI.Tabs
         {
             RefreshKeyButton(_keyButton);
             RefreshKeyButton(_animatorParamsKeyButton);
+            RefreshKeyButton(_ysmRadialMenuKeyButton);
             RefreshKeyButton(_modifierKey1Button);
             RefreshKeyButton(_modifierKey2Button);
         }

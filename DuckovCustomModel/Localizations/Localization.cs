@@ -34,6 +34,7 @@ namespace DuckovCustomModel.Localizations
             { "LoadingModelList", "Loading model list..." },
             { "Hotkey", "Hotkey" },
             { "AnimatorParamsHotkey", "Animator Parameters Hotkey" },
+            { "YsmRadialMenuHotkey", "YSM Action Wheel Hotkey" },
             { "None", "None" },
             { "Clear", "Clear" },
             { "PressAnyKey", "Press any key..." },
@@ -130,6 +131,7 @@ namespace DuckovCustomModel.Localizations
         public static string LoadingModelList => GetText("LoadingModelList");
         public static string Hotkey => GetText("Hotkey");
         public static string AnimatorParamsHotkey => GetText("AnimatorParamsHotkey");
+        public static string YsmRadialMenuHotkey => GetText("YsmRadialMenuHotkey");
         public static string None => GetText("None");
         public static string Clear => GetText("Clear");
         public static string PressAnyKey => GetText("PressAnyKey");

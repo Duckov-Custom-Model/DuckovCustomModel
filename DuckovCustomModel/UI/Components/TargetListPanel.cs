@@ -4,6 +4,7 @@ using System.Linq;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.Localizations;
+using DuckovCustomModel.Managers;
 using DuckovCustomModel.UI.Base;
 using DuckovCustomModel.UI.Data;
 using Newtonsoft.Json.Linq;
@@ -223,7 +224,7 @@ namespace DuckovCustomModel.UI.Components
 
         private void OnTargetButtonClicked(TargetInfo targetInfo)
         {
-            if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+            if (InputBlocker.GetRealKey(KeyCode.LeftShift) || InputBlocker.GetRealKey(KeyCode.RightShift))
             {
                 var info = new JObject
                 {

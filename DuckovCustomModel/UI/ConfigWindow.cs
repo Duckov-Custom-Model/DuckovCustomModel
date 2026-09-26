@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using Duckov.UI;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Core.Data;
@@ -13,6 +14,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -35,18 +37,17 @@ namespace DuckovCustomModel.UI
         private CursorLockMode _originalCursorLockState;
         private GameObject? _overlay;
         private GameObject? _panelRoot;
-        private PlayerInput? _playerInput;
-        private bool _playerInputWasActive;
+        private int _pointerDiagnosticsRemaining;
         private GameObject? _settingsButton;
         private SettingsTab? _settingsTab;
         private bool _showAnimatorParamsWindow;
         private TabSystem? _tabSystem;
-        private bool _uiActive;
         private GameObject? _uiRoot;
         private GameObject? _updateIndicatorButton;
         private GameObject? _updateIndicatorTitle;
 
         public static ConfigWindow? Instance { get; private set; }
+        public bool IsOpen { get; private set; }
 
         public int EmotionParameterValue1 { get; private set; }
         public int EmotionParameterValue2 { get; private set; }
@@ -88,7 +89,7 @@ namespace DuckovCustomModel.UI
 
             if (_settingsTab != null && _settingsTab.IsWaitingForKeyInput) return;
 
-            if (Input.GetKeyDown(uiConfig.ToggleKey))
+            if (InputBlocker.GetRealKeyDown(uiConfig.ToggleKey))
             {
                 if (_panelRoot.activeSelf)
                     HidePanel();
@@ -97,7 +98,7 @@ namespace DuckovCustomModel.UI
             }
 
             if (uiConfig.AnimatorParamsToggleKey != KeyCode.None &&
-                Input.GetKeyDown(uiConfig.AnimatorParamsToggleKey))
+                InputBlocker.GetRealKeyDown(uiConfig.AnimatorParamsToggleKey))
             {
                 if (!_isInitialized) InitializeUI();
                 _showAnimatorParamsWindow = !_showAnimatorParamsWindow;
@@ -107,25 +108,30 @@ namespace DuckovCustomModel.UI
 
             HandleShortcutParameters(uiConfig);
 
-            if (_uiActive && Input.GetKeyDown(KeyCode.Escape)) HidePanel();
+            if (IsOpen && InputBlocker.GetRealKeyDown(KeyCode.Escape)) HidePanel();
 
-            if (!_uiActive) return;
+            if (!IsOpen) return;
+
+            LogPointerTarget();
 
             if (_charInput != null && _charInputWasEnabled && _charInput.enabled) _charInput.enabled = false;
-
-            if (_playerInput != null && _playerInputWasActive && _playerInput.inputIsActive)
-                _playerInput.DeactivateInput();
         }
 
         private void LateUpdate()
         {
-            if (!_uiActive || _panelRoot == null || !_panelRoot.activeSelf) return;
+            if (!IsOpen || _panelRoot == null || !_panelRoot.activeSelf) return;
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
         }
 
+        private void OnDisable()
+        {
+            if (IsOpen) HidePanel();
+        }
+
         private void OnDestroy()
         {
+            if (IsOpen) HidePanel();
             if (Instance == this)
                 Instance = null;
             UpdateChecker.OnUpdateCheckCompleted -= OnUpdateCheckCompleted;
@@ -143,7 +149,7 @@ namespace DuckovCustomModel.UI
             BuildSettingsButton();
             BuildAnimatorParamsPanel();
 
-            _uiActive = false;
+            IsOpen = false;
             if (_overlay != null) _overlay.SetActive(false);
             if (_panelRoot != null) _panelRoot.SetActive(false);
 
@@ -314,6 +320,7 @@ namespace DuckovCustomModel.UI
 
         public void ShowPanel(int tabIndex = 0)
         {
+            YsmRadialMenu.Instance?.HideImmediately();
             if (_panelRoot != null && _panelRoot.activeSelf)
             {
                 _tabSystem?.SwitchToTab(tabIndex);
@@ -331,7 +338,8 @@ namespace DuckovCustomModel.UI
                 return;
             }
 
-            _uiActive = true;
+            IsOpen = true;
+            _pointerDiagnosticsRemaining = 8;
             if (_overlay != null) _overlay.SetActive(true);
             if (_panelRoot != null) _panelRoot.SetActive(true);
 
@@ -348,9 +356,15 @@ namespace DuckovCustomModel.UI
             var current = EventSystem.current;
             if (current == null)
             {
-                var eventSystem = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+                var eventSystem = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
+                var module = eventSystem.GetComponent<InputSystemUIInputModule>();
+                if (module.actionsAsset == null) module.AssignDefaultActions();
                 DontDestroyOnLoad(eventSystem);
             }
+
+            var uiModule = EventSystem.current?.currentInputModule as InputSystemUIInputModule
+                           ?? EventSystem.current?.GetComponent<InputSystemUIInputModule>();
+            InputBlocker.Instance?.BeginModalUi(uiModule);
 
             _charInput = CharacterInputControl;
             if (_charInput != null)
@@ -363,41 +377,16 @@ namespace DuckovCustomModel.UI
                 }
             }
 
-            _playerInput = PlayerInput;
-            if (_playerInput != null)
-            {
-                _playerInputWasActive = _playerInput.inputIsActive;
-                if (_playerInputWasActive)
-                {
-                    var inputBlocker = InputBlocker.Instance;
-                    if (inputBlocker != null)
-                    {
-                        inputBlocker.IsExternalBlocking = true;
-                        ModLogger.Log("PlayerInput blocked by InputBlocker (external).");
-                    }
-                    else
-                    {
-                        try
-                        {
-                            _playerInput.DeactivateInput();
-                            ModLogger.Log("PlayerInput deactivated (game input blocked).");
-                        }
-                        catch (Exception e)
-                        {
-                            ModLogger.LogWarning($"DeactivateInput() failed when opening config window: {e}");
-                        }
-                    }
-                }
-            }
-
             StartCoroutine(ForceCursorFree());
             ModLogger.Log("Config window opened.");
         }
 
         public void HidePanel()
         {
-            _uiActive = false;
+            IsOpen = false;
             StopAllCoroutines();
+
+            InputBlocker.Instance?.EndModalUi();
 
             if (_overlay != null) _overlay.SetActive(false);
             if (_panelRoot != null) _panelRoot.SetActive(false);
@@ -411,42 +400,34 @@ namespace DuckovCustomModel.UI
             _charInput = null;
             _charInputWasEnabled = false;
 
-            if (_playerInputWasActive)
-            {
-                var inputBlocker = InputBlocker.Instance;
-                if (inputBlocker != null)
-                {
-                    inputBlocker.IsExternalBlocking = false;
-                }
-                else
-                {
-                    var latestPlayerInput = PlayerInput;
-                    if (latestPlayerInput == null)
-                        ModLogger.LogWarning("PlayerInput is null when closing config window, skip ActivateInput().");
-                    else if (!latestPlayerInput.inputIsActive)
-                        try
-                        {
-                            latestPlayerInput.ActivateInput();
-                            ModLogger.Log("PlayerInput reactivated (game input restored).");
-                        }
-                        catch (Exception e)
-                        {
-                            ModLogger.LogWarning($"ActivateInput() failed when closing config window: {e}");
-                        }
-                }
-            }
-
-            _playerInput = null;
-            _playerInputWasActive = false;
-
             Cursor.visible = _cursorWasVisible;
             Cursor.lockState = _originalCursorLockState;
             ModLogger.Log("Config window closed.");
         }
 
+        private void LogPointerTarget()
+        {
+            if (_pointerDiagnosticsRemaining <= 0 || !InputCompatibility.GetMouseButtonDown(0)) return;
+            if (_panelRoot == null || !RectTransformUtility.RectangleContainsScreenPoint(
+                    _panelRoot.GetComponent<RectTransform>(), InputCompatibility.MousePosition)) return;
+            --_pointerDiagnosticsRemaining;
+            var eventSystem = EventSystem.current;
+            if (eventSystem == null)
+            {
+                ModLogger.LogWarning("Config pointer: no EventSystem.");
+                return;
+            }
+
+            var hits = new List<RaycastResult>();
+            eventSystem.RaycastAll(new(eventSystem) { position = InputCompatibility.MousePosition }, hits);
+            var target = hits.Count > 0 ? hits[0].gameObject : null;
+            ModLogger.Log($"Config pointer: top={target?.name ?? "none"}, " +
+                          $"module={eventSystem.currentInputModule?.GetType().Name ?? "none"}, raycasts={hits.Count}.");
+        }
+
         private IEnumerator ForceCursorFree()
         {
-            while (_uiActive)
+            while (IsOpen)
             {
                 if (Cursor.lockState != CursorLockMode.None)
                     Cursor.lockState = CursorLockMode.None;

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.Integrations.Ysm;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.UI.Base;
@@ -13,6 +14,7 @@ using DuckovCustomModel.UI.Data;
 using DuckovCustomModel.UI.Utils;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace DuckovCustomModel.UI.Components
@@ -83,8 +85,8 @@ namespace DuckovCustomModel.UI.Components
                 ExpandAllBundles, new(0.2f, 0.3f, 0.4f, 1)).GetComponent<Button>();
             UIFactory.SetupRectTransform(expandAllButton.gameObject, Vector2.zero, Vector2.zero, new(150, 0));
             var expandAllButtonLayoutElement = expandAllButton.gameObject.AddComponent<LayoutElement>();
-            expandAllButtonLayoutElement.preferredWidth = 150;
-            expandAllButtonLayoutElement.flexibleWidth = 0;
+            expandAllButtonLayoutElement.preferredWidth = 0;
+            expandAllButtonLayoutElement.flexibleWidth = 1;
             expandAllButtonLayoutElement.flexibleHeight = 1;
             var expandAllTextObj = UIFactory.CreateText("Text", expandAllButton.transform,
                 Localization.ExpandAllBundles, 16, Color.white, TextAnchor.MiddleCenter);
@@ -97,8 +99,8 @@ namespace DuckovCustomModel.UI.Components
                 CollapseAllBundles, new(0.2f, 0.3f, 0.4f, 1)).GetComponent<Button>();
             UIFactory.SetupRectTransform(collapseAllButton.gameObject, Vector2.zero, Vector2.zero, new(150, 0));
             var collapseAllButtonLayoutElement = collapseAllButton.gameObject.AddComponent<LayoutElement>();
-            collapseAllButtonLayoutElement.preferredWidth = 150;
-            collapseAllButtonLayoutElement.flexibleWidth = 0;
+            collapseAllButtonLayoutElement.preferredWidth = 0;
+            collapseAllButtonLayoutElement.flexibleWidth = 1;
             collapseAllButtonLayoutElement.flexibleHeight = 1;
             var collapseAllTextObj = UIFactory.CreateText("Text", collapseAllButton.transform,
                 Localization.CollapseAllBundles, 16, Color.white, TextAnchor.MiddleCenter);
@@ -111,8 +113,8 @@ namespace DuckovCustomModel.UI.Components
                 ScrollToTop, new(0.2f, 0.3f, 0.4f, 1)).GetComponent<Button>();
             UIFactory.SetupRectTransform(scrollToTopButton.gameObject, Vector2.zero, Vector2.zero, new(120, 0));
             var scrollToTopButtonLayoutElement = scrollToTopButton.gameObject.AddComponent<LayoutElement>();
-            scrollToTopButtonLayoutElement.preferredWidth = 120;
-            scrollToTopButtonLayoutElement.flexibleWidth = 0;
+            scrollToTopButtonLayoutElement.preferredWidth = 0;
+            scrollToTopButtonLayoutElement.flexibleWidth = 1;
             scrollToTopButtonLayoutElement.flexibleHeight = 1;
             var scrollToTopTextObj = UIFactory.CreateText("Text", scrollToTopButton.transform,
                 Localization.ScrollToTop, 16, Color.white, TextAnchor.MiddleCenter);
@@ -125,8 +127,8 @@ namespace DuckovCustomModel.UI.Components
                 ScrollToBottom, new(0.2f, 0.3f, 0.4f, 1)).GetComponent<Button>();
             UIFactory.SetupRectTransform(scrollToBottomButton.gameObject, Vector2.zero, Vector2.zero, new(120, 0));
             var scrollToBottomButtonLayoutElement = scrollToBottomButton.gameObject.AddComponent<LayoutElement>();
-            scrollToBottomButtonLayoutElement.preferredWidth = 120;
-            scrollToBottomButtonLayoutElement.flexibleWidth = 0;
+            scrollToBottomButtonLayoutElement.preferredWidth = 0;
+            scrollToBottomButtonLayoutElement.flexibleWidth = 1;
             scrollToBottomButtonLayoutElement.flexibleHeight = 1;
             var scrollToBottomTextObj = UIFactory.CreateText("Text", scrollToBottomButton.transform,
                 Localization.ScrollToBottom, 16, Color.white, TextAnchor.MiddleCenter);
@@ -225,9 +227,7 @@ namespace DuckovCustomModel.UI.Components
                     foreach (var bundle in bundlesCopy)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        var bundleKey = string.IsNullOrEmpty(bundle.DirectoryPath)
-                            ? bundle.BundleName
-                            : bundle.DirectoryPath;
+                        var bundleKey = GetBundleKey(bundle);
                         CreateLoadingPlaceholder(bundleKey, bundle);
                     }
 
@@ -294,11 +294,12 @@ namespace DuckovCustomModel.UI.Components
                 foreach (var model in bundle.Models)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
+                    if (YsmModelSource.IsYsm(model)) continue;
 
-                    if (!ModelManager.TryGetThumbnail(bundle.DirectoryPath, model.ModelID, out var texture))
+                    if (!ModelManager.TryGetThumbnail(bundle.DirectoryPath, model, out var texture))
                     {
                         texture = await AssetBundleManager.LoadThumbnailTextureAsync(bundle, model, cancellationToken);
-                        if (texture != null) ModelManager.CacheThumbnail(bundle.DirectoryPath, model.ModelID, texture);
+                        if (texture != null) ModelManager.CacheThumbnail(bundle.DirectoryPath, model, texture);
                     }
 
                     if (bundle.Models.Length > 5) await UniTask.NextFrame(cancellationToken);
@@ -346,7 +347,7 @@ namespace DuckovCustomModel.UI.Components
             foreach (var bundle in bundlesCopy)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var bundleKey = string.IsNullOrEmpty(bundle.DirectoryPath) ? bundle.BundleName : bundle.DirectoryPath;
+                var bundleKey = GetBundleKey(bundle);
                 CreateLoadingPlaceholder(bundleKey, bundle);
             }
 
@@ -391,7 +392,7 @@ namespace DuckovCustomModel.UI.Components
         {
             if (parent == null) return;
 
-            var statusKey = $"{bundle.DirectoryPath}_{model.ModelID}";
+            var statusKey = $"{bundle.DirectoryPath}_{model.ModelID}_{model.SourceRevision}";
 
             if (!_bundleStatusCache.TryGetValue(statusKey, out var statusResult))
             {
@@ -455,35 +456,34 @@ namespace DuckovCustomModel.UI.Components
             thumbnailLayoutElement.flexibleHeight = 0;
             var thumbnailImageComponent = thumbnailImage.GetComponent<Image>();
 
-            Texture2D? texture;
-            if (ModelManager.TryGetThumbnail(bundle.DirectoryPath, model.ModelID, out var cachedTexture))
+            if (!YsmModelSource.IsYsm(model))
             {
-                texture = cachedTexture;
-            }
-            else
-            {
-                texture = await AssetBundleManager.LoadThumbnailTextureAsync(bundle, model, cancellationToken);
-                if (texture != null) ModelManager.CacheThumbnail(bundle.DirectoryPath, model.ModelID, texture);
-            }
+                Texture2D? texture;
+                if (!ModelManager.TryGetThumbnail(bundle.DirectoryPath, model, out texture))
+                {
+                    texture = await AssetBundleManager.LoadThumbnailTextureAsync(bundle, model, cancellationToken);
+                    if (texture != null) ModelManager.CacheThumbnail(bundle.DirectoryPath, model, texture);
+                }
 
-            if (texture != null)
-            {
-                var sprite = Sprite.Create(texture, new(0, 0, texture.width, texture.height),
-                    new(0.5f, 0.5f));
-                thumbnailImageComponent.sprite = sprite;
-                thumbnailImageComponent.preserveAspect = true;
-                thumbnailImageComponent.color = Color.white;
-            }
-            else
-            {
-                thumbnailImageComponent.color = new(0.15f, 0.15f, 0.15f, 1);
-                var thumbnailOutline = thumbnailImage.AddComponent<Outline>();
-                thumbnailOutline.effectColor = new(0.3f, 0.3f, 0.3f, 0.5f);
-                thumbnailOutline.effectDistance = new(1, -1);
-
-                var placeholderText = UIFactory.CreateText("PlaceholderText", thumbnailImage.transform,
-                    Localization.NoPreview, 15, new(0.6f, 0.6f, 0.6f, 1), TextAnchor.MiddleCenter);
-                UIFactory.SetupRectTransform(placeholderText, Vector2.zero, Vector2.one, Vector2.zero);
+                if (texture != null)
+                {
+                    var sprite = Sprite.Create(texture, new(0, 0, texture.width, texture.height),
+                        new(0.5f, 0.5f));
+                    thumbnailImageComponent.sprite = sprite;
+                    thumbnailImage.AddComponent<OwnedThumbnailSprite>().Sprite = sprite;
+                    thumbnailImageComponent.preserveAspect = true;
+                    thumbnailImageComponent.color = Color.white;
+                }
+                else
+                {
+                    thumbnailImageComponent.color = new(0.15f, 0.15f, 0.15f, 1);
+                    var thumbnailOutline = thumbnailImage.AddComponent<Outline>();
+                    thumbnailOutline.effectColor = new(0.3f, 0.3f, 0.3f, 0.5f);
+                    thumbnailOutline.effectDistance = new(1, -1);
+                    var placeholderText = UIFactory.CreateText("PlaceholderText", thumbnailImage.transform,
+                        Localization.NoPreview, 15, new(0.6f, 0.6f, 0.6f, 1), TextAnchor.MiddleCenter);
+                    UIFactory.SetupRectTransform(placeholderText, Vector2.zero, Vector2.one, Vector2.zero);
+                }
             }
 
             var contentArea = new GameObject("ContentArea", typeof(RectTransform));
@@ -492,14 +492,18 @@ namespace DuckovCustomModel.UI.Components
                 offsetMax: new(-10, -10));
             UIFactory.SetupVerticalLayoutGroup(contentArea, 2f, new(0, 0, 0, 0), TextAnchor.UpperLeft, true, true);
 
+            var isYsm = YsmModelSource.IsYsm(model);
+
             var nameText = UIFactory.CreateText("Name", contentArea.transform,
-                string.IsNullOrEmpty(model.Name) ? model.ModelID : model.Name, 20,
+                isYsm ? MinecraftFormatting.ToTmp(string.IsNullOrEmpty(model.Name) ? model.ModelID : model.Name)
+                : string.IsNullOrEmpty(model.Name) ? model.ModelID : model.Name, 20,
                 hasError ? new(1f, 0.6f, 0.6f, 1) : Color.white, TextAnchor.UpperLeft, FontStyle.Bold);
             UIFactory.SetupRectTransform(nameText, new(0, 1), new(1, 1), new(0, 24), pivot: new(0, 1),
                 anchoredPosition: Vector2.zero);
             var nameTextComponent = nameText.GetComponent<TextMeshProUGUI>();
             if (nameTextComponent != null)
             {
+                if (isYsm) nameTextComponent.richText = true;
                 nameTextComponent.enableWordWrapping = true;
                 nameTextComponent.overflowMode = TextOverflowModes.Overflow;
             }
@@ -510,12 +514,15 @@ namespace DuckovCustomModel.UI.Components
             nameLayoutElement.flexibleWidth = 1;
 
             var infoText = UIFactory.CreateText("Info", contentArea.transform,
-                Localization.GetModelInfo(model.ModelID, model.Author, model.Version), 16,
+                isYsm
+                    ? MinecraftFormatting.ToTmp(Localization.GetModelInfo(model.ModelID, model.Author, model.Version))
+                    : Localization.GetModelInfo(model.ModelID, model.Author, model.Version), 16,
                 hasError ? new(1f, 0.7f, 0.7f, 1) : new(0.8f, 0.8f, 0.8f, 1), TextAnchor.UpperLeft);
             UIFactory.SetupRectTransform(infoText, Vector2.zero, Vector2.one, new(0, 18));
             var infoTextComponent = infoText.GetComponent<TextMeshProUGUI>();
             if (infoTextComponent != null)
             {
+                if (isYsm) infoTextComponent.richText = true;
                 infoTextComponent.enableWordWrapping = true;
                 infoTextComponent.overflowMode = TextOverflowModes.Truncate;
             }
@@ -557,11 +564,13 @@ namespace DuckovCustomModel.UI.Components
                 UIFactory.SetupRectTransform(descContent, new(0, 0), new(1, 1), Vector2.zero);
                 UIFactory.SetupVerticalLayoutGroup(descContent, 0f, new(0, 0, 0, 0), TextAnchor.UpperLeft,
                     childForceExpandWidth: true);
-                var descText = UIFactory.CreateText("Description", descContent.transform, model.Description, 15,
+                var descText = UIFactory.CreateText("Description", descContent.transform,
+                    isYsm ? MinecraftFormatting.ToTmp(model.Description) : model.Description, 15,
                     new(0.7f, 0.7f, 0.7f, 1), TextAnchor.UpperLeft);
                 var descTextComponent = descText.GetComponent<TextMeshProUGUI>();
                 if (descTextComponent != null)
                 {
+                    if (isYsm) descTextComponent.richText = true;
                     descTextComponent.enableWordWrapping = true;
                     descTextComponent.overflowMode = TextOverflowModes.Overflow;
                 }
@@ -660,12 +669,19 @@ namespace DuckovCustomModel.UI.Components
             _loadingPlaceholders[bundleKey] = placeholderObj;
         }
 
+        private static string GetBundleKey(ModelBundleInfo bundle)
+        {
+            return YsmModelSource.IsYsm(bundle) || string.IsNullOrEmpty(bundle.DirectoryPath)
+                ? bundle.BundleName
+                : bundle.DirectoryPath;
+        }
+
         private async UniTask BuildBundleGroupAsync(ModelBundleInfo bundle, CancellationToken cancellationToken)
         {
             if (_content == null) return;
 
             cancellationToken.ThrowIfCancellationRequested();
-            var bundleKey = string.IsNullOrEmpty(bundle.DirectoryPath) ? bundle.BundleName : bundle.DirectoryPath;
+            var bundleKey = GetBundleKey(bundle);
             _bundleExpandedStates.TryAdd(bundleKey, true);
             var isExpanded = _bundleExpandedStates[bundleKey];
 
@@ -681,12 +697,6 @@ namespace DuckovCustomModel.UI.Components
                     currentModelID = _currentTarget.UsingFallbackModel;
                     hasModelFallback = bundle.Models.Any(m => m.ModelID == currentModelID);
                 }
-            }
-
-            if (_scrollStrategy == ScrollStrategy.ScrollToActiveModel && (hasModelInUse || hasModelFallback))
-            {
-                isExpanded = true;
-                _bundleExpandedStates[bundleKey] = true;
             }
 
             if (_scrollStrategy == ScrollStrategy.ScrollToActiveModel && (hasModelInUse || hasModelFallback))
@@ -766,7 +776,8 @@ namespace DuckovCustomModel.UI.Components
 
             var modelsContainer = new GameObject("ModelsContainer", typeof(RectTransform), typeof(VerticalLayoutGroup));
             modelsContainer.transform.SetParent(bundleGroupObj.transform, false);
-            UIFactory.SetupRectTransform(modelsContainer, new(0, 0), new(1, 1), new(20, 0), new(-20, 0));
+            UIFactory.SetupRectTransform(modelsContainer, new(0, 0), new(1, 1),
+                offsetMin: new(20, 0), offsetMax: new(-20, 0));
             UIFactory.SetupVerticalLayoutGroup(modelsContainer, 10f, new(0, 0, 10, 10), TextAnchor.UpperLeft, true,
                 false, true);
             UIFactory.SetupContentSizeFitter(modelsContainer, ContentSizeFitter.FitMode.Unconstrained);
@@ -775,10 +786,15 @@ namespace DuckovCustomModel.UI.Components
             _bundleContainers[bundleKey] = modelsContainer;
             modelsContainer.SetActive(isExpanded);
 
+            var gridObject = new GameObject("ModelCardGrid", typeof(RectTransform),
+                typeof(GridLayoutGroup), typeof(LayoutElement), typeof(ModelCardGridLayout));
+            gridObject.transform.SetParent(modelsContainer.transform, false);
+            UIFactory.SetupRectTransform(gridObject, new(0, 1), new(1, 1),
+                Vector2.zero, pivot: new Vector2(.5f, 1));
             foreach (var model in bundle.Models.ToList())
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await BuildModelButtonAsync(bundle, model, modelsContainer.transform, cancellationToken);
+                await BuildModelCardAsync(bundle, model, gridObject.transform, cancellationToken);
             }
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -797,6 +813,11 @@ namespace DuckovCustomModel.UI.Components
                 {
                     bundleGroupObj.transform.SetParent(_content.transform, false);
                 }
+
+                var gridLayout = gridObject.GetComponent<ModelCardGridLayout>();
+                gridLayout.Initialize(modelsContainer.GetComponent<RectTransform>(),
+                    modelsContainerLayoutElement, bundleGroupObj.GetComponent<RectTransform>(),
+                    bundleGroupLayoutElement);
             }
         }
 
@@ -817,6 +838,7 @@ namespace DuckovCustomModel.UI.Components
 
             if (!_bundleContainers.TryGetValue(bundleKey, out var container)) return;
             container.SetActive(isExpanded);
+            container.GetComponentInChildren<ModelCardGridLayout>(true)?.SetExpanded(isExpanded);
 
             await UniTask.NextFrame();
             if (_content != null)
@@ -885,9 +907,8 @@ namespace DuckovCustomModel.UI.Components
             var buttonWorldPos = buttonRect.TransformPoint(Vector3.zero);
             var buttonLocalPosInContent = contentRect.InverseTransformPoint(buttonWorldPos);
 
-            var buttonCenterFromTop = -buttonLocalPosInContent.y + buttonRect.rect.height / 2;
-            var viewportCenter = viewportHeight / 2;
-            var desiredViewportTop = buttonCenterFromTop - viewportCenter;
+            var buttonTopFromTop = contentRect.rect.yMax - buttonLocalPosInContent.y - buttonRect.rect.height / 2;
+            var desiredViewportTop = buttonTopFromTop - 68f;
 
             var scrollableHeight = contentHeight - viewportHeight;
 
@@ -924,6 +945,291 @@ namespace DuckovCustomModel.UI.Components
             {
                 ModLogger.LogError($"Failed to open bundle folder: {ex.Message}");
             }
+        }
+
+        private async UniTask BuildModelCardAsync(ModelBundleInfo bundle, ModelInfo model,
+            Transform parent, CancellationToken cancellationToken)
+        {
+            var statusKey = $"{bundle.DirectoryPath}_{model.ModelID}_{model.SourceRevision}";
+            if (!_bundleStatusCache.TryGetValue(statusKey, out var status))
+            {
+                status = await AssetBundleManager.CheckBundleStatusAsync(bundle, model, cancellationToken);
+                _bundleStatusCache[statusKey] = status;
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var isInUse = _currentTarget?.UsingModel == model.ModelID;
+            var isFallback = !isInUse && _currentTarget?.UsingFallbackModel == model.ModelID;
+            var cardColor = !status.isValid ? new(.22f, .15f, .15f, .95f)
+                : isInUse ? new(.15f, .22f, .18f, .95f)
+                : isFallback ? new Color(.18f, .15f, .22f, .95f)
+                : new Color(.15f, .18f, .22f, .95f);
+            var card = UIFactory.CreateButton($"ModelCard_{model.ModelID}", parent, null, cardColor);
+            var cardRect = card.GetComponent<RectTransform>();
+            cardRect.sizeDelta = new(130, 225);
+            _modelButtonRects[model.ModelID] = cardRect;
+            var cardButton = card.GetComponent<Button>();
+            cardButton.interactable = status.isValid;
+            if (status.isValid) cardButton.onClick.AddListener(() => SelectModel(model));
+            var outline = card.AddComponent<Outline>();
+            outline.effectColor = isInUse ? new(.3f, .6f, .4f, .8f)
+                : isFallback ? new Color(.5f, .4f, .8f, .8f)
+                : new Color(.3f, .35f, .4f, .7f);
+            outline.effectDistance = new(1, -1);
+
+            var previewBackground = UIFactory.CreateImage("PreviewBackground", card.transform,
+                new Color(.11f, .14f, .18f, 1));
+            UIFactory.SetupRectTransform(previewBackground, new(0, 1), new(1, 1),
+                new Vector2(0, 175), pivot: new Vector2(.5f, 1));
+            previewBackground.GetComponent<Image>().raycastTarget = false;
+            previewBackground.AddComponent<RectMask2D>();
+            if (status.isValid && YsmModelSource.IsYsm(model))
+            {
+                var preview = new GameObject("AnimatedPreview", typeof(RectTransform), typeof(RawImage));
+                preview.transform.SetParent(previewBackground.transform, false);
+                UIFactory.SetupRectTransform(preview, Vector2.zero, Vector2.one, Vector2.zero);
+                var previewImage = preview.GetComponent<RawImage>();
+                previewImage.raycastTarget = false;
+                preview.AddComponent<YsmAnimatedThumbnail>().Initialize(bundle, model, previewImage,
+                    _scrollRect?.viewport ?? _scrollRect?.GetComponent<RectTransform>());
+            }
+            else if (status.isValid)
+            {
+                Texture2D? texture;
+                if (!ModelManager.TryGetThumbnail(bundle.DirectoryPath, model, out texture))
+                {
+                    texture = await AssetBundleManager.LoadThumbnailTextureAsync(bundle, model, cancellationToken);
+                    if (texture != null) ModelManager.CacheThumbnail(bundle.DirectoryPath, model, texture);
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                if (texture != null)
+                {
+                    var cover = UIFactory.CreateImage("Cover", previewBackground.transform, Color.white);
+                    UIFactory.SetupRectTransform(cover, Vector2.zero, Vector2.one, Vector2.zero);
+                    var sprite = Sprite.Create(texture, new(0, 0, texture.width, texture.height),
+                        new(.5f, .5f));
+                    var coverImage = cover.GetComponent<Image>();
+                    coverImage.sprite = sprite;
+                    coverImage.preserveAspect = true;
+                    coverImage.raycastTarget = false;
+                    cover.AddComponent<OwnedThumbnailSprite>().Sprite = sprite;
+                }
+                else
+                {
+                    var placeholder = UIFactory.CreateText("NoPreview", previewBackground.transform,
+                        Localization.NoPreview, 15, new Color(.65f, .65f, .65f), TextAnchor.MiddleCenter);
+                    UIFactory.SetupRectTransform(placeholder, Vector2.zero, Vector2.one, Vector2.zero);
+                    placeholder.GetComponent<TextMeshProUGUI>().raycastTarget = false;
+                }
+            }
+            else
+            {
+                var error = UIFactory.CreateText("Error", previewBackground.transform,
+                    string.IsNullOrWhiteSpace(status.errorMessage) ? "无法加载" : status.errorMessage,
+                    13, new Color(1f, .6f, .6f), TextAnchor.MiddleCenter);
+                UIFactory.SetupRectTransform(error, Vector2.zero, Vector2.one, Vector2.zero);
+                error.GetComponent<TextMeshProUGUI>().raycastTarget = false;
+            }
+
+            var isYsm = YsmModelSource.IsYsm(model);
+            var displayName = string.IsNullOrWhiteSpace(model.Name) ? model.ModelID : model.Name;
+            var nameObject = UIFactory.CreateText("Name", card.transform,
+                isYsm ? MinecraftFormatting.ToTmp(displayName) : displayName,
+                17, Color.white, TextAnchor.MiddleCenter, FontStyle.Bold);
+            UIFactory.SetupRectTransform(nameObject, new(0, 0), new(1, 0),
+                new Vector2(0, 50), pivot: new Vector2(.5f, 0), anchoredPosition: Vector2.zero);
+            var nameText = nameObject.GetComponent<TextMeshProUGUI>();
+            nameText.richText = isYsm;
+            nameText.raycastTarget = false;
+            nameText.enableAutoSizing = true;
+            nameText.fontSizeMin = 11;
+            nameText.fontSizeMax = 17;
+            nameText.overflowMode = TextOverflowModes.Ellipsis;
+
+            var tooltip = UIFactory.CreateImage("Details", card.transform, new Color(.04f, .06f, .08f, .97f));
+            UIFactory.SetupRectTransform(tooltip, new(.5f, .5f), new(.5f, .5f),
+                new Vector2(320, 100), pivot: new Vector2(0, 1));
+            tooltip.GetComponent<Image>().raycastTarget = false;
+            var metadata = string.Join("\n", new[]
+                {
+                    displayName, Localization.GetModelInfo(model.ModelID, model.Author, model.Version),
+                    model.Description,
+                }
+                .Where(value => !string.IsNullOrWhiteSpace(value)));
+            var details = UIFactory.CreateText("Metadata", tooltip.transform,
+                isYsm ? MinecraftFormatting.ToTmp(metadata) : metadata,
+                13, Color.white, TextAnchor.UpperLeft);
+            UIFactory.SetupRectTransform(details, Vector2.zero, Vector2.one,
+                offsetMin: new Vector2(7, 7), offsetMax: new Vector2(-7, -7));
+            var detailsText = details.GetComponent<TextMeshProUGUI>();
+            detailsText.richText = isYsm;
+            detailsText.raycastTarget = false;
+            detailsText.enableWordWrapping = true;
+            detailsText.overflowMode = TextOverflowModes.Ellipsis;
+            tooltip.SetActive(false);
+            card.AddComponent<ModelCardInteraction>().Initialize(tooltip, detailsText);
+        }
+    }
+
+    internal sealed class OwnedThumbnailSprite : MonoBehaviour
+    {
+        internal Sprite? Sprite;
+
+        private void OnDestroy()
+        {
+            if (Sprite != null) Destroy(Sprite);
+        }
+    }
+
+    internal sealed class ModelCardGridLayout : MonoBehaviour
+    {
+        private RectTransform? _bundleGroup;
+        private LayoutElement? _bundleLayout;
+        private bool _expanded;
+        private GridLayoutGroup? _grid;
+        private int _lastCount = -1;
+        private float _lastWidth = -1;
+        private LayoutElement? _layout;
+        private RectTransform? _modelsContainer;
+        private LayoutElement? _modelsLayout;
+
+        private void LateUpdate()
+        {
+            ApplyHeights(false);
+        }
+
+        internal void Initialize(RectTransform modelsContainer, LayoutElement modelsLayout,
+            RectTransform bundleGroup, LayoutElement bundleLayout)
+        {
+            _modelsContainer = modelsContainer;
+            _modelsLayout = modelsLayout;
+            _bundleGroup = bundleGroup;
+            _bundleLayout = bundleLayout;
+            _expanded = modelsContainer.gameObject.activeSelf;
+            var modelsFitter = modelsContainer.GetComponent<ContentSizeFitter>();
+            if (modelsFitter != null) modelsFitter.enabled = false;
+            var bundleFitter = bundleGroup.GetComponent<ContentSizeFitter>();
+            if (bundleFitter != null) bundleFitter.enabled = false;
+            ApplyHeights(true);
+        }
+
+        internal void SetExpanded(bool expanded)
+        {
+            _expanded = expanded;
+            ApplyHeights(true);
+        }
+
+        private void ApplyHeights(bool force)
+        {
+            _grid ??= GetComponent<GridLayoutGroup>();
+            _layout ??= GetComponent<LayoutElement>();
+            if (_grid == null || _layout == null || _modelsContainer == null ||
+                _modelsLayout == null || _bundleGroup == null || _bundleLayout == null) return;
+            var width = _modelsContainer.rect.width;
+            var count = transform.childCount;
+            if (!force && Mathf.Approximately(width, _lastWidth) && count == _lastCount) return;
+            _lastWidth = width;
+            _lastCount = count;
+            _grid.cellSize = new(130, 225);
+            _grid.spacing = new(8, 8);
+            _grid.padding = new(0, 0, 0, 0);
+            _grid.childAlignment = TextAnchor.UpperLeft;
+            _grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            var columns = Mathf.Max(1, Mathf.FloorToInt((width + 8) / 138));
+            _grid.constraintCount = columns;
+            var rows = Mathf.CeilToInt(count / (float)columns);
+            var gridHeight = rows == 0 ? 0 : rows * 225 + (rows - 1) * 8;
+            _layout.minHeight = _layout.preferredHeight = gridHeight;
+            _layout.flexibleWidth = 1;
+            ((RectTransform)transform).SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, gridHeight);
+            var modelsHeight = gridHeight + 20;
+            _modelsLayout.minHeight = _modelsLayout.preferredHeight = modelsHeight;
+            _modelsContainer.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, modelsHeight);
+            var bundleHeight = 50 + (_expanded ? modelsHeight : 0);
+            _bundleLayout.minHeight = _bundleLayout.preferredHeight = bundleHeight;
+            _bundleGroup.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, bundleHeight);
+            LayoutRebuilder.MarkLayoutForRebuild(_bundleGroup);
+            if (_bundleGroup.parent is RectTransform parent)
+                LayoutRebuilder.MarkLayoutForRebuild(parent);
+        }
+    }
+
+    internal sealed class ModelCardInteraction : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+    {
+        private static ModelCardInteraction? _open;
+        private RectTransform? _canvasRect;
+        private GameObject? _details;
+        private TextMeshProUGUI? _text;
+
+        private void OnDisable()
+        {
+            Hide();
+        }
+
+        private void OnDestroy()
+        {
+            Hide();
+            if (_details != null) Destroy(_details);
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (!AttachTooltip()) return;
+            var canvasRect = _canvasRect;
+            if (canvasRect == null || _details == null) return;
+            if (_open != null && _open != this) _open.Hide();
+            _open = this;
+            var rect = (RectTransform)_details.transform;
+            var canvas = canvasRect.GetComponent<Canvas>();
+            var camera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, eventData.position,
+                    camera, out var point))
+            {
+                var bounds = canvasRect.rect;
+                var x = point.x + 16f;
+                if (x + rect.rect.width > bounds.xMax - 8f) x = point.x - rect.rect.width - 16f;
+                rect.anchoredPosition = new(
+                    Mathf.Clamp(x, bounds.xMin + 8f, bounds.xMax - rect.rect.width - 8f),
+                    Mathf.Clamp(point.y + 8f, bounds.yMin + rect.rect.height + 8f, bounds.yMax - 8f));
+            }
+
+            rect.SetAsLastSibling();
+            _details.SetActive(true);
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            Hide();
+        }
+
+        internal void Initialize(GameObject details, TextMeshProUGUI text)
+        {
+            _details = details;
+            _text = text;
+        }
+
+        private bool AttachTooltip()
+        {
+            if (_details == null || _text == null) return false;
+            if (_canvasRect != null) return true;
+            var canvas = GetComponentInParent<Canvas>()?.rootCanvas;
+            if (canvas == null) return false;
+            _canvasRect = canvas.GetComponent<RectTransform>();
+            _details.transform.SetParent(canvas.transform, false);
+            var rect = (RectTransform)_details.transform;
+            var width = Mathf.Min(320f, _canvasRect.rect.width - 20f);
+            var height = Mathf.Clamp(_text.GetPreferredValues(_text.text, width - 14f, 10000f).y + 14f,
+                48f, Mathf.Max(48f, _canvasRect.rect.height - 20f));
+            rect.sizeDelta = new(width, height);
+            return true;
+        }
+
+        private void Hide()
+        {
+            if (_details != null) _details.SetActive(false);
+            if (_open == this) _open = null;
         }
     }
 }

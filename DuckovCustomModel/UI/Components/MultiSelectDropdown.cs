@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using DuckovCustomModel.Localizations;
+using DuckovCustomModel.Managers;
 using DuckovCustomModel.UI.Base;
 using TMPro;
 using UnityEngine;
@@ -23,8 +24,9 @@ namespace DuckovCustomModel.UI.Components
 
         private void Update()
         {
-            if (_dropdownPanel == null || !_dropdownPanel.activeSelf || !Input.GetMouseButtonDown(0)) return;
-            var mousePos = Input.mousePosition;
+            if (_dropdownPanel == null || !_dropdownPanel.activeSelf ||
+                !InputCompatibility.GetMouseButtonDown(0)) return;
+            var mousePos = InputCompatibility.MousePosition;
             var panelRect = _dropdownPanel.GetComponent<RectTransform>();
             var buttonRect = GetComponent<RectTransform>();
 
@@ -57,7 +59,7 @@ namespace DuckovCustomModel.UI.Components
 
         public HashSet<string> GetSelectedValues()
         {
-            return [.._selectedValues];
+            return [.. _selectedValues];
         }
 
         public void SetSelectedValues(HashSet<string> values)

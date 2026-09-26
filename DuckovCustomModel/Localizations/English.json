@@ -7,6 +7,7 @@
   "LoadingModelList": "Loading model list...",
   "Hotkey": "Hotkey",
   "AnimatorParamsHotkey": "Animator Parameters Hotkey",
+  "YsmRadialMenuHotkey": "YSM Action Wheel Hotkey",
   "None": "None",
   "Clear": "Clear",
   "PressAnyKey": "Press any key...",
@@ -88,4 +89,3 @@
   "ScrollToTop": "↑ Top",
   "ScrollToBottom": "Bottom ↓"
 }
-
