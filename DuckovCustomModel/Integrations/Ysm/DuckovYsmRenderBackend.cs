@@ -5,6 +5,7 @@ using ModelRuntime;
 using ModelRuntime.Adapters;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Matrix4x4 = System.Numerics.Matrix4x4;
 using NVector = System.Numerics.Vector3;
 using Object = UnityEngine.Object;
 
@@ -14,6 +15,7 @@ namespace DuckovCustomModel.Integrations.Ysm
     {
         public const string ShaderBundleRelativePath = "Resources/ysm-rendering.bundle";
         private static AssetBundle? shaderBundle;
+        private static readonly Dictionary<TextureAsset, SharedTexture> SharedTextures = new();
         private static Shader? sharedShader;
         private static Shader? sharedPreviewShader;
         private static int shaderUsers;
@@ -181,21 +183,27 @@ namespace DuckovCustomModel.Integrations.Ysm
             baked.Transform(pose, state.CpuVertices, state.CpuNormals, state.Collapsed);
             var colorsChanged = !state.ColorsUploaded;
             var glowChanged = !state.GlowUploaded;
+            for (var bone = 0; bone < state.BoneColors.Length; bone++)
+            {
+                var color = pose.Colors[bone];
+                var nextColor = new Color(color.X, color.Y, color.Z, color.W);
+                var previousColor = state.BoneColors[bone];
+                if (previousColor.r != nextColor.r || previousColor.g != nextColor.g ||
+                    previousColor.b != nextColor.b || previousColor.a != nextColor.a) colorsChanged = true;
+                state.BoneColors[bone] = nextColor;
+                var nextGlow = new Vector2(pose.Glow[bone] >= 0 ? pose.Glow[bone] : pose.FullBright[bone] ? 15 : -1, 0);
+                if (state.BoneGlow[bone].x != nextGlow.x) glowChanged = true;
+                state.BoneGlow[bone] = nextGlow;
+            }
+
             for (var i = 0; i < state.Vertices.Length; i++)
             {
                 var bone = baked.BoneIndices[i];
+                if (colorsChanged) state.Colors[i] = state.BoneColors[bone];
+                if (glowChanged) state.Glow[i] = state.BoneGlow[bone];
                 if (state.Collapsed[bone]) continue;
                 state.Vertices[i] = DuckovYsmCoordinates.ToUnityPosition(state.CpuVertices[i]);
                 state.Normals[i] = DuckovYsmCoordinates.ToUnityDirection(state.CpuNormals[i]);
-                var color = pose.Colors[bone];
-                var nextColor = new Color(color.X, color.Y, color.Z, color.W);
-                var previousColor = state.Colors[i];
-                if (previousColor.r != nextColor.r || previousColor.g != nextColor.g ||
-                    previousColor.b != nextColor.b || previousColor.a != nextColor.a) colorsChanged = true;
-                state.Colors[i] = nextColor;
-                var nextGlow = new Vector2(pose.Glow[bone] >= 0 ? pose.Glow[bone] : pose.FullBright[bone] ? 15 : -1, 0);
-                if (state.Glow[i].x != nextGlow.x) glowChanged = true;
-                state.Glow[i] = nextGlow;
             }
 
             state.Mesh.vertices = state.Vertices;
@@ -220,8 +228,8 @@ namespace DuckovCustomModel.Integrations.Ysm
                         c = source.Indices[triangle + 2];
                     var bone = baked.BoneIndices[a];
                     if (state.Collapsed[bone] || pose.Colors[bone].W <= 0 ||
-                        (state.RequiresTriangleCheck[bone] || baked.BoneIndices[b] != bone ||
-                         baked.BoneIndices[c] != bone) && !baked.IsTriangleRenderable(pose, a, b, c)) continue;
+                        ((state.RequiresTriangleCheck[bone] || baked.BoneIndices[b] != bone ||
+                          baked.BoneIndices[c] != bone) && !baked.IsTriangleRenderable(pose, a, b, c))) continue;
                     if (source.AlphaMode == MeshAlphaMode.Opaque && pose.Colors[bone].W >= 1)
                     {
                         if (indices[solid] != c || indices[solid + 1] != b || indices[solid + 2] != a)
@@ -277,19 +285,19 @@ namespace DuckovCustomModel.Integrations.Ysm
             }
         }
 
-        private static bool CollapsedToLine(System.Numerics.Matrix4x4 matrix)
+        private static bool CollapsedToLine(Matrix4x4 matrix)
         {
             return !HasArea(matrix.M11, matrix.M12, matrix.M13, matrix.M21, matrix.M22, matrix.M23) &&
                    !HasArea(matrix.M11, matrix.M12, matrix.M13, matrix.M31, matrix.M32, matrix.M33) &&
                    !HasArea(matrix.M21, matrix.M22, matrix.M23, matrix.M31, matrix.M32, matrix.M33);
         }
 
-        private static bool HasVolume(System.Numerics.Matrix4x4 matrix)
+        private static bool HasVolume(Matrix4x4 matrix)
         {
-            double translation = (double)matrix.M41 + matrix.M42 + matrix.M43;
-            double determinant = matrix.M11 * ((double)matrix.M22 * matrix.M33 - (double)matrix.M23 * matrix.M32) -
-                                 matrix.M12 * ((double)matrix.M21 * matrix.M33 - (double)matrix.M23 * matrix.M31) +
-                                 matrix.M13 * ((double)matrix.M21 * matrix.M32 - (double)matrix.M22 * matrix.M31);
+            var translation = (double)matrix.M41 + matrix.M42 + matrix.M43;
+            var determinant = matrix.M11 * ((double)matrix.M22 * matrix.M33 - (double)matrix.M23 * matrix.M32) -
+                              matrix.M12 * ((double)matrix.M21 * matrix.M33 - (double)matrix.M23 * matrix.M31) +
+                              matrix.M13 * ((double)matrix.M21 * matrix.M32 - (double)matrix.M22 * matrix.M31);
             return determinant != 0 && !double.IsNaN(determinant) && !double.IsInfinity(determinant) &&
                    !double.IsNaN(translation) && !double.IsInfinity(translation);
         }
@@ -333,13 +341,13 @@ namespace DuckovCustomModel.Integrations.Ysm
                     if (document.Textures.Count == 0)
                     {
                         state.Textures.Add(CreateWhiteTexture());
+                        state.TextureAssets.Add(null);
                     }
                     else
                     {
-                        if (!pixels.TryGetPixels(document.Textures[i], out var image))
-                            throw new InvalidOperationException("Cannot decode model texture: " +
-                                                                document.Textures[i].Name);
-                        state.Textures.Add(UploadTexture(image, document.Textures[i].Name));
+                        var asset = document.Textures[i];
+                        state.Textures.Add(AcquireTexture(asset));
+                        state.TextureAssets.Add(asset);
                     }
 
                 for (var i = 0; i < geometry.Partitions.Length; i++)
@@ -368,7 +376,7 @@ namespace DuckovCustomModel.Integrations.Ysm
                 state.TransparentRenderer.shadowCastingMode = ShadowCastingMode.Off;
                 state.TransparentRenderer.receiveShadows = true;
                 state.TransparentRenderer.enabled = false;
-                BindTextureFrames(state);
+                BindTextureFrames(state, true);
                 if (!thumbnailMode) BindAmbientProbe(state, true);
                 return state;
             }
@@ -394,12 +402,13 @@ namespace DuckovCustomModel.Integrations.Ysm
             return material;
         }
 
-        private void BindTextureFrames(GraphicsState state)
+        private void BindTextureFrames(GraphicsState state, bool force = false)
         {
             for (var i = 0; i < state.TextureBindings.Length; i++)
             {
                 var index = state.TextureBindings[i];
                 if (index >= state.Document.Textures.Count) continue;
+                if (!force && state.Document.Textures[index].Animation is not { Enabled: true }) continue;
                 var texture = state.Textures[index];
                 var frame = TextureAnimationSampler.Sample(state.Document.Textures[index], texture.width,
                     texture.height, TimeSeconds, TextureAnimationPlayback.DeclaredSequence);
@@ -484,6 +493,29 @@ namespace DuckovCustomModel.Integrations.Ysm
             return UploadTexture(new(1, 1, new byte[] { 255, 255, 255, 255 }), "Untextured");
         }
 
+        private Texture2D AcquireTexture(TextureAsset asset)
+        {
+            if (SharedTextures.TryGetValue(asset, out var shared))
+            {
+                shared.Users++;
+                return shared.Texture;
+            }
+
+            if (!pixels.TryGetPixels(asset, out var image))
+                throw new InvalidOperationException("Cannot decode model texture: " + asset.Name);
+            var texture = UploadTexture(image, asset.Name);
+            SharedTextures.Add(asset, new(texture));
+            return texture;
+        }
+
+        private static void ReleaseTexture(TextureAsset asset)
+        {
+            if (!SharedTextures.TryGetValue(asset, out var shared)) return;
+            if (--shared.Users > 0) return;
+            SharedTextures.Remove(asset);
+            Release(shared.Texture);
+        }
+
         private void ThrowIfDisposed()
         {
             if (disposed) throw new ObjectDisposedException(nameof(DuckovYsmRenderBackend));
@@ -538,6 +570,12 @@ namespace DuckovCustomModel.Integrations.Ysm
             shaderBundle = null;
         }
 
+        private sealed class SharedTexture(Texture2D texture)
+        {
+            internal readonly Texture2D Texture = texture;
+            internal int Users = 1;
+        }
+
         private sealed class SelectedPixels : ITexturePixelSource
         {
             private readonly ModelDocument document;
@@ -561,28 +599,31 @@ namespace DuckovCustomModel.Integrations.Ysm
 
         private sealed class GraphicsState : IDisposable
         {
+            internal readonly Color[] BoneColors;
+            internal readonly Vector2[] BoneGlow;
             internal readonly bool[] Collapsed;
-            internal readonly bool[] RequiresTriangleCheck;
             internal readonly Color[] Colors;
             internal readonly NVector[] CpuVertices, CpuNormals;
             internal readonly ModelDocument Document;
             internal readonly MeshData Geometry;
             internal readonly Vector2[] Glow;
             internal readonly TriangleDepth[] Order;
+            internal readonly bool[] RequiresTriangleCheck;
             internal readonly List<TransparentRun> Runs = new();
-            internal readonly int[][] SolidIndices;
             internal readonly int[] SolidCounts;
+            internal readonly int[][] SolidIndices;
             internal readonly Material[] SolidMaterials, TransparentMaterials;
             internal readonly int[] SortedIndices, TextureBindings;
+            internal readonly List<TextureAsset?> TextureAssets = new();
             internal readonly List<Texture2D> Textures = new();
             internal readonly Vector3[] Vertices, Normals;
+            internal bool ColorsUploaded, GlowUploaded;
             internal Mesh Mesh = null!, TransparentMesh = null!;
             internal GameObject Object = null!, TransparentObject = null!;
             internal MeshRenderer Renderer = null!, TransparentRenderer = null!;
             internal Material[] RunMaterials = Array.Empty<Material>();
             internal int TransparentCount;
             internal bool TransparentIndicesInitialized;
-            internal bool ColorsUploaded, GlowUploaded;
 
             internal GraphicsState(ModelDocument document, MeshData geometry)
             {
@@ -595,6 +636,8 @@ namespace DuckovCustomModel.Integrations.Ysm
                 Normals = new Vector3[count];
                 Colors = new Color[count];
                 Glow = new Vector2[count];
+                BoneColors = new Color[document.Bones.Count];
+                BoneGlow = new Vector2[document.Bones.Count];
                 Collapsed = new bool[document.Bones.Count];
                 RequiresTriangleCheck = new bool[document.Bones.Count];
                 int partitions = geometry.Partitions.Length, triangles = 0;
@@ -622,7 +665,11 @@ namespace DuckovCustomModel.Integrations.Ysm
                 Release(TransparentMesh);
                 foreach (var material in SolidMaterials) Release(material);
                 foreach (var material in TransparentMaterials) Release(material);
-                foreach (var texture in Textures) Release(texture);
+                for (var i = 0; i < Textures.Count; i++)
+                    if (TextureAssets[i] is { } asset)
+                        ReleaseTexture(asset);
+                    else
+                        Release(Textures[i]);
             }
         }
     }

@@ -7,6 +7,8 @@ English | [中文](CHANGELOG.md)
 ### Fixed and improved
 
 - Reduced repeated work in YSM animation sampling, pose composition, and transparent-mesh rendering.
+- Fixed held melee items disappearing while idle on some YSM models.
+- Reduced redundant color, glow, and static-texture updates; model instances and animated previews now share textures to reduce duplicate loading and GPU memory usage.
 - Sized model cards to the available width; model selection and group toggles now update only affected UI, while model-content changes rebuild the list and preserve scroll position.
 - Constrained the model selection, toolbar, and settings layouts to prevent first-display overflow and long labels from widening the interface.
 
