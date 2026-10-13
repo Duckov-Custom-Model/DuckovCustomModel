@@ -2,7 +2,7 @@
 
 English | [中文](CHANGELOG.md)
 
-## Version TBD
+## v2.1.0
 
 ### Added
 
@@ -17,7 +17,7 @@ English | [中文](CHANGELOG.md)
 - Improve YSM performance for individual models, multiple characters, and animated previews, reducing repeated work and texture memory use; support GPU rendering and shared character views.
 - Prepare and reuse VRM resources to reduce delays when switching back or using the same model on multiple characters; reduce processing for invisible characters.
 - Fix held melee weapons disappearing while some YSM models are idle.
-- Improve model-list layout, scrolling, and partial refresh; fix overflow on initial load, with long text, and when available width changes.
+- Improve model-list layout, scrolling, and partial refresh; fix overflow on initial load, with long text, and when available width changes, and correctly scroll to the selected model when first opening the interface.
 
 ## v2.0.1
 
