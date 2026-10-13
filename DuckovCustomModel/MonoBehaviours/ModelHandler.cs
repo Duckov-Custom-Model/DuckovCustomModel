@@ -13,6 +13,7 @@ using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Core.MonoBehaviours.Animators;
 using DuckovCustomModel.Integrations;
 using DuckovCustomModel.Integrations.AssetBundles;
+using DuckovCustomModel.Integrations.Vrm;
 using DuckovCustomModel.Integrations.Ysm;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.Utils;
@@ -77,9 +78,11 @@ namespace DuckovCustomModel.MonoBehaviours
         private int _ysmRendererVersion;
         private DuckovItemAgent? _ysmSocketAgent;
 
-        private bool ReplaceShader => YsmRuntime == null && (CurrentModelInfo is not { Features: { Length: > 0 } }
-                                                             || !CurrentModelInfo.Features.Contains(ModelFeatures
-                                                                 .NoAutoShaderReplace));
+        private bool ReplaceShader => YsmRuntime == null &&
+                                      (CurrentModelInfo == null || !VrmModelSource.IsVrm(CurrentModelInfo)) &&
+                                      (CurrentModelInfo is not { Features: { Length: > 0 } }
+                                       || !CurrentModelInfo.Features.Contains(ModelFeatures
+                                           .NoAutoShaderReplace));
 
         public CharacterMainControl? CharacterMainControl { get; private set; }
         public CharacterModel? OriginalCharacterModel { get; private set; }
@@ -513,6 +516,9 @@ namespace DuckovCustomModel.MonoBehaviours
             if (sourceHandler.YsmRuntime != null)
                 newCharacterModel.autoSyncRightHandRotation =
                     sourceHandler.YsmRuntime.OriginalAutoSyncRightHandRotation;
+            else if (sourceHandler.CustomModelInstance != null &&
+                     sourceHandler.CustomModelInstance.GetComponent<VrmCharacterRuntime>() is { } vrm)
+                newCharacterModel.autoSyncRightHandRotation = vrm.OriginalAutoSyncRightHandRotation;
 
             var sourceRoot = sourceHandler.OriginalCharacterModel.transform;
             var myRoot = newCharacterModel.transform;
@@ -981,7 +987,9 @@ namespace DuckovCustomModel.MonoBehaviours
             var customFaceInstance = GetOriginalCustomFaceInstance();
             if (customFaceInstance != null) customFaceInstance.gameObject.SetActive(false);
 
-            if (YsmRuntime != null) CustomModelInstance.SetActive(true);
+            CustomModelInstance.SetActive(true);
+            if (VrmModelSource.IsVrm(modelInfo) && CustomAnimator != null)
+                CustomAnimatorControl?.SetCustomAnimator(CustomAnimator);
 
             ModelHeightManager.InitializeHeightForHandler(this);
             ModelHeightManager.ApplyHeightToHandler(this);
@@ -1259,6 +1267,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void SetShowBackMaterial()
         {
+            if (CurrentModelInfo != null && VrmModelSource.IsVrm(CurrentModelInfo)) return;
             if (YsmRuntime != null) return;
             if (CurrentModelInfo is { Features.Length: > 0 }
                 && CurrentModelInfo.Features.Contains(ModelFeatures.SkipShowBackMaterial))

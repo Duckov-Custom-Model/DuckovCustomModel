@@ -4,6 +4,8 @@ using System.IO;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.Integrations;
+using DuckovCustomModel.Integrations.Vrm;
 using DuckovCustomModel.Integrations.Ysm;
 using ModelRuntime;
 using UnityEngine;
@@ -175,7 +177,7 @@ namespace DuckovCustomModel.Managers
             }
         }
 
-        internal static string? FindYsmAssetPath(ModelBundleInfo bundleInfo, string assetPath)
+        internal static string? FindBinaryAssetPath(ModelBundleInfo bundleInfo, string assetPath)
         {
             if (string.IsNullOrWhiteSpace(bundleInfo.BundlePath)) return null;
             if (!File.Exists(Path.Combine(bundleInfo.DirectoryPath, bundleInfo.BundlePath))) return null;
@@ -189,7 +191,7 @@ namespace DuckovCustomModel.Managers
             }
 
             var candidates = new List<string>();
-            if (YsmModelSource.IsYsm(bundleInfo))
+            if (ModelSourcePaths.IsFileSource(bundleInfo))
             {
                 var bundleDirectory = Path.GetDirectoryName(
                     Path.GetFullPath(Path.Combine(bundleInfo.DirectoryPath, bundleInfo.BundlePath)))!;
@@ -214,17 +216,17 @@ namespace DuckovCustomModel.Managers
             return null;
         }
 
-        internal static byte[] LoadYsmBytes(ModelBundleInfo bundleInfo, string assetPath)
+        internal static byte[] LoadBinaryBytes(ModelBundleInfo bundleInfo, string assetPath)
         {
             var bundle = GetOrLoadAssetBundle(bundleInfo)
-                         ?? throw new FileNotFoundException("YSM AssetBundle could not be loaded.",
+                         ?? throw new FileNotFoundException("Model AssetBundle could not be loaded.",
                              bundleInfo.BundlePath);
             var asset = bundle.LoadAsset<TextAsset>(assetPath);
             if (asset == null)
-                throw new InvalidDataException("YSM bundle asset must be a TextAsset: " + assetPath);
+                throw new InvalidDataException("Embedded model must be a TextAsset: " + assetPath);
             var bytes = asset.bytes;
             if (bytes.Length > new LoadLimits().MaxFileBytes)
-                throw new InvalidDataException("YSM bundle asset exceeds the loading budget: " + assetPath);
+                throw new InvalidDataException("Embedded model exceeds the loading budget: " + assetPath);
             return bytes;
         }
 
@@ -289,7 +291,8 @@ namespace DuckovCustomModel.Managers
             if (modelInfo.ThumbnailData is { Length: > 0 })
             {
                 var embedded = LoadThumbnailBytes(modelInfo.ThumbnailData);
-                if (embedded != null || !YsmModelSource.IsYsm(modelInfo)) return embedded;
+                if (embedded != null || (!YsmModelSource.IsYsm(modelInfo) && !VrmModelSource.IsVrm(modelInfo)))
+                    return embedded;
             }
 
             if (string.IsNullOrEmpty(modelInfo.ThumbnailPath))
@@ -328,12 +331,14 @@ namespace DuckovCustomModel.Managers
         public static (bool isValid, string? errorMessage) CheckBundleStatus(ModelBundleInfo bundleInfo,
             ModelInfo modelInfo)
         {
-            if (YsmModelSource.IsYsm(modelInfo))
+            if (YsmModelSource.IsYsm(modelInfo) || VrmModelSource.IsVrm(modelInfo))
                 try
                 {
-                    return YsmModelSource.HasSource(bundleInfo, modelInfo)
+                    return (VrmModelSource.IsVrm(modelInfo)
+                        ? VrmModelSource.HasSource(bundleInfo, modelInfo)
+                        : YsmModelSource.HasSource(bundleInfo, modelInfo))
                         ? (true, null)
-                        : (false, "YSM source was not found");
+                        : (false, "Model source was not found");
                 }
                 catch (Exception ex)
                 {
@@ -365,14 +370,16 @@ namespace DuckovCustomModel.Managers
             ModelBundleInfo bundleInfo,
             ModelInfo modelInfo, CancellationToken cancellationToken = default)
         {
-            if (YsmModelSource.IsYsm(modelInfo))
+            if (YsmModelSource.IsYsm(modelInfo) || VrmModelSource.IsVrm(modelInfo))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 try
                 {
-                    return YsmModelSource.HasSource(bundleInfo, modelInfo)
+                    return (VrmModelSource.IsVrm(modelInfo)
+                        ? VrmModelSource.HasSource(bundleInfo, modelInfo)
+                        : YsmModelSource.HasSource(bundleInfo, modelInfo))
                         ? (true, null)
-                        : (false, "YSM source was not found");
+                        : (false, "Model source was not found");
                 }
                 catch (Exception ex)
                 {

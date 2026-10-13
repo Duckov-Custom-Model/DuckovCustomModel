@@ -82,7 +82,7 @@ namespace DuckovCustomModel.Integrations.Ysm
         public static bool HasSource(ModelBundleInfo bundle, ModelInfo model)
         {
             if (!IsYsm(model)) return false;
-            return AssetBundleManager.FindYsmAssetPath(bundle, model.SourcePath) != null
+            return AssetBundleManager.FindBinaryAssetPath(bundle, model.SourcePath) != null
                    || File.Exists(GetSourcePath(bundle, model)) || Directory.Exists(GetSourcePath(bundle, model));
         }
 
@@ -90,15 +90,15 @@ namespace DuckovCustomModel.Integrations.Ysm
         {
             var path = GetSourcePath(bundle, model);
             var profile = ReadProfile(path);
-            var assetPath = AssetBundleManager.FindYsmAssetPath(bundle, model.SourcePath);
+            var assetPath = AssetBundleManager.FindBinaryAssetPath(bundle, model.SourcePath);
             return LoadValidated(path, profile,
-                assetPath == null ? null : AssetBundleManager.LoadYsmBytes(bundle, assetPath));
+                assetPath == null ? null : AssetBundleManager.LoadBinaryBytes(bundle, assetPath));
         }
 
         public static YsmModelLease Acquire(ModelBundleInfo bundle, ModelInfo model)
         {
             var path = GetSourcePath(bundle, model);
-            var assetPath = AssetBundleManager.FindYsmAssetPath(bundle, model.SourcePath);
+            var assetPath = AssetBundleManager.FindBinaryAssetPath(bundle, model.SourcePath);
             var revision = assetPath == null
                 ? Fingerprint(path)
                 : IsYsm(bundle)
@@ -113,7 +113,7 @@ namespace DuckovCustomModel.Integrations.Ysm
                 if (!Cache.TryGetValue(key, out var entry))
                 {
                     var package = LoadValidated(path, profile,
-                        assetPath == null ? null : AssetBundleManager.LoadYsmBytes(bundle, assetPath));
+                        assetPath == null ? null : AssetBundleManager.LoadBinaryBytes(bundle, assetPath));
                     if ((assetPath == null
                             ? Fingerprint(path)
                             : IsYsm(bundle)
@@ -158,8 +158,8 @@ namespace DuckovCustomModel.Integrations.Ysm
             Func<ModelBundleInfo, string, string?>? findAssetPath = null,
             Func<ModelBundleInfo, string, byte[]>? loadBytes = null)
         {
-            findAssetPath ??= AssetBundleManager.FindYsmAssetPath;
-            loadBytes ??= AssetBundleManager.LoadYsmBytes;
+            findAssetPath ??= AssetBundleManager.FindBinaryAssetPath;
+            loadBytes ??= AssetBundleManager.LoadBinaryBytes;
             var root = Path.GetFullPath(modelsDirectory);
             var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

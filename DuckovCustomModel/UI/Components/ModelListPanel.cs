@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.Integrations;
+using DuckovCustomModel.Integrations.Vrm;
 using DuckovCustomModel.Integrations.Ysm;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
@@ -814,21 +816,28 @@ namespace DuckovCustomModel.UI.Components
 
         private static string GetBundleKey(ModelBundleInfo bundle)
         {
-            return YsmModelSource.IsYsm(bundle) || string.IsNullOrEmpty(bundle.DirectoryPath)
+            return ModelSourcePaths.IsFileSource(bundle) || string.IsNullOrEmpty(bundle.DirectoryPath)
                 ? bundle.BundleName
                 : bundle.DirectoryPath;
         }
 
         private void GroupYsmModels()
         {
-            var firstIndex = _filteredModelBundles.FindIndex(YsmModelSource.IsYsm);
-            if (firstIndex < 0) return;
+            foreach (var kind in new[] { "Ysm", "Vrm" })
+            {
+                bool Matches(ModelBundleInfo bundle)
+                {
+                    return string.Equals(bundle.SourceKind, kind, StringComparison.OrdinalIgnoreCase);
+                }
 
-            var models = _filteredModelBundles.Where(YsmModelSource.IsYsm)
-                .SelectMany(bundle => bundle.Models).ToArray();
-            _filteredModelBundles.RemoveAll(YsmModelSource.IsYsm);
-            _filteredModelBundles.Insert(firstIndex,
-                ModelBundleInfo.CreateSourceBundle(ModelManager.ModelsDirectory, "YSM", "Ysm", models));
+                var firstIndex = _filteredModelBundles.FindIndex(Matches);
+                if (firstIndex < 0) continue;
+                var models = _filteredModelBundles.Where(Matches).SelectMany(bundle => bundle.Models).ToArray();
+                _filteredModelBundles.RemoveAll(Matches);
+                _filteredModelBundles.Insert(firstIndex,
+                    ModelBundleInfo.CreateSourceBundle(ModelManager.ModelsDirectory, kind.ToUpperInvariant(), kind,
+                        models));
+            }
         }
 
         private async UniTask BuildBundleGroupAsync(ModelBundleInfo bundle, CancellationToken cancellationToken)
@@ -958,7 +967,7 @@ namespace DuckovCustomModel.UI.Components
             foreach (var model in bundle.Models.ToList())
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var sourceBundle = bundle.BundleName == "YSM" && YsmModelSource.IsYsm(bundle)
+                var sourceBundle = ModelSourcePaths.IsFileSource(bundle) && bundle.BundleName != model.BundleName
                     ? ModelManager.ModelBundles.FirstOrDefault(candidate => candidate.BundleName == model.BundleName)
                       ?? bundle
                     : bundle;
@@ -1237,7 +1246,23 @@ namespace DuckovCustomModel.UI.Components
             detailsText.enableWordWrapping = true;
             detailsText.overflowMode = TextOverflowModes.Ellipsis;
             tooltip.SetActive(false);
-            card.AddComponent<ModelCardInteraction>().Initialize(tooltip, detailsText);
+            card.AddComponent<ModelCardInteraction>().Initialize(tooltip, detailsText,
+                VrmModelSource.IsVrm(model) ? () => PreloadVrm(bundle, model).Forget() : null);
+        }
+
+        private static async UniTaskVoid PreloadVrm(ModelBundleInfo bundle, ModelInfo model)
+        {
+            try
+            {
+                await VrmModelSource.Preload(bundle, model, CancellationToken.None, true);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                ModLogger.LogWarning($"VRM preparation failed for '{model.ModelID}': {ex.Message}");
+            }
         }
     }
 
@@ -1336,6 +1361,8 @@ namespace DuckovCustomModel.UI.Components
         private static ModelCardInteraction? _open;
         private RectTransform? _canvasRect;
         private GameObject? _details;
+
+        private Action? _preload;
         private TextMeshProUGUI? _text;
 
         private void OnDisable()
@@ -1351,6 +1378,7 @@ namespace DuckovCustomModel.UI.Components
 
         public void OnPointerEnter(PointerEventData eventData)
         {
+            if (_preload != null) Invoke(nameof(Preload), .25f);
             if (!AttachTooltip()) return;
             var canvasRect = _canvasRect;
             if (canvasRect == null || _details == null) return;
@@ -1379,8 +1407,9 @@ namespace DuckovCustomModel.UI.Components
             Hide();
         }
 
-        internal void Initialize(GameObject details, TextMeshProUGUI text)
+        internal void Initialize(GameObject details, TextMeshProUGUI text, Action? preload = null)
         {
+            _preload = preload;
             _details = details;
             _text = text;
         }
@@ -1401,8 +1430,14 @@ namespace DuckovCustomModel.UI.Components
             return true;
         }
 
+        private void Preload()
+        {
+            _preload?.Invoke();
+        }
+
         private void Hide()
         {
+            CancelInvoke(nameof(Preload));
             if (_details != null) _details.SetActive(false);
             if (_open == this) _open = null;
         }

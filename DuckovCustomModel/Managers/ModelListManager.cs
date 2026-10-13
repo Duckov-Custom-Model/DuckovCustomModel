@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.Core.Managers;
+using DuckovCustomModel.Integrations.Vrm;
 using DuckovCustomModel.Integrations.Ysm;
 using DuckovCustomModel.MonoBehaviours;
 
@@ -31,14 +33,20 @@ namespace DuckovCustomModel.Managers
                 var bundlesToReload = ModelManager.UpdateModelBundles(false, forceReload);
                 bundlesToReload.UnionWith(
                     await ModelManager.UpdateYsmModelBundlesAsync(cancellationToken, forceReload));
+                bundlesToReload.UnionWith(await VrmModelSource.RefreshAsync(ModelManager.ModelsDirectory,
+                    ModelManager.ModelBundles, cancellationToken));
                 ModelManager.ClearThumbnailCache();
 
+                priorityModelIDs ??= ModelTargetTypeRegistry.GetAllAvailableTargetTypes()
+                    .Concat(AICharacters.SupportedAICharacters.Select(ModelTargetType.CreateAICharacterTargetType))
+                    .Select(target => ModEntry.UsingModel?.GetModelID(target) ?? string.Empty);
                 var priorityModels = new List<(ModelBundleInfo bundle, ModelInfo model)>();
                 if (priorityModelIDs != null)
                     foreach (var modelID in priorityModelIDs.Distinct())
                         if (!string.IsNullOrEmpty(modelID) &&
                             ModelManager.FindModelByID(modelID, out var bundle, out var model))
                             priorityModels.Add((bundle, model));
+                VrmModelSource.SetPreferredModels(priorityModels);
                 if (bundlesToReload.Count > 0)
                 {
                     if (priorityModels.Count > 0)
@@ -77,6 +85,19 @@ namespace DuckovCustomModel.Managers
                         cancellationToken.ThrowIfCancellationRequested();
                         await AssetBundleManager.CheckBundleStatusAsync(bundle, model, cancellationToken);
                         await UniTask.NextFrame(cancellationToken);
+                    }
+                }
+
+                foreach (var (bundle, model) in priorityModels)
+                {
+                    if (!VrmModelSource.IsVrm(model)) continue;
+                    try
+                    {
+                        await VrmModelSource.Preload(bundle, model, cancellationToken);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        ModLogger.LogWarning($"VRM preparation failed for '{model.ModelID}': {ex.Message}");
                     }
                 }
 

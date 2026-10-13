@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -9,6 +9,8 @@ using Cysharp.Threading.Tasks;
 using DuckovCustomModel.Core;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Core.Managers;
+using DuckovCustomModel.Integrations;
+using DuckovCustomModel.Integrations.Vrm;
 using DuckovCustomModel.Integrations.Ysm;
 using DuckovCustomModel.MonoBehaviours;
 using UnityEngine;
@@ -36,6 +38,8 @@ namespace DuckovCustomModel.Managers
                 ClearThumbnailCache();
                 AssetBundleManager.UnloadAllAssetBundles(true);
                 YsmModelSource.ClearCache();
+                VrmModelSource.ClearTemplates();
+                VrmResourcePool.Clear();
                 BundleHashCache.Clear();
             }
 
@@ -86,7 +90,7 @@ namespace DuckovCustomModel.Managers
                         : BundleHashInfo.CalculateFileHash(bundlePath);
                     if (bundleHash.Length == 0) throw new IOException("Cannot hash AssetBundle: " + bundlePath);
                     parsedBundles[modelBundleDir] = bundleInfo;
-                    var previousInDirectory = ModelBundles.FirstOrDefault(b => !YsmModelSource.IsYsm(b)
+                    var previousInDirectory = ModelBundles.FirstOrDefault(b => !ModelSourcePaths.IsFileSource(b)
                                                                                && string.Equals(b.DirectoryPath,
                                                                                    modelBundleDir,
                                                                                    StringComparison.OrdinalIgnoreCase));
@@ -139,7 +143,7 @@ namespace DuckovCustomModel.Managers
             var existingBundles = ModelBundles.ToList();
             foreach (var existingBundle in existingBundles)
             {
-                if (YsmModelSource.IsYsm(existingBundle)) continue;
+                if (ModelSourcePaths.IsFileSource(existingBundle)) continue;
                 var bundleDir = existingBundle.DirectoryPath;
                 var directoryRemoved = string.IsNullOrEmpty(bundleDir) || !Directory.Exists(bundleDir);
                 var sourceMissing = !directoryRemoved && missingBundleDirectories.Contains(bundleDir);
@@ -244,9 +248,9 @@ namespace DuckovCustomModel.Managers
             var changed = new HashSet<string>();
             await Task.Run(() => YsmModelSource.UpdateDiscoveredModels(directory, snapshot, changed, cancellationToken,
                     forceReload,
-                    (bundle, path) => ReadAssetOnMainThread(() => AssetBundleManager.FindYsmAssetPath(bundle, path),
+                    (bundle, path) => ReadAssetOnMainThread(() => AssetBundleManager.FindBinaryAssetPath(bundle, path),
                         cancellationToken),
-                    (bundle, path) => ReadAssetOnMainThread(() => AssetBundleManager.LoadYsmBytes(bundle, path),
+                    (bundle, path) => ReadAssetOnMainThread(() => AssetBundleManager.LoadBinaryBytes(bundle, path),
                         cancellationToken)),
                 cancellationToken);
             await UniTask.SwitchToMainThread(cancellationToken);
