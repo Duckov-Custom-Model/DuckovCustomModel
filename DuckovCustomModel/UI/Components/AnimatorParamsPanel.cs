@@ -31,15 +31,21 @@ namespace DuckovCustomModel.UI.Components
         private readonly Dictionary<int, bool> _paramIsChanging = new();
         private readonly Dictionary<int, GameObject> _paramItemObjects = new();
         private readonly Dictionary<int, object> _paramPreviousValues = new();
+        private readonly Dictionary<int, (TextMeshProUGUI name, TextMeshProUGUI value)> _paramTexts = new();
+        private readonly List<ParameterRow> _parameterRows = [];
         private List<ModelHandler>? _availableHandlers;
         private List<AnimatorParamInfo>? _cachedParamInfos;
         private TMP_Dropdown? _characterDropdown;
         private GameObject? _closeButton;
         private GameObject? _contentArea;
+        private List<AnimatorParamInfo> _filteredParams = [];
+        private int _firstVisibleParameter = -1;
+        private float _nextValueRefresh;
 
         private GameObject? _panelRoot;
         private GameObject? _paramGridContent;
         private ScrollRect? _paramScrollRect;
+        private Vector2 _parameterViewportSize;
         private CancellationTokenSource? _periodicRefreshCts;
         private CancellationTokenSource? _rebuildCacheAndGridCts;
         private CancellationTokenSource? _refreshCharacterListCts;
@@ -51,10 +57,14 @@ namespace DuckovCustomModel.UI.Components
         private GameObject? _titleBar;
         private MultiSelectDropdown? _typeFilterDropdown;
         private MultiSelectDropdown? _usageFilterDropdown;
+        private int _visibleParameterCount = -1;
 
         private void LateUpdate()
         {
             if (_panelRoot == null || !_panelRoot.activeSelf) return;
+            UpdateVisibleParameters();
+            if (Time.unscaledTime < _nextValueRefresh) return;
+            _nextValueRefresh = Time.unscaledTime + .05f;
             RefreshParameterValues();
         }
 
@@ -103,8 +113,9 @@ namespace DuckovCustomModel.UI.Components
 
         private void OnModelChanged(ModelChangedEventArgs e)
         {
-            if (_panelRoot == null || !_panelRoot.activeSelf) return;
             if (_selectedModelHandler == null || e.Handler != _selectedModelHandler) return;
+            _cachedParamInfos = null;
+            if (_panelRoot == null || !_panelRoot.activeSelf) return;
             ScheduleRebuildCacheAndGrid();
         }
 
@@ -153,9 +164,7 @@ namespace DuckovCustomModel.UI.Components
 
             if (_paramGridContent == null) return;
 
-            foreach (var item in _paramItemObjects.Values.OfType<GameObject>())
-                Destroy(item);
-            _paramItemObjects.Clear();
+            UpdateParameterGrid([]);
         }
 
         private void SelectHandler(int index)
@@ -166,7 +175,9 @@ namespace DuckovCustomModel.UI.Components
                 return;
             }
 
+            if (_selectedModelHandler == _availableHandlers[index] && _cachedParamInfos != null) return;
             _selectedModelHandler = _availableHandlers[index];
+            UpdateParameterGrid([]);
             ScheduleRebuildCacheAndGrid();
         }
 
@@ -174,6 +185,7 @@ namespace DuckovCustomModel.UI.Components
         {
             if (_panelRoot == null) return;
             _panelRoot.SetActive(true);
+            _panelRoot.transform.SetAsLastSibling();
             RefreshCharacterList();
             StartPeriodicRefresh();
 
@@ -198,7 +210,7 @@ namespace DuckovCustomModel.UI.Components
 
         private void CreatePanel(Transform parent)
         {
-            _panelRoot = UIFactory.CreateImage("AnimatorParamsPanel", parent, new Color(0.1f, 0.12f, 0.15f, 0.95f));
+            _panelRoot = UIFactory.CreateImage("AnimatorParamsPanel", parent, UITheme.SurfaceAlternate);
             var rectTransform = _panelRoot.GetComponent<RectTransform>();
             rectTransform.anchorMin = new(0.5f, 0.5f);
             rectTransform.anchorMax = new(0.5f, 0.5f);
@@ -208,7 +220,7 @@ namespace DuckovCustomModel.UI.Components
 
             var outline = _panelRoot.AddComponent<Outline>();
             outline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
-            outline.effectDistance = new(2, -2);
+            outline.effectDistance = new(1, -1);
 
             var windowBase = _panelRoot.AddComponent<WindowBase>();
             windowBase.SetMinSize(new(MinWidth, MinHeight));
@@ -218,7 +230,7 @@ namespace DuckovCustomModel.UI.Components
         {
             if (_panelRoot == null) return;
 
-            _titleBar = UIFactory.CreateImage("TitleBar", _panelRoot.transform, new Color(0.15f, 0.18f, 0.22f, 0.9f));
+            _titleBar = UIFactory.CreateImage("TitleBar", _panelRoot.transform, UITheme.Surface);
             var titleRect = _titleBar.GetComponent<RectTransform>();
             titleRect.anchorMin = new(0, 1);
             titleRect.anchorMax = new(1, 1);
@@ -236,7 +248,7 @@ namespace DuckovCustomModel.UI.Components
             titleTextRect.offsetMax = new(-100, 0);
 
             _closeButton = UIFactory.CreateButton("CloseButton", _titleBar.transform, Hide,
-                new Color(0.8f, 0.2f, 0.2f, 1));
+                UITheme.Accent);
             var closeRect = _closeButton.GetComponent<RectTransform>();
             closeRect.anchorMin = new(1, 0.5f);
             closeRect.anchorMax = new(1, 0.5f);
@@ -278,8 +290,26 @@ namespace DuckovCustomModel.UI.Components
             filterRect.anchorMax = new(1, 1);
             filterRect.pivot = new(0.5f, 1);
             filterRect.anchoredPosition = Vector2.zero;
-            filterRect.offsetMin = new(0, -40);
+            filterRect.offsetMin = new(0, -38);
             filterRect.offsetMax = new(0, 0);
+
+            var secondaryFilters =
+                new GameObject("ParameterFilters", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+            secondaryFilters.transform.SetParent(_contentArea.transform, false);
+            var secondaryRect = secondaryFilters.GetComponent<RectTransform>();
+            secondaryRect.anchorMin = new(0, 1);
+            secondaryRect.anchorMax = new(1, 1);
+            secondaryRect.pivot = new(.5f, 1);
+            secondaryRect.offsetMin = new(0, -76);
+            secondaryRect.offsetMax = new(0, -38);
+            var secondaryLayout = secondaryFilters.GetComponent<HorizontalLayoutGroup>();
+            secondaryLayout.spacing = 10;
+            secondaryLayout.padding = new(5, 5, 0, 0);
+            secondaryLayout.childAlignment = TextAnchor.MiddleLeft;
+            secondaryLayout.childControlWidth = true;
+            secondaryLayout.childControlHeight = true;
+            secondaryLayout.childForceExpandWidth = true;
+            secondaryLayout.childForceExpandHeight = false;
 
             var layoutGroup = filterContainer.AddComponent<HorizontalLayoutGroup>();
             layoutGroup.spacing = 10f;
@@ -294,17 +324,17 @@ namespace DuckovCustomModel.UI.Components
                 OnCharacterChanged);
             var charLayout = _characterDropdown.gameObject.AddComponent<LayoutElement>();
             charLayout.preferredWidth = 300;
-            charLayout.minWidth = 100;
-            charLayout.flexibleWidth = 0;
+            charLayout.minWidth = 70;
+            charLayout.flexibleWidth = 1;
             charLayout.minHeight = 30;
             charLayout.preferredHeight = 30;
 
             var typeFilterObj = new GameObject("TypeFilter", typeof(RectTransform), typeof(MultiSelectDropdown));
-            typeFilterObj.transform.SetParent(filterContainer.transform, false);
+            typeFilterObj.transform.SetParent(secondaryFilters.transform, false);
             _typeFilterDropdown = typeFilterObj.GetComponent<MultiSelectDropdown>();
             var typeFilterLayout = typeFilterObj.AddComponent<LayoutElement>();
             typeFilterLayout.preferredWidth = 150;
-            typeFilterLayout.minWidth = 100;
+            typeFilterLayout.minWidth = 70;
             typeFilterLayout.flexibleWidth = 0;
             typeFilterLayout.minHeight = 30;
             typeFilterLayout.preferredHeight = 30;
@@ -312,11 +342,11 @@ namespace DuckovCustomModel.UI.Components
             _typeFilterDropdown.Initialize(types, _enabledTypes, GetTypeDisplayName, OnTypeSelectionChanged);
 
             var usageFilterObj = new GameObject("UsageFilter", typeof(RectTransform), typeof(MultiSelectDropdown));
-            usageFilterObj.transform.SetParent(filterContainer.transform, false);
+            usageFilterObj.transform.SetParent(secondaryFilters.transform, false);
             _usageFilterDropdown = usageFilterObj.GetComponent<MultiSelectDropdown>();
             var usageFilterLayout = usageFilterObj.AddComponent<LayoutElement>();
             usageFilterLayout.preferredWidth = 150;
-            usageFilterLayout.minWidth = 100;
+            usageFilterLayout.minWidth = 70;
             usageFilterLayout.flexibleWidth = 0;
             usageFilterLayout.minHeight = 30;
             usageFilterLayout.preferredHeight = 30;
@@ -326,7 +356,7 @@ namespace DuckovCustomModel.UI.Components
             _searchField = UIFactory.CreateInputField("SearchField", filterContainer.transform, "Search...");
             var searchLayout = _searchField.gameObject.AddComponent<LayoutElement>();
             searchLayout.preferredWidth = 200;
-            searchLayout.minWidth = 100;
+            searchLayout.minWidth = 70;
             searchLayout.flexibleWidth = 1;
             searchLayout.minHeight = 30;
             searchLayout.preferredHeight = 30;
@@ -343,18 +373,10 @@ namespace DuckovCustomModel.UI.Components
             scrollRect.anchorMin = new(0, 0);
             scrollRect.anchorMax = new(1, 1);
             scrollRect.offsetMin = new(0, 0);
-            scrollRect.offsetMax = new(0, -50);
+            scrollRect.offsetMax = new(0, -84);
 
             var scrollbar = UIFactory.CreateScrollbar(_paramScrollRect, 6f, true);
             scrollbar.transform.SetParent(_paramScrollRect.transform, false);
-
-            var gridLayout = _paramGridContent.AddComponent<GridLayoutGroup>();
-            gridLayout.cellSize = new(240, 40);
-            gridLayout.spacing = new(8, 4);
-            gridLayout.constraint = GridLayoutGroup.Constraint.Flexible;
-            gridLayout.startCorner = GridLayoutGroup.Corner.UpperLeft;
-            gridLayout.startAxis = GridLayoutGroup.Axis.Horizontal;
-            gridLayout.childAlignment = TextAnchor.UpperLeft;
 
             var contentRect = _paramGridContent.GetComponent<RectTransform>();
             contentRect.anchorMin = new(0, 1);
@@ -364,8 +386,7 @@ namespace DuckovCustomModel.UI.Components
             contentRect.offsetMin = new(5, 0);
             contentRect.offsetMax = new(-5, 0);
 
-            var contentSizeFitter = _paramGridContent.AddComponent<ContentSizeFitter>();
-            contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            _paramScrollRect.onValueChanged.AddListener(_ => UpdateVisibleParameters());
         }
 
         private void RefreshCharacterListInternal()
@@ -477,6 +498,7 @@ namespace DuckovCustomModel.UI.Components
 
         private void RefreshCharacterList()
         {
+            var previousHandler = _selectedModelHandler;
             RefreshCharacterListInternal();
 
             if (_characterDropdown == null || _availableHandlers == null) return;
@@ -487,9 +509,11 @@ namespace DuckovCustomModel.UI.Components
                 return;
             }
 
-            _characterDropdown.SetValueWithoutNotify(0);
+            var index = previousHandler != null ? _availableHandlers.IndexOf(previousHandler) : -1;
+            if (index < 0) index = 0;
+            _characterDropdown.SetValueWithoutNotify(index);
             _characterDropdown.RefreshShownValue();
-            SelectHandler(0);
+            SelectHandler(index);
         }
 
         private void OnCharacterChanged(int index)
@@ -585,7 +609,7 @@ namespace DuckovCustomModel.UI.Components
             _cachedParamInfos = null;
             UpdateAnimatorParamsCache(_selectedModelHandler);
 
-            if (_cachedParamInfos == null || _cachedParamInfos.Count == 0) return;
+            if (_cachedParamInfos == null) return;
 
             var filteredParams = FilterParameters(_cachedParamInfos);
             UpdateParameterGrid(filteredParams);
@@ -701,47 +725,96 @@ namespace DuckovCustomModel.UI.Components
 
         private void UpdateParameterGrid(List<AnimatorParamInfo> parameters)
         {
-            if (_paramGridContent == null) return;
-
-            foreach (var item in _paramItemObjects.Values.OfType<GameObject>())
-                Destroy(item);
-            _paramItemObjects.Clear();
-            _cachedParamInfoDict.Clear();
+            _filteredParams = parameters;
             _paramPreviousValues.Clear();
             _paramIsChanging.Clear();
-
-            var processedHashes = new HashSet<int>();
-            foreach (var paramInfo in parameters)
-            {
-                if (!processedHashes.Add(paramInfo.Hash)) continue;
-
-                var paramItem = CreateParameterItem(paramInfo);
-                if (paramItem == null) continue;
-
-                _paramItemObjects[paramInfo.Hash] = paramItem;
-                _cachedParamInfoDict[paramInfo.Hash] = paramInfo;
-            }
-
-            LayoutRebuilder.ForceRebuildLayoutImmediate(_paramGridContent.GetComponent<RectTransform>());
+            _firstVisibleParameter = -1;
+            UpdateVisibleParameters();
         }
 
-        private GameObject? CreateParameterItem(AnimatorParamInfo paramInfo)
+        private void UpdateVisibleParameters()
+        {
+            if (_paramGridContent == null || _paramScrollRect == null) return;
+            var viewport = _paramScrollRect.viewport.rect.size;
+            if (viewport.x <= 0 || viewport.y <= 0) return;
+            var content = _paramGridContent.GetComponent<RectTransform>();
+            var width = Mathf.Max(1, viewport.x - 16);
+            var columns = Mathf.Max(1, Mathf.FloorToInt((width + 8) / 248));
+            var cellWidth = (width - (columns - 1) * 8) / columns;
+            var rowCount = (_filteredParams.Count + columns - 1) / columns;
+            var height = Mathf.Max(0, rowCount * 44 - 4);
+            if (!Mathf.Approximately(content.sizeDelta.y, height))
+                content.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
+            var position = content.anchoredPosition;
+            var offset = Mathf.Clamp(position.y, 0, Mathf.Max(0, height - viewport.y));
+            if (!Mathf.Approximately(position.y, offset))
+            {
+                position.y = offset;
+                content.anchoredPosition = position;
+            }
+
+            var firstRow = Mathf.Max(0, Mathf.FloorToInt(offset / 44) - 1);
+            var visibleRows = Mathf.CeilToInt(viewport.y / 44) + 3;
+            var first = Mathf.Min(_filteredParams.Count, firstRow * columns);
+            var count = Mathf.Min(_filteredParams.Count - first, visibleRows * columns);
+            if (_firstVisibleParameter == first && _visibleParameterCount == count &&
+                _parameterViewportSize == viewport) return;
+            _firstVisibleParameter = first;
+            _visibleParameterCount = count;
+            _parameterViewportSize = viewport;
+            _paramItemObjects.Clear();
+            _paramTexts.Clear();
+            _cachedParamInfoDict.Clear();
+            while (_parameterRows.Count < count)
+            {
+                var row = CreateParameterItem();
+                if (row == null) break;
+                _parameterRows.Add(row);
+            }
+
+            for (var i = 0; i < _parameterRows.Count; i++)
+            {
+                var row = _parameterRows[i];
+                if (i >= count)
+                {
+                    row.Root.SetActive(false);
+                    continue;
+                }
+
+                var index = first + i;
+                var param = _filteredParams[index];
+                row.Root.SetActive(true);
+                row.Root.name = "Param_" + param.Name;
+                row.Rect.anchoredPosition = new(index % columns * (cellWidth + 8), -(index / columns * 44));
+                row.Rect.sizeDelta = new(cellWidth, 40);
+                row.Background.color = param.IsUsed ? UITheme.Surface : UITheme.SurfaceAlternate;
+                row.Name.text = HighlightWhitespace(param.Name, param.Type);
+                row.Name.color = Color.white;
+                row.Value.text = string.Empty;
+                row.Value.color = Color.white;
+                _paramItemObjects[param.Hash] = row.Root;
+                _paramTexts[param.Hash] = (row.Name, row.Value);
+                _cachedParamInfoDict[param.Hash] = param;
+            }
+
+            RefreshParameterValues();
+        }
+
+        private ParameterRow? CreateParameterItem()
         {
             if (_paramGridContent == null) return null;
 
-            var item = UIFactory.CreateImage($"Param_{paramInfo.Name}", _paramGridContent.transform,
-                paramInfo.IsUsed ? new(0.15f, 0.2f, 0.25f, 0.8f) : new Color(0.1f, 0.1f, 0.1f, 0.2f));
+            var item = UIFactory.CreateImage("Parameter", _paramGridContent.transform, UITheme.Surface);
 
             var itemRect = item.GetComponent<RectTransform>();
-            itemRect.anchorMin = Vector2.zero;
-            itemRect.anchorMax = Vector2.zero;
+            itemRect.anchorMin = new(0, 1);
+            itemRect.anchorMax = new(0, 1);
             itemRect.pivot = new(0, 1);
 
-            var paramText = HighlightWhitespace(paramInfo.Name, paramInfo.Type);
-            var nameText = UIFactory.CreateText("NameText", item.transform, paramText, 12, Color.white);
+            var nameText = UIFactory.CreateText("NameText", item.transform, string.Empty, 12, Color.white);
             var nameTextComponent = nameText.GetComponent<TextMeshProUGUI>();
             nameTextComponent.enableWordWrapping = true;
-            nameTextComponent.overflowMode = TextOverflowModes.Overflow;
+            nameTextComponent.overflowMode = TextOverflowModes.Ellipsis;
             nameTextComponent.richText = true;
             var nameTextRect = nameText.GetComponent<RectTransform>();
             nameTextRect.anchorMin = new(0, 0);
@@ -753,7 +826,8 @@ namespace DuckovCustomModel.UI.Components
                 TextAnchor.MiddleRight);
             var valueTextComponent = valueTextObj.GetComponent<TextMeshProUGUI>();
             valueTextComponent.alignment = TextAlignmentOptions.MidlineRight;
-            valueTextComponent.overflowMode = TextOverflowModes.Overflow;
+            valueTextComponent.overflowMode = TextOverflowModes.Ellipsis;
+            valueTextComponent.enableWordWrapping = false;
             var valueTextRect = valueTextObj.GetComponent<RectTransform>();
             valueTextRect.anchorMin = new(1, 0);
             valueTextRect.anchorMax = new(1, 1);
@@ -763,7 +837,14 @@ namespace DuckovCustomModel.UI.Components
             valueTextRect.offsetMin = new(-80, 3);
             valueTextRect.offsetMax = new(-5, -3);
 
-            return item;
+            return new()
+            {
+                Root = item,
+                Rect = itemRect,
+                Background = item.GetComponent<Image>(),
+                Name = nameTextComponent,
+                Value = valueTextComponent,
+            };
         }
 
         private static string HighlightWhitespace(string paramName, string paramType)
@@ -835,72 +916,18 @@ namespace DuckovCustomModel.UI.Components
 
                 if (!_cachedParamInfoDict.TryGetValue(hash, out var paramInfo)) continue;
 
-                var nameTextObj = itemObj.transform.Find("NameText");
-                var valueTextObj = itemObj.transform.Find("ValueText");
-                if (nameTextObj == null || valueTextObj == null) continue;
-
-                var nameText = nameTextObj.GetComponent<TextMeshProUGUI>();
-                var valueText = valueTextObj.GetComponent<TextMeshProUGUI>();
-                if (nameText == null || valueText == null) continue;
-
-                var valueTextStr = GetParameterValueString(paramInfo, customAnimatorControl, animator);
+                if (!_paramTexts.TryGetValue(hash, out var texts)) continue;
                 var currentValue = GetParameterValueObject(customAnimatorControl, paramInfo, animator);
+                var valueTextStr = currentValue is float number
+                    ? number.ToString("F3")
+                    : currentValue?.ToString() ?? (paramInfo.Type == "trigger" ? "Trigger" : "N/A");
 
                 UpdateParamState(paramInfo.Hash, currentValue, paramInfo.Type);
 
                 var color = GetParameterColor(paramInfo, currentValue);
-                nameText.color = color;
-                valueText.color = color;
-                valueText.text = valueTextStr;
-            }
-        }
-
-        private static string GetParameterValueString(AnimatorParamInfo paramInfo,
-            CustomAnimatorControl? customAnimatorControl, Animator? animator)
-        {
-            return GetParameterValue(customAnimatorControl, paramInfo, animator);
-        }
-
-        private static string GetParameterValue(CustomAnimatorControl? customAnimatorControl,
-            AnimatorParamInfo paramInfo, Animator? animator)
-        {
-            if (!paramInfo.IsExternal)
-            {
-                if (customAnimatorControl == null) return "N/A";
-
-                try
-                {
-                    return paramInfo.Type switch
-                    {
-                        "float" => customAnimatorControl.GetParameterFloat(paramInfo.Hash).ToString("F3"),
-                        "int" => customAnimatorControl.GetParameterInteger(paramInfo.Hash).ToString(),
-                        "bool" => customAnimatorControl.GetParameterBool(paramInfo.Hash).ToString(),
-                        "trigger" => "Trigger",
-                        _ => "Unknown",
-                    };
-                }
-                catch
-                {
-                    return "N/A";
-                }
-            }
-
-            if (animator == null) return "N/A";
-
-            try
-            {
-                return paramInfo.Type switch
-                {
-                    "float" => animator.GetFloat(paramInfo.Hash).ToString("F3"),
-                    "int" => animator.GetInteger(paramInfo.Hash).ToString(),
-                    "bool" => animator.GetBool(paramInfo.Hash).ToString(),
-                    "trigger" => "Trigger",
-                    _ => "Unknown",
-                };
-            }
-            catch
-            {
-                return "N/A";
+                if (texts.name.color != color) texts.name.color = color;
+                if (texts.value.color != color) texts.value.color = color;
+                if (texts.value.text != valueTextStr) texts.value.text = valueTextStr;
             }
         }
 
@@ -987,6 +1014,15 @@ namespace DuckovCustomModel.UI.Components
                 return new(1f, 0.4f, 0.1f, 1f);
 
             return isChanged ? new(1f, 0.8f, 0.2f, 1f) : Color.white;
+        }
+
+        private sealed class ParameterRow
+        {
+            internal Image Background = null!;
+            internal TextMeshProUGUI Name = null!;
+            internal RectTransform Rect = null!;
+            internal GameObject Root = null!;
+            internal TextMeshProUGUI Value = null!;
         }
     }
 }

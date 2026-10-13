@@ -28,6 +28,10 @@ namespace DuckovCustomModel.Localizations
         {
             { "Title", "Duckov Custom Model" },
             { "SearchPlaceholder", "Search models..." },
+            { "AudioSettings", "Audio settings" },
+            { "TargetOriginal", "Original appearance" },
+            { "TargetInherited", "Inherited" },
+            { "TargetCopyHint", "Shift + click to copy target details" },
             { "SearchTarget", "Search targets..." },
             { "Refresh", "Reload All Model Information" },
             { "Loading", "Loading..." },
@@ -155,6 +159,10 @@ namespace DuckovCustomModel.Localizations
 
         public static string Title => GetText("Title");
         public static string SearchPlaceholder => GetText("SearchPlaceholder");
+        public static string AudioSettings => GetText("AudioSettings");
+        public static string TargetOriginal => GetText("TargetOriginal");
+        public static string TargetInherited => GetText("TargetInherited");
+        public static string TargetCopyHint => GetText("TargetCopyHint");
         public static string SearchTarget => GetText("SearchTarget");
         public static string Refresh => GetText("Refresh");
         public static string Loading => GetText("Loading");

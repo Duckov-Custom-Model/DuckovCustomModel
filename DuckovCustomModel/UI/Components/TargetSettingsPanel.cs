@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.UI.Base;
 using DuckovCustomModel.UI.Data;
+using DuckovCustomModel.UI.Utils;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,16 +14,17 @@ namespace DuckovCustomModel.UI.Components
 {
     public partial class TargetSettingsPanel : MonoBehaviour
     {
+        private readonly Dictionary<string, float> _scrollPositions = new(StringComparer.Ordinal);
         private GameObject? _clearRuntimeDataRow;
         private GameObject? _content;
         private TargetInfo? _currentTarget;
         private TMP_InputField? _idleAudioMaxIntervalInput;
         private TMP_InputField? _idleAudioMinIntervalInput;
-        private TMP_Text? _modelAudioVolumeText;
         private GameObject? _modelHeightRow;
         private SliderWithInputToggle? _modelHeightSliderWithInput;
+        private string? _renderedTargetId;
         private GameObject? _runtimeSettingsDivider;
-        private int _settingRowIndex;
+        private ScrollRect? _scrollView;
 
         public void Initialize(Transform parent)
         {
@@ -32,6 +35,7 @@ namespace DuckovCustomModel.UI.Components
             scrollbar.transform.SetParent(scrollView.transform, false);
 
             _content = content;
+            _scrollView = scrollView;
 
             UIFactory.SetupVerticalLayoutGroup(_content, 10f, new(10, 10, 10, 10), TextAnchor.UpperCenter,
                 true, true, true);
@@ -44,6 +48,15 @@ namespace DuckovCustomModel.UI.Components
 
         public void SetTarget(TargetInfo? targetInfo)
         {
+            if (_currentTarget?.GetTargetTypeId() == targetInfo?.GetTargetTypeId() && _content != null &&
+                _content.transform.childCount > 0)
+            {
+                _currentTarget = targetInfo;
+                RefreshModelSelection();
+                return;
+            }
+
+            SaveScrollPosition();
             _currentTarget = targetInfo;
             Refresh();
         }
@@ -51,6 +64,8 @@ namespace DuckovCustomModel.UI.Components
         public void Refresh()
         {
             if (_content == null) return;
+            if (_renderedTargetId == _currentTarget?.GetTargetTypeId()) SaveScrollPosition();
+            _renderedTargetId = _currentTarget?.GetTargetTypeId();
 
             foreach (Transform child in _content.transform)
             {
@@ -60,19 +75,25 @@ namespace DuckovCustomModel.UI.Components
 
             if (_currentTarget == null) return;
 
-            _settingRowIndex = 0;
             BuildCharacterModelWarning();
+            BuildSectionHeading(() => Localization.ModelSettings);
             BuildModelHeightSetting();
             BuildSocketScaleSection();
-            BuildClearRuntimeDataButton();
-            BuildRuntimeSettingsDivider();
+            BuildSectionHeading(() => Localization.EquipmentSettings);
             BuildHideEquipmentSetting();
+            BuildSectionHeading(() => Localization.AudioSettings);
             BuildEnableModelAudioSetting();
             BuildModelAudioVolumeSetting();
             BuildEnableIdleAudioSetting();
             BuildIdleAudioIntervalSettings();
+            BuildRuntimeSettingsDivider();
+            BuildClearRuntimeDataButton();
 
             UpdateRuntimeSettingsVisibility();
+            LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)_content.transform);
+            if (_scrollView != null)
+                _scrollView.verticalNormalizedPosition =
+                    _scrollPositions.TryGetValue(_currentTarget.GetTargetTypeId(), out var position) ? position : 1;
         }
 
         public void RefreshModelSelection()
@@ -101,13 +122,13 @@ namespace DuckovCustomModel.UI.Components
 
             var label = UIFactory.CreateText("Label", _modelHeightRow.transform, Localization.ModelHeight, 18,
                 Color.white);
-            UIFactory.SetupBoundedLeftLabel(label, 340);
+            SetupSettingLabel(label, 340);
             UIFactory.SetLocalizedText(label, () => Localization.ModelHeight);
 
             var controlsContainer =
                 new GameObject("ControlsContainer", typeof(RectTransform), typeof(HorizontalLayoutGroup));
             controlsContainer.transform.SetParent(_modelHeightRow.transform, false);
-            UIFactory.SetupRightControl(controlsContainer, new(300, 30));
+            SetupSettingControl(controlsContainer, new(300, 30));
             UIFactory.SetupHorizontalLayoutGroup(controlsContainer, 8f, new(0, 0, 0, 0), TextAnchor.MiddleRight,
                 true);
 
@@ -115,8 +136,9 @@ namespace DuckovCustomModel.UI.Components
                 new GameObject("SliderWithInputContainer", typeof(RectTransform), typeof(LayoutElement));
             sliderWithInputContainer.transform.SetParent(controlsContainer.transform, false);
             var sliderLayoutElement = sliderWithInputContainer.GetComponent<LayoutElement>();
-            sliderLayoutElement.preferredWidth = 150;
-            sliderLayoutElement.flexibleWidth = 0;
+            sliderLayoutElement.minWidth = 0;
+            sliderLayoutElement.preferredWidth = 0;
+            sliderLayoutElement.flexibleWidth = 1;
 
             _modelHeightSliderWithInput = UIFactory.CreateSliderWithInputToggle(
                 "ModelHeightSlider",
@@ -130,7 +152,7 @@ namespace DuckovCustomModel.UI.Components
             var resetButton = UIFactory.CreateButton("ResetHeightButton", controlsContainer.transform,
                 OnResetHeightClicked, new Color(0.3f, 0.35f, 0.4f, 1)).GetComponent<Button>();
             var resetButtonLayoutElement = resetButton.gameObject.AddComponent<LayoutElement>();
-            resetButtonLayoutElement.preferredWidth = 100;
+            resetButtonLayoutElement.preferredWidth = 70;
             resetButtonLayoutElement.flexibleWidth = 0;
             var resetButtonText = UIFactory.CreateText("Text", resetButton.transform,
                 Localization.Reset, 14, Color.white, TextAnchor.MiddleCenter);
@@ -149,12 +171,12 @@ namespace DuckovCustomModel.UI.Components
             var label = UIFactory.CreateText("Label", _clearRuntimeDataRow.transform,
                 Localization.ClearCustomDataConfig, 18,
                 Color.white);
-            UIFactory.SetupBoundedLeftLabel(label, 140);
+            SetupSettingLabel(label, 130);
             UIFactory.SetLocalizedText(label, () => Localization.ClearCustomDataConfig);
 
             var clearButton = UIFactory.CreateButton("ClearRuntimeDataButton", _clearRuntimeDataRow.transform,
                 OnClearRuntimeDataClicked, new Color(0.5f, 0.2f, 0.2f, 1)).GetComponent<Button>();
-            UIFactory.SetupRightControl(clearButton.gameObject, new(100, 30));
+            SetupSettingControl(clearButton.gameObject, new(100, 30));
             var clearButtonText = UIFactory.CreateText("Text", clearButton.transform,
                 Localization.Clear, 14, Color.white, TextAnchor.MiddleCenter);
             UIFactory.SetupButtonText(clearButtonText);
@@ -235,7 +257,7 @@ namespace DuckovCustomModel.UI.Components
             var label = UIFactory.CreateText("Label", settingRow.transform,
                 string.Format(Localization.HideEquipment, displayName),
                 18, Color.white);
-            UIFactory.SetupBoundedLeftLabel(label, 60);
+            SetupSettingLabel(label, 60);
 
             UIFactory.SetLocalizedText(label, () =>
                 string.Format(Localization.HideEquipment, displayName));
@@ -256,8 +278,8 @@ namespace DuckovCustomModel.UI.Components
             }
 
             var toggle = UIFactory.CreateToggle("HideEquipmentToggle", settingRow.transform, isOn,
-                OnHideEquipmentToggleChanged);
-            UIFactory.SetupRightControl(toggle.gameObject, new(20, 20));
+                OnHideEquipmentToggleChanged, true);
+            SetupSettingControl(toggle.gameObject, new(20, 20));
         }
 
         private void BuildEnableModelAudioSetting()
@@ -269,7 +291,7 @@ namespace DuckovCustomModel.UI.Components
 
             var label = UIFactory.CreateText("Label", settingRow.transform, Localization.EnableModelAudio, 18,
                 Color.white);
-            UIFactory.SetupBoundedLeftLabel(label, 60);
+            SetupSettingLabel(label, 60);
             UIFactory.SetLocalizedText(label, () => Localization.EnableModelAudio);
 
             var isOn = true;
@@ -280,8 +302,8 @@ namespace DuckovCustomModel.UI.Components
             }
 
             var toggle = UIFactory.CreateToggle("EnableModelAudioToggle", settingRow.transform, isOn,
-                OnEnableModelAudioToggleChanged);
-            UIFactory.SetupRightControl(toggle.gameObject, new(20, 20));
+                OnEnableModelAudioToggleChanged, true);
+            SetupSettingControl(toggle.gameObject, new(20, 20));
         }
 
         private void BuildModelAudioVolumeSetting()
@@ -293,7 +315,7 @@ namespace DuckovCustomModel.UI.Components
 
             var label = UIFactory.CreateText("Label", settingRow.transform, Localization.ModelAudioVolume, 18,
                 Color.white);
-            UIFactory.SetupBoundedLeftLabel(label, 240);
+            SetupSettingLabel(label, 240);
             UIFactory.SetLocalizedText(label, () => Localization.ModelAudioVolume);
 
             var volume = 1f;
@@ -305,16 +327,11 @@ namespace DuckovCustomModel.UI.Components
 
             var sliderContainer = new GameObject("SliderContainer", typeof(RectTransform));
             sliderContainer.transform.SetParent(settingRow.transform, false);
-            UIFactory.SetupRightControl(sliderContainer, new(200, 30));
+            SetupSettingControl(sliderContainer, new(200, 30));
 
-            var slider = UIFactory.CreateSlider("ModelAudioVolumeSlider", sliderContainer.transform, 0f, 1f, volume,
-                OnModelAudioVolumeChanged);
+            var slider = UIFactory.CreateSliderWithInputToggle("ModelAudioVolumeSlider", sliderContainer.transform,
+                0f, 100f, volume * 100, "F0", value => OnModelAudioVolumeChanged(value / 100));
             UIFactory.SetupRectTransform(slider.gameObject, Vector2.zero, Vector2.one, Vector2.zero);
-
-            var volumeText = UIFactory.CreateText("VolumeText", sliderContainer.transform,
-                $"{volume:P0}", 14, Color.white, TextAnchor.MiddleRight);
-            UIFactory.SetupRightLabel(volumeText, 25f, -10f);
-            _modelAudioVolumeText = volumeText.GetComponent<TMP_Text>();
         }
 
         private void BuildEnableIdleAudioSetting()
@@ -326,7 +343,7 @@ namespace DuckovCustomModel.UI.Components
 
             var label = UIFactory.CreateText("Label", settingRow.transform, Localization.EnableIdleAudio, 18,
                 Color.white);
-            UIFactory.SetupBoundedLeftLabel(label, 60);
+            SetupSettingLabel(label, 60);
             UIFactory.SetLocalizedText(label, () => Localization.EnableIdleAudio);
 
             var isOn = false;
@@ -337,8 +354,8 @@ namespace DuckovCustomModel.UI.Components
             }
 
             var toggle = UIFactory.CreateToggle("EnableIdleAudioToggle", settingRow.transform, isOn,
-                OnEnableIdleAudioToggleChanged);
-            UIFactory.SetupRightControl(toggle.gameObject, new(20, 20));
+                OnEnableIdleAudioToggleChanged, true);
+            SetupSettingControl(toggle.gameObject, new(20, 20));
         }
 
         private void BuildIdleAudioIntervalSettings()
@@ -351,12 +368,13 @@ namespace DuckovCustomModel.UI.Components
             var targetTypeId = _currentTarget.GetTargetTypeId();
             var interval = idleAudioConfig.GetIdleAudioInterval(targetTypeId);
 
+            BuildSectionHeading(() => Localization.IdleAudioInterval);
             var minIntervalRow = CreateSettingRow();
             var minLabel = UIFactory.CreateText("Label", minIntervalRow.transform,
-                $"{Localization.IdleAudioInterval} {Localization.Seconds} ({Localization.MinValue})", 18, Color.white);
-            UIFactory.SetupBoundedLeftLabel(minLabel, 140);
+                $"{Localization.MinValue} ({Localization.Seconds})", 18, Color.white);
+            SetupSettingLabel(minLabel, 112);
             UIFactory.SetLocalizedText(minLabel, () =>
-                $"{Localization.IdleAudioInterval} {Localization.Seconds} ({Localization.MinValue})");
+                $"{Localization.MinValue} ({Localization.Seconds})");
 
             _idleAudioMinIntervalInput =
                 UIFactory.CreateInputField("IdleAudioMinIntervalInput", minIntervalRow.transform);
@@ -364,15 +382,15 @@ namespace DuckovCustomModel.UI.Components
             if (_idleAudioMinIntervalInput.textComponent != null)
                 _idleAudioMinIntervalInput.textComponent.enableAutoSizing = false;
 
-            UIFactory.SetupRightControl(_idleAudioMinIntervalInput.gameObject, new(100, 30));
+            SetupSettingControl(_idleAudioMinIntervalInput.gameObject, new(80, 30));
             _idleAudioMinIntervalInput.onEndEdit.AddListener(OnIdleAudioMinIntervalChanged);
 
             var maxIntervalRow = CreateSettingRow();
             var maxLabel = UIFactory.CreateText("Label", maxIntervalRow.transform,
-                $"{Localization.IdleAudioInterval} {Localization.Seconds} ({Localization.MaxValue})", 18, Color.white);
-            UIFactory.SetupBoundedLeftLabel(maxLabel, 140);
+                $"{Localization.MaxValue} ({Localization.Seconds})", 18, Color.white);
+            SetupSettingLabel(maxLabel, 112);
             UIFactory.SetLocalizedText(maxLabel, () =>
-                $"{Localization.IdleAudioInterval} {Localization.Seconds} ({Localization.MaxValue})");
+                $"{Localization.MaxValue} ({Localization.Seconds})");
 
             _idleAudioMaxIntervalInput =
                 UIFactory.CreateInputField("IdleAudioMaxIntervalInput", maxIntervalRow.transform);
@@ -380,7 +398,7 @@ namespace DuckovCustomModel.UI.Components
             if (_idleAudioMaxIntervalInput.textComponent != null)
                 _idleAudioMaxIntervalInput.textComponent.enableAutoSizing = false;
 
-            UIFactory.SetupRightControl(_idleAudioMaxIntervalInput.gameObject, new(100, 30));
+            SetupSettingControl(_idleAudioMaxIntervalInput.gameObject, new(80, 30));
             _idleAudioMaxIntervalInput.onEndEdit.AddListener(OnIdleAudioMaxIntervalChanged);
         }
 
@@ -420,9 +438,7 @@ namespace DuckovCustomModel.UI.Components
             var rowImage = row.GetComponent<Image>();
             rowImage.color = new(0.3f, 0.2f, 0.05f, 0.9f);
 
-            var outline = row.AddComponent<Outline>();
-            outline.effectColor = new(0.8f, 0.6f, 0.2f, 0.8f);
-            outline.effectDistance = new(2, -2);
+            rowImage.raycastTarget = false;
 
             UIFactory.SetupRectTransform(row, new(0, 1), new(1, 1), Vector2.zero,
                 pivot: new Vector2(0.5f, 1));
@@ -456,19 +472,70 @@ namespace DuckovCustomModel.UI.Components
             row.transform.SetParent(_content.transform, false);
 
             var rowImage = row.GetComponent<Image>();
-            var isEven = _settingRowIndex % 2 == 0;
-            rowImage.color = isEven ? new(0.12f, 0.14f, 0.16f, 0.8f) : new Color(0.1f, 0.12f, 0.14f, 0.8f);
-            _settingRowIndex++;
+            rowImage.color = UITheme.Surface;
+            rowImage.raycastTarget = false;
 
             UIFactory.SetupAnchor(row, new(0, 1), new(1, 1), new Vector2(0.5f, 1), new Vector2(0, 50),
                 Vector2.zero);
 
             var rowLayoutElement = row.AddComponent<LayoutElement>();
-            rowLayoutElement.preferredHeight = 50;
+            rowLayoutElement.preferredHeight = 44;
+            rowLayoutElement.minWidth = 0;
+            rowLayoutElement.preferredWidth = 0;
             rowLayoutElement.flexibleWidth = 1;
             rowLayoutElement.flexibleHeight = 0;
 
             return row;
+        }
+
+        private void SaveScrollPosition()
+        {
+            if (_scrollView != null && _currentTarget != null)
+                _scrollPositions[_currentTarget.GetTargetTypeId()] = _scrollView.verticalNormalizedPosition;
+        }
+
+        private void BuildSectionHeading(Func<string> text)
+        {
+            if (_content == null) return;
+            var heading = UIFactory.CreateText("SectionHeading", _content.transform, text(), 14, UITheme.Text);
+            var layout = heading.AddComponent<LayoutElement>();
+            layout.minWidth = 0;
+            layout.preferredWidth = 0;
+            layout.preferredHeight = 28;
+            layout.flexibleWidth = 1;
+            UIFactory.SetLocalizedText(heading, text);
+        }
+
+        private static void SetupSettingLabel(GameObject label, float reservedRight)
+        {
+            if (reservedRight < 200)
+            {
+                UIFactory.SetupBoundedLeftLabel(label, reservedRight);
+                return;
+            }
+
+            label.transform.parent.GetComponent<LayoutElement>().preferredHeight = 84;
+            UIFactory.SetupRectTransform(label, new(0, 1), Vector2.one,
+                offsetMin: new(20, -42), offsetMax: new(-20, -6));
+            var text = label.GetComponent<TMP_Text>();
+            text.enableWordWrapping = true;
+            text.overflowMode = TextOverflowModes.Overflow;
+            text.fontSize = 18;
+            text.alignment = TextAlignmentOptions.TopLeft;
+            label.AddComponent<StackedSettingLabel>();
+        }
+
+        private static void SetupSettingControl(GameObject control, Vector2 size)
+        {
+            var layout = control.transform.parent.GetComponent<LayoutElement>();
+            if (layout == null || layout.preferredHeight < 70)
+            {
+                UIFactory.SetupRightControl(control, size);
+                return;
+            }
+
+            UIFactory.SetupRectTransform(control, Vector2.zero, new(1, 0),
+                offsetMin: new(20, 8), offsetMax: new(-20, 8 + size.y));
         }
 
         private void OnHideEquipmentToggleChanged(bool value)
@@ -563,9 +630,6 @@ namespace DuckovCustomModel.UI.Components
 
             var targetTypeId = _currentTarget.GetTargetTypeId();
             modelAudioConfig.SetModelAudioVolume(targetTypeId, value);
-
-            if (_modelAudioVolumeText != null)
-                _modelAudioVolumeText.text = $"{value:P0}";
 
             ConfigManager.SaveConfigToFile(modelAudioConfig, "ModelAudioConfig.json");
         }

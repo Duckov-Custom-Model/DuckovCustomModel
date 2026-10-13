@@ -1,4 +1,8 @@
 {
+  "AudioSettings": "오디오 설정",
+  "TargetOriginal": "원래 외형",
+  "TargetInherited": "상속",
+  "TargetCopyHint": "Shift + 클릭으로 대상 정보 복사",
   "LeftHandLocator": "왼손",
   "RightHandLocator": "오른손",
   "RifleLocator": "소총",

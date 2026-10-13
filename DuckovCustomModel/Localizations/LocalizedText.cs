@@ -33,7 +33,7 @@ namespace DuckovCustomModel.Localizations
         public void SetTextGetter(Func<string> textGetter)
         {
             _textGetter = textGetter;
-            if (_text == null || _isRegistered) return;
+            if (_text == null) return;
             Register();
             RefreshText();
         }
@@ -44,7 +44,8 @@ namespace DuckovCustomModel.Localizations
 
             try
             {
-                _text.text = _textGetter();
+                var value = _textGetter();
+                if (_text.text != value) _text.text = value;
             }
             catch (Exception ex)
             {

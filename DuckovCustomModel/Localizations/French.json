@@ -1,4 +1,8 @@
 {
+  "AudioSettings": "Paramètres audio",
+  "TargetOriginal": "Apparence originale",
+  "TargetInherited": "Hérité",
+  "TargetCopyHint": "Maj + clic pour copier les informations de la cible",
   "LeftHandLocator": "Main gauche",
   "RightHandLocator": "Main droite",
   "RifleLocator": "Fusil",

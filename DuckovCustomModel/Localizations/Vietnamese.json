@@ -1,4 +1,8 @@
 {
+  "AudioSettings": "Cài đặt âm thanh",
+  "TargetOriginal": "Diện mạo gốc",
+  "TargetInherited": "Kế thừa",
+  "TargetCopyHint": "Shift + nhấp để sao chép thông tin mục tiêu",
   "LeftHandLocator": "Tay trái",
   "RightHandLocator": "Tay phải",
   "RifleLocator": "Súng trường",

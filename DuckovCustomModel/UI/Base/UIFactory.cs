@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.UI.Components;
 using DuckovCustomModel.UI.Utils;
@@ -30,6 +29,7 @@ namespace DuckovCustomModel.UI.Base
             var obj = new GameObject(name, typeof(TextMeshProUGUI));
             obj.transform.SetParent(parent, false);
             var textComponent = obj.GetComponent<TextMeshProUGUI>();
+            textComponent.raycastTarget = false;
             textComponent.text = text;
             textComponent.fontSize = fontSize;
             textComponent.color = color ?? Color.white;
@@ -65,7 +65,7 @@ namespace DuckovCustomModel.UI.Base
             if (textComponent == null) return;
 
             textComponent.enableWordWrapping = true;
-            textComponent.overflowMode = TextOverflowModes.Overflow;
+            textComponent.overflowMode = TextOverflowModes.Ellipsis;
             textComponent.enableAutoSizing = true;
             textComponent.fontSizeMin = minFontSize;
             textComponent.fontSizeMax = maxFontSize;
@@ -80,13 +80,15 @@ namespace DuckovCustomModel.UI.Base
             var obj = new GameObject(name, typeof(Image), typeof(Button));
             obj.transform.SetParent(parent, false);
 
-            if (backgroundColor.HasValue)
-            {
-                var image = obj.GetComponent<Image>();
-                image.color = backgroundColor.Value;
-            }
+            obj.GetComponent<Image>().color = backgroundColor ?? UITheme.Control;
 
             var button = obj.GetComponent<Button>();
+            var colors = button.colors;
+            colors.highlightedColor = new(1.15f, 1.15f, 1.15f, 1);
+            colors.pressedColor = new(.8f, .8f, .8f, 1);
+            colors.selectedColor = Color.white;
+            colors.fadeDuration = .08f;
+            button.colors = colors;
             if (onClick != null) button.onClick.AddListener(onClick);
 
             return obj;
@@ -96,24 +98,29 @@ namespace DuckovCustomModel.UI.Base
         {
             var inputObj = new GameObject(name, typeof(Image));
             var inputImage = inputObj.GetComponent<Image>();
-            inputImage.color = new(0.1f, 0.12f, 0.15f, 0.9f);
+            inputImage.color = UITheme.Border;
 
-            var outline = inputObj.AddComponent<Outline>();
-            outline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
-            outline.effectDistance = new(1, -1);
+            var background = CreateImage("Background", inputObj.transform, UITheme.Input);
+            SetupRectTransform(background, Vector2.zero, Vector2.one,
+                offsetMin: new(1, 1), offsetMax: new(-1, -1));
+            background.GetComponent<Image>().raycastTarget = false;
 
+            var viewport = new GameObject("Viewport", typeof(RectTransform), typeof(RectMask2D));
+            viewport.transform.SetParent(inputObj.transform, false);
+            SetupRectTransform(viewport, Vector2.zero, Vector2.one,
+                offsetMin: new(8, 2), offsetMax: new(-8, -2));
             var textObj = new GameObject("Text", typeof(TextMeshProUGUI));
-            textObj.transform.SetParent(inputObj.transform, false);
+            textObj.transform.SetParent(viewport.transform, false);
             var textComponent = textObj.GetComponent<TextMeshProUGUI>();
             textComponent.color = Color.white;
             textComponent.fontSize = 14;
             textComponent.enableAutoSizing = false;
             textComponent.alignment = TextAlignmentOptions.MidlineLeft;
             SetupRectTransform(textObj, new(0, 0), new(1, 1),
-                offsetMin: new(8, 4), offsetMax: new(-8, -4));
+                offsetMin: new(0, 2), offsetMax: new(0, -2));
 
             var placeholderObj = new GameObject("Placeholder", typeof(TextMeshProUGUI));
-            placeholderObj.transform.SetParent(inputObj.transform, false);
+            placeholderObj.transform.SetParent(viewport.transform, false);
             var placeholderComponent = placeholderObj.GetComponent<TextMeshProUGUI>();
             placeholderComponent.text = placeholder;
             placeholderComponent.color = new(1, 1, 1, 0.4f);
@@ -121,9 +128,17 @@ namespace DuckovCustomModel.UI.Base
             placeholderComponent.enableAutoSizing = false;
             placeholderComponent.alignment = TextAlignmentOptions.MidlineLeft;
             SetupRectTransform(placeholderObj, new(0, 0), new(1, 1),
-                offsetMin: new(8, 4), offsetMax: new(-8, -4));
+                offsetMin: new(0, 2), offsetMax: new(0, -2));
 
             var inputField = inputObj.AddComponent<TMP_InputField>();
+            textComponent.raycastTarget = false;
+            textComponent.enableWordWrapping = false;
+            placeholderComponent.raycastTarget = false;
+            placeholderComponent.enableWordWrapping = false;
+            placeholderComponent.overflowMode = TextOverflowModes.Ellipsis;
+            inputField.textViewport = viewport.GetComponent<RectTransform>();
+            inputField.targetGraphic = background.GetComponent<Image>();
+            inputField.selectionColor = new(.22f, .39f, .53f, .65f);
             inputField.textComponent = textComponent;
             inputField.placeholder = placeholderComponent;
 
@@ -132,7 +147,7 @@ namespace DuckovCustomModel.UI.Base
         }
 
         public static Toggle CreateToggle(string name, Transform parent, bool isOn = false,
-            UnityAction<bool>? onValueChanged = null)
+            UnityAction<bool>? onValueChanged = null, bool themed = false)
         {
             var toggleObj = new GameObject(name, typeof(RectTransform), typeof(Toggle));
             toggleObj.transform.SetParent(parent, false);
@@ -144,11 +159,14 @@ namespace DuckovCustomModel.UI.Base
                 new(20, 20), pivot: new(0.5f, 0.5f));
 
             var toggleImage = toggleObj.AddComponent<Image>();
-            toggleImage.color = new(0.2f, 0.2f, 0.2f, 1);
+            toggleImage.color = themed ? UITheme.Control : new(0.2f, 0.2f, 0.2f, 1);
+            if (themed) toggle.targetGraphic = toggleImage;
 
-            var checkmark = CreateImage("Checkmark", toggleObj.transform, new(0.2f, 0.8f, 0.2f, 1));
+            var checkmark = CreateImage("Checkmark", toggleObj.transform,
+                themed ? UITheme.Highlight : new(0.2f, 0.8f, 0.2f, 1));
             SetupRectTransform(checkmark, new(0.2f, 0.2f), new(0.8f, 0.8f), Vector2.zero);
             toggle.graphic = checkmark.GetComponent<Image>();
+            if (themed) toggle.graphic.raycastTarget = false;
 
             return toggle;
         }
@@ -162,13 +180,14 @@ namespace DuckovCustomModel.UI.Base
             var scrollImage = scrollView.GetComponent<Image>();
             scrollImage.color = new(0.05f, 0.08f, 0.12f, 0.8f);
 
-            var mask = scrollView.AddComponent<Mask>();
-            mask.showMaskGraphic = false;
+            scrollView.AddComponent<RectMask2D>();
 
             var scrollRect = scrollView.GetComponent<ScrollRect>();
             scrollRect.horizontal = horizontal;
             scrollRect.vertical = vertical;
             scrollRect.scrollSensitivity = 1;
+            scrollRect.movementType = ScrollRect.MovementType.Clamped;
+            scrollRect.viewport = scrollView.GetComponent<RectTransform>();
 
             content = new("Content", typeof(RectTransform));
             content.transform.SetParent(scrollView.transform, false);
@@ -192,8 +211,7 @@ namespace DuckovCustomModel.UI.Base
             scrollImage.color = new(0.05f, 0.08f, 0.12f, 0.8f);
             scrollImage.raycastTarget = false;
 
-            var mask = scrollView.AddComponent<Mask>();
-            mask.showMaskGraphic = false;
+            scrollView.AddComponent<RectMask2D>();
 
             var scrollRect = scrollView.GetComponent<NonInteractiveScrollRect>();
             scrollRect.horizontal = horizontal;
@@ -251,7 +269,7 @@ namespace DuckovCustomModel.UI.Base
             SetupAnchor(obj, new(0, 0.5f), new(0, 0.5f), new(0, 0.5f), new(0, height), new(leftOffset, 0));
         }
 
-        public static void SetupBoundedLeftLabel(GameObject obj, float reservedRight, float height = 30f)
+        public static void SetupBoundedLeftLabel(GameObject obj, float reservedRight, float height = 36f)
         {
             SetupRectTransform(obj, new(0, .5f), new(1, .5f),
                 offsetMin: new(20, -height / 2), offsetMax: new(-reservedRight, height / 2));
@@ -259,8 +277,9 @@ namespace DuckovCustomModel.UI.Base
             if (text == null) return;
             text.enableWordWrapping = false;
             text.enableAutoSizing = true;
-            text.fontSizeMin = 12;
+            text.fontSizeMin = 16;
             text.fontSizeMax = 18;
+            text.fontSize = 18;
             text.overflowMode = TextOverflowModes.Ellipsis;
         }
 
@@ -334,10 +353,10 @@ namespace DuckovCustomModel.UI.Base
             dropdownObj.transform.SetParent(parent, false);
 
             var dropdownImage = dropdownObj.GetComponent<Image>();
-            dropdownImage.color = new(0.1f, 0.12f, 0.15f, 0.9f);
+            dropdownImage.color = UITheme.Input;
 
             var outline = dropdownObj.AddComponent<Outline>();
-            outline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
+            outline.effectColor = UITheme.Border;
             outline.effectDistance = new(1, -1);
 
             var dropdown = dropdownObj.GetComponent<TMP_Dropdown>();
@@ -353,13 +372,13 @@ namespace DuckovCustomModel.UI.Base
                 offsetMin: new(10, 2), offsetMax: new(-25, -2));
             dropdown.captionText = labelText;
 
-            var arrowObj = new GameObject("Arrow", typeof(Image));
-            arrowObj.transform.SetParent(dropdownObj.transform, false);
-            var arrowImage = arrowObj.GetComponent<Image>();
-            arrowImage.color = Color.white;
-            SetupRectTransform(arrowObj, new(1, 0.5f), new(1, 0.5f),
-                new(20, 20), pivot: new(1, 0.5f), anchoredPosition: new(-5, 0));
-            dropdown.captionImage = arrowImage;
+            labelText.raycastTarget = false;
+            labelText.enableWordWrapping = false;
+            labelText.overflowMode = TextOverflowModes.Ellipsis;
+            var arrowObj = CreateText("Arrow", dropdownObj.transform, "▾", 18, UITheme.MutedText,
+                TextAnchor.MiddleCenter);
+            SetupRectTransform(arrowObj, new(1, .5f), new(1, .5f),
+                new(20, 24), pivot: new(1, .5f), anchoredPosition: new(-5, 0));
 
             var templateObj = new GameObject("Template", typeof(RectTransform), typeof(Image), typeof(ScrollRect));
             templateObj.transform.SetParent(dropdownObj.transform, false);
@@ -377,15 +396,15 @@ namespace DuckovCustomModel.UI.Base
             var templateScrollRect = templateObj.GetComponent<ScrollRect>();
             templateScrollRect.horizontal = false;
             templateScrollRect.vertical = true;
+            templateScrollRect.scrollSensitivity = 1;
+            templateScrollRect.movementType = ScrollRect.MovementType.Clamped;
 
-            var viewportObj = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(Mask));
+            var viewportObj = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D));
             viewportObj.transform.SetParent(templateObj.transform, false);
             SetupRectTransform(viewportObj, Vector2.zero, Vector2.one, Vector2.zero);
             var viewportImage = viewportObj.GetComponent<Image>();
             viewportImage.color = new(0.1f, 0.12f, 0.15f, 0.95f);
             viewportImage.raycastTarget = false;
-            var viewportMask = viewportObj.GetComponent<Mask>();
-            viewportMask.showMaskGraphic = false;
             templateScrollRect.viewport = viewportObj.GetComponent<RectTransform>();
 
             var contentObj = new GameObject("Content", typeof(RectTransform), typeof(ToggleGroup));
@@ -423,6 +442,9 @@ namespace DuckovCustomModel.UI.Base
             itemLabelObj.transform.SetParent(itemObj.transform, false);
             var itemLabelText = itemLabelObj.GetComponent<TextMeshProUGUI>();
             itemLabelText.fontSize = 15;
+            itemLabelText.raycastTarget = false;
+            itemLabelText.enableWordWrapping = false;
+            itemLabelText.overflowMode = TextOverflowModes.Ellipsis;
             itemLabelText.color = new(0.95f, 0.95f, 0.95f, 1f);
             itemLabelText.alignment = TextAlignmentOptions.MidlineLeft;
             SetupRectTransform(itemLabelObj, new(0, 0), new(1, 1),
@@ -469,9 +491,10 @@ namespace DuckovCustomModel.UI.Base
         public static Slider CreateSlider(string name, Transform parent, float minValue = 0f, float maxValue = 1f,
             float value = 1f, UnityAction<float>? onValueChanged = null)
         {
-            var sliderObj = new GameObject(name, typeof(RectTransform), typeof(Slider));
+            var sliderObj = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Slider));
             sliderObj.transform.SetParent(parent, false);
 
+            sliderObj.GetComponent<Image>().color = Color.clear;
             var slider = sliderObj.GetComponent<Slider>();
             slider.minValue = minValue;
             slider.maxValue = maxValue;
@@ -480,32 +503,34 @@ namespace DuckovCustomModel.UI.Base
 
             var backgroundObj = new GameObject("Background", typeof(RectTransform), typeof(Image));
             backgroundObj.transform.SetParent(sliderObj.transform, false);
-            SetupRectTransform(backgroundObj, new(0, 0.25f), new(1, 0.75f), Vector2.zero);
+            SetupRectTransform(backgroundObj, new(0, .5f), new(1, .5f), new(0, 4));
             var backgroundImage = backgroundObj.GetComponent<Image>();
             backgroundImage.color = new(0.1f, 0.1f, 0.1f, 0.5f);
             slider.targetGraphic = backgroundImage;
 
             var fillAreaObj = new GameObject("Fill Area", typeof(RectTransform));
             fillAreaObj.transform.SetParent(sliderObj.transform, false);
-            SetupRectTransform(fillAreaObj, new(0, 0.25f), new(1, 0.75f), Vector2.zero);
+            SetupRectTransform(fillAreaObj, new(0, .5f), new(1, .5f), new(0, 4));
 
             var fillObj = new GameObject("Fill", typeof(RectTransform), typeof(Image));
             fillObj.transform.SetParent(fillAreaObj.transform, false);
             SetupRectTransform(fillObj, Vector2.zero, Vector2.one, Vector2.zero);
             var fillImage = fillObj.GetComponent<Image>();
-            fillImage.color = new(0.2f, 0.6f, 0.9f, 1f);
+            fillImage.color = UITheme.Highlight;
+            fillImage.raycastTarget = false;
             slider.fillRect = fillObj.GetComponent<RectTransform>();
 
             var handleSlideAreaObj = new GameObject("Handle Slide Area", typeof(RectTransform));
             handleSlideAreaObj.transform.SetParent(sliderObj.transform, false);
-            SetupRectTransform(handleSlideAreaObj, Vector2.zero, Vector2.one, Vector2.zero);
+            SetupRectTransform(handleSlideAreaObj, new(0, .5f), new(1, .5f), new(-14, 20));
 
             var handleObj = new GameObject("Handle", typeof(RectTransform), typeof(Image));
             handleObj.transform.SetParent(handleSlideAreaObj.transform, false);
-            SetupRectTransform(handleObj, new(0.5f, 0.25f), new(0.5f, 0.75f), new(8, -10), pivot: new(0.5f, 0.5f));
+            SetupRectTransform(handleObj, new(0.5f, 0.5f), new(0.5f, 0.5f), new(14, 0), pivot: new(0.5f, 0.5f));
             var handleImage = handleObj.GetComponent<Image>();
             handleImage.color = new(0.8f, 0.8f, 0.8f, 1f);
             slider.handleRect = handleObj.GetComponent<RectTransform>();
+            slider.targetGraphic = handleImage;
 
             return slider;
         }
@@ -559,67 +584,17 @@ namespace DuckovCustomModel.UI.Base
             string valueFormat = "F3",
             UnityAction<float>? onValueChanged = null)
         {
-            var containerObj = new GameObject(name, typeof(RectTransform), typeof(HorizontalLayoutGroup));
+            var containerObj = new GameObject(name, typeof(RectTransform));
             containerObj.transform.SetParent(parent, false);
-            SetupHorizontalLayoutGroup(containerObj, 4f, new(0, 0, 0, 0), TextAnchor.MiddleLeft, true);
-
             var component = containerObj.AddComponent<SliderWithInputToggle>();
-
-            var toggleButtonObj =
-                CreateButton("ToggleButton", containerObj.transform, null, new(0.25f, 0.3f, 0.35f, 1));
-            var toggleButtonLayout = toggleButtonObj.AddComponent<LayoutElement>();
-            toggleButtonLayout.minWidth = 24;
-            toggleButtonLayout.preferredWidth = 24;
-            toggleButtonLayout.preferredHeight = 24;
-            toggleButtonLayout.flexibleWidth = 0;
-
-            var toggleButtonText = CreateText("Text", toggleButtonObj.transform, "#", 12, Color.white,
-                TextAnchor.MiddleCenter);
-            SetupRectTransform(toggleButtonText, Vector2.zero, Vector2.one, Vector2.zero);
-
-            var toggleButton = toggleButtonObj.GetComponent<Button>();
-            SetupButtonColors(toggleButton, new(1, 1, 1, 1), new(0.4f, 0.5f, 0.6f, 1),
-                new(0.3f, 0.4f, 0.5f, 1), new(0.4f, 0.5f, 0.6f, 1));
-
-            var sliderContainerObj = new GameObject("SliderContainer", typeof(RectTransform), typeof(LayoutElement));
-            sliderContainerObj.transform.SetParent(containerObj.transform, false);
-            var sliderLayout = sliderContainerObj.GetComponent<LayoutElement>();
-            sliderLayout.preferredWidth = 160;
-            sliderLayout.flexibleWidth = 1;
-
-            var slider = CreateSlider("Slider", sliderContainerObj.transform, minValue, maxValue, value);
-            SetupRectTransform(slider.gameObject, Vector2.zero, Vector2.one, Vector2.zero);
-
-            var valueText = CreateText("ValueText", sliderContainerObj.transform,
-                value.ToString(valueFormat, CultureInfo.InvariantCulture),
-                14, Color.white, TextAnchor.MiddleRight);
-            SetupRightLabel(valueText, 25f, -10f);
-
-            var inputContainerObj = new GameObject("InputContainer", typeof(RectTransform), typeof(LayoutElement));
-            inputContainerObj.transform.SetParent(containerObj.transform, false);
-            var inputLayout = inputContainerObj.GetComponent<LayoutElement>();
-            inputLayout.preferredWidth = 160;
-            inputLayout.flexibleWidth = 1;
-            inputContainerObj.SetActive(false);
-
-            var inputField = CreateInputField("InputField", inputContainerObj.transform);
-            SetupRectTransform(inputField.gameObject, Vector2.zero, Vector2.one, Vector2.zero);
-            inputField.text = value.ToString(valueFormat, CultureInfo.InvariantCulture);
-
-            component.Initialize(
-                toggleButton,
-                toggleButtonText.GetComponent<TMP_Text>(),
-                sliderContainerObj,
-                inputContainerObj,
-                slider,
-                inputField,
-                valueText.GetComponent<TMP_Text>(),
-                minValue,
-                maxValue,
-                value,
-                valueFormat,
-                onValueChanged);
-
+            var slider = CreateSlider("Slider", containerObj.transform, minValue, maxValue, value);
+            SetupRectTransform(slider.gameObject, new(0, .5f), new(1, .5f),
+                offsetMin: new(0, -15), offsetMax: new(-84, 15));
+            var inputField = CreateInputField("Value", containerObj.transform);
+            SetupRectTransform(inputField.gameObject, new(1, .5f), new(1, .5f), new(76, 30),
+                pivot: new(1, .5f), anchoredPosition: Vector2.zero);
+            inputField.textComponent.alignment = TextAlignmentOptions.Center;
+            component.Initialize(slider, inputField, minValue, maxValue, value, valueFormat, onValueChanged);
             return component;
         }
     }

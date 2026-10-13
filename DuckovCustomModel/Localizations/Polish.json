@@ -1,4 +1,8 @@
 {
+  "AudioSettings": "Ustawienia dźwięku",
+  "TargetOriginal": "Oryginalny wygląd",
+  "TargetInherited": "Odziedziczony",
+  "TargetCopyHint": "Shift + kliknięcie kopiuje informacje o celu",
   "LeftHandLocator": "Lewa ręka",
   "RightHandLocator": "Prawa ręka",
   "RifleLocator": "Karabin",

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -17,7 +17,6 @@ using DuckovCustomModel.UI.Data;
 using DuckovCustomModel.UI.Utils;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace DuckovCustomModel.UI.Components
@@ -42,14 +41,16 @@ namespace DuckovCustomModel.UI.Components
         private readonly List<ModelBundleInfo> _filteredModelBundles = [];
         private readonly Dictionary<string, GameObject> _loadingPlaceholders = new();
         private readonly Dictionary<string, RectTransform> _modelButtonRects = new();
-        private readonly Dictionary<string, (Image image, Outline outline, bool isValid)> _modelCards = new();
+
+        private readonly Dictionary<string, (Image image, Outline outline, bool isValid, TextMeshProUGUI marker)>
+            _modelCards = new();
+
         private string _builtTargetTypeId = string.Empty;
         private GameObject? _content;
         private TargetInfo? _currentTarget;
         private string _displayedFallbackId = string.Empty;
         private string _displayedSelectedId = string.Empty;
         private bool _hasBuiltList;
-        private bool _isThumbnailLoadingInProgress;
         private float _nextContentCheckAt;
         private CancellationTokenSource? _refreshCancellationTokenSource;
         private float _savedScrollPosition;
@@ -218,10 +219,12 @@ namespace DuckovCustomModel.UI.Components
                 var inUse = card.isValid && modelId == selectedId;
                 var fallback = card.isValid && !inUse && modelId == fallbackId;
                 card.image.color = !card.isValid ? new(.22f, .15f, .15f, .95f)
-                    : inUse ? new(.15f, .22f, .18f, .95f)
+                    : inUse ? new(.12f, .23f, .3f, .95f)
                     : fallback ? new(.18f, .15f, .22f, .95f)
                     : new(.15f, .18f, .22f, .95f);
-                card.outline.effectColor = inUse ? new(.3f, .6f, .4f, .8f)
+                card.marker.text = inUse ? "✓" : fallback ? "↳" : string.Empty;
+                card.marker.gameObject.SetActive(inUse || fallback);
+                card.outline.effectColor = inUse ? new(.4f, .75f, .92f, .8f)
                     : fallback ? new(.5f, .4f, .8f, .8f)
                     : new(.3f, .35f, .4f, .7f);
             }
@@ -233,7 +236,7 @@ namespace DuckovCustomModel.UI.Components
                 header.image.color = inUse ? new(.15f, .22f, .18f, .9f)
                     : fallback ? new(.18f, .15f, .22f, .9f)
                     : new(.18f, .2f, .25f, .9f);
-                header.outline.effectColor = inUse ? new(.3f, .6f, .4f, .8f)
+                header.outline.effectColor = inUse ? new(.4f, .75f, .92f, .8f)
                     : fallback ? new(.5f, .4f, .8f, .8f)
                     : new(.3f, .35f, .4f, .6f);
             }
@@ -357,7 +360,6 @@ namespace DuckovCustomModel.UI.Components
 
                 await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
 
-                if (forceFullRefresh) await LoadThumbnailsAsync(cancellationToken);
 
                 await UniTask.NextFrame(cancellationToken);
                 await UniTask.NextFrame(cancellationToken);
@@ -426,34 +428,6 @@ namespace DuckovCustomModel.UI.Components
             }
 
             return signature.ToString();
-        }
-
-        private async UniTask LoadThumbnailsAsync(CancellationToken cancellationToken)
-        {
-            if (_isThumbnailLoadingInProgress) return;
-
-            _isThumbnailLoadingInProgress = true;
-            try
-            {
-                foreach (var bundle in ModelManager.ModelBundles)
-                foreach (var model in bundle.Models)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    if (YsmModelSource.IsYsm(model)) continue;
-
-                    if (!ModelManager.TryGetThumbnail(bundle.DirectoryPath, model, out var texture))
-                    {
-                        texture = await AssetBundleManager.LoadThumbnailTextureAsync(bundle, model, cancellationToken);
-                        if (texture != null) ModelManager.CacheThumbnail(bundle.DirectoryPath, model, texture);
-                    }
-
-                    if (bundle.Models.Length > 5) await UniTask.NextFrame(cancellationToken);
-                }
-            }
-            finally
-            {
-                _isThumbnailLoadingInProgress = false;
-            }
         }
 
         private async UniTask BuildAICharacterModelListAsync(string nameKey, string targetTypeId,
@@ -877,6 +851,8 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupVerticalLayoutGroup(bundleGroupObj, 0f, new(0, 0, 0, 0), TextAnchor.UpperLeft, true, false,
                 true);
             var bundleGroupLayoutElement = bundleGroupObj.AddComponent<LayoutElement>();
+            bundleGroupLayoutElement.minHeight = 50;
+            bundleGroupLayoutElement.preferredHeight = 50;
             bundleGroupLayoutElement.minWidth = 0;
             bundleGroupLayoutElement.preferredWidth = 0;
             bundleGroupLayoutElement.flexibleWidth = 1;
@@ -909,7 +885,8 @@ namespace DuckovCustomModel.UI.Components
             _bundleHeaders[bundleKey] = (bundle, bundleHeaderObj.GetComponent<Image>(), bundleHeaderOutline);
 
             var expandToggle = UIFactory.CreateToggle("ExpandToggle", bundleHeaderObj.transform, isExpanded,
-                value => ToggleBundle(bundleKey, value));
+                value => ToggleBundle(bundleKey, value), true);
+            expandToggle.graphic.gameObject.SetActive(false);
             _bundleToggles[bundleKey] = expandToggle;
             UIFactory.SetupRectTransform(expandToggle.gameObject, new(0, 0.5f), new(0, 0.5f), new(30, 30),
                 pivot: new(0, 0.5f), anchoredPosition: new(10, 0));
@@ -967,16 +944,6 @@ namespace DuckovCustomModel.UI.Components
             gridLayoutElement.minWidth = 0;
             gridLayoutElement.preferredWidth = 0;
             gridLayoutElement.flexibleWidth = 1;
-            foreach (var model in bundle.Models.ToList())
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var sourceBundle = ModelSourcePaths.IsFileSource(bundle) && bundle.BundleName != model.BundleName
-                    ? ModelManager.ModelBundles.FirstOrDefault(candidate => candidate.BundleName == model.BundleName)
-                      ?? bundle
-                    : bundle;
-                await BuildModelCardAsync(sourceBundle, model, gridObject.transform, cancellationToken);
-            }
-
             cancellationToken.ThrowIfCancellationRequested();
 
             if (_content != null)
@@ -994,11 +961,32 @@ namespace DuckovCustomModel.UI.Components
                     bundleGroupObj.transform.SetParent(_content.transform, false);
                 }
 
+                var models = bundle.Models.ToArray();
                 var gridLayout = gridObject.GetComponent<ModelCardGridLayout>();
                 gridLayout.Initialize(modelsContainer.GetComponent<RectTransform>(),
                     modelsContainerLayoutElement, bundleGroupObj.GetComponent<RectTransform>(),
-                    bundleGroupLayoutElement);
+                    bundleGroupLayoutElement, models, _scrollRect!,
+                    (index, parent, token) =>
+                    {
+                        var model = models[index];
+                        var source = ModelSourcePaths.IsFileSource(bundle) && bundle.BundleName != model.BundleName
+                            ? ModelManager.ModelBundles.FirstOrDefault(candidate =>
+                                  candidate.BundleName == model.BundleName)
+                              ?? bundle
+                            : bundle;
+                        return BuildModelCardAsync(source, model, parent, token);
+                    },
+                    (index, parent) =>
+                    {
+                        var id = models[index].ModelID;
+                        if (!_modelButtonRects.TryGetValue(id, out var rect) || rect == null ||
+                            !rect.IsChildOf(parent)) return;
+                        _modelButtonRects.Remove(id);
+                        _modelCards.Remove(id);
+                    }, _refreshCancellationTokenSource!.Token);
             }
+
+            await UniTask.CompletedTask;
         }
 
         private void ToggleBundle(string bundleKey, bool isExpanded)
@@ -1061,9 +1049,6 @@ namespace DuckovCustomModel.UI.Components
             if (string.IsNullOrEmpty(targetModelId))
                 return false;
 
-            if (!_modelButtonRects.TryGetValue(targetModelId, out var buttonRect) || buttonRect == null)
-                return false;
-
             var contentRect = _content?.GetComponent<RectTransform>();
             if (contentRect == null)
                 return false;
@@ -1088,7 +1073,10 @@ namespace DuckovCustomModel.UI.Components
                 return true;
             }
 
-            var buttonWorldPos = buttonRect.TransformPoint(new(0, buttonRect.rect.yMax, 0));
+            var targetGrid = contentRect.GetComponentsInChildren<ModelCardGridLayout>(true)
+                .FirstOrDefault(grid => grid.ContainsModel(targetModelId));
+            if (targetGrid == null) return false;
+            var buttonWorldPos = targetGrid.GetModelTop(targetModelId);
             var buttonLocalPosInContent = contentRect.InverseTransformPoint(buttonWorldPos);
 
             var buttonTopFromTop = contentRect.rect.yMax - buttonLocalPosInContent.y;
@@ -1146,22 +1134,21 @@ namespace DuckovCustomModel.UI.Components
             var isInUse = _currentTarget?.UsingModel == model.ModelID;
             var isFallback = !isInUse && _currentTarget?.UsingFallbackModel == model.ModelID;
             var cardColor = !status.isValid ? new(.22f, .15f, .15f, .95f)
-                : isInUse ? new(.15f, .22f, .18f, .95f)
+                : isInUse ? new(.12f, .23f, .3f, .95f)
                 : isFallback ? new Color(.18f, .15f, .22f, .95f)
                 : new Color(.15f, .18f, .22f, .95f);
             var card = UIFactory.CreateButton($"ModelCard_{model.ModelID}", parent, null, cardColor);
             var cardRect = card.GetComponent<RectTransform>();
-            cardRect.sizeDelta = new(130, 225);
+            UIFactory.SetupRectTransform(card, Vector2.zero, Vector2.one, Vector2.zero);
             _modelButtonRects[model.ModelID] = cardRect;
             var cardButton = card.GetComponent<Button>();
             cardButton.interactable = status.isValid;
             if (status.isValid) cardButton.onClick.AddListener(() => SelectModel(model));
             var outline = card.AddComponent<Outline>();
-            outline.effectColor = isInUse ? new(.3f, .6f, .4f, .8f)
+            outline.effectColor = isInUse ? new(.4f, .75f, .92f, .8f)
                 : isFallback ? new Color(.5f, .4f, .8f, .8f)
                 : new Color(.3f, .35f, .4f, .7f);
             outline.effectDistance = new(1, -1);
-            _modelCards[model.ModelID] = (card.GetComponent<Image>(), outline, status.isValid);
 
             var previewBackground = UIFactory.CreateImage("PreviewBackground", card.transform,
                 new Color(.11f, .14f, .18f, 1));
@@ -1233,6 +1220,15 @@ namespace DuckovCustomModel.UI.Components
             nameText.fontSizeMax = 17;
             nameText.overflowMode = TextOverflowModes.Ellipsis;
 
+            var markerObject = UIFactory.CreateText("SelectionMark", card.transform,
+                isInUse ? "✓" : isFallback ? "↳" : string.Empty, 20,
+                new Color(.55f, .85f, 1), TextAnchor.MiddleCenter, FontStyle.Bold);
+            UIFactory.SetupRectTransform(markerObject, new(0, 1), new(0, 1), new(28, 28),
+                pivot: new(0, 1), anchoredPosition: new(4, -4));
+            markerObject.SetActive(isInUse || isFallback);
+            _modelCards[model.ModelID] = (card.GetComponent<Image>(), outline, status.isValid,
+                markerObject.GetComponent<TextMeshProUGUI>());
+
             var tooltip = UIFactory.CreateImage("Details", card.transform, new Color(.04f, .06f, .08f, .97f));
             UIFactory.SetupRectTransform(tooltip, new(.5f, .5f), new(.5f, .5f),
                 new Vector2(320, 100), pivot: new Vector2(0, 1));
@@ -1254,7 +1250,7 @@ namespace DuckovCustomModel.UI.Components
             detailsText.enableWordWrapping = true;
             detailsText.overflowMode = TextOverflowModes.Ellipsis;
             tooltip.SetActive(false);
-            card.AddComponent<ModelCardInteraction>().Initialize(tooltip, detailsText,
+            card.AddComponent<UIItemTooltip>().Initialize(tooltip, detailsText,
                 VrmModelSource.IsVrm(model) ? () => PreloadVrm(bundle, model).Forget() : null);
         }
 
@@ -1289,33 +1285,70 @@ namespace DuckovCustomModel.UI.Components
         private const float CardWidth = 130;
         private const float CardHeight = 225;
         private const float Spacing = 8;
+        private readonly Vector3[] _corners = new Vector3[4];
+        private readonly Dictionary<int, (RectTransform slot, CancellationTokenSource cancellation)> _visible = new();
+        private Func<int, Transform, CancellationToken, UniTask>? _build;
         private RectTransform? _bundleGroup;
         private LayoutElement? _bundleLayout;
+        private float _cardWidth = CardWidth;
+        private int _columns = 1;
         private bool _expanded;
-        private int _lastCount = -1;
+        private int _firstVisible = -1;
+        private int _lastVisible = -1;
         private float _lastWidth = -1;
         private LayoutElement? _layout;
+        private ModelInfo[] _models = [];
         private RectTransform? _modelsContainer;
         private LayoutElement? _modelsLayout;
+        private CancellationToken _refreshToken;
+        private Action<int, Transform>? _release;
+        private ScrollRect? _scroll;
 
         private void LateUpdate()
         {
             ApplyHeights(false);
+            RefreshVisible();
+        }
+
+        private void OnDisable()
+        {
+            foreach (var index in _visible.Keys.ToArray()) Release(index);
+            _firstVisible = _lastVisible = -1;
         }
 
         internal void Initialize(RectTransform modelsContainer, LayoutElement modelsLayout,
-            RectTransform bundleGroup, LayoutElement bundleLayout)
+            RectTransform bundleGroup, LayoutElement bundleLayout, ModelInfo[] models, ScrollRect scroll,
+            Func<int, Transform, CancellationToken, UniTask> build, Action<int, Transform> release,
+            CancellationToken refreshToken)
         {
             _modelsContainer = modelsContainer;
             _modelsLayout = modelsLayout;
             _bundleGroup = bundleGroup;
             _bundleLayout = bundleLayout;
+            _models = models;
+            _scroll = scroll;
+            _build = build;
+            _release = release;
+            _refreshToken = refreshToken;
             _expanded = modelsContainer.gameObject.activeSelf;
             var modelsFitter = modelsContainer.GetComponent<ContentSizeFitter>();
             if (modelsFitter != null) modelsFitter.enabled = false;
             var bundleFitter = bundleGroup.GetComponent<ContentSizeFitter>();
             if (bundleFitter != null) bundleFitter.enabled = false;
             ApplyHeights(true);
+        }
+
+        internal bool ContainsModel(string id)
+        {
+            return Array.Exists(_models, model => model.ModelID == id);
+        }
+
+        internal Vector3 GetModelTop(string id)
+        {
+            var index = Array.FindIndex(_models, model => model.ModelID == id);
+            var rect = (RectTransform)transform;
+            return rect.TransformPoint(new(rect.rect.xMin,
+                rect.rect.yMax - index / _columns * (CardHeight + Spacing), 0));
         }
 
         internal void RefreshLayout()
@@ -1329,6 +1362,73 @@ namespace DuckovCustomModel.UI.Components
             ApplyHeights(true);
         }
 
+        private void Release(int index)
+        {
+            if (!_visible.TryGetValue(index, out var entry)) return;
+            _visible.Remove(index);
+            entry.cancellation.Cancel();
+            entry.cancellation.Dispose();
+            _release?.Invoke(index, entry.slot);
+            entry.slot.gameObject.SetActive(false);
+            Destroy(entry.slot.gameObject);
+        }
+
+        private async UniTaskVoid BuildVisible(int index, RectTransform slot, CancellationToken token)
+        {
+            try
+            {
+                if (_build != null) await _build(index, slot, token);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                if (!token.IsCancellationRequested)
+                    ModLogger.LogWarning($"Model preview failed: {ex.Message}");
+            }
+        }
+
+        private void RefreshVisible()
+        {
+            if (!_expanded || _scroll == null || _build == null || _refreshToken.IsCancellationRequested ||
+                _lastWidth <= 0) return;
+            var viewport = _scroll.viewport ?? (RectTransform)_scroll.transform;
+            viewport.GetWorldCorners(_corners);
+            var rect = (RectTransform)transform;
+            var top = rect.rect.yMax - rect.InverseTransformPoint(_corners[1]).y;
+            var bottom = rect.rect.yMax - rect.InverseTransformPoint(_corners[0]).y;
+            var firstRow = Mathf.Max(0, Mathf.FloorToInt(top / (CardHeight + Spacing)) - 1);
+            var lastRow = Mathf.FloorToInt(bottom / (CardHeight + Spacing)) + 1;
+            var first = Mathf.Min(_models.Length, firstRow * _columns);
+            var last = Mathf.Min(_models.Length - 1, (lastRow + 1) * _columns - 1);
+            if (first == _firstVisible && last == _lastVisible) return;
+            _firstVisible = first;
+            _lastVisible = last;
+            foreach (var index in _visible.Keys.ToArray())
+                if (index < first || index > last)
+                    Release(index);
+            for (var index = first; index <= last; index++)
+            {
+                if (_visible.ContainsKey(index)) continue;
+                var slot = new GameObject($"CardSlot_{index}", typeof(RectTransform)).GetComponent<RectTransform>();
+                slot.SetParent(transform, false);
+                PositionSlot(slot, index);
+                var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_refreshToken);
+                _visible[index] = (slot, cancellation);
+                BuildVisible(index, slot, cancellation.Token).Forget();
+            }
+        }
+
+        private void PositionSlot(RectTransform slot, int index)
+        {
+            slot.anchorMin = slot.anchorMax = new(0, 1);
+            slot.pivot = new(0, 1);
+            slot.sizeDelta = new(_cardWidth, CardHeight);
+            slot.anchoredPosition = new(index % _columns * (CardWidth + Spacing),
+                -index / _columns * (CardHeight + Spacing));
+        }
+
         private void ApplyHeights(bool force)
         {
             _layout ??= GetComponent<LayoutElement>();
@@ -1336,23 +1436,13 @@ namespace DuckovCustomModel.UI.Components
                 _modelsLayout == null || _bundleGroup == null || _bundleLayout == null) return;
             var width = _modelsContainer.rect.width - Spacing;
             if (width <= 0) return;
-            var count = transform.childCount;
-            if (!force && Mathf.Approximately(width, _lastWidth) && count == _lastCount) return;
+            if (!force && Mathf.Approximately(width, _lastWidth)) return;
             _lastWidth = width;
-            _lastCount = count;
-            var cardWidth = Mathf.Min(CardWidth, width);
-            var columns = Mathf.Max(1, Mathf.FloorToInt((width + Spacing) / (CardWidth + Spacing)));
-            for (var i = 0; i < count; i++)
-            {
-                if (transform.GetChild(i) is not RectTransform card) continue;
-                card.anchorMin = card.anchorMax = new(0, 1);
-                card.pivot = new(0, 1);
-                card.sizeDelta = new(cardWidth, CardHeight);
-                card.anchoredPosition = new(i % columns * (CardWidth + Spacing),
-                    -i / columns * (CardHeight + Spacing));
-            }
-
-            var rows = Mathf.CeilToInt(count / (float)columns);
+            _cardWidth = Mathf.Min(CardWidth, width);
+            _columns = Mathf.Max(1, Mathf.FloorToInt((width + Spacing) / (CardWidth + Spacing)));
+            foreach (var (index, entry) in _visible) PositionSlot(entry.slot, index);
+            _firstVisible = _lastVisible = -1;
+            var rows = Mathf.CeilToInt(_models.Length / (float)_columns);
             var gridHeight = rows == 0 ? 0 : rows * CardHeight + (rows - 1) * Spacing;
             _layout.minHeight = _layout.preferredHeight = gridHeight;
             _layout.flexibleWidth = 1;
@@ -1364,95 +1454,7 @@ namespace DuckovCustomModel.UI.Components
             _bundleLayout.minHeight = _bundleLayout.preferredHeight = bundleHeight;
             _bundleGroup.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, bundleHeight);
             LayoutRebuilder.MarkLayoutForRebuild(_bundleGroup);
-            if (_bundleGroup.parent is RectTransform parent)
-                LayoutRebuilder.MarkLayoutForRebuild(parent);
-        }
-    }
-
-    internal sealed class ModelCardInteraction : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
-    {
-        private static ModelCardInteraction? _open;
-        private RectTransform? _canvasRect;
-        private GameObject? _details;
-
-        private Action? _preload;
-        private TextMeshProUGUI? _text;
-
-        private void OnDisable()
-        {
-            Hide();
-        }
-
-        private void OnDestroy()
-        {
-            Hide();
-            if (_details != null) Destroy(_details);
-        }
-
-        public void OnPointerEnter(PointerEventData eventData)
-        {
-            if (_preload != null) Invoke(nameof(Preload), .25f);
-            if (!AttachTooltip()) return;
-            var canvasRect = _canvasRect;
-            if (canvasRect == null || _details == null) return;
-            if (_open != null && _open != this) _open.Hide();
-            _open = this;
-            var rect = (RectTransform)_details.transform;
-            var canvas = canvasRect.GetComponent<Canvas>();
-            var camera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
-            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, eventData.position,
-                    camera, out var point))
-            {
-                var bounds = canvasRect.rect;
-                var x = point.x + 16f;
-                if (x + rect.rect.width > bounds.xMax - 8f) x = point.x - rect.rect.width - 16f;
-                rect.anchoredPosition = new(
-                    Mathf.Clamp(x, bounds.xMin + 8f, bounds.xMax - rect.rect.width - 8f),
-                    Mathf.Clamp(point.y + 8f, bounds.yMin + rect.rect.height + 8f, bounds.yMax - 8f));
-            }
-
-            rect.SetAsLastSibling();
-            _details.SetActive(true);
-        }
-
-        public void OnPointerExit(PointerEventData eventData)
-        {
-            Hide();
-        }
-
-        internal void Initialize(GameObject details, TextMeshProUGUI text, Action? preload = null)
-        {
-            _preload = preload;
-            _details = details;
-            _text = text;
-        }
-
-        private bool AttachTooltip()
-        {
-            if (_details == null || _text == null) return false;
-            if (_canvasRect != null) return true;
-            var canvas = GetComponentInParent<Canvas>()?.rootCanvas;
-            if (canvas == null) return false;
-            _canvasRect = canvas.GetComponent<RectTransform>();
-            _details.transform.SetParent(canvas.transform, false);
-            var rect = (RectTransform)_details.transform;
-            var width = Mathf.Min(320f, _canvasRect.rect.width - 20f);
-            var height = Mathf.Clamp(_text.GetPreferredValues(_text.text, width - 14f, 10000f).y + 14f,
-                48f, Mathf.Max(48f, _canvasRect.rect.height - 20f));
-            rect.sizeDelta = new(width, height);
-            return true;
-        }
-
-        private void Preload()
-        {
-            _preload?.Invoke();
-        }
-
-        private void Hide()
-        {
-            CancelInvoke(nameof(Preload));
-            if (_details != null) _details.SetActive(false);
-            if (_open == this) _open = null;
+            if (_bundleGroup.parent is RectTransform parent) LayoutRebuilder.MarkLayoutForRebuild(parent);
         }
     }
 }

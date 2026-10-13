@@ -1,4 +1,8 @@
 {
+  "AudioSettings": "Настройки звука",
+  "TargetOriginal": "Исходный облик",
+  "TargetInherited": "Унаследовано",
+  "TargetCopyHint": "Shift + щелчок: копировать сведения о цели",
   "LeftHandLocator": "Левая рука",
   "RightHandLocator": "Правая рука",
   "RifleLocator": "Винтовка",

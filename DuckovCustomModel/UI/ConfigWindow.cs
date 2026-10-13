@@ -73,8 +73,6 @@ namespace DuckovCustomModel.UI
             }
 
             UpdateSettingsButtonVisibility();
-            UpdateUpdateIndicators();
-
             if (uiConfig.DCMButtonAnchor != _lastAnchorPosition ||
                 Math.Abs(uiConfig.DCMButtonOffsetX - _lastOffsetX) > 0.01f ||
                 Math.Abs(uiConfig.DCMButtonOffsetY - _lastOffsetY) > 0.01f)
@@ -154,6 +152,7 @@ namespace DuckovCustomModel.UI
             if (_panelRoot != null) _panelRoot.SetActive(false);
 
             _isInitialized = true;
+            UpdateUpdateIndicators();
 
             var uiConfig = UIConfig;
             if (uiConfig != null)
@@ -232,7 +231,7 @@ namespace DuckovCustomModel.UI
             titleContainer.transform.SetParent(titleBar.transform, false);
             UIFactory.SetupRectTransform(titleContainer, new(0, 0), new(1, 1),
                 offsetMin: new Vector2(10, 0),
-                offsetMax: new Vector2(-10, 0));
+                offsetMax: new Vector2(-56, 0));
             UIFactory.SetupHorizontalLayoutGroup(titleContainer, 12f, new(0, 0, 0, 0), TextAnchor.MiddleCenter,
                 true, false, false, false);
 
@@ -318,8 +317,9 @@ namespace DuckovCustomModel.UI
             return inputField != null && inputField.isFocused;
         }
 
-        public void ShowPanel(int tabIndex = 0)
+        public void ShowPanel(int tabIndex = -1)
         {
+            if (tabIndex < 0) tabIndex = Mathf.Max(0, _tabSystem?.GetCurrentTab() ?? 0);
             YsmRadialMenu.Instance?.HideImmediately();
             if (_panelRoot != null && _panelRoot.activeSelf)
             {
@@ -346,7 +346,7 @@ namespace DuckovCustomModel.UI
             _modelSelectionTab?.Initialize();
             _settingsTab?.Initialize();
 
-            _tabSystem?.SwitchToTab(tabIndex);
+            _tabSystem?.SwitchToTab(tabIndex, true);
 
             _cursorWasVisible = Cursor.visible;
             _originalCursorLockState = Cursor.lockState;

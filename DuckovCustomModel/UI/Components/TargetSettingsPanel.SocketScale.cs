@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Localizations;
@@ -37,6 +37,7 @@ namespace DuckovCustomModel.UI.Components
         private void OnDisable()
         {
             ModelSocketScaleManager.OnScaleChanged -= OnSocketScaleChanged;
+            SaveScrollPosition();
         }
 
         private void BuildSocketScaleSection()
@@ -84,7 +85,7 @@ namespace DuckovCustomModel.UI.Components
             var sectionKey = (target, model);
             _socketScaleSectionExpanded.TryGetValue(sectionKey, out var sectionExpanded);
             var sectionHeader = UIFactory.CreateButton("SocketScaleHeader", _socketScaleSection.transform,
-                backgroundColor: new Color(0.12f, 0.14f, 0.16f, 0.9f));
+                backgroundColor: UITheme.Surface);
             SetSocketScaleRowSize(sectionHeader, 34);
             var heading = UIFactory.CreateText("SocketScaleHeading", sectionHeader.transform,
                 (sectionExpanded ? "▼ " : "▶ ") + Localization.SocketScales, 16, Color.white);
@@ -106,8 +107,13 @@ namespace DuckovCustomModel.UI.Components
             });
             var description = UIFactory.CreateText("ScaleDescription", sectionBody.transform,
                 Localization.SocketScaleMultiplier, 13, new Color(0.75f, 0.78f, 0.8f));
-            SetSocketScaleRowSize(description, 40);
+            var descriptionLayout = description.AddComponent<LayoutElement>();
+            descriptionLayout.minWidth = 0;
+            descriptionLayout.preferredWidth = 0;
+            descriptionLayout.flexibleWidth = 1;
+            description.GetComponent<TMP_Text>().enableWordWrapping = true;
             UIFactory.SetLocalizedText(description, () => Localization.SocketScaleMultiplier);
+            foreach (var slot in slots) BuildSocketScaleFoldout(sectionBody.transform, target, model, slot);
             var resetAll = UIFactory.CreateButton("ResetAllSocketScales", sectionBody.transform,
                 () => ModelSocketScaleManager.ResetAll(target, model), new Color(0.3f, 0.35f, 0.4f, 1));
             SetSocketScaleRowSize(resetAll, 34);
@@ -115,7 +121,6 @@ namespace DuckovCustomModel.UI.Components
                 Localization.ResetAllSocketScales, 14, Color.white, TextAnchor.MiddleCenter);
             UIFactory.SetupButtonText(resetAllText);
             UIFactory.SetLocalizedText(resetAllText, () => Localization.ResetAllSocketScales);
-            foreach (var slot in slots) BuildSocketScaleFoldout(sectionBody.transform, target, model, slot);
         }
 
         private void BuildSocketScaleFoldout(Transform parent, string target, string model, string slot)
@@ -124,7 +129,7 @@ namespace DuckovCustomModel.UI.Components
             var stateKey = (target, model, slot);
             _socketScaleExpanded.TryGetValue(stateKey, out var expanded);
             var header = UIFactory.CreateButton("Header", group.transform,
-                backgroundColor: new Color(0.12f, 0.14f, 0.16f, 0.9f));
+                backgroundColor: UITheme.Surface);
             SetSocketScaleRowSize(header, 30);
             var headerText = UIFactory.CreateText("Text", header.transform,
                 (expanded ? "▼ " : "▶ ") + Localization.GetSocketName(slot), 16, Color.white);
@@ -145,15 +150,24 @@ namespace DuckovCustomModel.UI.Components
                 headerLabel.text = (expanded ? "▼ " : "▶ ") + Localization.GetSocketName(slot);
                 LayoutRebuilder.MarkLayoutForRebuild((RectTransform)_content!.transform);
             });
-            var slider = UIFactory.CreateSliderWithInputToggle("Scale", body.transform,
+            var controls = new GameObject("ValueRow", typeof(RectTransform));
+            controls.transform.SetParent(body.transform, false);
+            SetSocketScaleRowSize(controls, 32);
+            UIFactory.SetupHorizontalLayoutGroup(controls, 8, new(0, 0, 0, 0),
+                TextAnchor.MiddleLeft, true);
+            var slider = UIFactory.CreateSliderWithInputToggle("Scale", controls.transform,
                 ModelSocketScaleManager.MinScale, ModelSocketScaleManager.MaxScale,
                 ModelSocketScaleManager.GetScale(target, model, slot), "F2",
                 value => ModelSocketScaleManager.SetScale(target, model, slot, value));
             SetSocketScaleRowSize(slider.gameObject, 32);
             _socketScaleSliders.Add(slot, slider);
-            var reset = UIFactory.CreateButton("Reset", body.transform,
+            var reset = UIFactory.CreateButton("Reset", controls.transform,
                 () => ModelSocketScaleManager.ResetScale(target, model, slot), new Color(0.3f, 0.35f, 0.4f, 1));
             SetSocketScaleRowSize(reset, 30);
+            var resetLayout = reset.GetComponent<LayoutElement>();
+            resetLayout.minWidth = 64;
+            resetLayout.preferredWidth = 64;
+            resetLayout.flexibleWidth = 0;
             var resetText = UIFactory.CreateText("Text", reset.transform,
                 Localization.Reset, 14, Color.white, TextAnchor.MiddleCenter);
             UIFactory.SetupButtonText(resetText);

@@ -1,4 +1,8 @@
 {
+  "AudioSettings": "การตั้งค่าเสียง",
+  "TargetOriginal": "รูปลักษณ์เดิม",
+  "TargetInherited": "รับค่าจากส่วนกลาง",
+  "TargetCopyHint": "Shift + คลิกเพื่อคัดลอกข้อมูลเป้าหมาย",
   "LeftHandLocator": "มือซ้าย",
   "RightHandLocator": "มือขวา",
   "RifleLocator": "ปืนไรเฟิล",

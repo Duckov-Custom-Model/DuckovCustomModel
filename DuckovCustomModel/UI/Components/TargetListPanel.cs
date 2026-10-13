@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.Localizations;
@@ -17,13 +18,24 @@ namespace DuckovCustomModel.UI.Components
 {
     public class TargetListPanel : MonoBehaviour
     {
-        private readonly Dictionary<string, GameObject> _targetButtons = new();
+        private readonly Dictionary<string, string> _modelNames = new();
         private readonly Dictionary<string, TargetInfo> _targetsById = new();
         private GameObject? _content;
+        private List<TargetInfo> _filteredTargets = new();
+        private float _searchAt;
         private TMP_InputField? _searchInputField;
+        private bool _searchPending;
         private string _searchText = "";
 
         private TargetInfo? _selectedTarget;
+        private VirtualVerticalList? _virtualList;
+
+        private void Update()
+        {
+            if (!_searchPending || Time.unscaledTime < _searchAt) return;
+            _searchPending = false;
+            Refresh();
+        }
 
         public event Action<TargetInfo>? OnTargetSelected;
 
@@ -50,21 +62,21 @@ namespace DuckovCustomModel.UI.Components
 
             _content = content;
 
-            UIFactory.SetupVerticalLayoutGroup(_content, 10f, new(10, 20, 0, 0), TextAnchor.UpperLeft, true, false,
-                true);
-            UIFactory.SetupContentSizeFitter(_content, ContentSizeFitter.FitMode.Unconstrained);
-            var contentLayoutElement = _content.AddComponent<LayoutElement>();
-            contentLayoutElement.minWidth = 0;
-            contentLayoutElement.preferredWidth = 0;
-            contentLayoutElement.flexibleWidth = 1;
+            _virtualList = scrollView.gameObject.AddComponent<VirtualVerticalList>();
+            _virtualList.Initialize(scrollView, 72, 4, new(2, 8, 4, 4), CreateTargetRow,
+                (row, index) => UpdateTargetButton(row, _filteredTargets[index]));
         }
 
         public void Refresh()
         {
             if (_content == null) return;
 
+            _modelNames.Clear();
+            foreach (var bundle in ModelManager.ModelBundles)
+            foreach (var model in bundle.Models)
+                _modelNames[model.ModelID] = string.IsNullOrWhiteSpace(model.Name) ? model.ModelID : model.Name;
             var targets = GetAllTargets();
-            var filteredTargets = FilterTargets(targets, _searchText);
+            _filteredTargets = FilterTargets(targets, _searchText);
             _targetsById.Clear();
             foreach (var target in targets)
                 _targetsById[target.Id] = target;
@@ -77,46 +89,13 @@ namespace DuckovCustomModel.UI.Components
                                         (selectedTargetTypeId != _selectedTarget.TargetTypeId ||
                                          selectedDisplayName != _selectedTarget.DisplayName);
 
-            foreach (var target in filteredTargets)
-                target.IsSelected = _selectedTarget != null && _selectedTarget.Id == target.Id;
-
-            var existingButtonIds = new HashSet<string>(_targetButtons.Keys);
-            var targetIds = new HashSet<string>(filteredTargets.Select(t => t.Id));
-
-            foreach (var target in filteredTargets)
-                if (_targetButtons.TryGetValue(target.Id, out var existingButton))
-                {
-                    existingButton.SetActive(true);
-                    UpdateTargetButton(existingButton, target);
-                }
-                else
-                {
-                    BuildTargetButton(target);
-                }
-
-            foreach (var buttonId in existingButtonIds.Except(targetIds))
-                if (_targetButtons.TryGetValue(buttonId, out var button))
-                    button.SetActive(false);
-
-            for (var i = 0; i < filteredTargets.Count; i++)
-            {
-                var target = filteredTargets[i];
-                if (_targetButtons.TryGetValue(target.Id, out var button))
-                    button.transform.SetSiblingIndex(i);
-            }
-
-            if (_selectedTarget != null)
-            {
-                if (selectedTargetChanged) OnTargetSelected?.Invoke(_selectedTarget);
-                return;
-            }
-
-            _selectedTarget = filteredTargets.FirstOrDefault() ?? targets.FirstOrDefault();
-            if (_selectedTarget == null) return;
-            _selectedTarget.IsSelected = true;
-            if (_targetButtons.TryGetValue(_selectedTarget.Id, out var firstButton))
-                UpdateTargetButton(firstButton, _selectedTarget);
-            OnTargetSelected?.Invoke(_selectedTarget);
+            var chooseInitial = _selectedTarget == null;
+            _selectedTarget ??= _filteredTargets.FirstOrDefault() ?? targets.FirstOrDefault();
+            foreach (var target in _filteredTargets)
+                target.IsSelected = target.Id == _selectedTarget?.Id;
+            _virtualList?.SetCount(_filteredTargets.Count);
+            if ((chooseInitial || selectedTargetChanged) && _selectedTarget != null)
+                OnTargetSelected?.Invoke(_selectedTarget);
         }
 
         private static List<TargetInfo> GetAllTargets()
@@ -142,106 +121,21 @@ namespace DuckovCustomModel.UI.Components
             return targets;
         }
 
-        private void BuildTargetButton(TargetInfo targetInfo)
+        private GameObject CreateTargetRow(Transform parent)
         {
-            if (_content == null) return;
-
-            var buttonObj = UIFactory.CreateButton($"TargetButton_{targetInfo.Id}", _content.transform,
-                () => OnTargetButtonClicked(targetInfo.Id)).gameObject;
-            UIFactory.SetupRectTransform(buttonObj, new(0, 0), new(1, 0), new(0, 50));
-
-            var layoutElement = buttonObj.AddComponent<LayoutElement>();
-            layoutElement.minHeight = 50;
-            layoutElement.preferredHeight = 50;
-            layoutElement.flexibleWidth = 1;
-
-            var text = UIFactory.CreateText("Text", buttonObj.transform, targetInfo.DisplayName, 18, Color.white,
-                TextAnchor.MiddleCenter);
-            UIFactory.SetupButtonText(text);
-
-            SetupTargetButton(buttonObj, targetInfo);
-
-            _targetButtons[targetInfo.Id] = buttonObj;
+            var row = UIFactory.CreateButton("TargetRow", parent);
+            var item = row.AddComponent<TargetListItem>();
+            item.Initialize();
+            row.GetComponent<Button>().onClick.AddListener(() => OnTargetButtonClicked(item.TargetId));
+            return row;
         }
 
-        private static void UpdateTargetButton(GameObject buttonObj, TargetInfo targetInfo)
+        private void UpdateTargetButton(GameObject buttonObj, TargetInfo targetInfo)
         {
-            SetupTargetButton(buttonObj, targetInfo);
-        }
-
-        private static void SetupTargetButton(GameObject buttonObj, TargetInfo targetInfo)
-        {
-            var buttonImage = buttonObj.GetComponent<Image>();
-
-            Color highlightedColor;
-            Color pressedColor;
-            Color outlineColor;
-
-            var isExtension = targetInfo.IsExtension();
-
-            if (targetInfo.HasModel)
-            {
-                if (isExtension)
-                {
-                    highlightedColor = new(0.3f, 0.65f, 0.65f, 1);
-                    pressedColor = new(0.25f, 0.55f, 0.55f, 1);
-                    outlineColor = new(0.2f, 0.45f, 0.45f, 0.8f);
-                }
-                else
-                {
-                    highlightedColor = new(0.5f, 0.8f, 0.6f, 1);
-                    pressedColor = new(0.4f, 0.7f, 0.5f, 1);
-                    outlineColor = new(0.3f, 0.6f, 0.4f, 0.8f);
-                }
-            }
-            else if (targetInfo.HasFallbackModel)
-            {
-                if (isExtension)
-                {
-                    highlightedColor = new(0.6f, 0.75f, 0.9f, 1);
-                    pressedColor = new(0.5f, 0.65f, 0.8f, 1);
-                    outlineColor = new(0.4f, 0.55f, 0.7f, 0.8f);
-                }
-                else
-                {
-                    highlightedColor = new(0.7f, 0.6f, 0.9f, 1);
-                    pressedColor = new(0.6f, 0.5f, 0.8f, 1);
-                    outlineColor = new(0.5f, 0.4f, 0.7f, 0.8f);
-                }
-            }
-            else
-            {
-                if (isExtension)
-                {
-                    highlightedColor = new(0.4f, 0.5f, 0.55f, 1);
-                    pressedColor = new(0.3f, 0.4f, 0.45f, 1);
-                    outlineColor = new(0.25f, 0.35f, 0.4f, 0.6f);
-                }
-                else
-                {
-                    highlightedColor = new(0.5f, 0.7f, 0.9f, 1);
-                    pressedColor = new(0.4f, 0.6f, 0.8f, 1);
-                    outlineColor = new(0.3f, 0.35f, 0.4f, 0.6f);
-                }
-            }
-
-            buttonImage.color = highlightedColor;
-
-            var outline = buttonObj.GetComponent<Outline>();
-            if (outline == null)
-                outline = buttonObj.AddComponent<Outline>();
-
-            outline.effectColor = targetInfo.IsSelected ? new(1f, 0.5f, 0f, 1f) : outlineColor;
-            outline.effectDistance = new(10, 0);
-
-            var button = buttonObj.GetComponent<Button>();
-            UIFactory.SetupButtonColors(button, highlightedColor, highlightedColor, pressedColor, highlightedColor);
-
-            var textObj = buttonObj.transform.Find("Text");
-            if (textObj == null) return;
-            var text = textObj.GetComponent<TextMeshProUGUI>();
-            if (text != null)
-                text.text = targetInfo.DisplayName;
+            var modelId = targetInfo.HasModel ? targetInfo.UsingModel : targetInfo.UsingFallbackModel;
+            var modelName = _modelNames.TryGetValue(modelId, out var name) ? name : modelId;
+            buttonObj.GetComponent<TargetListItem>().Bind(targetInfo,
+                Regex.Replace(modelName, "§[0-9a-fk-or]", "", RegexOptions.IgnoreCase));
         }
 
         private void OnTargetButtonClicked(string targetId)
@@ -261,15 +155,21 @@ namespace DuckovCustomModel.UI.Components
                 return;
             }
 
+            if (_selectedTarget?.Id == targetId) return;
+            if (_selectedTarget != null) _selectedTarget.IsSelected = false;
             _selectedTarget = targetInfo;
-            Refresh();
+            targetInfo.IsSelected = true;
+            _virtualList?.RefreshVisible();
             OnTargetSelected?.Invoke(targetInfo);
         }
 
         private void OnSearchTextChanged(string searchText)
         {
-            _searchText = searchText.Trim();
-            Refresh();
+            var value = searchText.Trim();
+            if (_searchText == value) return;
+            _searchText = value;
+            _searchPending = true;
+            _searchAt = Time.unscaledTime + .15f;
         }
 
         private static List<TargetInfo> FilterTargets(List<TargetInfo> targets, string searchText)

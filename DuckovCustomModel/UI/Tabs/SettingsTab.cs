@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Text;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Localizations;
@@ -19,7 +20,9 @@ namespace DuckovCustomModel.UI.Tabs
         private TMP_Dropdown? _dcmButtonAnchorDropdown;
         private TMP_InputField? _dcmButtonOffsetXInput;
         private TMP_InputField? _dcmButtonOffsetYInput;
+        private string? _displayedChangelog;
         private GameObject? _downloadButtonsContainer;
+        private string? _downloadSignature;
         private bool _isWaitingForAnimatorParamsKeyInput;
         private bool _isWaitingForModifierKey1Input;
         private bool _isWaitingForModifierKey2Input;
@@ -31,7 +34,6 @@ namespace DuckovCustomModel.UI.Tabs
         private GameObject? _modifierKey1Button;
         private GameObject? _modifierKey2Button;
 
-        private int _settingRowIndex;
         private LocalizedText? _updateCheckButtonText;
         private LocalizedText? _updateInfoLocalizedText;
         private GameObject? _ysmRadialMenuKeyButton;
@@ -47,15 +49,30 @@ namespace DuckovCustomModel.UI.Tabs
             if (IsWaitingForKeyInput)
                 HandleKeyInputCapture();
 
-            if (_updateInfoLocalizedText == null || !(Time.time - _lastUpdateInfoRefreshTime > 30f)) return;
-            _lastUpdateInfoRefreshTime = Time.time;
+            if (_updateInfoLocalizedText == null || !(Time.unscaledTime - _lastUpdateInfoRefreshTime > 30f)) return;
+            _lastUpdateInfoRefreshTime = Time.unscaledTime;
             RefreshUpdateInfo();
+        }
+
+        private void OnDisable()
+        {
+            _isWaitingForUIKeyInput = false;
+            _isWaitingForAnimatorParamsKeyInput = false;
+            _isWaitingForModifierKey1Input = false;
+            _isWaitingForModifierKey2Input = false;
+            _isWaitingForYsmRadialMenuKeyInput = false;
+            RefreshAllKeyButtons();
         }
 
         protected override void OnDestroy()
         {
             UpdateChecker.OnUpdateCheckCompleted -= OnUpdateCheckCompleted;
             base.OnDestroy();
+        }
+
+        protected override void OnShow()
+        {
+            RefreshUpdateInfo();
         }
 
         public void RefreshAnimatorParamsToggleState(bool visible)
@@ -71,16 +88,13 @@ namespace DuckovCustomModel.UI.Tabs
             PanelRoot = UIFactory.CreateImage("SettingsPanel", transform, new(0.08f, 0.1f, 0.12f, 0.95f));
             UIFactory.SetupRectTransform(PanelRoot, new(0, 0), new(1, 1), Vector2.zero);
 
-            var outline = PanelRoot.AddComponent<Outline>();
-            outline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
-            outline.effectDistance = new(2, -2);
+            PanelRoot.GetComponent<Image>().raycastTarget = false;
         }
 
         protected override void BuildContent()
         {
             if (PanelRoot == null) return;
 
-            _settingRowIndex = 0;
             BuildSettingsContent();
         }
 
@@ -95,18 +109,27 @@ namespace DuckovCustomModel.UI.Tabs
             var scrollbar = UIFactory.CreateScrollbar(scrollView, 6f, false);
             scrollbar.transform.SetParent(scrollView.transform, false);
 
-            UIFactory.SetupVerticalLayoutGroup(contentArea, 10f, new(10, 10, 10, 10));
-            UIFactory.SetupContentSizeFitter(contentArea, ContentSizeFitter.FitMode.Unconstrained,
-                ContentSizeFitter.FitMode.Unconstrained);
+            UIFactory.SetupVerticalLayoutGroup(contentArea, 8f, new(12, 22, 12, 12),
+                TextAnchor.UpperLeft, true, true, true);
+            UIFactory.SetupContentSizeFitter(contentArea, ContentSizeFitter.FitMode.Unconstrained);
 
+            BuildSectionHeading(contentArea, () => Localization.HotkeySettings);
             BuildKeySetting(contentArea);
-            BuildAnimatorParamsKeySetting(contentArea);
             BuildYsmRadialMenuKeySetting(contentArea);
             BuildModifierKeySettings(contentArea);
-            BuildAnimatorParamsToggle(contentArea);
+            BuildSectionHeading(contentArea, () => Localization.Settings);
             BuildShowDCMButtonToggle(contentArea);
             BuildDCMButtonPositionSettings(contentArea);
-            BuildUpdateCheckSection(contentArea);
+            BuildSectionHeading(contentArea, () => Localization.AnimatorSettings);
+            BuildAnimatorParamsKeySetting(contentArea);
+            BuildAnimatorParamsToggle(contentArea);
+            var updates = UIFactory.CreateImage("UpdatesPanel", PanelRoot.transform, UITheme.SurfaceAlternate);
+            updates.AddComponent<RectMask2D>();
+            UIFactory.SetupVerticalLayoutGroup(updates, 10f, new(16, 16, 12, 12),
+                TextAnchor.UpperLeft, true, true, true);
+            BuildUpdateCheckSection(updates);
+            PanelRoot.AddComponent<SettingsColumnsLayout>().Initialize(
+                (RectTransform)scrollView.transform, (RectTransform)updates.transform);
 
             if (contentArea != null)
                 LayoutRebuilder.ForceRebuildLayoutImmediate(contentArea.GetComponent<RectTransform>());
@@ -118,13 +141,13 @@ namespace DuckovCustomModel.UI.Tabs
 
             var keyLabel = UIFactory.CreateText("KeyLabel", row.transform,
                 Localization.Hotkey, 18, Color.white);
-            UIFactory.SetupBoundedLeftLabel(keyLabel, 140);
+            SetupSettingLabel(keyLabel, 140);
             UIFactory.SetLocalizedText(keyLabel, () => Localization.Hotkey);
 
             var keyButton = UIFactory.CreateButton("KeyButton", row.transform, OnKeyButtonClicked,
                 new(0.2f, 0.2f, 0.2f, 1));
             _keyButton = keyButton;
-            UIFactory.SetupRightControl(keyButton, new(100, 30));
+            SetupSettingControl(keyButton, new(100, 30));
 
             var keyButtonText = UIFactory.CreateText("Text", keyButton.transform,
                 GetKeyCodeDisplayName(UIConfig?.ToggleKey ?? KeyCode.Backslash), 18, Color.white,
@@ -142,17 +165,17 @@ namespace DuckovCustomModel.UI.Tabs
 
             var keyLabel = UIFactory.CreateText("KeyLabel", row.transform,
                 Localization.AnimatorParamsHotkey, 18, Color.white);
-            UIFactory.SetupBoundedLeftLabel(keyLabel, 210);
+            SetupSettingLabel(keyLabel, 210);
             UIFactory.SetLocalizedText(keyLabel, () => Localization.AnimatorParamsHotkey);
 
             var keyButton = UIFactory.CreateButton("KeyButton", row.transform, OnAnimatorParamsKeyButtonClicked,
                 new(0.2f, 0.2f, 0.2f, 1));
             _animatorParamsKeyButton = keyButton;
-            UIFactory.SetupRightControl(keyButton, new(100, 30));
+            SetupSettingControl(keyButton, new(100, 30));
 
             var clearButton = UIFactory.CreateButton("ClearButton", row.transform, OnAnimatorParamsClearButtonClicked,
                 new(0.3f, 0.2f, 0.2f, 1));
-            UIFactory.SetupRightControl(clearButton, new(60, 30), -20f - 100f - 8f);
+            SetupSettingControl(clearButton, new(60, 30), -20f - 100f - 8f);
 
             var clearButtonText = UIFactory.CreateText("Text", clearButton.transform,
                 Localization.Clear, 16, Color.white, TextAnchor.MiddleCenter);
@@ -174,7 +197,7 @@ namespace DuckovCustomModel.UI.Tabs
             var row = CreateSettingRow(parent);
             var label = UIFactory.CreateText("YsmWheelKeyLabel", row.transform,
                 Localization.YsmRadialMenuHotkey, 18, Color.white);
-            UIFactory.SetupBoundedLeftLabel(label, 140);
+            SetupSettingLabel(label, 140);
             UIFactory.SetLocalizedText(label, () => Localization.YsmRadialMenuHotkey);
             var button = UIFactory.CreateButton("YsmWheelKeyButton", row.transform, () =>
             {
@@ -185,7 +208,7 @@ namespace DuckovCustomModel.UI.Tabs
                 RefreshAllKeyButtons();
             }, new(0.2f, 0.2f, 0.2f, 1));
             _ysmRadialMenuKeyButton = button;
-            UIFactory.SetupRightControl(button, new(100, 30));
+            SetupSettingControl(button, new(100, 30));
             var text = UIFactory.CreateText("Text", button.transform,
                 GetKeyCodeDisplayName(UIConfig?.YsmRadialMenuKey ?? KeyCode.Z), 18, Color.white,
                 TextAnchor.MiddleCenter);
@@ -200,13 +223,13 @@ namespace DuckovCustomModel.UI.Tabs
             var modifier1Row = CreateSettingRow(parent);
             var modifier1Label = UIFactory.CreateText("ModifierKey1Label", modifier1Row.transform,
                 Localization.EmotionModifierKey1, 18, Color.white);
-            UIFactory.SetupBoundedLeftLabel(modifier1Label, 140);
+            SetupSettingLabel(modifier1Label, 140);
             UIFactory.SetLocalizedText(modifier1Label, () => Localization.EmotionModifierKey1);
 
             var modifier1Button = UIFactory.CreateButton("ModifierKey1Button", modifier1Row.transform,
                 OnModifierKey1ButtonClicked, new(0.2f, 0.2f, 0.2f, 1));
             _modifierKey1Button = modifier1Button;
-            UIFactory.SetupRightControl(modifier1Button, new(100, 30));
+            SetupSettingControl(modifier1Button, new(100, 30));
 
             var modifier1ButtonText = UIFactory.CreateText("Text", modifier1Button.transform,
                 GetKeyCodeDisplayName(UIConfig?.EmotionModifierKey1 ?? KeyCode.Comma), 18, Color.white,
@@ -220,13 +243,13 @@ namespace DuckovCustomModel.UI.Tabs
             var modifier2Row = CreateSettingRow(parent);
             var modifier2Label = UIFactory.CreateText("ModifierKey2Label", modifier2Row.transform,
                 Localization.EmotionModifierKey2, 18, Color.white);
-            UIFactory.SetupBoundedLeftLabel(modifier2Label, 140);
+            SetupSettingLabel(modifier2Label, 140);
             UIFactory.SetLocalizedText(modifier2Label, () => Localization.EmotionModifierKey2);
 
             var modifier2Button = UIFactory.CreateButton("ModifierKey2Button", modifier2Row.transform,
                 OnModifierKey2ButtonClicked, new(0.2f, 0.2f, 0.2f, 1));
             _modifierKey2Button = modifier2Button;
-            UIFactory.SetupRightControl(modifier2Button, new(100, 30));
+            SetupSettingControl(modifier2Button, new(100, 30));
 
             var modifier2ButtonText = UIFactory.CreateText("Text", modifier2Button.transform,
                 GetKeyCodeDisplayName(UIConfig?.EmotionModifierKey2 ?? KeyCode.Period), 18, Color.white,
@@ -243,9 +266,7 @@ namespace DuckovCustomModel.UI.Tabs
             var rowImage = warningRow.GetComponent<Image>();
             rowImage.color = new(0.3f, 0.2f, 0.05f, 0.9f);
 
-            var outline = warningRow.AddComponent<Outline>();
-            outline.effectColor = new(0.8f, 0.6f, 0.2f, 0.8f);
-            outline.effectDistance = new(2, -2);
+            rowImage.raycastTarget = false;
 
             UIFactory.SetupAnchor(warningRow, new(0, 1), new(1, 1), new(0.5f, 1), new(0, 0), Vector2.zero);
 
@@ -283,13 +304,13 @@ namespace DuckovCustomModel.UI.Tabs
 
             var label = UIFactory.CreateText("Label", row.transform,
                 Localization.ShowAnimatorParameters, 18, Color.white);
-            UIFactory.SetupBoundedLeftLabel(label, 60);
+            SetupSettingLabel(label, 60);
             UIFactory.SetLocalizedText(label, () => Localization.ShowAnimatorParameters);
 
             var configWindow = GetComponentInParent<ConfigWindow>();
             var toggle = UIFactory.CreateToggle("AnimatorParamsToggle", row.transform,
-                configWindow?.IsAnimatorParamsWindowVisible() ?? false, SetAnimatorParamsWindowVisible);
-            UIFactory.SetupRightControl(toggle.gameObject, new(20, 20));
+                configWindow?.IsAnimatorParamsWindowVisible() ?? false, SetAnimatorParamsWindowVisible, true);
+            SetupSettingControl(toggle.gameObject, new(20, 20));
 
             _animatorParamsToggle = toggle;
         }
@@ -300,12 +321,12 @@ namespace DuckovCustomModel.UI.Tabs
 
             var label = UIFactory.CreateText("Label", row.transform,
                 Localization.ShowDCMButton, 18, Color.white);
-            UIFactory.SetupBoundedLeftLabel(label, 60);
+            SetupSettingLabel(label, 60);
             UIFactory.SetLocalizedText(label, () => Localization.ShowDCMButton);
 
             var toggle = UIFactory.CreateToggle("ShowDCMButtonToggle", row.transform,
-                UIConfig?.ShowDCMButton ?? true, OnShowDCMButtonToggleChanged);
-            UIFactory.SetupRightControl(toggle.gameObject, new(20, 20));
+                UIConfig?.ShowDCMButton ?? true, OnShowDCMButtonToggleChanged, true);
+            SetupSettingControl(toggle.gameObject, new(20, 20));
         }
 
         private static void OnShowDCMButtonToggleChanged(bool value)
@@ -320,11 +341,11 @@ namespace DuckovCustomModel.UI.Tabs
             var anchorRow = CreateSettingRow(parent);
             var anchorLabel = UIFactory.CreateText("AnchorLabel", anchorRow.transform,
                 Localization.DCMButtonAnchor, 18, Color.white);
-            UIFactory.SetupBoundedLeftLabel(anchorLabel, 240);
+            SetupSettingLabel(anchorLabel, 192);
             UIFactory.SetLocalizedText(anchorLabel, () => Localization.DCMButtonAnchor);
 
             var dropdown = UIFactory.CreateDropdown("AnchorDropdown", anchorRow.transform, OnAnchorDropdownChanged);
-            UIFactory.SetupRightControl(dropdown.gameObject, new(200, 30));
+            SetupSettingControl(dropdown.gameObject, new(160, 30));
 
             RefreshAnchorDropdownOptions(dropdown);
 
@@ -337,34 +358,38 @@ namespace DuckovCustomModel.UI.Tabs
             var offsetRow = CreateSettingRow(parent);
             var offsetLabel = UIFactory.CreateText("OffsetLabel", offsetRow.transform,
                 Localization.DCMButtonOffset, 18, Color.white);
-            UIFactory.SetupBoundedLeftLabel(offsetLabel, 350);
+
             UIFactory.SetLocalizedText(offsetLabel, () => Localization.DCMButtonOffset);
 
             var offsetYInput = UIFactory.CreateInputField("OffsetYInput", offsetRow.transform);
-            UIFactory.SetupRightControl(offsetYInput.gameObject, new(80, 25));
+            UIFactory.SetupRectTransform(offsetYInput.gameObject, new(.5f, 0), new(1, 0),
+                offsetMin: new(40, 10), offsetMax: new(-12, 35));
             offsetYInput.contentType = TMP_InputField.ContentType.DecimalNumber;
             offsetYInput.onValueChanged.AddListener(OnOffsetYValueChanged);
             offsetYInput.onEndEdit.AddListener(OnOffsetYEndEdit);
             _dcmButtonOffsetYInput = offsetYInput;
 
             var offsetYLabel = UIFactory.CreateText("OffsetYLabel", offsetRow.transform,
-                Localization.OffsetY, 16, new Color(0.9f, 0.9f, 0.9f, 1));
-            UIFactory.SetupRightLabel(offsetYLabel);
-            UIFactory.SetupContentSizeFitter(offsetYLabel);
+                Localization.OffsetY, 18, new Color(0.9f, 0.9f, 0.9f, 1));
+            UIFactory.SetupRectTransform(offsetYLabel, new(.5f, 0), new(.5f, 0),
+                offsetMin: new(8, 10), offsetMax: new(36, 35));
             UIFactory.SetLocalizedText(offsetYLabel, () => Localization.OffsetY);
 
             var offsetXInput = UIFactory.CreateInputField("OffsetXInput", offsetRow.transform);
-            UIFactory.SetupRightControl(offsetXInput.gameObject, new(80, 25), -220f);
+            UIFactory.SetupRectTransform(offsetXInput.gameObject, Vector2.zero, new(.5f, 0),
+                offsetMin: new(44, 10), offsetMax: new(-8, 35));
             offsetXInput.contentType = TMP_InputField.ContentType.DecimalNumber;
             offsetXInput.onValueChanged.AddListener(OnOffsetXValueChanged);
             offsetXInput.onEndEdit.AddListener(OnOffsetXEndEdit);
             _dcmButtonOffsetXInput = offsetXInput;
 
             var offsetXLabel = UIFactory.CreateText("OffsetXLabel", offsetRow.transform,
-                Localization.OffsetX, 16, new Color(0.9f, 0.9f, 0.9f, 1));
-            UIFactory.SetupRightLabel(offsetXLabel, 25f, -320f);
-            UIFactory.SetupContentSizeFitter(offsetXLabel);
+                Localization.OffsetX, 18, new Color(0.9f, 0.9f, 0.9f, 1));
+            UIFactory.SetupRectTransform(offsetXLabel, Vector2.zero, Vector2.zero,
+                offsetMin: new(12, 10), offsetMax: new(40, 35));
             UIFactory.SetLocalizedText(offsetXLabel, () => Localization.OffsetX);
+            offsetRow.AddComponent<ButtonOffsetRowLayout>().Initialize(offsetLabel, offsetXLabel,
+                offsetXInput.gameObject, offsetYLabel, offsetYInput.gameObject);
 
             RefreshDCMButtonPositionDisplay();
         }
@@ -491,20 +516,40 @@ namespace DuckovCustomModel.UI.Tabs
             configWindow?.RefreshSettingsButton();
         }
 
+        private static void BuildSectionHeading(GameObject parent, Func<string> text)
+        {
+            var heading = UIFactory.CreateText("SectionHeading", parent.transform, text(), 14, UITheme.Text);
+            var layout = heading.AddComponent<LayoutElement>();
+            layout.minWidth = 0;
+            layout.preferredWidth = 0;
+            layout.preferredHeight = 28;
+            layout.flexibleWidth = 1;
+            UIFactory.SetLocalizedText(heading, text);
+        }
+
+        private static void SetupSettingLabel(GameObject label, float reservedRight)
+        {
+            UIFactory.SetupBoundedLeftLabel(label, reservedRight);
+        }
+
+        private static void SetupSettingControl(GameObject control, Vector2 size, float rightOffset = -20)
+        {
+            UIFactory.SetupRightControl(control, size, rightOffset);
+        }
+
         private GameObject CreateSettingRow(GameObject parent)
         {
             var row = new GameObject("SettingRow", typeof(RectTransform), typeof(Image));
             row.transform.SetParent(parent.transform, false);
 
             var rowImage = row.GetComponent<Image>();
-            var isEven = _settingRowIndex % 2 == 0;
-            rowImage.color = isEven ? new(0.12f, 0.14f, 0.16f, 0.8f) : new(0.1f, 0.12f, 0.14f, 0.8f);
-            _settingRowIndex++;
+            rowImage.color = UITheme.Surface;
+            rowImage.raycastTarget = false;
 
             UIFactory.SetupAnchor(row, new(0, 1), new(1, 1), new(0.5f, 1), new(0, 50), Vector2.zero);
 
             var rowLayoutElement = row.AddComponent<LayoutElement>();
-            rowLayoutElement.preferredHeight = 50;
+            rowLayoutElement.preferredHeight = 44;
             rowLayoutElement.minWidth = 0;
             rowLayoutElement.preferredWidth = 0;
             rowLayoutElement.flexibleWidth = 1;
@@ -692,153 +737,93 @@ namespace DuckovCustomModel.UI.Tabs
 
         private void BuildUpdateCheckSection(GameObject parent)
         {
-            if (PanelRoot == null) return;
+            var updatePanel = parent;
+            var checkButton = UIFactory.CreateButton("UpdateCheckButton", updatePanel.transform,
+                OnUpdateCheckButtonClicked, UITheme.Accent);
+            var checkLayout = checkButton.AddComponent<LayoutElement>();
+            checkLayout.minWidth = 0;
+            checkLayout.minHeight = 40;
+            checkLayout.preferredHeight = 40;
+            checkLayout.flexibleHeight = 0;
+            checkLayout.flexibleWidth = 1;
+            var checkText = UIFactory.CreateText("Text", checkButton.transform, "", 16,
+                Color.white, TextAnchor.MiddleCenter);
+            UIFactory.SetupButtonText(checkText);
+            _updateCheckButtonText = checkText.AddComponent<LocalizedText>();
+            _updateCheckButtonText.SetTextGetter(GetCheckButtonText);
 
-            var updatePanel = new GameObject("UpdateCheckPanel", typeof(RectTransform));
-            updatePanel.transform.SetParent(PanelRoot.transform, false);
-            UIFactory.SetupRectTransform(updatePanel, new(1f, 0f), new(1f, 0f),
-                new Vector2(400f, 120f), pivot: new Vector2(1f, 0f), anchoredPosition: new Vector2(-20f, 20f));
+            var updateInfoText = UIFactory.CreateText("UpdateInfo", updatePanel.transform, "", 16,
+                UITheme.Text, TextAnchor.UpperLeft);
+            var infoText = updateInfoText.GetComponent<TextMeshProUGUI>();
+            infoText.enableWordWrapping = true;
+            infoText.overflowMode = TextOverflowModes.Masking;
+            var infoLayout = updateInfoText.AddComponent<LayoutElement>();
+            infoLayout.minWidth = 0;
+            infoLayout.preferredWidth = 0;
+            infoLayout.flexibleWidth = 1;
+            infoLayout.flexibleHeight = 0;
+            _updateInfoLocalizedText = updateInfoText.AddComponent<LocalizedText>();
+            _updateInfoLocalizedText.SetTextGetter(GetUpdateInfoText);
 
-            var updatePanelImage = updatePanel.AddComponent<Image>();
-            updatePanelImage.color = new(0.1f, 0.12f, 0.14f, 0.9f);
+            var logScroll = UIFactory.CreateScrollView("ChangelogScrollView", updatePanel.transform,
+                out var logContent);
+            var logLayout = logScroll.gameObject.AddComponent<LayoutElement>();
+            logLayout.minWidth = 0;
+            logLayout.minHeight = 0;
+            logLayout.preferredWidth = 0;
+            logLayout.preferredHeight = 0;
+            logLayout.flexibleWidth = 1;
+            logLayout.flexibleHeight = 1;
+            var viewport = new GameObject("Viewport", typeof(RectTransform), typeof(RectMask2D));
+            viewport.transform.SetParent(logScroll.transform, false);
+            UIFactory.SetupRectTransform(viewport, Vector2.zero, Vector2.one, Vector2.zero,
+                new(10, 0), Vector2.zero);
+            logScroll.viewport = (RectTransform)viewport.transform;
+            logContent.transform.SetParent(viewport.transform, false);
+            UIFactory.SetupRectTransform(logContent, new(0, 1), Vector2.one, Vector2.zero,
+                pivot: new(0, 1), anchoredPosition: Vector2.zero);
+            UIFactory.SetupVerticalLayoutGroup(logContent, 0, new(8, 8, 8, 8),
+                TextAnchor.UpperLeft, true, true, true);
+            UIFactory.SetupContentSizeFitter(logContent, ContentSizeFitter.FitMode.Unconstrained);
+            var logScrollbar = UIFactory.CreateScrollbar(logScroll, 6f, false);
+            logScrollbar.transform.SetParent(logScroll.transform, false);
 
-            var outline = updatePanel.AddComponent<Outline>();
-            outline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
-            outline.effectDistance = new(1, -1);
-
-            UIFactory.SetupVerticalLayoutGroup(updatePanel, 8f, new(10, 10, 10, 10),
-                childControlHeight: true, childControlWidth: true, childForceExpandHeight: false,
-                childForceExpandWidth: true);
-
-            var layoutElement = updatePanel.AddComponent<LayoutElement>();
-            layoutElement.minWidth = 400f;
-            layoutElement.minHeight = 120f;
-            layoutElement.preferredWidth = 400f;
-            layoutElement.flexibleWidth = 0f;
-            layoutElement.flexibleHeight = 0f;
-
-            UIFactory.SetupContentSizeFitter(updatePanel, ContentSizeFitter.FitMode.Unconstrained);
-
-            var updateInfoText = UIFactory.CreateText("UpdateInfo", updatePanel.transform, "", 18,
-                new Color(0.9f, 0.9f, 0.9f, 1), TextAnchor.UpperCenter);
-
-            var textComponent = updateInfoText.GetComponent<TextMeshProUGUI>();
-            if (textComponent != null)
-            {
-                textComponent.enableAutoSizing = true;
-                textComponent.fontSizeMin = 12;
-                textComponent.fontSizeMax = 20;
-            }
-
-            var updateInfoLayoutElement = updateInfoText.AddComponent<LayoutElement>();
-            updateInfoLayoutElement.flexibleHeight = 0f;
-            updateInfoLayoutElement.flexibleWidth = 1f;
-
-            UIFactory.SetupContentSizeFitter(updateInfoText);
-
-            var localizedUpdateInfo = updateInfoText.AddComponent<LocalizedText>();
-            localizedUpdateInfo.SetTextGetter(GetUpdateInfoText);
-            _updateInfoLocalizedText = localizedUpdateInfo;
-
-            var changelogScrollView = UIFactory.CreateScrollView("ChangelogScrollView", updatePanel.transform,
-                out var changelogContent);
-            UIFactory.SetupRectTransform(changelogScrollView.gameObject, Vector2.zero, Vector2.one,
-                offsetMax: new(-10, 0));
-
-            var scrollViewLayout = changelogScrollView.gameObject.AddComponent<LayoutElement>();
-            scrollViewLayout.minHeight = 0f;
-            scrollViewLayout.preferredHeight = 200f;
-            scrollViewLayout.flexibleHeight = 0f;
-            scrollViewLayout.flexibleWidth = 1f;
-
-            var changelogScrollbar = UIFactory.CreateScrollbar(changelogScrollView);
-            changelogScrollbar.transform.SetParent(changelogScrollView.transform, false);
-
-            changelogScrollView.gameObject.SetActive(false);
-
-            UIFactory.SetupRectTransform(changelogContent, new(0, 0), new(1, 1), Vector2.zero);
-
-            UIFactory.SetupVerticalLayoutGroup(changelogContent, 0f, new(0, 10, 0, 0),
-                TextAnchor.UpperLeft, childForceExpandWidth: true);
-
-            var changelogText = UIFactory.CreateText("ChangelogText", changelogContent.transform, "", 14,
-                new Color(0.9f, 0.9f, 0.9f, 1), TextAnchor.UpperLeft);
-
-            UIFactory.SetupRectTransform(changelogText, new(0, 1), new(1, 1), Vector2.zero,
-                pivot: new Vector2(0.5f, 1));
-
-            var changelogTextComponent = changelogText.GetComponent<TextMeshProUGUI>();
-            if (changelogTextComponent != null)
-            {
-                changelogTextComponent.enableWordWrapping = true;
-                changelogTextComponent.overflowMode = TextOverflowModes.Overflow;
-                changelogTextComponent.richText = true;
-            }
-
-            changelogText.AddComponent<LinkHandler>();
-
-            UIFactory.SetupContentSizeFitter(changelogText, ContentSizeFitter.FitMode.Unconstrained);
-            UIFactory.SetupContentSizeFitter(changelogContent, ContentSizeFitter.FitMode.Unconstrained);
-
-            var scrollViewHeightAdjuster = changelogScrollView.gameObject.AddComponent<ScrollViewHeightAdjuster>();
-            scrollViewHeightAdjuster.Initialize(changelogScrollView, changelogContent, 0f, 200f);
-
-            _changelogText = changelogScrollView.gameObject;
+            _changelogText = UIFactory.CreateText("ChangelogText", logContent.transform, "", 14,
+                UITheme.Text, TextAnchor.UpperLeft);
+            var changelogBody = _changelogText.GetComponent<TextMeshProUGUI>();
+            changelogBody.enableWordWrapping = true;
+            changelogBody.enableAutoSizing = false;
+            changelogBody.overflowMode = TextOverflowModes.Masking;
+            changelogBody.maskable = true;
+            var changelogLayout = _changelogText.AddComponent<LayoutElement>();
+            changelogLayout.minWidth = 0;
+            changelogLayout.preferredWidth = 0;
+            changelogLayout.flexibleWidth = 1;
+            _changelogText.AddComponent<LinkHandler>();
 
             var downloadSection = new GameObject("DownloadSection", typeof(RectTransform));
             downloadSection.transform.SetParent(updatePanel.transform, false);
             downloadSection.SetActive(false);
 
             UIFactory.SetupVerticalLayoutGroup(downloadSection, 6f, new(0, 0, 0, 0),
-                childControlHeight: false, childControlWidth: true, childForceExpandHeight: false,
+                childControlHeight: true, childControlWidth: true, childForceExpandHeight: false,
                 childForceExpandWidth: true);
-
-            var downloadLabel = UIFactory.CreateText("DownloadLabel", downloadSection.transform, "", 18,
-                new Color(0.9f, 0.9f, 0.9f, 1), TextAnchor.UpperCenter);
-            var downloadLabelTextComponent = downloadLabel.GetComponent<TextMeshProUGUI>();
-            if (downloadLabelTextComponent != null)
-            {
-                downloadLabelTextComponent.enableAutoSizing = true;
-                downloadLabelTextComponent.fontSizeMin = 12;
-                downloadLabelTextComponent.fontSizeMax = 20;
-            }
-
-            UIFactory.SetLocalizedText(downloadLabel, () => Localization.DownloadLinks);
-            UIFactory.SetupContentSizeFitter(downloadLabel);
 
             var downloadButtonsContainer = new GameObject("DownloadButtonsContainer", typeof(RectTransform));
             downloadButtonsContainer.transform.SetParent(downloadSection.transform, false);
 
-            UIFactory.SetupHorizontalLayoutGroup(downloadButtonsContainer, 8f, new(0, 0, 0, 0),
-                TextAnchor.MiddleCenter,
-                childControlHeight: false, childControlWidth: false, childForceExpandHeight: false,
-                childForceExpandWidth: false);
-
-            UIFactory.SetupContentSizeFitter(downloadButtonsContainer);
+            downloadButtonsContainer.AddComponent<DownloadButtonsLayout>();
+            var downloadLayout = downloadSection.AddComponent<LayoutElement>();
+            downloadLayout.minWidth = 0;
+            downloadLayout.preferredWidth = 0;
+            downloadLayout.flexibleWidth = 1;
+            downloadLayout.flexibleHeight = 0;
 
             _downloadButtonsContainer = downloadSection;
 
-            var checkButton = UIFactory.CreateButton("UpdateCheckButton", updatePanel.transform,
-                OnUpdateCheckButtonClicked,
-                new Color(0.2f, 0.3f, 0.4f, 0.9f));
+            UpdateChecker.OnUpdateCheckCompleted += OnUpdateCheckCompleted;
 
-            var checkButtonLayoutElement = checkButton.AddComponent<LayoutElement>();
-            checkButtonLayoutElement.minHeight = 30f;
-            checkButtonLayoutElement.preferredHeight = 30f;
-            checkButtonLayoutElement.preferredWidth = 120f;
-            checkButtonLayoutElement.flexibleHeight = 0f;
-            checkButtonLayoutElement.flexibleWidth = 0f;
-
-            var checkButtonText = UIFactory.CreateText("Text", checkButton.transform, "", 16,
-                Color.white, TextAnchor.MiddleCenter);
-            UIFactory.SetupButtonText(checkButtonText);
-            var localizedCheckButtonText = checkButtonText.AddComponent<LocalizedText>();
-            localizedCheckButtonText.SetTextGetter(GetCheckButtonText);
-            _updateCheckButtonText = localizedCheckButtonText;
-
-            if (UpdateChecker.Instance != null) UpdateChecker.OnUpdateCheckCompleted += OnUpdateCheckCompleted;
-
-            _lastUpdateInfoRefreshTime = Time.time;
+            _lastUpdateInfoRefreshTime = Time.unscaledTime;
             RefreshUpdateInfo();
         }
 
@@ -927,57 +912,84 @@ namespace DuckovCustomModel.UI.Tabs
             var changelog = updateChecker.GetLatestChangelog();
             var downloadLinks = updateChecker.GetLatestDownloadLinks();
 
-            if (_changelogText != null)
+            if (_changelogText != null && _displayedChangelog != changelog)
             {
-                var hasChangelog = !string.IsNullOrEmpty(changelog);
-                _changelogText.SetActive(hasChangelog);
-
-                if (hasChangelog)
-                {
-                    var scrollView = _changelogText.GetComponent<ScrollRect>();
-                    if (scrollView != null && scrollView.content != null)
-                    {
-                        var textComponent = scrollView.content.GetComponentInChildren<TextMeshProUGUI>();
-                        if (textComponent != null)
-                        {
-                            var baseFontSize = (int)textComponent.fontSize;
-                            textComponent.text = MarkdownToRichTextConverter.Convert(changelog!, baseFontSize, 20);
-                        }
-                    }
-                }
+                _displayedChangelog = changelog;
+                _changelogText.SetActive(!string.IsNullOrEmpty(changelog));
+                var text = _changelogText.GetComponent<TextMeshProUGUI>();
+                text.text = string.IsNullOrEmpty(changelog)
+                    ? string.Empty
+                    : MarkdownToRichTextConverter.Convert(changelog!, (int)text.fontSize, 20);
             }
+
+            var signature = downloadLinks == null
+                ? string.Empty
+                : string.Join("\n", downloadLinks.Select(link => $"{link.Name}\t{link.Url}"));
+            if (_downloadSignature == signature) return;
+            _downloadSignature = signature;
 
             if (_downloadButtonsContainer == null) return;
 
             var buttonsContainer = _downloadButtonsContainer.transform.Find("DownloadButtonsContainer");
             if (buttonsContainer != null)
                 foreach (Transform child in buttonsContainer)
+                {
+                    child.gameObject.SetActive(false);
                     Destroy(child.gameObject);
+                }
 
             var hasDownloadLinks = downloadLinks is { Count: > 0 };
             _downloadButtonsContainer.SetActive(hasDownloadLinks);
 
-            if (!hasDownloadLinks || buttonsContainer == null) return;
+            if (downloadLinks is not { Count: > 0 } || buttonsContainer == null) return;
             foreach (var link in downloadLinks)
             {
-                var downloadButton = UIFactory.CreateButton($"DownloadButton_{link.Name}",
-                    buttonsContainer,
-                    () => OpenURL(link.Url),
-                    new Color(0.2f, 0.5f, 0.8f, 0.9f));
-
-                UIFactory.SetupRectTransform(downloadButton, new(0f, 0.5f), new(0f, 0.5f),
-                    new Vector2(130f, 28f), pivot: new Vector2(0.5f, 0.5f));
-
-                var buttonLayout = downloadButton.AddComponent<LayoutElement>();
-                buttonLayout.preferredHeight = 28f;
-                buttonLayout.preferredWidth = 130f;
-                buttonLayout.flexibleHeight = 0f;
-                buttonLayout.flexibleWidth = 0f;
-
-                var buttonText = UIFactory.CreateText("Text", downloadButton.transform, link.Name, 12,
-                    Color.white, TextAnchor.MiddleCenter);
-                UIFactory.SetupButtonText(buttonText, 10, 14, 10f);
+                var button = UIFactory.CreateButton("DownloadLink", buttonsContainer,
+                    () => OpenURL(link.Url), UITheme.Accent);
+                var label = UIFactory.CreateText("Text", button.transform, link.Name, 14,
+                    UITheme.Text, TextAnchor.MiddleCenter);
+                UIFactory.SetupButtonText(label);
             }
+        }
+    }
+
+    internal sealed class DownloadButtonsLayout : LayoutGroup
+    {
+        private const float Spacing = 6;
+        private const float RowHeight = 34;
+
+        private int Columns => Mathf.Max(1, Mathf.FloorToInt((rectTransform.rect.width + Spacing) / 146));
+
+        public override void CalculateLayoutInputHorizontal()
+        {
+            base.CalculateLayoutInputHorizontal();
+            SetLayoutInputForAxis(0, 0, 1, 0);
+        }
+
+        public override void CalculateLayoutInputVertical()
+        {
+            var rows = Mathf.CeilToInt((float)rectChildren.Count / Columns);
+            var height = rows * RowHeight + Mathf.Max(0, rows - 1) * Spacing;
+            SetLayoutInputForAxis(height, height, 0, 1);
+        }
+
+        public override void SetLayoutHorizontal()
+        {
+            var columns = Columns;
+            var width = Mathf.Min(200, Mathf.Max(0, (rectTransform.rect.width - (columns - 1) * Spacing) / columns));
+            for (var i = 0; i < rectChildren.Count; i++)
+            {
+                var rowItems = Mathf.Min(columns, rectChildren.Count - i / columns * columns);
+                var left = (rectTransform.rect.width - rowItems * width - (rowItems - 1) * Spacing) * .5f;
+                SetChildAlongAxis(rectChildren[i], 0, left + i % columns * (width + Spacing), width);
+            }
+        }
+
+        public override void SetLayoutVertical()
+        {
+            var columns = Columns;
+            for (var i = 0; i < rectChildren.Count; i++)
+                SetChildAlongAxis(rectChildren[i], 1, i / columns * (RowHeight + Spacing), RowHeight);
         }
     }
 }
