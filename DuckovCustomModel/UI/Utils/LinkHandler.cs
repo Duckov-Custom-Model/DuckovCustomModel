@@ -1,4 +1,4 @@
-﻿using TMPro;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -6,6 +6,12 @@ namespace DuckovCustomModel.UI.Utils
 {
     public class LinkHandler : MonoBehaviour, IPointerClickHandler
     {
+        private void Awake()
+        {
+            var text = GetComponent<TextMeshProUGUI>();
+            if (text != null) text.raycastTarget = true;
+        }
+
         public void OnPointerClick(PointerEventData eventData)
         {
             var textMeshPro = GetComponent<TextMeshProUGUI>();

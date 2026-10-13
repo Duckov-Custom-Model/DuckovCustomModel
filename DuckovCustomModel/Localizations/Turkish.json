@@ -1,4 +1,8 @@
 {
+  "AudioSettings": "Ses ayarları",
+  "TargetOriginal": "Özgün görünüm",
+  "TargetInherited": "Devralınan",
+  "TargetCopyHint": "Hedef bilgilerini kopyalamak için Shift + tıklama",
   "LeftHandLocator": "Sol el",
   "RightHandLocator": "Sağ el",
   "RifleLocator": "Tüfek",

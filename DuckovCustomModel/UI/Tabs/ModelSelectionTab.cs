@@ -2,6 +2,8 @@ using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.UI.Base;
 using DuckovCustomModel.UI.Components;
+using DuckovCustomModel.UI.Utils;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,6 +16,7 @@ namespace DuckovCustomModel.UI.Tabs
         private ModelListPanel? _modelListPanel;
         private GameObject? _overlayPanel;
         private SearchField? _searchField;
+        private TextMeshProUGUI? _targetHeading;
         private TargetListPanel? _targetListPanel;
         private TargetSettingsPanel? _targetSettingsPanel;
 
@@ -40,6 +43,9 @@ namespace DuckovCustomModel.UI.Tabs
             var leftContainer = CreateLeftContainer(bottomContainer);
             var midContainer = CreateMidContainer(bottomContainer);
             var rightContainer = CreateRightContainer(bottomContainer);
+            bottomContainer.AddComponent<ModelColumnsLayout>().Initialize(
+                (RectTransform)leftContainer.transform, (RectTransform)midContainer.transform,
+                (RectTransform)rightContainer.transform);
 
             var functionButtonBarContainer = CreateFunctionButtonBarContainer(topContainer);
             var targetListContainer = CreateTargetListContainer(leftContainer);
@@ -48,6 +54,14 @@ namespace DuckovCustomModel.UI.Tabs
             var bundleToolbarContainer = CreateBundleToolbarContainer(midContainer);
             var modelListContainer = CreateModelListContainer(midContainer);
             var targetSettingsContainer = CreateTargetSettingsContainer(rightContainer);
+            var heading = UIFactory.CreateText("TargetHeading", rightContainer.transform, "", 18,
+                UITheme.Text, TextAnchor.MiddleLeft, FontStyle.Bold);
+            UIFactory.SetupRectTransform(heading, new(0, 1), Vector2.one, new(0, 36),
+                pivot: new(.5f, 1), anchoredPosition: Vector2.zero);
+            _targetHeading = heading.GetComponent<TextMeshProUGUI>();
+            _targetHeading.margin = new(12, 0, 12, 0);
+            _targetHeading.enableWordWrapping = false;
+            _targetHeading.overflowMode = TextOverflowModes.Ellipsis;
 
             _functionButtonBar = functionButtonBarContainer.AddComponent<FunctionButtonBar>();
             _targetListPanel = targetListContainer.AddComponent<TargetListPanel>();
@@ -67,6 +81,7 @@ namespace DuckovCustomModel.UI.Tabs
                 () => _modelListPanel?.Refresh(ModelListPanel.ScrollStrategy.ScrollToActiveModel);
             _targetListPanel.OnTargetSelected += targetInfo =>
             {
+                if (_targetHeading != null) _targetHeading.text = targetInfo.DisplayName;
                 _modelListPanel?.SetTarget(targetInfo);
                 _targetSettingsPanel?.SetTarget(targetInfo);
             };
@@ -140,196 +155,104 @@ namespace DuckovCustomModel.UI.Tabs
 
         private GameObject CreateContent()
         {
-            var content = new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup));
+            var content = new GameObject("Content", typeof(RectTransform));
             content.transform.SetParent(PanelRoot!.transform, false);
-            UIFactory.SetupRectTransform(content, Vector2.zero, Vector2.one, Vector2.zero);
-            UIFactory.SetupVerticalLayoutGroup(content, 10f, new(10, 10, 10, 10), TextAnchor.UpperCenter,
-                true, true, true);
-
+            UIFactory.SetupRectTransform(content, Vector2.zero, Vector2.one, Vector2.zero,
+                new(10, 10), new(-10, -10));
             return content;
         }
 
         private static GameObject CreateTopContainer(GameObject parent)
         {
-            var container = new GameObject("TopContainer", typeof(RectTransform), typeof(LayoutElement));
-            container.transform.SetParent(parent.transform, false);
-            UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
-
-            var layoutElement = container.GetComponent<LayoutElement>();
-            layoutElement.preferredHeight = 80;
-            layoutElement.flexibleHeight = 0;
-            layoutElement.flexibleWidth = 1;
-
+            var container = CreateRegion("TopContainer", parent);
+            UIFactory.SetupRectTransform(container, new(0, 1), Vector2.one, new(0, 56), pivot: new(.5f, 1));
             return container;
         }
 
         private static GameObject CreateBottomContainer(GameObject parent)
         {
-            var container = new GameObject("BottomContainer", typeof(RectTransform), typeof(HorizontalLayoutGroup),
-                typeof(LayoutElement));
-            container.transform.SetParent(parent.transform, false);
-            UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
-
-            var layoutElement = container.GetComponent<LayoutElement>();
-            layoutElement.minWidth = 0;
-            layoutElement.preferredWidth = 0;
-            layoutElement.flexibleHeight = 1;
-            layoutElement.flexibleWidth = 1;
-
-            UIFactory.SetupHorizontalLayoutGroup(container, 10f, new(0, 0, 0, 0), TextAnchor.MiddleLeft,
-                true);
-
+            var container = CreateRegion("BottomContainer", parent);
+            UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero,
+                offsetMax: new(0, -66));
             return container;
         }
 
         private static GameObject CreateLeftContainer(GameObject parent)
         {
-            var container = new GameObject("LeftContainer", typeof(RectTransform), typeof(LayoutElement));
-            container.transform.SetParent(parent.transform, false);
-            UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
-
-            var layoutElement = container.GetComponent<LayoutElement>();
-            layoutElement.minWidth = 160;
-            layoutElement.preferredWidth = 200;
-            layoutElement.flexibleWidth = 0;
-            layoutElement.flexibleHeight = 1;
-
-            return container;
+            return CreateRegion("LeftContainer", parent);
         }
 
         private static GameObject CreateMidContainer(GameObject parent)
         {
-            var container =
-                UIFactory.CreateImage("MidContainer", parent.transform, new Color(0.1f, 0.12f, 0.14f, 0.95f));
-            container.AddComponent<VerticalLayoutGroup>();
-            container.AddComponent<LayoutElement>();
+            var container = UIFactory.CreateImage("MidContainer", parent.transform, UITheme.SurfaceAlternate);
             container.AddComponent<RectMask2D>();
-            UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
-            UIFactory.SetupVerticalLayoutGroup(container, 10f, new(0, 0, 0, 0), TextAnchor.UpperCenter,
-                true, true, true);
-
-            var layoutElement = container.GetComponent<LayoutElement>();
-            layoutElement.minWidth = 130;
-            layoutElement.preferredWidth = 130;
-            layoutElement.flexibleWidth = 1;
-            layoutElement.flexibleHeight = 1;
-
             return container;
         }
 
         private static GameObject CreateRightContainer(GameObject parent)
         {
-            var container = new GameObject("RightContainer", typeof(RectTransform), typeof(LayoutElement));
+            return CreateRegion("RightContainer", parent);
+        }
+
+        private static GameObject CreateRegion(string name, GameObject parent)
+        {
+            var container = new GameObject(name, typeof(RectTransform));
             container.transform.SetParent(parent.transform, false);
             UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
-
-            var layoutElement = container.GetComponent<LayoutElement>();
-            layoutElement.minWidth = 300;
-            layoutElement.preferredWidth = 500;
-            layoutElement.flexibleWidth = 0;
-            layoutElement.flexibleHeight = 1;
-
             return container;
         }
 
         private static GameObject CreateFunctionButtonBarContainer(GameObject parent)
         {
-            var container = new GameObject("FunctionButtonBarContainer", typeof(RectTransform), typeof(LayoutElement));
-            container.transform.SetParent(parent.transform, false);
-            UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
-
-            var layoutElement = container.GetComponent<LayoutElement>();
-            layoutElement.preferredHeight = 80;
-            layoutElement.flexibleHeight = 0;
-            layoutElement.flexibleWidth = 1;
-
+            var container = CreateRegion("FunctionButtonBarContainer", parent);
             return container;
         }
 
         private static GameObject CreateTargetListContainer(GameObject parent)
         {
-            var container = new GameObject("TargetListContainer", typeof(RectTransform), typeof(LayoutElement));
-            container.transform.SetParent(parent.transform, false);
-            UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
-
-            var layoutElement = container.GetComponent<LayoutElement>();
-            layoutElement.minWidth = 0;
-            layoutElement.preferredWidth = 0;
-            layoutElement.flexibleWidth = 0;
-            layoutElement.flexibleHeight = 1;
-
+            var container = CreateRegion("TargetListContainer", parent);
             return container;
         }
 
         private static GameObject CreateNoneModelButtonContainer(GameObject parent)
         {
-            var container = new GameObject("NoneModelButtonContainer", typeof(RectTransform), typeof(LayoutElement));
-            container.transform.SetParent(parent.transform, false);
-            UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
-
-            var layoutElement = container.GetComponent<LayoutElement>();
-            layoutElement.preferredHeight = 60;
-            layoutElement.flexibleHeight = 0;
-            layoutElement.flexibleWidth = 1;
-
+            var container = CreateRegion("NoneModelButtonContainer", parent);
+            UIFactory.SetupRectTransform(container, new(0, 1), Vector2.one, new(0, 34),
+                pivot: new(.5f, 1), anchoredPosition: Vector2.zero);
             return container;
         }
 
         private static GameObject CreateBundleToolbarContainer(GameObject parent)
         {
-            var container = new GameObject("BundleToolbarContainer", typeof(RectTransform), typeof(LayoutElement));
-            container.transform.SetParent(parent.transform, false);
-            UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
-
-            var layoutElement = container.GetComponent<LayoutElement>();
-            layoutElement.preferredHeight = 40;
-            layoutElement.flexibleHeight = 0;
-            layoutElement.flexibleWidth = 1;
-
+            var container = CreateRegion("BundleToolbarContainer", parent);
+            UIFactory.SetupRectTransform(container, new(0, 1), Vector2.one, new(0, 40),
+                pivot: new(.5f, 1), anchoredPosition: new(0, -90));
             return container;
         }
 
         private static GameObject CreateSearchFieldContainer(GameObject parent)
         {
-            var container = new GameObject("SearchFieldContainer", typeof(RectTransform), typeof(LayoutElement));
-            container.transform.SetParent(parent.transform, false);
-            UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
-
-            var layoutElement = container.GetComponent<LayoutElement>();
-            layoutElement.preferredHeight = 40;
-            layoutElement.flexibleHeight = 0;
-            layoutElement.flexibleWidth = 1;
-
+            var container = CreateRegion("SearchFieldContainer", parent);
+            UIFactory.SetupRectTransform(container, new(0, 1), Vector2.one, new(0, 40),
+                pivot: new(.5f, 1), anchoredPosition: new(0, -42));
             return container;
         }
 
         private static GameObject CreateModelListContainer(GameObject parent)
         {
-            var container = new GameObject("ModelListContainer", typeof(RectTransform), typeof(LayoutElement));
-            container.transform.SetParent(parent.transform, false);
-            UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
-
-            var layoutElement = container.GetComponent<LayoutElement>();
-            layoutElement.minWidth = 0;
-            layoutElement.preferredWidth = 0;
-            layoutElement.flexibleHeight = 1;
-            layoutElement.flexibleWidth = 1;
-
+            var container = CreateRegion("ModelListContainer", parent);
+            container.AddComponent<Canvas>();
+            container.AddComponent<GraphicRaycaster>();
+            UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero,
+                offsetMax: new(0, -138));
             return container;
         }
 
         private static GameObject CreateTargetSettingsContainer(GameObject parent)
         {
-            var container = new GameObject("TargetSettingsContainer", typeof(RectTransform), typeof(LayoutElement));
-            container.transform.SetParent(parent.transform, false);
-            UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
-
-            var layoutElement = container.GetComponent<LayoutElement>();
-            layoutElement.minWidth = 0;
-            layoutElement.preferredWidth = 0;
-            layoutElement.flexibleWidth = 1;
-            layoutElement.flexibleHeight = 1;
-
+            var container = CreateRegion("TargetSettingsContainer", parent);
+            UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero,
+                offsetMax: new(0, -40));
             return container;
         }
 

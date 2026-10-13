@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using DuckovCustomModel.Localizations;
@@ -13,14 +13,17 @@ namespace DuckovCustomModel.UI.Components
 {
     public class MultiSelectDropdown : MonoBehaviour, IPointerClickHandler
     {
+        private readonly Vector3[] _corners = new Vector3[4];
         private readonly HashSet<string> _selectedValues = new();
-        private readonly Dictionary<string, Toggle> _toggles = new();
         private GameObject? _button;
         private GameObject? _buttonText;
+        private Canvas? _canvas;
+        private RectTransform? _content;
         private GameObject? _dropdownPanel;
         private Func<string, string>? _getDisplayName;
         private Action? _onSelectionChanged;
         private string[] _options = [];
+        private VirtualVerticalList? _virtualList;
 
         private void Update()
         {
@@ -33,6 +36,16 @@ namespace DuckovCustomModel.UI.Components
             if (!RectTransformUtility.RectangleContainsScreenPoint(panelRect, mousePos, null) &&
                 !RectTransformUtility.RectangleContainsScreenPoint(buttonRect, mousePos, null))
                 _dropdownPanel.SetActive(false);
+        }
+
+        private void OnDisable()
+        {
+            if (_dropdownPanel != null) _dropdownPanel.SetActive(false);
+        }
+
+        private void OnDestroy()
+        {
+            if (_dropdownPanel != null) Destroy(_dropdownPanel);
         }
 
         public void OnPointerClick(PointerEventData eventData)
@@ -55,6 +68,13 @@ namespace DuckovCustomModel.UI.Components
             _getDisplayName = getDisplayName;
             _onSelectionChanged = onSelectionChanged;
             CreateButton();
+            UpdateButtonText();
+            _virtualList?.SetCount(_options.Length);
+            if (_dropdownPanel != null && _dropdownPanel.activeSelf)
+            {
+                UpdateDropdownPosition();
+                _virtualList?.RefreshVisible();
+            }
         }
 
         public HashSet<string> GetSelectedValues()
@@ -68,9 +88,7 @@ namespace DuckovCustomModel.UI.Components
             foreach (var value in values)
                 _selectedValues.Add(value);
             UpdateButtonText();
-            if (_dropdownPanel == null) return;
-            foreach (var (key, toggle) in _toggles)
-                toggle.isOn = _selectedValues.Contains(key);
+            _virtualList?.RefreshVisible();
         }
 
         private void CreateButton()
@@ -90,6 +108,9 @@ namespace DuckovCustomModel.UI.Components
             buttonTextRect.anchorMax = new(1, 1);
             buttonTextRect.offsetMin = new(5, 0);
             buttonTextRect.offsetMax = new(-20, 0);
+            var text = _buttonText.GetComponent<TMP_Text>();
+            text.enableWordWrapping = false;
+            text.overflowMode = TextOverflowModes.Ellipsis;
             UpdateButtonText();
 
             var arrowObj =
@@ -108,102 +129,101 @@ namespace DuckovCustomModel.UI.Components
         {
             if (_dropdownPanel != null) return;
 
-            _dropdownPanel = UIFactory.CreateImage("DropdownPanel", transform, new Color(0.1f, 0.12f, 0.15f, 0.95f));
+            _canvas = GetComponentInParent<Canvas>()?.rootCanvas;
+            if (_canvas == null) return;
+            _dropdownPanel = UIFactory.CreateImage("DropdownPanel", _canvas.transform, UITheme.Surface);
+            var popupCanvas = _dropdownPanel.AddComponent<Canvas>();
+            popupCanvas.overrideSorting = true;
+            popupCanvas.sortingOrder = _canvas.sortingOrder + 10;
+            _dropdownPanel.AddComponent<GraphicRaycaster>();
             _dropdownPanel.SetActive(false);
 
             var outline = _dropdownPanel.AddComponent<Outline>();
             outline.effectColor = new(0.3f, 0.35f, 0.4f, 0.7f);
             outline.effectDistance = new(2, -2);
 
-            var content = new GameObject("Content", typeof(RectTransform));
-            content.transform.SetParent(_dropdownPanel.transform, false);
-            var contentRect = content.GetComponent<RectTransform>();
-            contentRect.anchorMin = Vector2.zero;
-            contentRect.anchorMax = Vector2.one;
-            contentRect.offsetMin = new(5, 5);
-            contentRect.offsetMax = new(-5, -5);
+            var scroll = UIFactory.CreateScrollView("Options", _dropdownPanel.transform, out var content);
+            UIFactory.SetupRectTransform(scroll.gameObject, Vector2.zero, Vector2.one,
+                offsetMin: new(4, 4), offsetMax: new(-4, -4));
+            _content = content.GetComponent<RectTransform>();
 
-            var layoutGroup = content.AddComponent<VerticalLayoutGroup>();
-            layoutGroup.spacing = 2f;
-            layoutGroup.padding = new(5, 5, 5, 5);
-            layoutGroup.childControlWidth = true;
-            layoutGroup.childControlHeight = false;
-            layoutGroup.childForceExpandWidth = true;
-            layoutGroup.childForceExpandHeight = false;
+            _virtualList = scroll.gameObject.AddComponent<VirtualVerticalList>();
+            _virtualList.Initialize(scroll, 30, 2, new(5, 5, 5, 5), CreateOptionRow, BindOptionRow);
+            _virtualList.SetCount(_options.Length);
+        }
 
-            foreach (var option in _options)
-            {
-                var toggleObj = new GameObject($"Toggle_{option}", typeof(RectTransform), typeof(Toggle));
-                toggleObj.transform.SetParent(content.transform, false);
+        private GameObject CreateOptionRow(Transform parent)
+        {
+            var toggleObj = new GameObject("Option", typeof(RectTransform), typeof(Image),
+                typeof(Toggle));
+            toggleObj.transform.SetParent(parent, false);
 
-                var toggleRect = toggleObj.GetComponent<RectTransform>();
-                toggleRect.anchorMin = new(0, 1);
-                toggleRect.anchorMax = new(1, 1);
-                toggleRect.pivot = new(0.5f, 1);
-                toggleRect.sizeDelta = new(0, 30);
+            var toggle = toggleObj.GetComponent<Toggle>();
+            var rowImage = toggleObj.GetComponent<Image>();
+            rowImage.color = UITheme.Control;
+            toggle.targetGraphic = rowImage;
+            var row = toggleObj.AddComponent<MultiSelectOptionRow>();
+            row.Toggle = toggle;
+            toggle.onValueChanged.AddListener(value => OnToggleChanged(row.Key, value));
 
-                var toggle = toggleObj.GetComponent<Toggle>();
-                toggle.isOn = _selectedValues.Contains(option);
-                toggle.onValueChanged.AddListener(OnToggleChanged);
-                _toggles[option] = toggle;
+            var checkboxVar = new GameObject("Checkbox", typeof(RectTransform), typeof(Image));
+            checkboxVar.transform.SetParent(toggleObj.transform, false);
 
-                var layoutElement = toggleObj.AddComponent<LayoutElement>();
-                layoutElement.minHeight = 30;
-                layoutElement.preferredHeight = 30;
-                layoutElement.flexibleHeight = 0;
+            var checkboxRect = checkboxVar.GetComponent<RectTransform>();
+            checkboxRect.anchorMin = new(0, 0.5f);
+            checkboxRect.anchorMax = new(0, 0.5f);
+            checkboxRect.pivot = new(0.5f, 0.5f);
+            checkboxRect.sizeDelta = new(20, 20);
+            checkboxRect.anchoredPosition = new(10, 0);
 
-                var checkboxVar = new GameObject("Checkbox", typeof(RectTransform), typeof(Image));
-                checkboxVar.transform.SetParent(toggleObj.transform, false);
+            var bgImage = checkboxVar.GetComponent<Image>();
+            bgImage.color = new(0.2f, 0.2f, 0.2f, 1);
+            bgImage.raycastTarget = false;
 
-                var checkboxRect = checkboxVar.GetComponent<RectTransform>();
-                checkboxRect.anchorMin = new(0, 0.5f);
-                checkboxRect.anchorMax = new(0, 0.5f);
-                checkboxRect.pivot = new(0.5f, 0.5f);
-                checkboxRect.sizeDelta = new(20, 20);
-                checkboxRect.anchoredPosition = new(10, 0);
+            var checkmark = new GameObject("Checkmark", typeof(RectTransform), typeof(Image));
+            checkmark.transform.SetParent(checkboxVar.transform, false);
+            var checkImage = checkmark.GetComponent<Image>();
+            checkImage.color = UITheme.Highlight;
+            checkImage.raycastTarget = false;
 
-                var bgImage = checkboxVar.GetComponent<Image>();
-                bgImage.color = new(0.2f, 0.2f, 0.2f, 1);
-                toggle.targetGraphic = bgImage;
+            var checkRect = checkmark.GetComponent<RectTransform>();
+            checkRect.anchorMin = Vector2.zero;
+            checkRect.anchorMax = Vector2.one;
+            checkRect.pivot = new(0.5f, 0.5f);
+            checkRect.anchoredPosition = Vector2.zero;
+            checkRect.sizeDelta = Vector2.zero;
+            checkRect.offsetMin = new(4, 4);
+            checkRect.offsetMax = new(-4, -4);
 
-                var checkmark = new GameObject("Checkmark", typeof(RectTransform), typeof(Image));
-                checkmark.transform.SetParent(checkboxVar.transform, false);
-                var checkImage = checkmark.GetComponent<Image>();
-                checkImage.color = new(0.2f, 0.8f, 0.2f, 1);
+            toggle.graphic = checkImage;
 
-                var checkRect = checkmark.GetComponent<RectTransform>();
-                checkRect.anchorMin = Vector2.zero;
-                checkRect.anchorMax = Vector2.one;
-                checkRect.pivot = new(0.5f, 0.5f);
-                checkRect.anchoredPosition = Vector2.zero;
-                checkRect.sizeDelta = Vector2.zero;
-                checkRect.offsetMin = new(4, 4);
-                checkRect.offsetMax = new(-4, -4);
+            var labelObj = new GameObject("Label", typeof(TextMeshProUGUI));
+            labelObj.transform.SetParent(toggleObj.transform, false);
+            var labelText = labelObj.GetComponent<TextMeshProUGUI>();
+            row.Label = labelText;
+            labelText.fontSize = 14;
+            labelText.raycastTarget = false;
+            labelText.color = Color.white;
+            labelText.alignment = TextAlignmentOptions.MidlineLeft;
+            labelText.enableWordWrapping = false;
+            labelText.overflowMode = TextOverflowModes.Ellipsis;
 
-                toggle.graphic = checkImage;
+            var labelRect = labelObj.GetComponent<RectTransform>();
+            labelRect.anchorMin = new(0, 0);
+            labelRect.anchorMax = new(1, 1);
+            labelRect.pivot = new(0, 0.5f);
+            labelRect.anchoredPosition = Vector2.zero;
+            labelRect.offsetMin = new(40, 0);
+            labelRect.offsetMax = new(-5, 0);
+            return toggleObj;
+        }
 
-                var labelObj = new GameObject("Label", typeof(TextMeshProUGUI));
-                labelObj.transform.SetParent(toggleObj.transform, false);
-                var labelText = labelObj.GetComponent<TextMeshProUGUI>();
-                var displayName = _getDisplayName != null ? _getDisplayName(option) : option;
-                labelText.text = displayName;
-                labelText.fontSize = 14;
-                labelText.color = Color.white;
-                labelText.alignment = TextAlignmentOptions.MidlineLeft;
-                labelText.enableWordWrapping = false;
-                labelText.overflowMode = TextOverflowModes.Ellipsis;
-
-                var labelRect = labelObj.GetComponent<RectTransform>();
-                labelRect.anchorMin = new(0, 0);
-                labelRect.anchorMax = new(1, 1);
-                labelRect.pivot = new(0, 0.5f);
-                labelRect.anchoredPosition = Vector2.zero;
-                labelRect.offsetMin = new(40, 0);
-                labelRect.offsetMax = new(-5, 0);
-            }
-
-            var contentSizeFitter = content.AddComponent<ContentSizeFitter>();
-            contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        private void BindOptionRow(GameObject item, int index)
+        {
+            var row = item.GetComponent<MultiSelectOptionRow>();
+            row.Key = _options[index];
+            row.Label.text = _getDisplayName != null ? _getDisplayName(row.Key) : row.Key;
+            row.Toggle.SetIsOnWithoutNotify(_selectedValues.Contains(row.Key));
         }
 
         private void UpdateButtonText()
@@ -244,40 +264,51 @@ namespace DuckovCustomModel.UI.Components
 
             _dropdownPanel.transform.SetAsLastSibling();
             UpdateDropdownPosition();
+            _virtualList?.RefreshVisible();
         }
 
         private void UpdateDropdownPosition()
         {
             if (_dropdownPanel == null) return;
 
-            var content = _dropdownPanel.transform.Find("Content");
-            if (content == null) return;
-
-            var contentRect = content.GetComponent<RectTransform>();
-            LayoutRebuilder.ForceRebuildLayoutImmediate(contentRect);
-
+            if (_content == null || _canvas == null) return;
+            var canvasRect = (RectTransform)_canvas.transform;
             var buttonRect = GetComponent<RectTransform>();
             var panelRect = _dropdownPanel.GetComponent<RectTransform>();
-
+            buttonRect.GetWorldCorners(_corners);
+            var bottomLeft = canvasRect.InverseTransformPoint(_corners[0]);
+            var topLeft = canvasRect.InverseTransformPoint(_corners[1]);
+            var bottomRight = canvasRect.InverseTransformPoint(_corners[3]);
+            var bounds = canvasRect.rect;
+            var width = Mathf.Min(Mathf.Max(180, bottomRight.x - bottomLeft.x), bounds.width - 16);
+            var below = bottomLeft.y - bounds.yMin - 8;
+            var above = bounds.yMax - topLeft.y - 8;
+            var showAbove = below < Mathf.Min(180, _content.rect.height + 8) && above > below;
+            var height = Mathf.Min(_content.rect.height + 8, 320, Mathf.Max(32, showAbove ? above : below));
+            var left = Mathf.Clamp(bottomLeft.x, bounds.xMin + 8, bounds.xMax - width - 8);
+            panelRect.anchorMin = canvasRect.pivot;
+            panelRect.anchorMax = canvasRect.pivot;
             panelRect.pivot = new(0, 1);
-            panelRect.anchorMin = Vector2.zero;
-            panelRect.anchorMax = Vector2.zero;
-            panelRect.anchoredPosition = new(0, -buttonRect.sizeDelta.y + 15);
-
-            var contentSize = contentRect.rect.height;
-            panelRect.sizeDelta = new(buttonRect.rect.width, contentSize + 10);
+            panelRect.sizeDelta = new(width, height);
+            panelRect.anchoredPosition = new(left, showAbove ? topLeft.y + height : bottomLeft.y);
         }
 
-        private void OnToggleChanged(bool value)
+        private void OnToggleChanged(string key, bool value)
         {
-            foreach (var (key, toggle) in _toggles)
-                if (toggle.isOn)
-                    _selectedValues.Add(key);
-                else
-                    _selectedValues.Remove(key);
+            if (value)
+                _selectedValues.Add(key);
+            else
+                _selectedValues.Remove(key);
 
             UpdateButtonText();
             _onSelectionChanged?.Invoke();
         }
+    }
+
+    internal sealed class MultiSelectOptionRow : MonoBehaviour
+    {
+        internal string Key = string.Empty;
+        internal TMP_Text Label = null!;
+        internal Toggle Toggle = null!;
     }
 }

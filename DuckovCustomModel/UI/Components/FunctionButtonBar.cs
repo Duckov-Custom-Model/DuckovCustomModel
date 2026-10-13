@@ -34,7 +34,7 @@ namespace DuckovCustomModel.UI.Components
             var layoutElement = buttonBar.AddComponent<LayoutElement>();
             layoutElement.flexibleWidth = 1;
             layoutElement.flexibleHeight = 1;
-            layoutElement.preferredHeight = 80;
+            layoutElement.preferredHeight = 56;
 
             UIFactory.SetupHorizontalLayoutGroup(buttonBar, 10f, new(10, 10, 10, 10),
                 childControlWidth: true);
@@ -54,9 +54,9 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupRectTransform(_refreshButton.gameObject, Vector2.zero, Vector2.zero, new(180, 0));
 
             var refreshButtonLayoutElement = _refreshButton.gameObject.AddComponent<LayoutElement>();
-            refreshButtonLayoutElement.minWidth = 110;
-            refreshButtonLayoutElement.preferredWidth = 180;
-            refreshButtonLayoutElement.flexibleWidth = 0;
+            refreshButtonLayoutElement.minWidth = 0;
+            refreshButtonLayoutElement.preferredWidth = 0;
+            refreshButtonLayoutElement.flexibleWidth = 1;
             refreshButtonLayoutElement.flexibleHeight = 1;
 
             var refreshTextObj = UIFactory.CreateLocalizedText("Text", _refreshButton.transform,
@@ -74,9 +74,9 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupRectTransform(_resetInvalidModelsButton.gameObject, Vector2.zero, Vector2.zero, new(180, 0));
 
             var resetButtonLayoutElement = _resetInvalidModelsButton.gameObject.AddComponent<LayoutElement>();
-            resetButtonLayoutElement.minWidth = 110;
-            resetButtonLayoutElement.preferredWidth = 180;
-            resetButtonLayoutElement.flexibleWidth = 0;
+            resetButtonLayoutElement.minWidth = 0;
+            resetButtonLayoutElement.preferredWidth = 0;
+            resetButtonLayoutElement.flexibleWidth = 1;
             resetButtonLayoutElement.flexibleHeight = 1;
 
             var resetTextObj = UIFactory.CreateText("Text", _resetInvalidModelsButton.transform,
@@ -100,9 +100,9 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupRectTransform(_openModelFolderButton.gameObject, Vector2.zero, Vector2.zero, new(180, 0));
 
             var openFolderButtonLayoutElement = _openModelFolderButton.gameObject.AddComponent<LayoutElement>();
-            openFolderButtonLayoutElement.minWidth = 110;
-            openFolderButtonLayoutElement.preferredWidth = 180;
-            openFolderButtonLayoutElement.flexibleWidth = 0;
+            openFolderButtonLayoutElement.minWidth = 0;
+            openFolderButtonLayoutElement.preferredWidth = 0;
+            openFolderButtonLayoutElement.flexibleWidth = 1;
             openFolderButtonLayoutElement.flexibleHeight = 1;
 
             var openFolderTextObj = UIFactory.CreateText("Text", _openModelFolderButton.transform,
@@ -112,20 +112,17 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupButtonColors(_openModelFolderButton, new(1, 1, 1, 1), new(0.4f, 0.6f, 0.4f, 1),
                 new(0.3f, 0.5f, 0.3f, 1), new(0.4f, 0.6f, 0.4f, 1));
 
-            var hintLabel = UIFactory.CreateLocalizedText("ModelUninstallHint", parent.transform,
-                () => Localization.ModelUninstallHint, 24, new(0.8f, 0.8f, 0.8f, 0.8f));
-            var hintLayoutElement = hintLabel.AddComponent<LayoutElement>();
-            hintLayoutElement.minWidth = 0;
-            hintLayoutElement.preferredWidth = 0;
-            hintLayoutElement.flexibleWidth = 1;
-            hintLayoutElement.flexibleHeight = 1;
-            var hintTextComponent = hintLabel.GetComponent<TextMeshProUGUI>();
-            if (hintTextComponent == null) return;
-            hintTextComponent.enableWordWrapping = true;
-            hintTextComponent.enableAutoSizing = true;
-            hintTextComponent.fontSizeMin = 12;
-            hintTextComponent.fontSizeMax = 24;
-            hintTextComponent.overflowMode = TextOverflowModes.Ellipsis;
+            var tooltip = UIFactory.CreateImage("FolderHint", _openModelFolderButton.transform,
+                new Color(.04f, .06f, .08f, .98f));
+            UIFactory.SetupRectTransform(tooltip, new(.5f, .5f), new(.5f, .5f), new(320, 100), pivot: new(0, 1));
+            tooltip.GetComponent<Image>().raycastTarget = false;
+            var hint = UIFactory.CreateLocalizedText("Text", tooltip.transform,
+                () => Localization.ModelUninstallHint, 13, UITheme.Text, TextAnchor.UpperLeft);
+            UIFactory.SetupRectTransform(hint, Vector2.zero, Vector2.one,
+                offsetMin: new(7, 7), offsetMax: new(-7, -7));
+            tooltip.SetActive(false);
+            _openModelFolderButton.gameObject.AddComponent<UIItemTooltip>().Initialize(tooltip,
+                hint.GetComponent<TextMeshProUGUI>());
         }
 
         private void OnResetInvalidModelsButtonClicked()

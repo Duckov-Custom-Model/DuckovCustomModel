@@ -2,6 +2,17 @@
 
 English | [中文](CHANGELOG.md)
 
+## v2.1.1
+
+### Interface improvements
+
+- Reorganize target selection, model browsing, and settings. Target rows retain status colors and show assigned or inherited appearances, with clearer selection, text hierarchy, and hover details.
+- Group settings by function and adapt controls to column width. Edit values directly beside sliders, keep dropdowns within the window, and retain scroll positions per target.
+- Separate settings and update information. Only the release-note body scrolls; version information, update checks, and download buttons stay fixed without overlapping settings.
+- Reduce repeated layout, search, and preview UI updates. Unify square controls, hover feedback, and text bounds, and retain the active tab.
+- Improve animator-window filtering, dragging, and resizing, retain the selected character, and reduce unchanged parameter updates.
+- Create or reuse target rows, model cards, selection options, and animator parameters only around the visible area. Rebind changed content and release offscreen model previews to reduce object counts in large lists.
+
 ## v2.1.0
 
 ### Added

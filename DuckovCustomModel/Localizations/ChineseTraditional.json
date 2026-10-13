@@ -1,4 +1,8 @@
 {
+  "AudioSettings": "音訊設定",
+  "TargetOriginal": "原始外觀",
+  "TargetInherited": "繼承",
+  "TargetCopyHint": "Shift + 點擊：複製目標資訊",
   "LeftHandLocator": "左手",
   "RightHandLocator": "右手",
   "RifleLocator": "步槍",

@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace DuckovCustomModel.UI.Utils
 {
-    public class WindowBase : MonoBehaviour, IDragHandler, IBeginDragHandler
+    public class WindowBase : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler
     {
         private Vector2 _initialMousePos;
         private Vector2 _initialPosition;
@@ -32,6 +32,7 @@ namespace DuckovCustomModel.UI.Utils
             }
 
             CreateResizeHandle();
+            ClampToParent();
         }
 
         public void OnBeginDrag(PointerEventData eventData)
@@ -39,11 +40,15 @@ namespace DuckovCustomModel.UI.Utils
             if (_windowRectTransform == null) return;
 
             _initialMousePos = eventData.position;
-            _initialSize = _windowRectTransform.sizeDelta;
+            _initialSize = _windowRectTransform.rect.size;
             _initialPosition = _windowRectTransform.anchoredPosition;
 
             _isResizing = IsResizeHandle(eventData.position);
-            _isDragging = !_isResizing;
+            var title = _windowRectTransform.Find("TitleBar") as RectTransform;
+            _isDragging = !_isResizing && (title == null ||
+                                           RectTransformUtility.RectangleContainsScreenPoint(title, eventData.position,
+                                               eventData.pressEventCamera));
+            if (_isDragging || _isResizing) _windowRectTransform.SetAsLastSibling();
         }
 
         public void OnDrag(PointerEventData eventData)
@@ -54,6 +59,12 @@ namespace DuckovCustomModel.UI.Utils
                 ResizeWindow(eventData);
             else if (_isDragging)
                 DragWindow(eventData);
+        }
+
+        public void OnEndDrag(PointerEventData eventData)
+        {
+            _isDragging = false;
+            _isResizing = false;
         }
 
         private void CreateResizeHandle()
@@ -95,7 +106,7 @@ namespace DuckovCustomModel.UI.Utils
             if (!_isResizing)
             {
                 _initialMousePos = eventData.position;
-                _initialSize = _windowRectTransform.sizeDelta;
+                _initialSize = _windowRectTransform.rect.size;
                 _initialPosition = _windowRectTransform.anchoredPosition;
                 _isResizing = true;
             }
@@ -155,6 +166,7 @@ namespace DuckovCustomModel.UI.Utils
                 out var oldPoint);
             var localDelta = newPoint - oldPoint;
             _windowRectTransform.anchoredPosition = _initialPosition + localDelta;
+            ClampToParent();
         }
 
         private void ResizeWindow(PointerEventData eventData)
@@ -177,13 +189,32 @@ namespace DuckovCustomModel.UI.Utils
             var newSize = _initialSize;
             var newPosition = _initialPosition;
 
-            newSize.x = Mathf.Clamp(_initialSize.x + localDelta.x, _minSize.x, _maxSize.x);
-            newSize.y = Mathf.Clamp(_initialSize.y - localDelta.y, _minSize.y, _maxSize.y);
-            newPosition.x = _initialPosition.x + (newSize.x - _initialSize.x) * 0.5f;
-            newPosition.y = _initialPosition.y - (newSize.y - _initialSize.y) * 0.5f;
+            var available = _windowRectTransform.parent is RectTransform parent ? parent.rect.size : _maxSize;
+            var maximum = Vector2.Min(_maxSize, available);
+            var minimum = Vector2.Min(_minSize, maximum);
+            newSize.x = Mathf.Clamp(_initialSize.x + localDelta.x, minimum.x, maximum.x);
+            newSize.y = Mathf.Clamp(_initialSize.y - localDelta.y, minimum.y, maximum.y);
+            newPosition.x = _initialPosition.x + (newSize.x - _initialSize.x) * _windowRectTransform.pivot.x;
+            newPosition.y = _initialPosition.y - (newSize.y - _initialSize.y) * (1 - _windowRectTransform.pivot.y);
 
-            _windowRectTransform.sizeDelta = newSize;
+            _windowRectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, newSize.x);
+            _windowRectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, newSize.y);
             _windowRectTransform.anchoredPosition = newPosition;
+            ClampToParent();
+        }
+
+        private void ClampToParent()
+        {
+            if (_windowRectTransform == null || _windowRectTransform.parent is not RectTransform parent) return;
+            var size = Vector2.Min(_windowRectTransform.rect.size, parent.rect.size);
+            _windowRectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, size.x);
+            _windowRectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, size.y);
+            var position = _windowRectTransform.localPosition;
+            position.x = Mathf.Clamp(position.x, parent.rect.xMin + size.x * _windowRectTransform.pivot.x,
+                parent.rect.xMax - size.x * (1 - _windowRectTransform.pivot.x));
+            position.y = Mathf.Clamp(position.y, parent.rect.yMin + size.y * _windowRectTransform.pivot.y,
+                parent.rect.yMax - size.y * (1 - _windowRectTransform.pivot.y));
+            _windowRectTransform.localPosition = position;
         }
 
         private class ResizeHandleDragHandler : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler
@@ -192,7 +223,7 @@ namespace DuckovCustomModel.UI.Utils
 
             public void OnBeginDrag(PointerEventData eventData)
             {
-                // Handled in HandleResizeHandleDrag
+                _windowBase?.OnBeginDrag(eventData);
             }
 
             public void OnDrag(PointerEventData eventData)

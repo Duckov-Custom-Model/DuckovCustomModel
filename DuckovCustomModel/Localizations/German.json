@@ -1,4 +1,8 @@
 {
+  "AudioSettings": "Audioeinstellungen",
+  "TargetOriginal": "Originalaussehen",
+  "TargetInherited": "Geerbt",
+  "TargetCopyHint": "Umschalt + Klick kopiert die Zieldetails",
   "LeftHandLocator": "Linke Hand",
   "RightHandLocator": "Rechte Hand",
   "RifleLocator": "Gewehr",

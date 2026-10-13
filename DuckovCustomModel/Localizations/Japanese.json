@@ -1,4 +1,8 @@
 {
+  "AudioSettings": "音声設定",
+  "TargetOriginal": "元の外観",
+  "TargetInherited": "継承",
+  "TargetCopyHint": "Shift + クリックで対象情報をコピー",
   "LeftHandLocator": "左手",
   "RightHandLocator": "右手",
   "RifleLocator": "ライフル",

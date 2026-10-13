@@ -8,8 +8,21 @@ namespace DuckovCustomModel.UI.Components
 {
     public class SearchField : MonoBehaviour
     {
+        private string _appliedSearch = string.Empty;
+        private float _applyAt;
         private TMP_InputField? _inputField;
+        private bool _pending;
         private string _searchText = string.Empty;
+
+        private void Update()
+        {
+            if (_pending && Time.unscaledTime >= _applyAt) ApplySearch();
+        }
+
+        private void OnDisable()
+        {
+            if (_pending) ApplySearch();
+        }
 
         public event Action<string>? OnSearchChanged;
 
@@ -26,10 +39,19 @@ namespace DuckovCustomModel.UI.Components
                 () => Localization.SearchPlaceholder);
         }
 
+        private void ApplySearch()
+        {
+            _pending = false;
+            if (_appliedSearch == _searchText) return;
+            _appliedSearch = _searchText;
+            OnSearchChanged?.Invoke(_searchText);
+        }
+
         private void OnSearchValueChanged(string text)
         {
             _searchText = text;
-            OnSearchChanged?.Invoke(_searchText);
+            _applyAt = Time.unscaledTime + .15f;
+            _pending = true;
         }
     }
 }

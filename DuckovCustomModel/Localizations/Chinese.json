@@ -1,4 +1,8 @@
 {
+  "AudioSettings": "音频设置",
+  "TargetOriginal": "原始外观",
+  "TargetInherited": "继承",
+  "TargetCopyHint": "Shift + 点击：复制目标信息",
   "LeftHandLocator": "左手",
   "RightHandLocator": "右手",
   "RifleLocator": "步枪",

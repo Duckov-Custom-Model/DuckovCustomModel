@@ -1,4 +1,8 @@
 {
+  "AudioSettings": "Ajustes de audio",
+  "TargetOriginal": "Aspecto original",
+  "TargetInherited": "Heredado",
+  "TargetCopyHint": "Mayús + clic para copiar los datos del objetivo",
   "LeftHandLocator": "Mano izquierda",
   "RightHandLocator": "Mano derecha",
   "RifleLocator": "Rifle",

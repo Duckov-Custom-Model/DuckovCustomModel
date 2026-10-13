@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.UI.Base;
@@ -12,7 +12,7 @@ namespace DuckovCustomModel.UI.Components
     {
         private readonly Dictionary<int, string> _tabLocalizationKeys = [];
         private readonly List<TabInfo> _tabs = [];
-        private int _currentTab;
+        private int _currentTab = -1;
         private GameObject? _tabContainer;
 
         public event Action<int>? OnTabChanged;
@@ -24,7 +24,8 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupRectTransform(_tabContainer, new(0, 1), new(1, 1), new Vector2(0, 60),
                 pivot: new Vector2(0.5f, 1),
                 anchoredPosition: new Vector2(0, -40));
-            UIFactory.SetupHorizontalLayoutGroup(_tabContainer, 8f, new(10, 8, 10, 8));
+            UIFactory.SetupHorizontalLayoutGroup(_tabContainer, 4f, new(10, 8, 10, 8),
+                childControlWidth: true, childForceExpandWidth: true);
         }
 
         public void AddTab(string tabName, GameObject panel, bool isActive = false, string? localizationKey = null)
@@ -33,9 +34,16 @@ namespace DuckovCustomModel.UI.Components
 
             var tabIndex = _tabs.Count;
             var button = UIFactory.CreateButton($"Tab_{tabIndex}", _tabContainer.transform,
-                () => SwitchToTab(tabIndex), new Color(0.2f, 0.2f, 0.2f, 1)).GetComponent<Button>();
+                () => SwitchToTab(tabIndex), UITheme.Surface).GetComponent<Button>();
             UIFactory.SetupRectTransform(button.gameObject, Vector2.zero, Vector2.zero, new Vector2(140, 60));
 
+            var layout = button.gameObject.AddComponent<LayoutElement>();
+            layout.minWidth = 0;
+            layout.preferredWidth = 140;
+            layout.flexibleWidth = 1;
+            var indicator = UIFactory.CreateImage("Selected", button.transform, UITheme.Highlight);
+            indicator.GetComponent<Image>().raycastTarget = false;
+            UIFactory.SetupRectTransform(indicator, Vector2.zero, new(1, 0), new(0, 2));
             var text = UIFactory.CreateText("Text", button.transform, tabName, 16, Color.white,
                 TextAnchor.MiddleCenter);
             UIFactory.SetupButtonText(text);
@@ -48,8 +56,10 @@ namespace DuckovCustomModel.UI.Components
                 Panel = panel,
                 IsActive = isActive,
                 Text = textComponent,
+                Indicator = indicator,
             };
 
+            if (!isActive && _tabs.Count > 0) panel.SetActive(false);
             _tabs.Add(tabInfo);
 
             if (!string.IsNullOrEmpty(localizationKey))
@@ -89,9 +99,10 @@ namespace DuckovCustomModel.UI.Components
             };
         }
 
-        public void SwitchToTab(int tabIndex)
+        public void SwitchToTab(int tabIndex, bool refresh = false)
         {
             if (tabIndex < 0 || tabIndex >= _tabs.Count) return;
+            if (_currentTab == tabIndex && !refresh) return;
 
             _currentTab = tabIndex;
 
@@ -116,7 +127,11 @@ namespace DuckovCustomModel.UI.Components
                 }
 
                 var colors = tab.Button.colors;
-                colors.normalColor = isActive ? new(0.3f, 0.4f, 0.5f, 1) : new Color(0.2f, 0.2f, 0.2f, 1);
+                tab.Button.image.color = isActive ? UITheme.Control : UITheme.SurfaceAlternate;
+                tab.Indicator.SetActive(isActive);
+                if (tab.Text != null) tab.Text.color = isActive ? UITheme.Text : UITheme.MutedText;
+                colors.normalColor = Color.white;
+                colors.selectedColor = Color.white;
                 tab.Button.colors = colors;
             }
 
@@ -134,6 +149,7 @@ namespace DuckovCustomModel.UI.Components
             public Button Button { get; set; } = null!;
             public GameObject Panel { get; set; } = null!;
             public bool IsActive { get; set; }
+            public GameObject Indicator { get; set; } = null!;
             public TextMeshProUGUI? Text { get; set; }
         }
     }
