@@ -362,6 +362,9 @@ namespace DuckovCustomModel.UI.Components
                 await UniTask.NextFrame(cancellationToken);
                 await UniTask.NextFrame(cancellationToken);
 
+                await UniTask.WaitUntil(() => isActiveAndEnabled && _content != null &&
+                                              _content.activeInHierarchy, cancellationToken: cancellationToken);
+
                 if (_scrollRect != null)
                 {
                     if (_content != null)
@@ -1070,6 +1073,11 @@ namespace DuckovCustomModel.UI.Components
                 return false;
 
             Canvas.ForceUpdateCanvases();
+            foreach (var grid in contentRect.GetComponentsInChildren<ModelCardGridLayout>())
+                grid.RefreshLayout();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(contentRect);
+            Canvas.ForceUpdateCanvases();
+            _scrollRect.StopMovement();
 
             var contentHeight = contentRect.rect.height;
             var viewportHeight = viewportRect.rect.height;
@@ -1080,10 +1088,10 @@ namespace DuckovCustomModel.UI.Components
                 return true;
             }
 
-            var buttonWorldPos = buttonRect.TransformPoint(Vector3.zero);
+            var buttonWorldPos = buttonRect.TransformPoint(new(0, buttonRect.rect.yMax, 0));
             var buttonLocalPosInContent = contentRect.InverseTransformPoint(buttonWorldPos);
 
-            var buttonTopFromTop = contentRect.rect.yMax - buttonLocalPosInContent.y - buttonRect.rect.height / 2;
+            var buttonTopFromTop = contentRect.rect.yMax - buttonLocalPosInContent.y;
             var desiredViewportTop = buttonTopFromTop - 68f;
 
             var scrollableHeight = contentHeight - viewportHeight;
@@ -1307,6 +1315,11 @@ namespace DuckovCustomModel.UI.Components
             if (modelsFitter != null) modelsFitter.enabled = false;
             var bundleFitter = bundleGroup.GetComponent<ContentSizeFitter>();
             if (bundleFitter != null) bundleFitter.enabled = false;
+            ApplyHeights(true);
+        }
+
+        internal void RefreshLayout()
+        {
             ApplyHeights(true);
         }
 
