@@ -26,8 +26,19 @@ namespace DuckovCustomModel.Managers
 
         public static string ModelsDirectory => Path.Combine(ConfigManager.ConfigBaseDirectory, "Models");
 
-        public static HashSet<string> UpdateModelBundles(bool includeYsm = true)
+        public static HashSet<string> UpdateModelBundles(bool includeYsm = true, bool forceReload = false)
         {
+            if (forceReload)
+            {
+                foreach (var handler in GetAllHandlers().ToArray()) handler.CleanupCustomModel();
+                foreach (var bundle in ModelBundles)
+                    TMPSpriteAtlasManager.UnregisterSpriteAssets(bundle.BundleName);
+                ClearThumbnailCache();
+                AssetBundleManager.UnloadAllAssetBundles(true);
+                YsmModelSource.ClearCache();
+                BundleHashCache.Clear();
+            }
+
             if (!Directory.Exists(ModelsDirectory))
                 Directory.CreateDirectory(ModelsDirectory);
 
@@ -217,18 +228,26 @@ namespace DuckovCustomModel.Managers
                     ModLogger.LogException(ex);
                 }
 
-            if (includeYsm) YsmModelSource.UpdateDiscoveredModels(ModelsDirectory, ModelBundles, bundlesToReload);
+            if (includeYsm)
+                YsmModelSource.UpdateDiscoveredModels(ModelsDirectory, ModelBundles, bundlesToReload,
+                    forceReload: forceReload);
             CheckDuplicateModelIDs();
 
             return bundlesToReload;
         }
 
-        internal static async UniTask<HashSet<string>> UpdateYsmModelBundlesAsync(CancellationToken cancellationToken)
+        internal static async UniTask<HashSet<string>> UpdateYsmModelBundlesAsync(CancellationToken cancellationToken,
+            bool forceReload = false)
         {
             var directory = ModelsDirectory;
             var snapshot = ModelBundles.Where(YsmModelSource.IsYsm).ToList();
             var changed = new HashSet<string>();
-            await Task.Run(() => YsmModelSource.UpdateDiscoveredModels(directory, snapshot, changed, cancellationToken),
+            await Task.Run(() => YsmModelSource.UpdateDiscoveredModels(directory, snapshot, changed, cancellationToken,
+                    forceReload,
+                    (bundle, path) => ReadAssetOnMainThread(() => AssetBundleManager.FindYsmAssetPath(bundle, path),
+                        cancellationToken),
+                    (bundle, path) => ReadAssetOnMainThread(() => AssetBundleManager.LoadYsmBytes(bundle, path),
+                        cancellationToken)),
                 cancellationToken);
             await UniTask.SwitchToMainThread(cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
@@ -236,6 +255,25 @@ namespace DuckovCustomModel.Managers
             ModelBundles.AddRange(snapshot);
             CheckDuplicateModelIDs();
             return changed;
+        }
+
+        private static T ReadAssetOnMainThread<T>(Func<T> read, CancellationToken cancellationToken)
+        {
+            var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var registration = cancellationToken.Register(() => completion.TrySetCanceled(cancellationToken));
+            UniTask.Post(() =>
+            {
+                if (completion.Task.IsCompleted) return;
+                try
+                {
+                    completion.TrySetResult(read());
+                }
+                catch (Exception ex)
+                {
+                    completion.TrySetException(ex);
+                }
+            });
+            return completion.Task.GetAwaiter().GetResult();
         }
 
         public static IReadOnlyDictionary<string, List<string>> GetDuplicateModelIDs()

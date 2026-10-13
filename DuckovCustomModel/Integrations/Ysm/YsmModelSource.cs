@@ -34,8 +34,7 @@ namespace DuckovCustomModel.Integrations.Ysm
 
         public void Dispose()
         {
-            var callback = release;
-            release = null;
+            var callback = Interlocked.Exchange(ref release, null);
             callback?.Invoke();
         }
     }
@@ -67,7 +66,8 @@ namespace DuckovCustomModel.Integrations.Ysm
         internal static bool IsFallbackAnimation(ModelDocument document, string animation)
         {
             return OriginalAnimations.TryGetValue(document, out var names) && !names.Contains(animation)
-                   && document.Animations.ContainsKey(animation);
+                                                                           && document.Animations
+                                                                               .ContainsKey(animation);
         }
 
         public static string GetSourcePath(ModelBundleInfo bundle, ModelInfo model)
@@ -99,22 +99,26 @@ namespace DuckovCustomModel.Integrations.Ysm
         {
             var path = GetSourcePath(bundle, model);
             var assetPath = AssetBundleManager.FindYsmAssetPath(bundle, model.SourcePath);
-            var revision = assetPath == null ? Fingerprint(path) : IsYsm(bundle)
-                ? Fingerprint(path) + "|" + BundleRevision(bundle, assetPath, path)
-                : BundleRevision(bundle, assetPath, path);
+            var revision = assetPath == null
+                ? Fingerprint(path)
+                : IsYsm(bundle)
+                    ? Fingerprint(path) + "|" + BundleRevision(bundle, assetPath, path)
+                    : BundleRevision(bundle, assetPath, path);
             if (!string.IsNullOrEmpty(model.SourceRevision) && revision != model.SourceRevision)
                 throw new IOException("YSM source changed since discovery; refresh the model list before loading.");
             var profile = ReadProfile(path);
-            var key = (assetPath == null ? path : bundle.BundlePath + "|" + assetPath) + "|" + revision;
+            var key = CacheKey(bundle, path, assetPath, revision);
             lock (CacheLock)
             {
                 if (!Cache.TryGetValue(key, out var entry))
                 {
                     var package = LoadValidated(path, profile,
                         assetPath == null ? null : AssetBundleManager.LoadYsmBytes(bundle, assetPath));
-                    if ((assetPath == null ? Fingerprint(path) : IsYsm(bundle)
-                            ? Fingerprint(path) + "|" + BundleRevision(bundle, assetPath, path)
-                            : BundleRevision(bundle, assetPath, path)) != revision)
+                    if ((assetPath == null
+                            ? Fingerprint(path)
+                            : IsYsm(bundle)
+                                ? Fingerprint(path) + "|" + BundleRevision(bundle, assetPath, path)
+                                : BundleRevision(bundle, assetPath, path)) != revision)
                         throw new IOException("YSM source changed while loading.");
                     entry = new() { Package = package };
                     Cache.Add(key, entry);
@@ -133,6 +137,14 @@ namespace DuckovCustomModel.Integrations.Ysm
             }
         }
 
+        private static string CacheKey(ModelBundleInfo bundle, string path, string? assetPath, string revision)
+        {
+            return (assetPath == null
+                ? path
+                : Path.GetFullPath(Path.Combine(bundle.DirectoryPath, bundle.BundlePath))
+                  + "|" + assetPath + "|" + path) + "|" + revision;
+        }
+
         public static void ClearCache()
         {
             lock (CacheLock)
@@ -142,8 +154,12 @@ namespace DuckovCustomModel.Integrations.Ysm
         }
 
         public static void UpdateDiscoveredModels(string modelsDirectory, List<ModelBundleInfo> bundles,
-            HashSet<string> changedBundles, CancellationToken cancellationToken = default)
+            HashSet<string> changedBundles, CancellationToken cancellationToken = default, bool forceReload = false,
+            Func<ModelBundleInfo, string, string?>? findAssetPath = null,
+            Func<ModelBundleInfo, string, byte[]>? loadBytes = null)
         {
+            findAssetPath ??= AssetBundleManager.FindYsmAssetPath;
+            loadBytes ??= AssetBundleManager.LoadYsmBytes;
             var root = Path.GetFullPath(modelsDirectory);
             var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -164,14 +180,17 @@ namespace DuckovCustomModel.Integrations.Ysm
                     var bundlePath = ResolveProfileBundlePath(root, path, profile);
                     var sourceBundle = ModelBundleInfo.CreateSourceBundle(root, bundleName, "Ysm", []);
                     sourceBundle.BundlePath = bundlePath;
-                    var assetPath = AssetBundleManager.FindYsmAssetPath(sourceBundle, relative);
+                    var assetPath = bundlePath.Length == 0 ? null : findAssetPath(sourceBundle, relative);
                     var revision = Fingerprint(path, cancellationToken)
-                                   + (assetPath == null ? string.Empty : "|" + BundleRevision(sourceBundle, assetPath, path));
-                    if (previous?.Models.FirstOrDefault()?.SourceRevision == revision) continue;
+                                   + (assetPath == null
+                                       ? string.Empty
+                                       : "|" + BundleRevision(sourceBundle, assetPath, path));
+                    if (!forceReload && previous?.Models.FirstOrDefault()?.SourceRevision == revision) continue;
                     var package = LoadValidated(path, profile,
-                        assetPath == null ? null : AssetBundleManager.LoadYsmBytes(sourceBundle, assetPath));
+                        assetPath == null ? null : loadBytes(sourceBundle, assetPath));
                     if (Fingerprint(path, cancellationToken)
-                        + (assetPath == null ? string.Empty : "|" + BundleRevision(sourceBundle, assetPath, path)) != revision)
+                        + (assetPath == null ? string.Empty : "|" + BundleRevision(sourceBundle, assetPath, path)) !=
+                        revision)
                         throw new IOException("YSM source changed while discovering.");
                     var thumbnailPath = FindThumbnail(path, profile);
                     var model = new ModelInfo
@@ -189,7 +208,7 @@ namespace DuckovCustomModel.Integrations.Ysm
                             : null,
                         SourceKind = "Ysm", SourcePath = relative, SourceRevision = revision,
                         DeathLootBoxYsmPath = ResolveDeathLootBoxPath(root, path, profile.DeathLootBoxYsmPath,
-                            bundlePath),
+                            bundlePath, findAssetPath),
                         DeathLootBoxPrefabPath = profile.DeathLootBoxPrefabPath,
                         DeathLootBoxAnimation = profile.DeathLootBoxAnimation,
                         BundleName = bundleName, TargetTypes = profile.TargetTypes.Length == 0
@@ -202,7 +221,7 @@ namespace DuckovCustomModel.Integrations.Ysm
                     if (!model.Validate()) throw new InvalidDataException("Invalid YSM model metadata.");
                     lock (CacheLock)
                     {
-                        var cacheKey = path + "|" + revision;
+                        var cacheKey = CacheKey(sourceBundle, path, assetPath, revision);
                         if (!Cache.TryGetValue(cacheKey, out var cached))
                             Cache.Add(cacheKey, new() { Package = package, LastUsed = ++cacheUseSequence });
                         else cached.LastUsed = ++cacheUseSequence;
@@ -266,12 +285,13 @@ namespace DuckovCustomModel.Integrations.Ysm
             }
         }
 
-        private static ModelPackage LoadValidated(string path, DuckovYsmBindingProfile profile, byte[]? bundleBytes = null)
+        private static ModelPackage LoadValidated(string path, DuckovYsmBindingProfile profile,
+            byte[]? bundleBytes = null)
         {
             if (bundleBytes == null) RejectLinks(path);
             var package = bundleBytes == null
                 ? new ModelLoader(new(), new YsmDecoder()).Load(path)
-                : new YsmDecoder().Decode(bundleBytes, new LoadLimits());
+                : new YsmDecoder().Decode(bundleBytes, new());
             if (!package.Models.TryGetValue(profile.ModelTarget, out var document))
                 throw new InvalidDataException("YSM package lacks configured target '" + profile.ModelTarget + "'.");
             if (profile.ModelTarget == "player/main")
@@ -279,6 +299,7 @@ namespace DuckovCustomModel.Integrations.Ysm
                 OriginalAnimations.Add(document, new(document.Animations.Keys, StringComparer.Ordinal));
                 YsmAnimationFallbacks.Apply(document);
             }
+
             document.Validate();
             return package;
         }
@@ -331,7 +352,7 @@ namespace DuckovCustomModel.Integrations.Ysm
         }
 
         private static string ResolveDeathLootBoxPath(string root, string sourcePath, string relative,
-            string bundlePath)
+            string bundlePath, Func<ModelBundleInfo, string, string?> findAssetPath)
         {
             if (string.IsNullOrWhiteSpace(relative)) return string.Empty;
             if (Path.IsPathRooted(relative) || !relative.EndsWith(".ysm", StringComparison.OrdinalIgnoreCase))
@@ -346,8 +367,9 @@ namespace DuckovCustomModel.Integrations.Ysm
             {
                 var bundle = ModelBundleInfo.CreateSourceBundle(modelsRoot, string.Empty, "Ysm", []);
                 bundle.BundlePath = bundlePath;
-                if (AssetBundleManager.FindYsmAssetPath(bundle, target) != null) return target;
+                if (findAssetPath(bundle, target) != null) return target;
             }
+
             if (!File.Exists(path))
                 throw new InvalidDataException("DeathLootBoxYsmPath must resolve to a YSM file inside Models.");
             RejectLinks(path);

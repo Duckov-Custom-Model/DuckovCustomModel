@@ -1,14 +1,17 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using Duckov;
 using Duckov.Buffs;
 using Duckov.UI;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Core.MonoBehaviours.Animators;
+using DuckovCustomModel.Integrations;
 using DuckovCustomModel.Integrations.AssetBundles;
 using DuckovCustomModel.Integrations.Ysm;
 using DuckovCustomModel.Managers;
@@ -51,7 +54,6 @@ namespace DuckovCustomModel.MonoBehaviours
         private readonly Dictionary<string, List<string>> _soundsByTag = [];
         private Renderer[]? _cachedCustomModelRenderers;
         private float _currentHeight;
-
         private ModelBundleInfo? _currentModelBundleInfo;
         private CharacterSubVisuals? _customModelSubVisuals;
         private GameObject? _deathLootBoxPrefab;
@@ -61,11 +63,16 @@ namespace DuckovCustomModel.MonoBehaviours
         private Vector3 _initialRootScale = Vector3.one;
         private bool _isScaleLocked;
 
+        private CancellationTokenSource? _modelLoadCancellation;
+
         private float _nextIdleAudioTime;
         private CapsuleCollider? _originalBodyCollider;
         private Vector3 _originalColliderCenter;
         private float _originalColliderHeight, _originalColliderRadius;
         private bool _originalFaceActive = true, _originalSoundEnabled = true;
+        private ModelBundleInfo? _pendingBundle;
+        private ModelInfo? _pendingModel;
+        private PreparedModel? _preparedModel;
         private AssetBundleRadialActionPlayer? _radialActionPlayer;
         private int _ysmRendererVersion;
         private DuckovItemAgent? _ysmSocketAgent;
@@ -145,18 +152,6 @@ namespace DuckovCustomModel.MonoBehaviours
             _radialActionPlayer?.Entries ?? Array.Empty<RadialMenuEntry>();
 
         public string? CurrentRadialActionId => _radialActionPlayer?.CurrentActionId;
-
-        public IReadOnlyList<RadialFormInfo> GetRadialActionForms(string actionId) =>
-            _radialActionPlayer?.GetForms(actionId) ?? Array.Empty<RadialFormInfo>();
-
-        public double GetRadialFormValue(RadialFormInfo form) => _radialActionPlayer?.GetFormValue(form) ?? 0;
-
-        public bool SetRadialFormValue(string actionId, string formId, double value) =>
-            _radialActionPlayer?.SetFormValue(actionId, formId, value) == true;
-
-        public void SaveRadialForms() => _radialActionPlayer?.SaveForms();
-
-        public void ResetRadialForms() => _radialActionPlayer?.ResetForms();
 
         private void Update()
         {
@@ -262,6 +257,31 @@ namespace DuckovCustomModel.MonoBehaviours
             if (CharacterMainControl.Health == null) return;
             CharacterMainControl.Health.OnHurtEvent.RemoveListener(OnHurt);
             CharacterMainControl.Health.OnDeadEvent.RemoveListener(OnDeath);
+        }
+
+        public IReadOnlyList<RadialFormInfo> GetRadialActionForms(string actionId)
+        {
+            return _radialActionPlayer?.GetForms(actionId) ?? Array.Empty<RadialFormInfo>();
+        }
+
+        public double GetRadialFormValue(RadialFormInfo form)
+        {
+            return _radialActionPlayer?.GetFormValue(form) ?? 0;
+        }
+
+        public bool SetRadialFormValue(string actionId, string formId, double value)
+        {
+            return _radialActionPlayer?.SetFormValue(actionId, formId, value) == true;
+        }
+
+        public void SaveRadialForms()
+        {
+            _radialActionPlayer?.SaveForms();
+        }
+
+        public void ResetRadialForms()
+        {
+            _radialActionPlayer?.ResetForms();
         }
 
         public bool TryPlayRadialAction(string actionId)
@@ -433,6 +453,8 @@ namespace DuckovCustomModel.MonoBehaviours
                 InitializeCustomModel(bundleInfo, modelInfo);
                 return;
             }
+
+            CleanupCustomModel();
         }
 
         public void InitializeFrom(ModelHandler sourceHandler, CharacterMainControl characterMainControl)
@@ -657,6 +679,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
         public void CleanupCustomModel()
         {
+            CancelModelLoad();
             var notifyRestored = IsHiddenOriginalModel;
             StopRadialAction();
             _radialActionPlayer = null;
@@ -686,7 +709,8 @@ namespace DuckovCustomModel.MonoBehaviours
             CurrentModelInfo = null;
             _currentModelBundleInfo = null;
 
-            YsmRuntime?.Dispose();
+            _preparedModel?.Dispose();
+            _preparedModel = null;
             YsmRuntime = null;
             _customModelSubVisuals = null;
 
@@ -710,11 +734,7 @@ namespace DuckovCustomModel.MonoBehaviours
             if (CustomAnimatorControl != null)
                 CustomAnimatorControl.SetCustomAnimator(null);
 
-            if (_deathLootBoxPrefab != null)
-            {
-                DestroyImmediate(_deathLootBoxPrefab);
-                _deathLootBoxPrefab = null;
-            }
+            if (_deathLootBoxPrefab != null) _deathLootBoxPrefab = null;
 
             foreach (var destroyAdapter in _modifiedDeathLootBoxes
                          .Where(deathLootBox => deathLootBox != null)
@@ -762,39 +782,74 @@ namespace DuckovCustomModel.MonoBehaviours
                       _currentModelBundleInfo?.DirectoryPath == modelBundleInfo.DirectoryPath
                     : YsmRuntime == null && CustomModelInstance != null &&
                       ReferenceEquals(CurrentModelInfo, modelInfo) &&
-                      ReferenceEquals(_currentModelBundleInfo, modelBundleInfo)) return;
-            GameObject? candidate = null;
-            YsmCharacterRuntime? runtime = null;
-            // Parse, bake, build materials and evaluate the first pose before touching the current model.
-            try
+                      ReferenceEquals(_currentModelBundleInfo, modelBundleInfo))
             {
-                if (YsmModelSource.IsYsm(modelInfo))
-                {
-                    runtime = new(this, modelBundleInfo, modelInfo);
-                    candidate = runtime.Root;
-                }
-                else
-                {
-                    var prefab = AssetBundleManager.LoadModelPrefab(modelBundleInfo, modelInfo);
-                    if (prefab == null) throw new InvalidOperationException("Failed to load custom model prefab.");
-                    candidate = Instantiate(prefab, OriginalCharacterModel.transform);
-                    candidate.name = CustomModelInstanceName;
-                    if (!candidate.activeSelf) candidate.SetActive(true);
-                }
-            }
-            catch (Exception exception)
-            {
-                runtime?.Dispose();
-                if (candidate != null) DestroyImmediate(candidate);
-                ModLogger.LogError($"Model switch failed; current model retained: {exception.Message}");
+                CancelModelLoad();
                 return;
             }
 
+            if (ReferenceEquals(_pendingBundle, modelBundleInfo) && ReferenceEquals(_pendingModel, modelInfo)) return;
+            CancelModelLoad();
+            _pendingBundle = modelBundleInfo;
+            _pendingModel = modelInfo;
+            _modelLoadCancellation = new();
+            LoadAndApplyModelAsync(modelBundleInfo, modelInfo, _modelLoadCancellation).Forget();
+        }
+
+        private void CancelModelLoad()
+        {
+            var cancellation = _modelLoadCancellation;
+            _modelLoadCancellation = null;
+            _pendingBundle = null;
+            _pendingModel = null;
+            cancellation?.Cancel();
+        }
+
+        private async UniTaskVoid LoadAndApplyModelAsync(ModelBundleInfo bundle, ModelInfo model,
+            CancellationTokenSource cancellation)
+        {
+            PreparedModel? prepared = null;
+            try
+            {
+                prepared = await ModelSourceLoader.Load(this, bundle, model, cancellation.Token);
+                cancellation.Token.ThrowIfCancellationRequested();
+                if (this == null || CharacterMainControl == null || OriginalCharacterModel == null ||
+                    !ReferenceEquals(_modelLoadCancellation, cancellation)) return;
+                var candidate = prepared;
+                prepared = null;
+                ApplyPreparedModel(bundle, model, candidate);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception exception)
+            {
+                ModLogger.LogError($"Model switch failed; current model retained: {exception.Message}");
+            }
+            finally
+            {
+                prepared?.Dispose();
+                if (ReferenceEquals(_modelLoadCancellation, cancellation))
+                {
+                    _modelLoadCancellation = null;
+                    _pendingBundle = null;
+                    _pendingModel = null;
+                }
+
+                cancellation.Dispose();
+            }
+        }
+
+        private void ApplyPreparedModel(ModelBundleInfo modelBundleInfo, ModelInfo modelInfo, PreparedModel prepared)
+        {
+            var candidate = prepared.Root;
+            var runtime = prepared.YsmRuntime;
             var previous = new RetainedModel(this);
             try
             {
                 DetachForSwitch();
                 CustomModelInstance = candidate;
+                _preparedModel = prepared;
                 YsmRuntime = runtime;
                 _customModelSubVisuals = null;
                 _deathLootBoxPrefab = null;
@@ -810,8 +865,7 @@ namespace DuckovCustomModel.MonoBehaviours
             catch (Exception exception)
             {
                 DetachForSwitch();
-                runtime?.Dispose();
-                if (candidate != null) DestroyImmediate(candidate);
+                prepared.Dispose();
                 previous.Restore(this);
                 if (CustomModelInstance != null && CurrentModelInfo != null)
                 {
@@ -1540,6 +1594,7 @@ namespace DuckovCustomModel.MonoBehaviours
             private readonly ModelInfo? _info;
             private readonly Vector3 _initialScale;
             private readonly GameObject? _loot;
+            private readonly PreparedModel? _prepared;
             private readonly GameObject? _root;
             private readonly YsmCharacterRuntime? _runtime;
             private readonly bool _scaleLocked;
@@ -1548,6 +1603,7 @@ namespace DuckovCustomModel.MonoBehaviours
             public RetainedModel(ModelHandler handler)
             {
                 _root = handler.CustomModelInstance;
+                _prepared = handler._preparedModel;
                 _runtime = handler.YsmRuntime;
                 _bundle = handler._currentModelBundleInfo;
                 _info = handler.CurrentModelInfo;
@@ -1561,13 +1617,13 @@ namespace DuckovCustomModel.MonoBehaviours
 
             public void Dispose()
             {
-                _runtime?.Dispose();
-                if (_root != null) DestroyImmediate(_root);
+                _prepared?.Dispose();
             }
 
             public void Restore(ModelHandler handler)
             {
                 handler.CustomModelInstance = _root;
+                handler._preparedModel = _prepared;
                 handler.YsmRuntime = _runtime;
                 handler._currentModelBundleInfo = _bundle;
                 handler.CurrentModelInfo = _info;

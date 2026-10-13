@@ -22,27 +22,23 @@ namespace DuckovCustomModel.Managers
         #region 私有方法
 
         private static async UniTaskVoid RefreshModelListAsync(CancellationToken cancellationToken,
-            IEnumerable<string>? priorityModelIDs)
+            IEnumerable<string>? priorityModelIDs, bool forceReload)
         {
-            // Refresh registrations before replacing instances. Failed YSM candidates keep the active model.
-            OnRefreshStarted?.Invoke();
-
-            var priorityModels = new List<(ModelBundleInfo bundle, ModelInfo model)>();
-
-            if (priorityModelIDs != null)
-                foreach (var priorityModelID in priorityModelIDs)
-                {
-                    if (string.IsNullOrEmpty(priorityModelID)) continue;
-                    if (ModelManager.FindModelByID(priorityModelID, out var bundleInfo, out var modelInfo))
-                        priorityModels.Add((bundleInfo, modelInfo));
-                }
-
             try
             {
-                var bundlesToReload = ModelManager.UpdateModelBundles(false);
-                bundlesToReload.UnionWith(await ModelManager.UpdateYsmModelBundlesAsync(cancellationToken));
+                OnRefreshStarted?.Invoke();
+                cancellationToken.ThrowIfCancellationRequested();
+                var bundlesToReload = ModelManager.UpdateModelBundles(false, forceReload);
+                bundlesToReload.UnionWith(
+                    await ModelManager.UpdateYsmModelBundlesAsync(cancellationToken, forceReload));
                 ModelManager.ClearThumbnailCache();
 
+                var priorityModels = new List<(ModelBundleInfo bundle, ModelInfo model)>();
+                if (priorityModelIDs != null)
+                    foreach (var modelID in priorityModelIDs.Distinct())
+                        if (!string.IsNullOrEmpty(modelID) &&
+                            ModelManager.FindModelByID(modelID, out var bundle, out var model))
+                            priorityModels.Add((bundle, model));
                 if (bundlesToReload.Count > 0)
                 {
                     if (priorityModels.Count > 0)
@@ -173,13 +169,13 @@ namespace DuckovCustomModel.Managers
 
         #region 刷新模型列表
 
-        public static void RefreshModelList(IEnumerable<string>? priorityModelIDs = null)
+        public static void RefreshModelList(IEnumerable<string>? priorityModelIDs = null, bool forceReload = false)
         {
             if (IsRefreshing) return;
 
             IsRefreshing = true;
             _refreshCancellationTokenSource = new();
-            RefreshModelListAsync(_refreshCancellationTokenSource.Token, priorityModelIDs).Forget();
+            RefreshModelListAsync(_refreshCancellationTokenSource.Token, priorityModelIDs, forceReload).Forget();
         }
 
         public static void CancelRefresh()

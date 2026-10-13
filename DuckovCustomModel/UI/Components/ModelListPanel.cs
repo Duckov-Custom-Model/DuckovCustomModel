@@ -240,6 +240,12 @@ namespace DuckovCustomModel.UI.Components
             _displayedFallbackId = fallbackId ?? string.Empty;
         }
 
+        public void SuspendRefresh()
+        {
+            _refreshCancellationTokenSource?.Cancel();
+            if (_content != null) _content.SetActive(false);
+        }
+
         public void Refresh(ScrollStrategy scrollStrategy = ScrollStrategy.ScrollToTop, bool forceRefresh = false)
         {
             if (_content == null) return;
@@ -269,6 +275,8 @@ namespace DuckovCustomModel.UI.Components
                 Destroy(placeholder);
             _loadingPlaceholders.Clear();
             _filteredModelBundles.Clear();
+
+            _content.SetActive(true);
 
             _refreshCancellationTokenSource = new();
             var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(

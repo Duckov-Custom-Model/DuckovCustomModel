@@ -62,7 +62,7 @@ namespace DuckovCustomModel.UI.Tabs
             _modelListPanel.InitializeBundleToolbar(bundleToolbarContainer.transform);
             _targetSettingsPanel.Initialize(targetSettingsContainer.transform);
 
-            _functionButtonBar.OnRefresh += () => { ModelListManager.RefreshModelList(); };
+            _functionButtonBar.OnRefresh += () => { ModelListManager.RefreshModelList(forceReload: true); };
             _functionButtonBar.OnResetInvalidModels +=
                 () => _modelListPanel?.Refresh(ModelListPanel.ScrollStrategy.ScrollToActiveModel);
             _targetListPanel.OnTargetSelected += targetInfo =>
@@ -113,6 +113,7 @@ namespace DuckovCustomModel.UI.Tabs
 
         private void OnRefreshStarted()
         {
+            _modelListPanel?.SuspendRefresh();
             UpdateRefreshOverlay();
         }
 
