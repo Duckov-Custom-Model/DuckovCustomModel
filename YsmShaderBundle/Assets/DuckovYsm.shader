@@ -34,12 +34,15 @@ Shader "DuckovCustomModel/Ysm Lit"
             #pragma vertex Vert
             #pragma fragment Frag
             #pragma target 3.0
+            #pragma multi_compile_local _ YSM_GPU_POSE
+            #pragma target 4.5 YSM_GPU_POSE
             #pragma multi_compile _ _ADDITIONAL_LIGHTS
             #pragma multi_compile _ _FORWARD_PLUS
             #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile _ _SHADOWS_SOFT
             #define _MAIN_LIGHT_SHADOWS 1
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "DuckovYsmPose.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             float4 _YsmSHAr, _YsmSHAg, _YsmSHAb;
@@ -55,7 +58,7 @@ Shader "DuckovCustomModel/Ysm Lit"
             CBUFFER_END
             struct Attributes
             {
-                float4 positionOS : POSITION;
+                float4 positionOS : POSITION; float2 boneIndex : TEXCOORD3;
                 float3 normalOS : NORMAL;
                 float2 uv : TEXCOORD0;
                 float2 glow : TEXCOORD1;
@@ -75,13 +78,14 @@ Shader "DuckovCustomModel/Ysm Lit"
             Varyings Vert(Attributes input)
             {
                 Varyings output;
+                input.positionOS.xyz = YsmPosition(input.positionOS.xyz, input.boneIndex.x);
                 output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
                 output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
                 output.screenShadowCoord = ComputeScreenPos(output.positionCS);
-                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+                output.normalWS = TransformObjectToWorldNormal(YsmNormal(input.normalOS, input.boneIndex.x));
                 output.uv = input.uv;
-                output.glowAndStatic = float2(input.glow.x, input.noAnimation.x);
-                output.color = input.color;
+                output.glowAndStatic = float2(YsmGlow(input.glow.x, input.boneIndex.x), input.noAnimation.x);
+                output.color = YsmColor(input.color, input.boneIndex.x);
                 return output;
             }
             half4 Frag(Varyings input, FRONT_FACE_TYPE facing : FRONT_FACE_SEMANTIC) : SV_Target
@@ -150,13 +154,31 @@ Shader "DuckovCustomModel/Ysm Lit"
             ZTest LEqual
             ColorMask 0
             HLSLPROGRAM
-            #pragma vertex ShadowPassVertex
+            #pragma vertex YsmShadowVertex
             #pragma fragment ShadowPassFragment
             #pragma target 3.0
+            #pragma multi_compile_local _ YSM_GPU_POSE
+            #pragma target 4.5 YSM_GPU_POSE
             #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "DuckovYsmPose.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
+            struct YsmShadowAttributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                float2 texcoord : TEXCOORD0;
+                float2 boneIndex : TEXCOORD3;
+            };
+            Varyings YsmShadowVertex(YsmShadowAttributes input)
+            {
+                Attributes source = (Attributes)0;
+                source.positionOS = float4(YsmPosition(input.positionOS.xyz, input.boneIndex.x), 1);
+                source.normalOS = YsmNormal(input.normalOS, input.boneIndex.x);
+                source.texcoord = input.texcoord;
+                return ShadowPassVertex(source);
+            }
             ENDHLSL
         }
         Pass
@@ -170,12 +192,16 @@ Shader "DuckovCustomModel/Ysm Lit"
             #pragma vertex DepthVert
             #pragma fragment DepthFrag
             #pragma target 3.0
+            #pragma multi_compile_local _ YSM_GPU_POSE
+            #pragma target 4.5 YSM_GPU_POSE
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            struct Attributes { float4 positionOS : POSITION; };
+            #include "DuckovYsmPose.hlsl"
+            struct Attributes { float4 positionOS : POSITION; float2 boneIndex : TEXCOORD3; };
             struct Varyings { float4 positionCS : SV_POSITION; };
             Varyings DepthVert(Attributes input)
             {
                 Varyings output;
+                input.positionOS.xyz = YsmPosition(input.positionOS.xyz, input.boneIndex.x);
                 output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
                 return output;
             }
@@ -192,15 +218,19 @@ Shader "DuckovCustomModel/Ysm Lit"
             #pragma vertex NormalVert
             #pragma fragment NormalFrag
             #pragma target 3.0
+            #pragma multi_compile_local _ YSM_GPU_POSE
+            #pragma target 4.5 YSM_GPU_POSE
             #pragma multi_compile_fragment _ _GBUFFER_NORMALS_OCT
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            struct Attributes { float4 positionOS : POSITION; float3 normalOS : NORMAL; };
+            #include "DuckovYsmPose.hlsl"
+            struct Attributes { float4 positionOS : POSITION; float2 boneIndex : TEXCOORD3; float3 normalOS : NORMAL; };
             struct Varyings { float4 positionCS : SV_POSITION; float3 normalWS : TEXCOORD0; };
             Varyings NormalVert(Attributes input)
             {
                 Varyings output;
+                input.positionOS.xyz = YsmPosition(input.positionOS.xyz, input.boneIndex.x);
                 output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
-                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+                output.normalWS = TransformObjectToWorldNormal(YsmNormal(input.normalOS, input.boneIndex.x));
                 return output;
             }
             half4 NormalFrag(Varyings input) : SV_Target

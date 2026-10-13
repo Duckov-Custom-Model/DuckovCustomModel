@@ -131,6 +131,12 @@ namespace DuckovCustomModel.Integrations.Ysm
             destination.ExtraAnimationLocked = ExtraAnimationLocked;
         }
 
+        public DuckovYsmRenderBackend CreateView(Transform root, bool preview = true)
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(YsmCharacterRuntime));
+            return _renderer!.CreateView(root, preview);
+        }
+
         public Transform? GetGunLocator(int itemTypeId)
         {
             var category = _lease.Profile.ItemCategories.TryGetValue(itemTypeId, out var configured)
@@ -224,15 +230,9 @@ namespace DuckovCustomModel.Integrations.Ysm
             if (Locators.TryGetValue(SocketNames.Helmet, out var helmet))
                 NaturalHeight = Root.transform.InverseTransformPoint(helmet.position).y * InitialRootScale.y;
             if (NaturalHeight > 0) return;
-            var maximum = 0f;
-            var minimum = 0f;
-            foreach (var renderer in _renderer!.Renderers)
-            {
-                var bounds = renderer.localBounds;
-                maximum = Mathf.Max(maximum, bounds.max.y);
-                minimum = Mathf.Min(minimum, bounds.min.y);
-            }
-
+            var bounds = _renderer!.MeasurePoseBounds();
+            var maximum = Mathf.Max(0, bounds.max.y);
+            var minimum = Mathf.Min(0, bounds.min.y);
             NaturalHeight = (maximum - minimum) * Mathf.Abs(InitialRootScale.y);
         }
 

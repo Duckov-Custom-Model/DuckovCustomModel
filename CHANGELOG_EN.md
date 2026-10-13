@@ -9,6 +9,9 @@ English | [中文](CHANGELOG.md)
 - Reduced repeated work in YSM animation sampling, pose composition, and transparent-mesh rendering.
 - Fixed held melee items disappearing while idle on some YSM models.
 - Reduced redundant color, glow, and static-texture updates; model instances and animated previews now share textures to reduce duplicate loading and GPU memory usage.
+- Added GPU vertex and normal transforms for YSM scene models and animated previews, reducing per-frame mesh processing and uploads; retained a CPU fallback with multicore processing for large meshes.
+- Cached unchanged bone matrices, mesh visibility classifications, and transparency sorting results to reduce repeated work with both single and multiple models.
+- Added a shared character-view API that reuses animation poses and GPU bone data while handling preview lighting and transparency sorting independently.
 - Sized model cards to the available width; model selection and group toggles now update only affected UI, while model-content changes rebuild the list and preserve scroll position.
 - Constrained the model selection, toolbar, and settings layouts to prevent first-display overflow and long labels from widening the interface.
 

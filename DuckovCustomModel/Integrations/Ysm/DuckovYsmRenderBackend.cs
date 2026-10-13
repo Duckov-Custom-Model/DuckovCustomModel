@@ -19,13 +19,16 @@ namespace DuckovCustomModel.Integrations.Ysm
         private static Shader? sharedShader;
         private static Shader? sharedPreviewShader;
         private static int shaderUsers;
+        private readonly ModelPackage package;
         private readonly ITexturePixelSource pixels;
         private readonly List<Renderer> renderers = new();
+        private readonly List<DuckovYsmRenderBackend> views = new();
         private bool disposed;
         private GraphicsState? graphics;
         private Vector3 lastAmbientProbePosition;
         private PoseEvaluator? lastPose;
         private double nextAmbientProbeSample;
+        private DuckovYsmRenderBackend? poseSource;
         private bool renderStateLogged;
         private Shader? shader;
         private bool thumbnailMode;
@@ -34,6 +37,7 @@ namespace DuckovCustomModel.Integrations.Ysm
         {
             Root = root ? root : throw new ArgumentNullException(nameof(root));
             if (package == null) throw new ArgumentNullException(nameof(package));
+            this.package = package;
             this.pixels = pixels ?? throw new ArgumentNullException(nameof(pixels));
             shader = AcquireShader();
             try
@@ -65,12 +69,19 @@ namespace DuckovCustomModel.Integrations.Ysm
             if (graphics == null) return;
             UpdatePose(graphics, pose);
             lastPose = pose;
+            foreach (var view in views)
+            {
+                view.TimeSeconds = TimeSeconds;
+                view.Render(pose);
+            }
         }
 
         public void Dispose()
         {
             if (disposed) return;
             disposed = true;
+            poseSource?.views.Remove(this);
+            while (views.Count > 0) views[views.Count - 1].Dispose();
             UnregisterPipeline(this);
             graphics?.Dispose();
             graphics = null;
@@ -81,6 +92,46 @@ namespace DuckovCustomModel.Integrations.Ysm
                 ReleaseShader();
                 shader = null;
             }
+        }
+
+        public DuckovYsmRenderBackend CreateView(Transform root, bool preview = true)
+        {
+            ThrowIfDisposed();
+            var state = graphics ?? throw new InvalidOperationException("Load a model before creating a view.");
+            var view = new DuckovYsmRenderBackend(root, package, pixels);
+            try
+            {
+                if (preview) view.SetThumbnailMode();
+                view.LoadCore(state.Document, state.Geometry);
+                if (view.TextureIndex != TextureIndex) view.SetTextureIndex(TextureIndex);
+                view.poseSource = this;
+                views.Add(view);
+                view.TimeSeconds = TimeSeconds;
+                if (lastPose != null) view.Render(lastPose);
+                return view;
+            }
+            catch
+            {
+                view.Dispose();
+                throw;
+            }
+        }
+
+        private bool ShareBones(GraphicsState state)
+        {
+            var source = poseSource?.graphics;
+            if (source?.BoneBuffer == null) return false;
+            if (state.BoneBuffer != source.BoneBuffer)
+            {
+                if (state.OwnsBoneBuffer) state.BoneBuffer?.Release();
+                state.BoneBuffer = source.BoneBuffer;
+                state.OwnsBoneBuffer = false;
+                foreach (var material in state.SolidMaterials) BindBones(material, state.BoneBuffer);
+                foreach (var material in state.TransparentMaterials) BindBones(material, state.BoneBuffer);
+            }
+
+            state.GpuBones = source.GpuBones;
+            return true;
         }
 
         internal void SetThumbnailMode()
@@ -104,8 +155,8 @@ namespace DuckovCustomModel.Integrations.Ysm
                 geometry = MeshBaker.Bake(document, new SelectedPixels(pixels, document, selected));
             if (geometry == null) throw new ArgumentNullException(nameof(geometry));
             var next = BuildGraphics(document, geometry, selected);
-            SwapGraphics(next, selected);
             lastPose = null;
+            SwapGraphics(next, selected);
         }
 
         public void SetTextureIndex(int index)
@@ -156,105 +207,151 @@ namespace DuckovCustomModel.Integrations.Ysm
             }
 
             next.Object.SetActive(true);
+            foreach (var view in views)
+            {
+                view.LoadCore(next.Document, next.Geometry);
+                if (view.TextureIndex != selected) view.SetTextureIndex(selected);
+                if (lastPose != null) view.Render(lastPose);
+            }
+
             previous?.Dispose();
         }
 
         private void UpdatePose(GraphicsState state, PoseEvaluator pose)
         {
             var baked = state.Geometry;
-            for (var bone = 0; bone < state.Collapsed.Length; bone++)
-            {
-                var matrix = pose.Matrices[bone];
-                var collapsed = CollapsedToLine(matrix);
-                if (!collapsed)
-                    for (var ancestor = bone; ancestor >= 0; ancestor = state.Document.Bones[ancestor].Parent)
-                    {
-                        var scale = pose.Scales[ancestor];
-                        if ((scale.X == 0 ? 1 : 0) + (scale.Y == 0 ? 1 : 0) + (scale.Z == 0 ? 1 : 0) < 2)
-                            continue;
-                        collapsed = true;
-                        break;
-                    }
-
-                state.Collapsed[bone] = collapsed;
-                state.RequiresTriangleCheck[bone] = !collapsed && !HasVolume(matrix);
-            }
-
-            baked.Transform(pose, state.CpuVertices, state.CpuNormals, state.Collapsed);
+            var geometryChanged = !state.PoseUploaded;
+            var topologyChanged = !state.PoseUploaded;
             var colorsChanged = !state.ColorsUploaded;
             var glowChanged = !state.GlowUploaded;
-            for (var bone = 0; bone < state.BoneColors.Length; bone++)
+            foreach (var bone in state.BoneOrder)
             {
+                var matrix = pose.Matrices[bone];
+                var changed = !state.PoseUploaded || state.BoneMatrices[bone] != matrix ||
+                              state.BoneVisible[bone] != pose.Visible[bone];
+                var scale = pose.Scales[bone];
+                var parent = state.Document.Bones[bone].Parent;
+                state.InheritedCollapse[bone] = (scale.X == 0 ? 1 : 0) + (scale.Y == 0 ? 1 : 0) +
+                                                (scale.Z == 0 ? 1 : 0) >= 2 ||
+                                                (parent >= 0 && state.InheritedCollapse[parent]);
+                var collapsed = state.InheritedCollapse[bone] || !pose.Visible[bone] || CollapsedToLine(matrix);
+                var triangleCheck = !collapsed && !HasVolume(matrix);
+                topologyChanged |= state.Collapsed[bone] != collapsed ||
+                                   state.RequiresTriangleCheck[bone] != triangleCheck || (changed && triangleCheck);
+                changed |= state.Collapsed[bone] != collapsed;
+                geometryChanged |= changed;
+                state.SkipBones[bone] = collapsed || !changed;
+                state.Collapsed[bone] = collapsed;
+                state.RequiresTriangleCheck[bone] = triangleCheck;
+                state.BoneMatrices[bone] = matrix;
+                state.BoneVisible[bone] = pose.Visible[bone];
                 var color = pose.Colors[bone];
                 var nextColor = new Color(color.X, color.Y, color.Z, color.W);
                 var previousColor = state.BoneColors[bone];
                 if (previousColor.r != nextColor.r || previousColor.g != nextColor.g ||
                     previousColor.b != nextColor.b || previousColor.a != nextColor.a) colorsChanged = true;
+                if (previousColor.a != nextColor.a) topologyChanged = true;
                 state.BoneColors[bone] = nextColor;
                 var nextGlow = new Vector2(pose.Glow[bone] >= 0 ? pose.Glow[bone] : pose.FullBright[bone] ? 15 : -1, 0);
                 if (state.BoneGlow[bone].x != nextGlow.x) glowChanged = true;
                 state.BoneGlow[bone] = nextGlow;
             }
 
-            for (var i = 0; i < state.Vertices.Length; i++)
+            var sharedBones = ShareBones(state);
+            if (state.BoneBuffer != null)
             {
-                var bone = baked.BoneIndices[i];
-                if (colorsChanged) state.Colors[i] = state.BoneColors[bone];
-                if (glowChanged) state.Glow[i] = state.BoneGlow[bone];
-                if (state.Collapsed[bone]) continue;
-                state.Vertices[i] = DuckovYsmCoordinates.ToUnityPosition(state.CpuVertices[i]);
-                state.Normals[i] = DuckovYsmCoordinates.ToUnityDirection(state.CpuNormals[i]);
+                if (!sharedBones && (geometryChanged || colorsChanged || glowChanged)) UploadBones(state);
+                if (geometryChanged) UpdateGpuBounds(state);
+            }
+            else
+            {
+                if (geometryChanged)
+                    baked.TransformParallel(pose, state.CpuVertices, state.CpuNormals, state.SkipBones);
+                if (geometryChanged || colorsChanged || glowChanged)
+                    for (var i = 0; i < state.Vertices.Length; i++)
+                    {
+                        var bone = baked.BoneIndices[i];
+                        if (colorsChanged) state.Colors[i] = state.BoneColors[bone];
+                        if (glowChanged) state.Glow[i] = state.BoneGlow[bone];
+                        if (state.SkipBones[bone]) continue;
+                        state.Vertices[i] = DuckovYsmCoordinates.ToUnityPosition(state.CpuVertices[i]);
+                        state.Normals[i] = DuckovYsmCoordinates.ToUnityDirection(state.CpuNormals[i]);
+                    }
+
+                if (geometryChanged)
+                {
+                    state.Mesh.vertices = state.Vertices;
+                    state.Mesh.normals = state.Normals;
+                    state.Mesh.RecalculateBounds();
+                }
+
+                if (colorsChanged) state.Mesh.colors = state.Colors;
+                if (glowChanged) state.Mesh.uv2 = state.Glow;
             }
 
-            state.Mesh.vertices = state.Vertices;
-            state.Mesh.normals = state.Normals;
-            if (colorsChanged) state.Mesh.colors = state.Colors;
-            if (glowChanged) state.Mesh.uv2 = state.Glow;
-            state.Mesh.RecalculateBounds();
+            if (geometryChanged || topologyChanged)
+                unchecked
+                {
+                    ++state.PoseVersion;
+                }
+
+            state.PoseUploaded = true;
             var hadTransparency = state.TransparentCount > 0;
             state.ColorsUploaded = true;
             state.GlowUploaded = true;
-            state.TransparentCount = 0;
-            for (var partition = 0; partition < baked.Partitions.Length; partition++)
+            if (topologyChanged || (geometryChanged && state.HasMixedTriangles))
             {
-                var source = baked.Partitions[partition];
-                var indices = state.SolidIndices[partition];
-                var solid = 0;
-                var indicesChanged = state.SolidCounts[partition] < 0;
-                for (var triangle = 0; triangle < source.Indices.Length; triangle += 3)
+                state.TransparentCount = 0;
+                for (var partition = 0; partition < baked.Partitions.Length; partition++)
                 {
-                    int a = source.Indices[triangle],
-                        b = source.Indices[triangle + 1],
-                        c = source.Indices[triangle + 2];
-                    var bone = baked.BoneIndices[a];
-                    if (state.Collapsed[bone] || pose.Colors[bone].W <= 0 ||
-                        ((state.RequiresTriangleCheck[bone] || baked.BoneIndices[b] != bone ||
-                          baked.BoneIndices[c] != bone) && !baked.IsTriangleRenderable(pose, a, b, c))) continue;
-                    if (source.AlphaMode == MeshAlphaMode.Opaque && pose.Colors[bone].W >= 1)
+                    var source = baked.Partitions[partition];
+                    var indices = state.SolidIndices[partition];
+                    var solid = 0;
+                    var indicesChanged = state.SolidCounts[partition] < 0;
+                    for (var triangle = 0; triangle < source.Indices.Length; triangle += 3)
                     {
-                        if (indices[solid] != c || indices[solid + 1] != b || indices[solid + 2] != a)
-                            indicesChanged = true;
-                        indices[solid++] = c;
-                        indices[solid++] = b;
-                        indices[solid++] = a;
+                        int a = source.Indices[triangle],
+                            b = source.Indices[triangle + 1],
+                            c = source.Indices[triangle + 2];
+                        var bone = baked.BoneIndices[a];
+                        if (state.Collapsed[bone] || pose.Colors[bone].W <= 0 ||
+                            ((state.RequiresTriangleCheck[bone] || baked.BoneIndices[b] != bone ||
+                              baked.BoneIndices[c] != bone) && !baked.IsTriangleRenderable(pose, a, b, c))) continue;
+                        if (source.AlphaMode == MeshAlphaMode.Opaque && pose.Colors[bone].W >= 1)
+                        {
+                            if (indices[solid] != c || indices[solid + 1] != b || indices[solid + 2] != a)
+                                indicesChanged = true;
+                            indices[solid++] = c;
+                            indices[solid++] = b;
+                            indices[solid++] = a;
+                        }
+                        else
+                        {
+                            state.Order[state.TransparentCount++] =
+                                new() { Partition = partition, Triangle = triangle };
+                        }
                     }
-                    else
-                    {
-                        state.Order[state.TransparentCount++] = new() { Partition = partition, Triangle = triangle };
-                    }
-                }
 
-                if (state.SolidCounts[partition] != solid) indicesChanged = true;
-                state.SolidCounts[partition] = solid;
-                if (indicesChanged) state.Mesh.SetTriangles(indices, 0, solid, partition, false);
+                    if (state.SolidCounts[partition] != solid) indicesChanged = true;
+                    state.SolidCounts[partition] = solid;
+                    if (indicesChanged) state.Mesh.SetTriangles(indices, 0, solid, partition, false);
+                }
             }
 
             if (state.TransparentCount > 0)
             {
-                state.TransparentMesh.vertices = state.Vertices;
-                state.TransparentMesh.normals = state.Normals;
-                if (colorsChanged || !hadTransparency) state.TransparentMesh.colors = state.Colors;
-                if (glowChanged || !hadTransparency) state.TransparentMesh.uv2 = state.Glow;
+                if (state.BoneBuffer == null)
+                {
+                    if (geometryChanged || !hadTransparency)
+                    {
+                        state.TransparentMesh.vertices = state.Vertices;
+                        state.TransparentMesh.normals = state.Normals;
+                    }
+
+                    if (colorsChanged || !hadTransparency) state.TransparentMesh.colors = state.Colors;
+                    if (glowChanged || !hadTransparency) state.TransparentMesh.uv2 = state.Glow;
+                }
+
                 state.TransparentMesh.bounds = state.Mesh.bounds;
             }
             else
@@ -320,9 +417,12 @@ namespace DuckovCustomModel.Integrations.Ysm
                 state.TransparentMesh = NewMesh(document.Name + " transparency", geometry.Positions.Length);
                 var uv = new Vector2[state.Vertices.Length];
                 var animation = new Vector2[uv.Length];
+                var boneIndices = new Vector2[uv.Length];
                 for (var i = 0; i < uv.Length; i++)
                 {
                     state.Vertices[i] = DuckovYsmCoordinates.ToUnityPosition(geometry.Positions[i]);
+                    state.Normals[i] = DuckovYsmCoordinates.ToUnityDirection(geometry.Normals[i]);
+                    boneIndices[i] = new(geometry.BoneIndices[i], 0);
                     uv[i] = new(geometry.Uvs[i].X, geometry.Uvs[i].Y);
                     animation[i] =
                         new(geometry.AnimateTexture.Length == uv.Length && !geometry.AnimateTexture[i] ? 1 : 0, 0);
@@ -333,6 +433,8 @@ namespace DuckovCustomModel.Integrations.Ysm
                     mesh.vertices = state.Vertices;
                     mesh.uv = uv;
                     mesh.uv3 = animation;
+                    mesh.uv4 = boneIndices;
+                    mesh.normals = state.Normals;
                     mesh.RecalculateBounds();
                 }
 
@@ -361,6 +463,7 @@ namespace DuckovCustomModel.Integrations.Ysm
                     state.TransparentMaterials[i] = CreateMaterial(draw, state.Textures[texture], true);
                 }
 
+                InitializeGpu(state);
                 state.Object.AddComponent<MeshFilter>().sharedMesh = state.Mesh;
                 state.Renderer = state.Object.AddComponent<MeshRenderer>();
                 state.Renderer.sharedMaterials = state.SolidMaterials;
@@ -599,14 +702,20 @@ namespace DuckovCustomModel.Integrations.Ysm
 
         private sealed class GraphicsState : IDisposable
         {
+            internal readonly Bounds[] BoneBounds;
             internal readonly Color[] BoneColors;
             internal readonly Vector2[] BoneGlow;
+            internal readonly bool[] BoneHasVertices;
+            internal readonly Matrix4x4[] BoneMatrices;
+            internal readonly int[] BoneOrder;
+            internal readonly bool[] BoneVisible, InheritedCollapse, SkipBones;
             internal readonly bool[] Collapsed;
             internal readonly Color[] Colors;
             internal readonly NVector[] CpuVertices, CpuNormals;
             internal readonly ModelDocument Document;
             internal readonly MeshData Geometry;
             internal readonly Vector2[] Glow;
+            internal readonly bool HasMixedTriangles;
             internal readonly TriangleDepth[] Order;
             internal readonly bool[] RequiresTriangleCheck;
             internal readonly List<TransparentRun> Runs = new();
@@ -617,11 +726,18 @@ namespace DuckovCustomModel.Integrations.Ysm
             internal readonly List<TextureAsset?> TextureAssets = new();
             internal readonly List<Texture2D> Textures = new();
             internal readonly Vector3[] Vertices, Normals;
+            internal ComputeBuffer? BoneBuffer;
             internal bool ColorsUploaded, GlowUploaded;
+            internal GpuBone[] GpuBones;
             internal Mesh Mesh = null!, TransparentMesh = null!;
             internal GameObject Object = null!, TransparentObject = null!;
+            internal bool OwnsBoneBuffer = true;
+            internal bool PoseUploaded;
+            internal long PoseVersion, SortedPoseVersion = -1;
             internal MeshRenderer Renderer = null!, TransparentRenderer = null!;
             internal Material[] RunMaterials = Array.Empty<Material>();
+            internal Vector3 SortedForward;
+            internal UnityEngine.Matrix4x4 SortedWorld;
             internal int TransparentCount;
             internal bool TransparentIndicesInitialized;
 
@@ -629,6 +745,43 @@ namespace DuckovCustomModel.Integrations.Ysm
             {
                 Document = document;
                 Geometry = geometry;
+                BoneMatrices = new Matrix4x4[document.Bones.Count];
+                BoneVisible = new bool[document.Bones.Count];
+                InheritedCollapse = new bool[document.Bones.Count];
+                SkipBones = new bool[document.Bones.Count];
+                BoneBounds = new Bounds[document.Bones.Count];
+                BoneHasVertices = new bool[document.Bones.Count];
+                GpuBones = new GpuBone[document.Bones.Count];
+                var order = new List<int>();
+                var seen = new bool[document.Bones.Count];
+
+                void Visit(int bone)
+                {
+                    if (seen[bone]) return;
+                    var parent = document.Bones[bone].Parent;
+                    if (parent >= 0) Visit(parent);
+                    seen[bone] = true;
+                    order.Add(bone);
+                }
+
+                for (var bone = 0; bone < seen.Length; bone++) Visit(bone);
+                BoneOrder = order.ToArray();
+                for (var vertex = 0; vertex < geometry.Positions.Length; vertex++)
+                {
+                    var bone = geometry.BoneIndices[vertex];
+                    var point = DuckovYsmCoordinates.ToUnityPosition(geometry.Positions[vertex]);
+                    if (BoneHasVertices[bone]) BoneBounds[bone].Encapsulate(point);
+                    else BoneBounds[bone] = new(point, Vector3.zero);
+                    BoneHasVertices[bone] = true;
+                }
+
+                foreach (var partition in geometry.Partitions)
+                    for (var i = 0; i < partition.Indices.Length; i += 3)
+                        if (geometry.BoneIndices[partition.Indices[i]] !=
+                            geometry.BoneIndices[partition.Indices[i + 1]] ||
+                            geometry.BoneIndices[partition.Indices[i]] !=
+                            geometry.BoneIndices[partition.Indices[i + 2]])
+                            HasMixedTriangles = true;
                 var count = geometry.Positions.Length;
                 CpuVertices = new NVector[count];
                 CpuNormals = new NVector[count];
@@ -659,6 +812,8 @@ namespace DuckovCustomModel.Integrations.Ysm
 
             public void Dispose()
             {
+                if (OwnsBoneBuffer) BoneBuffer?.Release();
+                BoneBuffer = null;
                 if (Object) Object.SetActive(false);
                 Release(Object);
                 Release(Mesh);
