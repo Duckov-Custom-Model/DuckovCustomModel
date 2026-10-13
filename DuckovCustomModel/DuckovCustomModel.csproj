@@ -74,6 +74,9 @@
 		<None Update="preview.png">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
+		<None Update="Resources\vrm-runtime.bundle;Resources\UniVRM-LICENSE.txt">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Update="Resources\ysm-rendering.bundle">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
@@ -84,6 +87,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Reference Include="UniGLTF.Utils"><HintPath>$(MSBuildProjectDirectory)\..\lib\UniGLTF.Utils.dll</HintPath></Reference>
+		<Reference Include="UniGLTF.UniUnlit"><HintPath>$(MSBuildProjectDirectory)\..\lib\UniGLTF.UniUnlit.dll</HintPath></Reference>
+		<Reference Include="UniHumanoid"><HintPath>$(MSBuildProjectDirectory)\..\lib\UniHumanoid.dll</HintPath></Reference>
+		<Reference Include="UniGLTF"><HintPath>$(MSBuildProjectDirectory)\..\lib\UniGLTF.dll</HintPath></Reference>
+		<Reference Include="SpringBoneJobs"><HintPath>$(MSBuildProjectDirectory)\..\lib\SpringBoneJobs.dll</HintPath></Reference>
+		<Reference Include="FastSpringBone10"><HintPath>$(MSBuildProjectDirectory)\..\lib\FastSpringBone10.dll</HintPath></Reference>
+		<Reference Include="VrmLib"><HintPath>$(MSBuildProjectDirectory)\..\lib\VrmLib.dll</HintPath></Reference>
+		<Reference Include="VRM10.MToon10"><HintPath>$(MSBuildProjectDirectory)\..\lib\VRM10.MToon10.dll</HintPath></Reference>
+		<Reference Include="VRM10"><HintPath>$(MSBuildProjectDirectory)\..\lib\VRM10.dll</HintPath></Reference>
 		<Reference Include="ModelRuntime"><HintPath>$(ModelRuntimeBinaryRoot)\ModelRuntime.dll</HintPath></Reference>
 		<Reference Include="ModelRuntime.Adapters"><HintPath>$(ModelRuntimeBinaryRoot)\ModelRuntime.Adapters.dll</HintPath></Reference>
 		<Reference Include="ModelRuntime.Media"><HintPath>$(ModelRuntimeBinaryRoot)\ModelRuntime.Media.dll</HintPath></Reference>

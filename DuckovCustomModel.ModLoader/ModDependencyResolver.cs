@@ -10,6 +10,8 @@ namespace DuckovCustomModel
         private static readonly HashSet<string> AllowedNames = new(StringComparer.OrdinalIgnoreCase)
         {
             "DuckovCustomModel.Core", "DuckovCustomModel.GameModules", "0Harmony",
+            "UniGLTF.Utils", "UniGLTF.UniUnlit", "UniHumanoid", "UniGLTF", "SpringBoneJobs", "FastSpringBone10",
+            "VrmLib", "VRM10.MToon10", "VRM10",
             "ModelRuntime", "ModelRuntime.Adapters", "ModelRuntime.Ysm", "ModelRuntime.Media",
             "StbImageSharp", "ZstdSharp", "System.Runtime.CompilerServices.Unsafe",
         };

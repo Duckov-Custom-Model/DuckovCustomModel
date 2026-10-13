@@ -100,8 +100,12 @@ namespace DuckovCustomModel.Integrations.Ysm
             var changed = false;
             foreach (var binding in _bindings)
             {
-                if (!(pose.TryGetLocatorTransform(binding.LocatorName, out var matrix) ||
-                      pose.TryGetBonePivotTransform(binding.LocatorName, out matrix)) ||
+                var found = pose.TryGetLocatorTransform(binding.LocatorName, out var matrix) ||
+                            pose.TryGetBonePivotTransform(binding.LocatorName, out matrix);
+                if (!found && binding.SocketName == SocketNames.MeleeWeapon)
+                    found = pose.TryGetLocatorTransform(SocketNames.RightHand, out matrix) ||
+                            pose.TryGetBonePivotTransform(SocketNames.RightHand, out matrix);
+                if (!found ||
                     !DuckovYsmCoordinates.TryGetUnityTransform(matrix, out var position, out var rotation,
                         out var scale))
                 {

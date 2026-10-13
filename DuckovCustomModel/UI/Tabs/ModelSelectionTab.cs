@@ -62,7 +62,7 @@ namespace DuckovCustomModel.UI.Tabs
             _modelListPanel.InitializeBundleToolbar(bundleToolbarContainer.transform);
             _targetSettingsPanel.Initialize(targetSettingsContainer.transform);
 
-            _functionButtonBar.OnRefresh += () => { ModelListManager.RefreshModelList(); };
+            _functionButtonBar.OnRefresh += () => { ModelListManager.RefreshModelList(forceReload: true); };
             _functionButtonBar.OnResetInvalidModels +=
                 () => _modelListPanel?.Refresh(ModelListPanel.ScrollStrategy.ScrollToActiveModel);
             _targetListPanel.OnTargetSelected += targetInfo =>
@@ -74,7 +74,7 @@ namespace DuckovCustomModel.UI.Tabs
             _modelListPanel.OnModelSelected += () =>
             {
                 _targetListPanel?.Refresh();
-                _targetSettingsPanel?.Refresh();
+                _targetSettingsPanel?.RefreshModelSelection();
             };
 
             var contentRect = content.GetComponent<RectTransform>();
@@ -113,6 +113,7 @@ namespace DuckovCustomModel.UI.Tabs
 
         private void OnRefreshStarted()
         {
+            _modelListPanel?.SuspendRefresh();
             UpdateRefreshOverlay();
         }
 
@@ -170,6 +171,8 @@ namespace DuckovCustomModel.UI.Tabs
             UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
 
             var layoutElement = container.GetComponent<LayoutElement>();
+            layoutElement.minWidth = 0;
+            layoutElement.preferredWidth = 0;
             layoutElement.flexibleHeight = 1;
             layoutElement.flexibleWidth = 1;
 
@@ -186,7 +189,7 @@ namespace DuckovCustomModel.UI.Tabs
             UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
 
             var layoutElement = container.GetComponent<LayoutElement>();
-            layoutElement.minWidth = 200;
+            layoutElement.minWidth = 160;
             layoutElement.preferredWidth = 200;
             layoutElement.flexibleWidth = 0;
             layoutElement.flexibleHeight = 1;
@@ -206,8 +209,8 @@ namespace DuckovCustomModel.UI.Tabs
                 true, true, true);
 
             var layoutElement = container.GetComponent<LayoutElement>();
-            layoutElement.minWidth = 0;
-            layoutElement.preferredWidth = 0;
+            layoutElement.minWidth = 130;
+            layoutElement.preferredWidth = 130;
             layoutElement.flexibleWidth = 1;
             layoutElement.flexibleHeight = 1;
 
@@ -221,7 +224,7 @@ namespace DuckovCustomModel.UI.Tabs
             UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
 
             var layoutElement = container.GetComponent<LayoutElement>();
-            layoutElement.minWidth = 500;
+            layoutElement.minWidth = 300;
             layoutElement.preferredWidth = 500;
             layoutElement.flexibleWidth = 0;
             layoutElement.flexibleHeight = 1;
@@ -307,6 +310,8 @@ namespace DuckovCustomModel.UI.Tabs
             UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
 
             var layoutElement = container.GetComponent<LayoutElement>();
+            layoutElement.minWidth = 0;
+            layoutElement.preferredWidth = 0;
             layoutElement.flexibleHeight = 1;
             layoutElement.flexibleWidth = 1;
 
@@ -320,6 +325,8 @@ namespace DuckovCustomModel.UI.Tabs
             UIFactory.SetupRectTransform(container, Vector2.zero, Vector2.one, Vector2.zero);
 
             var layoutElement = container.GetComponent<LayoutElement>();
+            layoutElement.minWidth = 0;
+            layoutElement.preferredWidth = 0;
             layoutElement.flexibleWidth = 1;
             layoutElement.flexibleHeight = 1;
 
@@ -329,7 +336,7 @@ namespace DuckovCustomModel.UI.Tabs
         protected override void OnShow()
         {
             _targetListPanel?.Refresh();
-            _modelListPanel?.Refresh(ModelListPanel.ScrollStrategy.ScrollToActiveModel);
+            _modelListPanel?.RefreshSelection();
             _targetSettingsPanel?.Refresh();
 
             UpdateRefreshOverlay();

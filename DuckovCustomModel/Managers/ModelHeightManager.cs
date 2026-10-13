@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.Integrations.Vrm;
 using DuckovCustomModel.Integrations.Ysm;
 using DuckovCustomModel.MonoBehaviours;
 using ModelRuntime;
@@ -31,6 +32,7 @@ namespace DuckovCustomModel.Managers
 
             if (YsmModelSource.IsYsm(modelInfo))
                 return GetYsmHeight(bundleInfo, modelInfo);
+            if (VrmModelSource.IsVrm(modelInfo)) return GetVrmRuntime(modelID)?.NaturalHeight ?? 0;
 
             var prefab = AssetBundleManager.LoadAssetFromBundle<GameObject>(bundleInfo, modelInfo.PrefabPath);
             if (prefab == null) return 0f;
@@ -54,6 +56,8 @@ namespace DuckovCustomModel.Managers
                 var scale = lease.Package.Models[lease.Profile.ModelTarget].DisplayScale;
                 return new Vector3(scale.X, scale.Y, scale.Z) * lease.Profile.Scale;
             }
+
+            if (VrmModelSource.IsVrm(modelInfo)) return GetVrmRuntime(modelID)?.InitialRootScale ?? Vector3.one;
 
             var prefab = AssetBundleManager.LoadAssetFromBundle<GameObject>(bundleInfo, modelInfo.PrefabPath);
             return prefab == null ? Vector3.one : prefab.transform.localScale;
@@ -149,6 +153,15 @@ namespace DuckovCustomModel.Managers
                 return;
 
             handler.ApplyHeightFromRuntimeData(userHeight, initialHeight, initialRootScale);
+        }
+
+        private static VrmCharacterRuntime? GetVrmRuntime(string modelID)
+        {
+            foreach (var handler in ModelManager.GetAllHandlers())
+                if (handler.CurrentModelInfo?.ModelID == modelID && handler.CustomModelInstance != null &&
+                    handler.CustomModelInstance.GetComponent<VrmCharacterRuntime>() is { } runtime)
+                    return runtime;
+            return null;
         }
 
         private static float GetYsmHeight(ModelBundleInfo bundleInfo, ModelInfo modelInfo)

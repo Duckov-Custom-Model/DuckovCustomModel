@@ -1,10 +1,13 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.Integrations;
+using DuckovCustomModel.Integrations.Vrm;
 using DuckovCustomModel.Integrations.Ysm;
+using ModelRuntime;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -12,45 +15,42 @@ namespace DuckovCustomModel.Managers
 {
     public static class AssetBundleManager
     {
-        private static readonly Dictionary<string, AssetBundle> LoadedBundles = [];
-        private static readonly Dictionary<string, UniTask<AssetBundle?>> LoadingTasks = [];
+        private static readonly Dictionary<string, AssetBundle> LoadedBundles = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, BundleLoad> LoadingTasks = new(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<AssetBundle, HashSet<string>> AssetNames = [];
+
+        private static string? GetBundlePath(ModelBundleInfo bundleInfo)
+        {
+            if (string.IsNullOrWhiteSpace(bundleInfo.BundlePath)) return null;
+            var path = Path.GetFullPath(Path.Combine(bundleInfo.DirectoryPath, bundleInfo.BundlePath));
+            if (File.Exists(path)) return path;
+            ModLogger.LogError($"AssetBundleManager: AssetBundle file not found at path: {path}");
+            return null;
+        }
 
         public static AssetBundle? GetOrLoadAssetBundle(ModelBundleInfo bundleInfo, bool forceReload = false)
         {
-            if (string.IsNullOrWhiteSpace(bundleInfo.BundlePath)) return null;
-            var bundlePath = Path.Combine(bundleInfo.DirectoryPath, bundleInfo.BundlePath);
-            if (string.IsNullOrEmpty(bundlePath) || !File.Exists(bundlePath))
+            var path = GetBundlePath(bundleInfo);
+            if (path == null) return null;
+            if (forceReload) UnloadAssetBundle(path);
+            if (LoadedBundles.TryGetValue(path, out var existing) && existing != null) return existing;
+            if (LoadingTasks.TryGetValue(path, out var pending))
             {
-                ModLogger.LogError($"AssetBundleManager: AssetBundle file not found at path: {bundlePath}");
-                return null;
+                var result = CompleteLoad(path, pending, pending.Request.assetBundle);
+                if (!pending.Invalidated) return result;
             }
-
-            if (!forceReload && LoadedBundles.TryGetValue(bundlePath, out var existingBundle)) return existingBundle;
 
             try
             {
-                if (forceReload && LoadedBundles.TryGetValue(bundlePath, out var oldBundleToUnload))
-                {
-                    AssetNames.Remove(oldBundleToUnload);
-                    oldBundleToUnload.Unload(true);
-                    LoadedBundles.Remove(bundlePath);
-                }
-
-                var assetBundle = AssetBundle.LoadFromFile(bundlePath);
-                if (assetBundle == null)
-                {
-                    ModLogger.LogError($"AssetBundleManager: Failed to load AssetBundle from path: {bundlePath}");
-                    return null;
-                }
-
-                LoadedBundles[bundlePath] = assetBundle;
-                return assetBundle;
+                var bundle = AssetBundle.LoadFromFile(path);
+                if (bundle == null)
+                    ModLogger.LogError($"AssetBundleManager: Failed to load AssetBundle from path: {path}");
+                else LoadedBundles[path] = bundle;
+                return bundle;
             }
             catch (Exception ex)
             {
-                ModLogger.LogError(
-                    $"AssetBundleManager: Exception while loading AssetBundle from path: {bundlePath}. Exception: {ex}");
+                ModLogger.LogError($"AssetBundleManager: Failed to load '{path}': {ex}");
                 return null;
             }
         }
@@ -58,102 +58,100 @@ namespace DuckovCustomModel.Managers
         public static async UniTask<AssetBundle?> GetOrLoadAssetBundleAsync(ModelBundleInfo bundleInfo,
             bool forceReload = false, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(bundleInfo.BundlePath)) return null;
-            var bundlePath = Path.Combine(bundleInfo.DirectoryPath, bundleInfo.BundlePath);
-            if (string.IsNullOrEmpty(bundlePath) || !File.Exists(bundlePath))
+            cancellationToken.ThrowIfCancellationRequested();
+            var path = GetBundlePath(bundleInfo);
+            if (path == null) return null;
+            if (forceReload) UnloadAssetBundle(path);
+            if (LoadedBundles.TryGetValue(path, out var existing) && existing != null) return existing;
+            if (LoadingTasks.TryGetValue(path, out var obsolete) && obsolete.Invalidated)
             {
-                ModLogger.LogError($"AssetBundleManager: AssetBundle file not found at path: {bundlePath}");
-                return null;
+                await obsolete.Request.ToUniTask().AttachExternalCancellation(cancellationToken);
+                CompleteLoad(path, obsolete, obsolete.Request.assetBundle);
+                return await GetOrLoadAssetBundleAsync(bundleInfo, false, cancellationToken);
             }
 
-            if (!forceReload && LoadedBundles.TryGetValue(bundlePath, out var existingBundle))
-                return existingBundle;
-
-            if (LoadingTasks.TryGetValue(bundlePath, out var loadingTask))
-                return await loadingTask;
-
-            var task = LoadAssetBundleInternalAsync(bundlePath, forceReload, cancellationToken);
-            LoadingTasks[bundlePath] = task;
-
-            try
-            {
-                var result = await task;
-                return result;
-            }
-            finally
-            {
-                LoadingTasks.Remove(bundlePath);
-            }
-        }
-
-        private static async UniTask<AssetBundle?> LoadAssetBundleInternalAsync(string bundlePath, bool forceReload,
-            CancellationToken cancellationToken)
-        {
-            await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
-
-            try
-            {
-                if (forceReload && LoadedBundles.TryGetValue(bundlePath, out var oldBundleToUnload))
+            if (!LoadingTasks.TryGetValue(path, out var pending))
+                try
                 {
-                    AssetNames.Remove(oldBundleToUnload);
-                    oldBundleToUnload.Unload(true);
-                    LoadedBundles.Remove(bundlePath);
-                    await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
+                    pending = new(AssetBundle.LoadFromFileAsync(path));
+                    LoadingTasks.Add(path, pending);
+                    FinishLoadAsync(path, pending).Forget();
                 }
-
-                var request = AssetBundle.LoadFromFileAsync(bundlePath);
-                await request.ToUniTask();
-                var assetBundle = request.assetBundle;
-                if (cancellationToken.IsCancellationRequested)
+                catch (Exception ex)
                 {
-                    if (assetBundle != null) assetBundle.Unload(true);
-                    cancellationToken.ThrowIfCancellationRequested();
-                }
-
-                if (assetBundle == null)
-                {
-                    ModLogger.LogError($"AssetBundleManager: Failed to load AssetBundle from path: {bundlePath}");
+                    ModLogger.LogError($"AssetBundleManager: Failed to load '{path}': {ex}");
                     return null;
                 }
 
-                if (LoadedBundles.TryGetValue(bundlePath, out var oldBundle))
-                {
-                    AssetNames.Remove(oldBundle);
-                    oldBundle.Unload(true);
-                    LoadedBundles.Remove(bundlePath);
-                }
+            return await pending.Completion.Task.AttachExternalCancellation(cancellationToken);
+        }
 
-                LoadedBundles[bundlePath] = assetBundle;
-                return assetBundle;
+        private static async UniTask FinishLoadAsync(string path, BundleLoad pending)
+        {
+            try
+            {
+                await pending.Request.ToUniTask();
+                CompleteLoad(path, pending, pending.Request.assetBundle);
             }
             catch (Exception ex)
             {
-                ModLogger.LogError(
-                    $"AssetBundleManager: Exception while loading AssetBundle from path: {bundlePath}. Exception: {ex}");
+                if (LoadingTasks.TryGetValue(path, out var current) && ReferenceEquals(current, pending))
+                    LoadingTasks.Remove(path);
+                pending.Completion.TrySetException(ex);
+                ModLogger.LogError($"AssetBundleManager: Failed to load '{path}': {ex}");
+            }
+        }
+
+        private static AssetBundle? CompleteLoad(string path, BundleLoad pending, AssetBundle? bundle)
+        {
+            if (pending.Completed) return pending.Result;
+            pending.Completed = true;
+            var current = LoadingTasks.TryGetValue(path, out var active) && ReferenceEquals(active, pending);
+            if (current) LoadingTasks.Remove(path);
+            if (pending.Invalidated || !current)
+            {
+                if (bundle != null) bundle.Unload(true);
+                pending.Completion.TrySetCanceled();
                 return null;
             }
+
+            if (bundle != null) LoadedBundles[path] = bundle;
+            else ModLogger.LogError($"AssetBundleManager: Failed to load AssetBundle from path: {path}");
+            pending.Result = bundle;
+            pending.Completion.TrySetResult(bundle);
+            return bundle;
         }
 
         public static void UnloadAssetBundle(string bundlePath)
         {
-            if (string.IsNullOrEmpty(bundlePath)) return;
-
-            if (LoadedBundles.TryGetValue(bundlePath, out var bundle))
+            if (string.IsNullOrWhiteSpace(bundlePath)) return;
+            bundlePath = Path.GetFullPath(bundlePath);
+            if (LoadingTasks.TryGetValue(bundlePath, out var pending))
             {
-                AssetNames.Remove(bundle);
-                bundle.Unload(true);
-                LoadedBundles.Remove(bundlePath);
+                pending.Invalidated = true;
+                pending.Completion.TrySetCanceled();
             }
 
-            LoadingTasks.Remove(bundlePath, out _);
+            if (!LoadedBundles.TryGetValue(bundlePath, out var bundle)) return;
+            LoadedBundles.Remove(bundlePath);
+            AssetNames.Remove(bundle);
+            if (bundle != null) bundle.Unload(true);
         }
 
         public static void UnloadAllAssetBundles(bool unloadAllLoadedObjects = false)
         {
-            foreach (var bundle in LoadedBundles.Values) bundle.Unload(unloadAllLoadedObjects);
+            foreach (var pending in new List<BundleLoad>(LoadingTasks.Values))
+            {
+                pending.Invalidated = true;
+                pending.Completion.TrySetCanceled();
+            }
+
+            var bundles = new List<AssetBundle>(LoadedBundles.Values);
             LoadedBundles.Clear();
-            LoadingTasks.Clear();
             AssetNames.Clear();
+            foreach (var bundle in bundles)
+                if (bundle != null)
+                    bundle.Unload(unloadAllLoadedObjects);
         }
 
         public static T? LoadAssetFromBundle<T>(ModelBundleInfo bundleInfo, string assetPath) where T : Object
@@ -179,7 +177,7 @@ namespace DuckovCustomModel.Managers
             }
         }
 
-        internal static string? FindYsmAssetPath(ModelBundleInfo bundleInfo, string assetPath)
+        internal static string? FindBinaryAssetPath(ModelBundleInfo bundleInfo, string assetPath)
         {
             if (string.IsNullOrWhiteSpace(bundleInfo.BundlePath)) return null;
             if (!File.Exists(Path.Combine(bundleInfo.DirectoryPath, bundleInfo.BundlePath))) return null;
@@ -193,7 +191,7 @@ namespace DuckovCustomModel.Managers
             }
 
             var candidates = new List<string>();
-            if (YsmModelSource.IsYsm(bundleInfo))
+            if (ModelSourcePaths.IsFileSource(bundleInfo))
             {
                 var bundleDirectory = Path.GetDirectoryName(
                     Path.GetFullPath(Path.Combine(bundleInfo.DirectoryPath, bundleInfo.BundlePath)))!;
@@ -218,16 +216,17 @@ namespace DuckovCustomModel.Managers
             return null;
         }
 
-        internal static byte[] LoadYsmBytes(ModelBundleInfo bundleInfo, string assetPath)
+        internal static byte[] LoadBinaryBytes(ModelBundleInfo bundleInfo, string assetPath)
         {
             var bundle = GetOrLoadAssetBundle(bundleInfo)
-                         ?? throw new FileNotFoundException("YSM AssetBundle could not be loaded.", bundleInfo.BundlePath);
+                         ?? throw new FileNotFoundException("Model AssetBundle could not be loaded.",
+                             bundleInfo.BundlePath);
             var asset = bundle.LoadAsset<TextAsset>(assetPath);
             if (asset == null)
-                throw new InvalidDataException("YSM bundle asset must be a TextAsset: " + assetPath);
+                throw new InvalidDataException("Embedded model must be a TextAsset: " + assetPath);
             var bytes = asset.bytes;
-            if (bytes.Length > new ModelRuntime.LoadLimits().MaxFileBytes)
-                throw new InvalidDataException("YSM bundle asset exceeds the loading budget: " + assetPath);
+            if (bytes.Length > new LoadLimits().MaxFileBytes)
+                throw new InvalidDataException("Embedded model exceeds the loading budget: " + assetPath);
             return bytes;
         }
 
@@ -292,7 +291,8 @@ namespace DuckovCustomModel.Managers
             if (modelInfo.ThumbnailData is { Length: > 0 })
             {
                 var embedded = LoadThumbnailBytes(modelInfo.ThumbnailData);
-                if (embedded != null || !YsmModelSource.IsYsm(modelInfo)) return embedded;
+                if (embedded != null || (!YsmModelSource.IsYsm(modelInfo) && !VrmModelSource.IsVrm(modelInfo)))
+                    return embedded;
             }
 
             if (string.IsNullOrEmpty(modelInfo.ThumbnailPath))
@@ -331,12 +331,19 @@ namespace DuckovCustomModel.Managers
         public static (bool isValid, string? errorMessage) CheckBundleStatus(ModelBundleInfo bundleInfo,
             ModelInfo modelInfo)
         {
-            if (YsmModelSource.IsYsm(modelInfo))
-            {
-                try { return YsmModelSource.HasSource(bundleInfo, modelInfo)
-                    ? (true, null) : (false, "YSM source was not found"); }
-                catch (Exception ex) { return (false, ex.Message); }
-            }
+            if (YsmModelSource.IsYsm(modelInfo) || VrmModelSource.IsVrm(modelInfo))
+                try
+                {
+                    return (VrmModelSource.IsVrm(modelInfo)
+                        ? VrmModelSource.HasSource(bundleInfo, modelInfo)
+                        : YsmModelSource.HasSource(bundleInfo, modelInfo))
+                        ? (true, null)
+                        : (false, "Model source was not found");
+                }
+                catch (Exception ex)
+                {
+                    return (false, ex.Message);
+                }
 
             var bundlePath = Path.Combine(bundleInfo.DirectoryPath, bundleInfo.BundlePath);
             if (string.IsNullOrEmpty(bundlePath) || !File.Exists(bundlePath))
@@ -363,13 +370,16 @@ namespace DuckovCustomModel.Managers
             ModelBundleInfo bundleInfo,
             ModelInfo modelInfo, CancellationToken cancellationToken = default)
         {
-            if (YsmModelSource.IsYsm(modelInfo))
+            if (YsmModelSource.IsYsm(modelInfo) || VrmModelSource.IsVrm(modelInfo))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 try
                 {
-                    return YsmModelSource.HasSource(bundleInfo, modelInfo)
-                        ? (true, null) : (false, "YSM source was not found");
+                    return (VrmModelSource.IsVrm(modelInfo)
+                        ? VrmModelSource.HasSource(bundleInfo, modelInfo)
+                        : YsmModelSource.HasSource(bundleInfo, modelInfo))
+                        ? (true, null)
+                        : (false, "Model source was not found");
                 }
                 catch (Exception ex)
                 {
@@ -557,6 +567,19 @@ namespace DuckovCustomModel.Managers
             }
 
             return atlases.Count > 0 ? atlases.ToArray() : null;
+        }
+
+        private sealed class BundleLoad
+        {
+            internal readonly UniTaskCompletionSource<AssetBundle?> Completion = new();
+            internal readonly AssetBundleCreateRequest Request;
+            internal bool Invalidated, Completed;
+            internal AssetBundle? Result;
+
+            internal BundleLoad(AssetBundleCreateRequest request)
+            {
+                Request = request;
+            }
         }
     }
 }

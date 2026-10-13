@@ -27,6 +27,8 @@ namespace DuckovCustomModel.Integrations.Ysm
         private string _extra = string.Empty;
         private long _extraSequence;
 
+        private bool _ikSocketsChanged;
+
         public YsmCharacterRuntime(ModelHandler handler, ModelBundleInfo bundle, ModelInfo model)
         {
             if (handler.CharacterMainControl == null || handler.OriginalCharacterModel == null)
@@ -131,6 +133,12 @@ namespace DuckovCustomModel.Integrations.Ysm
             destination.ExtraAnimationLocked = ExtraAnimationLocked;
         }
 
+        public DuckovYsmRenderBackend CreateView(Transform root, bool preview = true)
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(YsmCharacterRuntime));
+            return _renderer!.CreateView(root, preview);
+        }
+
         public Transform? GetGunLocator(int itemTypeId)
         {
             var category = _lease.Profile.ItemCategories.TryGetValue(itemTypeId, out var configured)
@@ -167,13 +175,19 @@ namespace DuckovCustomModel.Integrations.Ysm
             Release(() => _sockets!.Deactivate());
         }
 
+        internal void UpdateIkSockets()
+        {
+            if (!_disposed) _ikSocketsChanged |= _sockets!.Update(Simulation.Pose);
+        }
+
         public bool Tick(double deltaSeconds)
         {
             if (_disposed || !_active || !Root.activeInHierarchy) return false;
             if (!_cameraLayerChecked) CheckCameraLayer();
             _renderer!.TimeSeconds = Simulation.Time + Math.Max(0, deltaSeconds);
             Adapter.Advance(Math.Max(0, deltaSeconds));
-            var socketsChanged = _sockets!.Update(Simulation.Pose);
+            var socketsChanged = _sockets!.Update(Simulation.Pose) | _ikSocketsChanged;
+            _ikSocketsChanged = false;
             _effects!.Tick(Math.Max(0, deltaSeconds));
             return socketsChanged;
         }
@@ -224,15 +238,9 @@ namespace DuckovCustomModel.Integrations.Ysm
             if (Locators.TryGetValue(SocketNames.Helmet, out var helmet))
                 NaturalHeight = Root.transform.InverseTransformPoint(helmet.position).y * InitialRootScale.y;
             if (NaturalHeight > 0) return;
-            var maximum = 0f;
-            var minimum = 0f;
-            foreach (var renderer in _renderer!.Renderers)
-            {
-                var bounds = renderer.localBounds;
-                maximum = Mathf.Max(maximum, bounds.max.y);
-                minimum = Mathf.Min(minimum, bounds.min.y);
-            }
-
+            var bounds = _renderer!.MeasurePoseBounds();
+            var maximum = Mathf.Max(0, bounds.max.y);
+            var minimum = Mathf.Min(0, bounds.min.y);
             NaturalHeight = (maximum - minimum) * Mathf.Abs(InitialRootScale.y);
         }
 

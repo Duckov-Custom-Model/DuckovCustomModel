@@ -39,8 +39,8 @@ namespace DuckovCustomModel.Core.Data
                 var settings = jsonSettings ?? JsonSettings.Default;
                 var info = JsonConvert.DeserializeObject<ModelBundleInfo>(json, settings);
                 if (info == null) return info;
-                info.DirectoryPath = directoryPath;
-                info.Models = info.Models.Where(model => model.Validate()).ToArray();
+                info.DirectoryPath = Path.GetFullPath(directoryPath);
+                info.Models = (info.Models ?? []).Where(model => model != null && model.Validate()).ToArray();
                 return info;
             }
             catch (JsonException ex)

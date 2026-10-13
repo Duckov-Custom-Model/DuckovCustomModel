@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Reflection;
 
@@ -66,6 +66,9 @@ namespace DuckovCustomModel
                              "ModelRuntime.dll", "ModelRuntime.Media.dll",
                              "ModelRuntime.Ysm.dll", "ModelRuntime.Adapters.dll",
                              "DuckovCustomModel.Core.dll",
+                             "UniGLTF.Utils.dll", "UniGLTF.UniUnlit.dll", "UniHumanoid.dll", "UniGLTF.dll",
+                             "SpringBoneJobs.dll", "FastSpringBone10.dll", "VrmLib.dll", "VRM10.MToon10.dll",
+                             "VRM10.dll",
                          })
                     _dependencyResolver.LoadModule(dependency);
 

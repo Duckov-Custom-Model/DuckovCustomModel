@@ -72,8 +72,12 @@ namespace DuckovCustomModel.Integrations.Ysm
                               $"ambientMode={RenderSettings.ambientMode}, sun={(sun ? sun.name : "none")}");
             }
 
-            var frustum = GeometryUtility.CalculateFrustumPlanes(camera);
-            foreach (var instance in Instances) instance.SortTransparency(camera, frustum);
+            Plane[]? frustum = null;
+            foreach (var instance in Instances)
+            {
+                if (instance.graphics == null || instance.graphics.TransparentCount == 0) continue;
+                instance.SortTransparency(camera, frustum ??= GeometryUtility.CalculateFrustumPlanes(camera));
+            }
         }
 
         private void SortTransparency(Camera camera, Plane[] frustum)
@@ -91,18 +95,18 @@ namespace DuckovCustomModel.Integrations.Ysm
 
             if (!GeometryUtility.TestPlanesAABB(frustum, state.Renderer.bounds)) return;
             var world = state.Object.transform.localToWorldMatrix;
-            var position = camera.transform.position;
             var forward = camera.transform.forward;
+            if (state.SortedPoseVersion == state.PoseVersion && state.SortedWorld.Equals(world) &&
+                state.SortedForward.Equals(forward)) return;
             var count = state.TransparentCount;
             for (var i = 0; i < count; i++)
             {
                 var entry = state.Order[i];
                 var indices = state.Geometry.Partitions[entry.Partition].Indices;
-                var center = world.MultiplyPoint3x4((state.Vertices[indices[entry.Triangle]] +
-                                                     state.Vertices[indices[entry.Triangle + 1]] +
-                                                     state.Vertices[indices[entry.Triangle + 2]]) / 3);
-                entry.Depth = ((double)center.x - position.x) * forward.x +
-                              ((double)center.y - position.y) * forward.y + ((double)center.z - position.z) * forward.z;
+                var center = world.MultiplyPoint3x4(TriangleCenter(state, indices[entry.Triangle],
+                    indices[entry.Triangle + 1], indices[entry.Triangle + 2]));
+                entry.Depth = (double)center.x * forward.x + (double)center.y * forward.y +
+                              (double)center.z * forward.z;
                 state.Order[i] = entry;
             }
 
@@ -153,6 +157,9 @@ namespace DuckovCustomModel.Integrations.Ysm
                 state.TransparentRenderer.sharedMaterials = materials;
             }
 
+            state.SortedPoseVersion = state.PoseVersion;
+            state.SortedWorld = world;
+            state.SortedForward = forward;
             state.TransparentRenderer.enabled = true;
         }
 
@@ -160,7 +167,8 @@ namespace DuckovCustomModel.Integrations.Ysm
         {
             var state = graphics;
             if (state == null) return;
-            SortTransparency(camera, GeometryUtility.CalculateFrustumPlanes(camera));
+            if (state.TransparentCount > 0)
+                SortTransparency(camera, GeometryUtility.CalculateFrustumPlanes(camera));
             commands.Clear();
             commands.SetRenderTarget(target);
             commands.ClearRenderTarget(true, true, camera.backgroundColor);

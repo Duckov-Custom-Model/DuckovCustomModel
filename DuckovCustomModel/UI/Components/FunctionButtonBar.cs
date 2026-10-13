@@ -36,7 +36,8 @@ namespace DuckovCustomModel.UI.Components
             layoutElement.flexibleHeight = 1;
             layoutElement.preferredHeight = 80;
 
-            UIFactory.SetupHorizontalLayoutGroup(buttonBar, 10f, new(10, 10, 10, 10));
+            UIFactory.SetupHorizontalLayoutGroup(buttonBar, 10f, new(10, 10, 10, 10),
+                childControlWidth: true);
 
             BuildRefreshButton(buttonBar);
             BuildResetInvalidModelsButton(buttonBar);
@@ -53,6 +54,7 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupRectTransform(_refreshButton.gameObject, Vector2.zero, Vector2.zero, new(180, 0));
 
             var refreshButtonLayoutElement = _refreshButton.gameObject.AddComponent<LayoutElement>();
+            refreshButtonLayoutElement.minWidth = 110;
             refreshButtonLayoutElement.preferredWidth = 180;
             refreshButtonLayoutElement.flexibleWidth = 0;
             refreshButtonLayoutElement.flexibleHeight = 1;
@@ -72,6 +74,7 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupRectTransform(_resetInvalidModelsButton.gameObject, Vector2.zero, Vector2.zero, new(180, 0));
 
             var resetButtonLayoutElement = _resetInvalidModelsButton.gameObject.AddComponent<LayoutElement>();
+            resetButtonLayoutElement.minWidth = 110;
             resetButtonLayoutElement.preferredWidth = 180;
             resetButtonLayoutElement.flexibleWidth = 0;
             resetButtonLayoutElement.flexibleHeight = 1;
@@ -97,6 +100,7 @@ namespace DuckovCustomModel.UI.Components
             UIFactory.SetupRectTransform(_openModelFolderButton.gameObject, Vector2.zero, Vector2.zero, new(180, 0));
 
             var openFolderButtonLayoutElement = _openModelFolderButton.gameObject.AddComponent<LayoutElement>();
+            openFolderButtonLayoutElement.minWidth = 110;
             openFolderButtonLayoutElement.preferredWidth = 180;
             openFolderButtonLayoutElement.flexibleWidth = 0;
             openFolderButtonLayoutElement.flexibleHeight = 1;
@@ -110,14 +114,18 @@ namespace DuckovCustomModel.UI.Components
 
             var hintLabel = UIFactory.CreateLocalizedText("ModelUninstallHint", parent.transform,
                 () => Localization.ModelUninstallHint, 24, new(0.8f, 0.8f, 0.8f, 0.8f));
-            UIFactory.SetupRectTransform(hintLabel, new(0, 0.5f), new(0, 0.5f), new(600, 0), pivot: new(0, 0.5f));
+            var hintLayoutElement = hintLabel.AddComponent<LayoutElement>();
+            hintLayoutElement.minWidth = 0;
+            hintLayoutElement.preferredWidth = 0;
+            hintLayoutElement.flexibleWidth = 1;
+            hintLayoutElement.flexibleHeight = 1;
             var hintTextComponent = hintLabel.GetComponent<TextMeshProUGUI>();
             if (hintTextComponent == null) return;
             hintTextComponent.enableWordWrapping = true;
             hintTextComponent.enableAutoSizing = true;
             hintTextComponent.fontSizeMin = 12;
             hintTextComponent.fontSizeMax = 24;
-            hintTextComponent.overflowMode = TextOverflowModes.Overflow;
+            hintTextComponent.overflowMode = TextOverflowModes.Ellipsis;
         }
 
         private void OnResetInvalidModelsButtonClicked()

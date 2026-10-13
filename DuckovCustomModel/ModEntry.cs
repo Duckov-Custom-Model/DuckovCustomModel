@@ -8,6 +8,7 @@ using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.Extensions.ShoulderSurfing;
 using DuckovCustomModel.HarmonyPatches;
+using DuckovCustomModel.Integrations.Vrm;
 using DuckovCustomModel.Integrations.Ysm;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
@@ -50,6 +51,7 @@ namespace DuckovCustomModel
 
             CheckAndUpdateVersionFile();
 
+            VrmModelSource.Register();
             LoadConfig();
 
             var patched = PatchAll();
@@ -102,8 +104,6 @@ namespace DuckovCustomModel
 
             ModelListManager.CancelRefresh();
             foreach (var handler in ModelManager.GetAllHandlers())
-            {
-                if (handler.YsmRuntime == null) continue;
                 try
                 {
                     handler.CleanupCustomModel();
@@ -112,9 +112,9 @@ namespace DuckovCustomModel
                 {
                     ModLogger.LogException(exception);
                 }
-            }
 
             YsmModelSource.ClearCache();
+            VrmModelSource.ClearResources();
 
             UnloadConfig();
 

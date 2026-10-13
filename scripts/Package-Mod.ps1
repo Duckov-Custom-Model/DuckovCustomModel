@@ -18,7 +18,8 @@ $requiredFiles = @(
     'ModelRuntime.dll', 'ModelRuntime.Adapters.dll', 'ModelRuntime.Media.dll',
     'ModelRuntime.Ysm.dll', 'StbImageSharp.dll', 'ZstdSharp.dll',
     'System.Runtime.CompilerServices.Unsafe.dll', 'info.ini', 'preview.png',
-    'Resources/ysm-rendering.bundle'
+    'Resources/ysm-rendering.bundle', 'Resources/vrm-runtime.bundle', 'Resources/UniVRM-LICENSE.txt',
+    'UniGLTF.Utils.dll', 'UniGLTF.UniUnlit.dll', 'UniHumanoid.dll', 'UniGLTF.dll', 'SpringBoneJobs.dll', 'FastSpringBone10.dll', 'VrmLib.dll', 'VRM10.MToon10.dll', 'VRM10.dll'
 )
 foreach ($relativePath in $requiredFiles) {
     if (-not (Test-Path -LiteralPath (Join-Path $outputRoot $relativePath) -PathType Leaf)) {

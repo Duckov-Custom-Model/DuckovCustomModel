@@ -18,6 +18,8 @@ namespace DuckovCustomModel.Core.Data
         public string PrefabPath { get; set; } = string.Empty;
         public string SourceKind { get; set; } = "AssetBundle";
         public string SourcePath { get; set; } = string.Empty;
+        public VrmModelSettings? Vrm { get; set; }
+        public ModelIkSettings? Ik { get; set; }
         [JsonIgnore] public string SourceRevision { get; set; } = string.Empty;
 
         public string? DeathLootBoxPrefabPath { get; set; }
@@ -46,15 +48,11 @@ namespace DuckovCustomModel.Core.Data
         {
             if (string.IsNullOrWhiteSpace(ModelID)) return false;
             if (string.IsNullOrWhiteSpace(Name)) return false;
-            if (string.Equals(SourceKind, "Ysm", StringComparison.OrdinalIgnoreCase))
-            {
-                if (string.IsNullOrWhiteSpace(SourcePath)) return false;
-            }
-            else if (!string.Equals(SourceKind, "AssetBundle", StringComparison.OrdinalIgnoreCase)
-                     || string.IsNullOrWhiteSpace(PrefabPath))
-            {
-                return false;
-            }
+            if (Vrm != null && !Vrm.Validate()) return false;
+            if (Ik != null && !Ik.Validate()) return false;
+            if (!ModelSourceDefinition.TryGet(SourceKind, out var source)) return false;
+            SourceKind = source.Kind;
+            if (string.IsNullOrWhiteSpace(source.UsesPrefabPath ? PrefabPath : SourcePath)) return false;
 
             if (string.IsNullOrWhiteSpace(DeathLootBoxPrefabPath)) DeathLootBoxPrefabPath = null;
 
@@ -99,17 +97,10 @@ namespace DuckovCustomModel.Core.Data
             Features = features.ToArray();
             CustomSounds = soundInfos.ToArray();
 
-            if (string.Equals(SourceKind, "AssetBundle", StringComparison.OrdinalIgnoreCase))
-            {
-                var actionIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                var actionParameters = new HashSet<string>(StringComparer.Ordinal);
-                RadialMenus = ValidateRadialMenus(RadialMenus, actionIds, actionParameters,
-                    new HashSet<string>(StringComparer.OrdinalIgnoreCase), 0);
-            }
-            else
-            {
-                RadialMenus = [];
-            }
+            var actionIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var actionParameters = new HashSet<string>(StringComparer.Ordinal);
+            RadialMenus = ValidateRadialMenus(RadialMenus, actionIds, actionParameters,
+                new(StringComparer.OrdinalIgnoreCase), 0);
 
             return true;
         }

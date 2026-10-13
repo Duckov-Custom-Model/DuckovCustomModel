@@ -96,7 +96,7 @@ namespace DuckovCustomModel.UI.Tabs
             scrollbar.transform.SetParent(scrollView.transform, false);
 
             UIFactory.SetupVerticalLayoutGroup(contentArea, 10f, new(10, 10, 10, 10));
-            UIFactory.SetupContentSizeFitter(contentArea, ContentSizeFitter.FitMode.PreferredSize,
+            UIFactory.SetupContentSizeFitter(contentArea, ContentSizeFitter.FitMode.Unconstrained,
                 ContentSizeFitter.FitMode.Unconstrained);
 
             BuildKeySetting(contentArea);
@@ -118,8 +118,7 @@ namespace DuckovCustomModel.UI.Tabs
 
             var keyLabel = UIFactory.CreateText("KeyLabel", row.transform,
                 Localization.Hotkey, 18, Color.white);
-            UIFactory.SetupLeftLabel(keyLabel);
-            UIFactory.SetupContentSizeFitter(keyLabel);
+            UIFactory.SetupBoundedLeftLabel(keyLabel, 140);
             UIFactory.SetLocalizedText(keyLabel, () => Localization.Hotkey);
 
             var keyButton = UIFactory.CreateButton("KeyButton", row.transform, OnKeyButtonClicked,
@@ -143,8 +142,7 @@ namespace DuckovCustomModel.UI.Tabs
 
             var keyLabel = UIFactory.CreateText("KeyLabel", row.transform,
                 Localization.AnimatorParamsHotkey, 18, Color.white);
-            UIFactory.SetupLeftLabel(keyLabel);
-            UIFactory.SetupContentSizeFitter(keyLabel);
+            UIFactory.SetupBoundedLeftLabel(keyLabel, 210);
             UIFactory.SetLocalizedText(keyLabel, () => Localization.AnimatorParamsHotkey);
 
             var keyButton = UIFactory.CreateButton("KeyButton", row.transform, OnAnimatorParamsKeyButtonClicked,
@@ -176,7 +174,7 @@ namespace DuckovCustomModel.UI.Tabs
             var row = CreateSettingRow(parent);
             var label = UIFactory.CreateText("YsmWheelKeyLabel", row.transform,
                 Localization.YsmRadialMenuHotkey, 18, Color.white);
-            UIFactory.SetupLeftLabel(label);
+            UIFactory.SetupBoundedLeftLabel(label, 140);
             UIFactory.SetLocalizedText(label, () => Localization.YsmRadialMenuHotkey);
             var button = UIFactory.CreateButton("YsmWheelKeyButton", row.transform, () =>
             {
@@ -202,8 +200,7 @@ namespace DuckovCustomModel.UI.Tabs
             var modifier1Row = CreateSettingRow(parent);
             var modifier1Label = UIFactory.CreateText("ModifierKey1Label", modifier1Row.transform,
                 Localization.EmotionModifierKey1, 18, Color.white);
-            UIFactory.SetupLeftLabel(modifier1Label);
-            UIFactory.SetupContentSizeFitter(modifier1Label);
+            UIFactory.SetupBoundedLeftLabel(modifier1Label, 140);
             UIFactory.SetLocalizedText(modifier1Label, () => Localization.EmotionModifierKey1);
 
             var modifier1Button = UIFactory.CreateButton("ModifierKey1Button", modifier1Row.transform,
@@ -223,8 +220,7 @@ namespace DuckovCustomModel.UI.Tabs
             var modifier2Row = CreateSettingRow(parent);
             var modifier2Label = UIFactory.CreateText("ModifierKey2Label", modifier2Row.transform,
                 Localization.EmotionModifierKey2, 18, Color.white);
-            UIFactory.SetupLeftLabel(modifier2Label);
-            UIFactory.SetupContentSizeFitter(modifier2Label);
+            UIFactory.SetupBoundedLeftLabel(modifier2Label, 140);
             UIFactory.SetLocalizedText(modifier2Label, () => Localization.EmotionModifierKey2);
 
             var modifier2Button = UIFactory.CreateButton("ModifierKey2Button", modifier2Row.transform,
@@ -251,12 +247,12 @@ namespace DuckovCustomModel.UI.Tabs
             outline.effectColor = new(0.8f, 0.6f, 0.2f, 0.8f);
             outline.effectDistance = new(2, -2);
 
-            UIFactory.SetupAnchor(warningRow, new(0, 1), new(1, 1), new(0.5f, 1), new(800, 0), Vector2.zero);
+            UIFactory.SetupAnchor(warningRow, new(0, 1), new(1, 1), new(0.5f, 1), new(0, 0), Vector2.zero);
 
             var warningRowLayoutElement = warningRow.AddComponent<LayoutElement>();
-            warningRowLayoutElement.minWidth = 800;
-            warningRowLayoutElement.preferredWidth = 800;
-            warningRowLayoutElement.flexibleWidth = 0;
+            warningRowLayoutElement.minWidth = 0;
+            warningRowLayoutElement.preferredWidth = 0;
+            warningRowLayoutElement.flexibleWidth = 1;
             warningRowLayoutElement.flexibleHeight = 1;
 
             UIFactory.SetupVerticalLayoutGroup(warningRow, 0f, new(20, 20, 10, 10),
@@ -278,7 +274,7 @@ namespace DuckovCustomModel.UI.Tabs
             warningLayoutElement.flexibleHeight = 1;
 
             UIFactory.SetupContentSizeFitter(warningText, ContentSizeFitter.FitMode.Unconstrained);
-            UIFactory.SetupContentSizeFitter(warningRow);
+            UIFactory.SetupContentSizeFitter(warningRow, ContentSizeFitter.FitMode.Unconstrained);
         }
 
         private void BuildAnimatorParamsToggle(GameObject parent)
@@ -287,8 +283,7 @@ namespace DuckovCustomModel.UI.Tabs
 
             var label = UIFactory.CreateText("Label", row.transform,
                 Localization.ShowAnimatorParameters, 18, Color.white);
-            UIFactory.SetupLeftLabel(label);
-            UIFactory.SetupContentSizeFitter(label);
+            UIFactory.SetupBoundedLeftLabel(label, 60);
             UIFactory.SetLocalizedText(label, () => Localization.ShowAnimatorParameters);
 
             var configWindow = GetComponentInParent<ConfigWindow>();
@@ -305,8 +300,7 @@ namespace DuckovCustomModel.UI.Tabs
 
             var label = UIFactory.CreateText("Label", row.transform,
                 Localization.ShowDCMButton, 18, Color.white);
-            UIFactory.SetupLeftLabel(label);
-            UIFactory.SetupContentSizeFitter(label);
+            UIFactory.SetupBoundedLeftLabel(label, 60);
             UIFactory.SetLocalizedText(label, () => Localization.ShowDCMButton);
 
             var toggle = UIFactory.CreateToggle("ShowDCMButtonToggle", row.transform,
@@ -326,8 +320,7 @@ namespace DuckovCustomModel.UI.Tabs
             var anchorRow = CreateSettingRow(parent);
             var anchorLabel = UIFactory.CreateText("AnchorLabel", anchorRow.transform,
                 Localization.DCMButtonAnchor, 18, Color.white);
-            UIFactory.SetupLeftLabel(anchorLabel);
-            UIFactory.SetupContentSizeFitter(anchorLabel);
+            UIFactory.SetupBoundedLeftLabel(anchorLabel, 240);
             UIFactory.SetLocalizedText(anchorLabel, () => Localization.DCMButtonAnchor);
 
             var dropdown = UIFactory.CreateDropdown("AnchorDropdown", anchorRow.transform, OnAnchorDropdownChanged);
@@ -344,8 +337,7 @@ namespace DuckovCustomModel.UI.Tabs
             var offsetRow = CreateSettingRow(parent);
             var offsetLabel = UIFactory.CreateText("OffsetLabel", offsetRow.transform,
                 Localization.DCMButtonOffset, 18, Color.white);
-            UIFactory.SetupLeftLabel(offsetLabel);
-            UIFactory.SetupContentSizeFitter(offsetLabel);
+            UIFactory.SetupBoundedLeftLabel(offsetLabel, 350);
             UIFactory.SetLocalizedText(offsetLabel, () => Localization.DCMButtonOffset);
 
             var offsetYInput = UIFactory.CreateInputField("OffsetYInput", offsetRow.transform);
@@ -509,13 +501,13 @@ namespace DuckovCustomModel.UI.Tabs
             rowImage.color = isEven ? new(0.12f, 0.14f, 0.16f, 0.8f) : new(0.1f, 0.12f, 0.14f, 0.8f);
             _settingRowIndex++;
 
-            UIFactory.SetupAnchor(row, new(0, 1), new(1, 1), new(0.5f, 1), new(800, 50), Vector2.zero);
+            UIFactory.SetupAnchor(row, new(0, 1), new(1, 1), new(0.5f, 1), new(0, 50), Vector2.zero);
 
             var rowLayoutElement = row.AddComponent<LayoutElement>();
             rowLayoutElement.preferredHeight = 50;
-            rowLayoutElement.minWidth = 800;
-            rowLayoutElement.preferredWidth = 800;
-            rowLayoutElement.flexibleWidth = 0;
+            rowLayoutElement.minWidth = 0;
+            rowLayoutElement.preferredWidth = 0;
+            rowLayoutElement.flexibleWidth = 1;
             rowLayoutElement.flexibleHeight = 0;
 
             return row;

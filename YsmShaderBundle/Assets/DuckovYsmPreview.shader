@@ -27,7 +27,10 @@ Shader "DuckovCustomModel/Ysm Preview"
             #pragma vertex Vert
             #pragma fragment Frag
             #pragma target 3.0
+            #pragma multi_compile_local _ YSM_GPU_POSE
+            #pragma target 4.5 YSM_GPU_POSE
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "DuckovYsmPose.hlsl"
             TEXTURE2D(_MainTex); SAMPLER(sampler_MainTex);
             CBUFFER_START(UnityPerMaterial)
                 float4 _FrameUv;
@@ -37,7 +40,7 @@ Shader "DuckovCustomModel/Ysm Preview"
             CBUFFER_END
             struct Attributes
             {
-                float4 positionOS : POSITION;
+                float4 positionOS : POSITION; float2 boneIndex : TEXCOORD3;
                 float2 uv : TEXCOORD0;
                 float2 noAnimation : TEXCOORD2;
                 float4 color : COLOR;
@@ -52,10 +55,11 @@ Shader "DuckovCustomModel/Ysm Preview"
             Varyings Vert(Attributes input)
             {
                 Varyings output;
+                input.positionOS.xyz = YsmPosition(input.positionOS.xyz, input.boneIndex.x);
                 output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
                 output.uv = input.uv;
                 output.noAnimation = input.noAnimation.x;
-                output.color = input.color;
+                output.color = YsmColor(input.color, input.boneIndex.x);
                 return output;
             }
             half4 Frag(Varyings input) : SV_Target

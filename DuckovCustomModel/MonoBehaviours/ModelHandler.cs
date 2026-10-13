@@ -1,15 +1,20 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using Duckov;
 using Duckov.Buffs;
 using Duckov.UI;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Core.MonoBehaviours.Animators;
+using DuckovCustomModel.Integrations;
 using DuckovCustomModel.Integrations.AssetBundles;
+using DuckovCustomModel.Integrations.Ik;
+using DuckovCustomModel.Integrations.Vrm;
 using DuckovCustomModel.Integrations.Ysm;
 using DuckovCustomModel.Managers;
 using DuckovCustomModel.Utils;
@@ -51,7 +56,6 @@ namespace DuckovCustomModel.MonoBehaviours
         private readonly Dictionary<string, List<string>> _soundsByTag = [];
         private Renderer[]? _cachedCustomModelRenderers;
         private float _currentHeight;
-
         private ModelBundleInfo? _currentModelBundleInfo;
         private CharacterSubVisuals? _customModelSubVisuals;
         private GameObject? _deathLootBoxPrefab;
@@ -61,18 +65,25 @@ namespace DuckovCustomModel.MonoBehaviours
         private Vector3 _initialRootScale = Vector3.one;
         private bool _isScaleLocked;
 
+        private CancellationTokenSource? _modelLoadCancellation;
+
         private float _nextIdleAudioTime;
         private CapsuleCollider? _originalBodyCollider;
         private Vector3 _originalColliderCenter;
         private float _originalColliderHeight, _originalColliderRadius;
         private bool _originalFaceActive = true, _originalSoundEnabled = true;
+        private ModelBundleInfo? _pendingBundle;
+        private ModelInfo? _pendingModel;
+        private PreparedModel? _preparedModel;
         private AssetBundleRadialActionPlayer? _radialActionPlayer;
         private int _ysmRendererVersion;
         private DuckovItemAgent? _ysmSocketAgent;
 
-        private bool ReplaceShader => YsmRuntime == null && (CurrentModelInfo is not { Features: { Length: > 0 } }
-                                                             || !CurrentModelInfo.Features.Contains(ModelFeatures
-                                                                 .NoAutoShaderReplace));
+        private bool ReplaceShader => YsmRuntime == null &&
+                                      (CurrentModelInfo == null || !VrmModelSource.IsVrm(CurrentModelInfo)) &&
+                                      (CurrentModelInfo is not { Features: { Length: > 0 } }
+                                       || !CurrentModelInfo.Features.Contains(ModelFeatures
+                                           .NoAutoShaderReplace));
 
         public CharacterMainControl? CharacterMainControl { get; private set; }
         public CharacterModel? OriginalCharacterModel { get; private set; }
@@ -145,18 +156,6 @@ namespace DuckovCustomModel.MonoBehaviours
             _radialActionPlayer?.Entries ?? Array.Empty<RadialMenuEntry>();
 
         public string? CurrentRadialActionId => _radialActionPlayer?.CurrentActionId;
-
-        public IReadOnlyList<RadialFormInfo> GetRadialActionForms(string actionId) =>
-            _radialActionPlayer?.GetForms(actionId) ?? Array.Empty<RadialFormInfo>();
-
-        public double GetRadialFormValue(RadialFormInfo form) => _radialActionPlayer?.GetFormValue(form) ?? 0;
-
-        public bool SetRadialFormValue(string actionId, string formId, double value) =>
-            _radialActionPlayer?.SetFormValue(actionId, formId, value) == true;
-
-        public void SaveRadialForms() => _radialActionPlayer?.SaveForms();
-
-        public void ResetRadialForms() => _radialActionPlayer?.ResetForms();
 
         private void Update()
         {
@@ -240,6 +239,7 @@ namespace DuckovCustomModel.MonoBehaviours
         private void OnDestroy()
         {
             ModelHeightManager.OnHeightChanged -= OnHeightChangedEvent;
+            ModelSocketScaleManager.OnScaleChanged -= OnSocketScaleChanged;
             try
             {
                 CleanupCustomModel();
@@ -262,6 +262,31 @@ namespace DuckovCustomModel.MonoBehaviours
             if (CharacterMainControl.Health == null) return;
             CharacterMainControl.Health.OnHurtEvent.RemoveListener(OnHurt);
             CharacterMainControl.Health.OnDeadEvent.RemoveListener(OnDeath);
+        }
+
+        public IReadOnlyList<RadialFormInfo> GetRadialActionForms(string actionId)
+        {
+            return _radialActionPlayer?.GetForms(actionId) ?? Array.Empty<RadialFormInfo>();
+        }
+
+        public double GetRadialFormValue(RadialFormInfo form)
+        {
+            return _radialActionPlayer?.GetFormValue(form) ?? 0;
+        }
+
+        public bool SetRadialFormValue(string actionId, string formId, double value)
+        {
+            return _radialActionPlayer?.SetFormValue(actionId, formId, value) == true;
+        }
+
+        public void SaveRadialForms()
+        {
+            _radialActionPlayer?.SaveForms();
+        }
+
+        public void ResetRadialForms()
+        {
+            _radialActionPlayer?.ResetForms();
         }
 
         public bool TryPlayRadialAction(string actionId)
@@ -354,6 +379,7 @@ namespace DuckovCustomModel.MonoBehaviours
             ModelSoundStopTrigger.OnSoundStopTriggered += OnSoundStopTriggered;
 
             ModelHeightManager.OnHeightChanged += OnHeightChangedEvent;
+            ModelSocketScaleManager.OnScaleChanged += OnSocketScaleChanged;
 
 
             InitializeModelPriorityList();
@@ -433,6 +459,8 @@ namespace DuckovCustomModel.MonoBehaviours
                 InitializeCustomModel(bundleInfo, modelInfo);
                 return;
             }
+
+            CleanupCustomModel();
         }
 
         public void InitializeFrom(ModelHandler sourceHandler, CharacterMainControl characterMainControl)
@@ -491,6 +519,12 @@ namespace DuckovCustomModel.MonoBehaviours
             if (sourceHandler.YsmRuntime != null)
                 newCharacterModel.autoSyncRightHandRotation =
                     sourceHandler.YsmRuntime.OriginalAutoSyncRightHandRotation;
+            else if (sourceHandler.CustomModelInstance != null &&
+                     sourceHandler.CustomModelInstance.GetComponent<VrmCharacterRuntime>() is { } vrm)
+                newCharacterModel.autoSyncRightHandRotation = vrm.OriginalAutoSyncRightHandRotation;
+            else if (sourceHandler.CustomModelInstance != null &&
+                     sourceHandler.CustomModelInstance.GetComponent<ModelIkController>() is { } ik)
+                newCharacterModel.autoSyncRightHandRotation = ik.OriginalAutoSyncRightHandRotation;
 
             var sourceRoot = sourceHandler.OriginalCharacterModel.transform;
             var myRoot = newCharacterModel.transform;
@@ -657,6 +691,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
         public void CleanupCustomModel()
         {
+            CancelModelLoad();
             var notifyRestored = IsHiddenOriginalModel;
             StopRadialAction();
             _radialActionPlayer = null;
@@ -686,7 +721,8 @@ namespace DuckovCustomModel.MonoBehaviours
             CurrentModelInfo = null;
             _currentModelBundleInfo = null;
 
-            YsmRuntime?.Dispose();
+            _preparedModel?.Dispose();
+            _preparedModel = null;
             YsmRuntime = null;
             _customModelSubVisuals = null;
 
@@ -710,11 +746,7 @@ namespace DuckovCustomModel.MonoBehaviours
             if (CustomAnimatorControl != null)
                 CustomAnimatorControl.SetCustomAnimator(null);
 
-            if (_deathLootBoxPrefab != null)
-            {
-                DestroyImmediate(_deathLootBoxPrefab);
-                _deathLootBoxPrefab = null;
-            }
+            if (_deathLootBoxPrefab != null) _deathLootBoxPrefab = null;
 
             foreach (var destroyAdapter in _modifiedDeathLootBoxes
                          .Where(deathLootBox => deathLootBox != null)
@@ -762,39 +794,74 @@ namespace DuckovCustomModel.MonoBehaviours
                       _currentModelBundleInfo?.DirectoryPath == modelBundleInfo.DirectoryPath
                     : YsmRuntime == null && CustomModelInstance != null &&
                       ReferenceEquals(CurrentModelInfo, modelInfo) &&
-                      ReferenceEquals(_currentModelBundleInfo, modelBundleInfo)) return;
-            GameObject? candidate = null;
-            YsmCharacterRuntime? runtime = null;
-            // Parse, bake, build materials and evaluate the first pose before touching the current model.
-            try
+                      ReferenceEquals(_currentModelBundleInfo, modelBundleInfo))
             {
-                if (YsmModelSource.IsYsm(modelInfo))
-                {
-                    runtime = new(this, modelBundleInfo, modelInfo);
-                    candidate = runtime.Root;
-                }
-                else
-                {
-                    var prefab = AssetBundleManager.LoadModelPrefab(modelBundleInfo, modelInfo);
-                    if (prefab == null) throw new InvalidOperationException("Failed to load custom model prefab.");
-                    candidate = Instantiate(prefab, OriginalCharacterModel.transform);
-                    candidate.name = CustomModelInstanceName;
-                    if (!candidate.activeSelf) candidate.SetActive(true);
-                }
-            }
-            catch (Exception exception)
-            {
-                runtime?.Dispose();
-                if (candidate != null) DestroyImmediate(candidate);
-                ModLogger.LogError($"Model switch failed; current model retained: {exception.Message}");
+                CancelModelLoad();
                 return;
             }
 
+            if (ReferenceEquals(_pendingBundle, modelBundleInfo) && ReferenceEquals(_pendingModel, modelInfo)) return;
+            CancelModelLoad();
+            _pendingBundle = modelBundleInfo;
+            _pendingModel = modelInfo;
+            _modelLoadCancellation = new();
+            LoadAndApplyModelAsync(modelBundleInfo, modelInfo, _modelLoadCancellation).Forget();
+        }
+
+        private void CancelModelLoad()
+        {
+            var cancellation = _modelLoadCancellation;
+            _modelLoadCancellation = null;
+            _pendingBundle = null;
+            _pendingModel = null;
+            cancellation?.Cancel();
+        }
+
+        private async UniTaskVoid LoadAndApplyModelAsync(ModelBundleInfo bundle, ModelInfo model,
+            CancellationTokenSource cancellation)
+        {
+            PreparedModel? prepared = null;
+            try
+            {
+                prepared = await ModelSourceLoader.Load(this, bundle, model, cancellation.Token);
+                cancellation.Token.ThrowIfCancellationRequested();
+                if (this == null || CharacterMainControl == null || OriginalCharacterModel == null ||
+                    !ReferenceEquals(_modelLoadCancellation, cancellation)) return;
+                var candidate = prepared;
+                prepared = null;
+                ApplyPreparedModel(bundle, model, candidate);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception exception)
+            {
+                ModLogger.LogError($"Model switch failed; current model retained: {exception.Message}");
+            }
+            finally
+            {
+                prepared?.Dispose();
+                if (ReferenceEquals(_modelLoadCancellation, cancellation))
+                {
+                    _modelLoadCancellation = null;
+                    _pendingBundle = null;
+                    _pendingModel = null;
+                }
+
+                cancellation.Dispose();
+            }
+        }
+
+        private void ApplyPreparedModel(ModelBundleInfo modelBundleInfo, ModelInfo modelInfo, PreparedModel prepared)
+        {
+            var candidate = prepared.Root;
+            var runtime = prepared.YsmRuntime;
             var previous = new RetainedModel(this);
             try
             {
                 DetachForSwitch();
                 CustomModelInstance = candidate;
+                _preparedModel = prepared;
                 YsmRuntime = runtime;
                 _customModelSubVisuals = null;
                 _deathLootBoxPrefab = null;
@@ -810,8 +877,7 @@ namespace DuckovCustomModel.MonoBehaviours
             catch (Exception exception)
             {
                 DetachForSwitch();
-                runtime?.Dispose();
-                if (candidate != null) DestroyImmediate(candidate);
+                prepared.Dispose();
                 previous.Restore(this);
                 if (CustomModelInstance != null && CurrentModelInfo != null)
                 {
@@ -877,6 +943,9 @@ namespace DuckovCustomModel.MonoBehaviours
             }
 
             CustomModelInstance = preparedInstance;
+            var socketScales = CustomModelInstance.GetComponent<ModelSocketScaleBindings>() ??
+                               CustomModelInstance.AddComponent<ModelSocketScaleBindings>();
+            socketScales.Apply(ModelSocketScaleManager.GetScales(TargetTypeId, modelInfo.ModelID));
 
             _cachedCustomModelRenderers = GetAllRenderers(CustomModelInstance);
             _ysmRendererVersion = YsmRuntime?.RendererVersion ?? 0;
@@ -918,6 +987,7 @@ namespace DuckovCustomModel.MonoBehaviours
                 CharacterMainControl.AddSubVisuals(_customModelSubVisuals);
 
             ChangeToCustomModelSockets();
+            InitializeModelIk();
             YsmRuntime?.Activate();
             UpdateCollider();
 
@@ -927,7 +997,9 @@ namespace DuckovCustomModel.MonoBehaviours
             var customFaceInstance = GetOriginalCustomFaceInstance();
             if (customFaceInstance != null) customFaceInstance.gameObject.SetActive(false);
 
-            if (YsmRuntime != null) CustomModelInstance.SetActive(true);
+            CustomModelInstance.SetActive(true);
+            if (VrmModelSource.IsVrm(modelInfo) && CustomAnimator != null)
+                CustomAnimatorControl?.SetCustomAnimator(CustomAnimator);
 
             ModelHeightManager.InitializeHeightForHandler(this);
             ModelHeightManager.ApplyHeightToHandler(this);
@@ -964,27 +1036,59 @@ namespace DuckovCustomModel.MonoBehaviours
             foreach (var kvp in _originalModelSockets) ReplaceModelSocket(kvp.Key, kvp.Value);
         }
 
+        private void InitializeModelIk()
+        {
+            if (CustomModelInstance == null || CurrentModelInfo == null) return;
+            var settings = CurrentModelInfo.Ik;
+            if (settings == null && VrmModelSource.IsVrm(CurrentModelInfo) &&
+                string.IsNullOrWhiteSpace(CurrentModelInfo.Vrm?.AnimatorControllerPath))
+                settings = new();
+            if (settings is not { Enabled: true }) return;
+            if (YsmRuntime != null)
+            {
+                var rig = new YsmModelIkRig(CustomModelInstance.transform, YsmRuntime.Simulation, settings);
+                if (!rig.HasBindings) return;
+                CustomModelInstance.AddComponent<ModelIkController>().Initialize(this, settings, rig, true);
+            }
+            else
+            {
+                var rig = new TransformModelIkRig(CustomModelInstance.transform, CustomAnimator, settings);
+                if (!rig.HasBindings) return;
+                CustomModelInstance.AddComponent<ModelIkController>().Initialize(this, settings, rig);
+            }
+        }
+
         private void RecordCustomModelSockets()
         {
             if (OriginalCharacterModel == null) return;
 
             _customModelSockets.Clear();
             _customModelLocators.Clear();
+            if (CustomModelInstance == null || CurrentModelInfo == null) return;
+            var scales = CustomModelInstance.GetComponent<ModelSocketScaleBindings>() ??
+                         CustomModelInstance.AddComponent<ModelSocketScaleBindings>();
 
             if (YsmRuntime != null)
             {
                 foreach (var pair in YsmRuntime.Locators)
                 {
-                    _customModelLocators[pair.Key] = pair.Value;
+                    var socket = scales.Resolve(pair.Key, pair.Value);
+                    _customModelLocators[pair.Key] = socket;
                     if (OriginalModelSocketFieldInfos.TryGetValue(pair.Key, out var field))
-                        _customModelSockets[field] = pair.Value;
+                        _customModelSockets[field] = socket;
                 }
 
                 var held = CharacterMainControl?.CurrentHoldItemAgent;
                 if (held is ItemAgent_Gun && held.Item != null &&
                     YsmRuntime.GetGunLocator(held.Item.TypeID) is { } gunLocator &&
                     OriginalModelSocketFieldInfos.TryGetValue(SocketNames.RightHand, out var rightHandField))
-                    _customModelSockets[rightHandField] = gunLocator;
+                    foreach (var pair in YsmRuntime.Locators)
+                        if (pair.Value == gunLocator)
+                        {
+                            _customModelSockets[rightHandField] = scales.Resolve(pair.Key, gunLocator);
+                            break;
+                        }
+
                 return;
             }
 
@@ -993,19 +1097,34 @@ namespace DuckovCustomModel.MonoBehaviours
             {
                 var locatorTransform = SearchLocatorTransform(CustomModelInstance!, locatorName);
                 if (locatorTransform == null) continue;
-                _customModelLocators[locatorName] = locatorTransform;
+                var socket = scales.Resolve(locatorName, locatorTransform);
+                _customModelLocators[locatorName] = socket;
 
                 var fieldInfo = socketFields.FirstOrDefault(f => f.Key == locatorName).Value;
                 if (fieldInfo != null)
-                    _customModelSockets[fieldInfo] = locatorTransform;
+                    _customModelSockets[fieldInfo] = socket;
             }
 
             foreach (var locatorName in SocketNames.ExternalSocketNames)
             {
                 var locatorTransform = SearchLocatorTransform(CustomModelInstance!, locatorName);
                 if (locatorTransform == null) continue;
-                _customModelLocators[locatorName] = locatorTransform;
+                _customModelLocators[locatorName] = scales.Resolve(locatorName, locatorTransform);
             }
+        }
+
+        public IReadOnlyList<string> GetAdjustableSocketNames()
+        {
+            return _customModelLocators.Where(pair => pair.Value != null).Select(pair => pair.Key)
+                .OrderBy(name => name, StringComparer.Ordinal).ToArray();
+        }
+
+        private void OnSocketScaleChanged(string targetTypeId, string modelID)
+        {
+            if (TargetTypeId != targetTypeId || CurrentModelInfo?.ModelID != modelID ||
+                CustomModelInstance == null) return;
+            CustomModelInstance.GetComponent<ModelSocketScaleBindings>()?
+                .Apply(ModelSocketScaleManager.GetScales(targetTypeId, modelID));
         }
 
         private void ChangeToCustomModelSockets()
@@ -1118,7 +1237,7 @@ namespace DuckovCustomModel.MonoBehaviours
             return slot.Content.ActiveAgent != null ? slot.Content.ActiveAgent : null;
         }
 
-        private Transform? GetSocketTransform(string socketName)
+        internal Transform? GetSocketTransform(string socketName)
         {
             if (OriginalCharacterModel == null) return null;
 
@@ -1205,6 +1324,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void SetShowBackMaterial()
         {
+            if (CurrentModelInfo != null && VrmModelSource.IsVrm(CurrentModelInfo)) return;
             if (YsmRuntime != null) return;
             if (CurrentModelInfo is { Features.Length: > 0 }
                 && CurrentModelInfo.Features.Contains(ModelFeatures.SkipShowBackMaterial))
@@ -1540,6 +1660,7 @@ namespace DuckovCustomModel.MonoBehaviours
             private readonly ModelInfo? _info;
             private readonly Vector3 _initialScale;
             private readonly GameObject? _loot;
+            private readonly PreparedModel? _prepared;
             private readonly GameObject? _root;
             private readonly YsmCharacterRuntime? _runtime;
             private readonly bool _scaleLocked;
@@ -1548,6 +1669,7 @@ namespace DuckovCustomModel.MonoBehaviours
             public RetainedModel(ModelHandler handler)
             {
                 _root = handler.CustomModelInstance;
+                _prepared = handler._preparedModel;
                 _runtime = handler.YsmRuntime;
                 _bundle = handler._currentModelBundleInfo;
                 _info = handler.CurrentModelInfo;
@@ -1561,13 +1683,13 @@ namespace DuckovCustomModel.MonoBehaviours
 
             public void Dispose()
             {
-                _runtime?.Dispose();
-                if (_root != null) DestroyImmediate(_root);
+                _prepared?.Dispose();
             }
 
             public void Restore(ModelHandler handler)
             {
                 handler.CustomModelInstance = _root;
+                handler._preparedModel = _prepared;
                 handler.YsmRuntime = _runtime;
                 handler._currentModelBundleInfo = _bundle;
                 handler.CurrentModelInfo = _info;
