@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DuckovCustomModel.Core.Data;
 using ModelRuntime;
 using ModelRuntime.Adapters;
 
@@ -7,6 +8,7 @@ namespace DuckovCustomModel.Integrations.Ysm
 {
     public sealed class DuckovYsmBindingProfile
     {
+        public ModelIkSettings? Ik { get; set; }
         public string ModelTarget { get; set; } = "player/main";
         public MolangValueCompatibility ValueCompatibility { get; set; } = MolangValueCompatibility.Ysm241;
         public YsmHandAnimationCompatibility HandCompatibility { get; set; } = YsmHandAnimationCompatibility.Version241;

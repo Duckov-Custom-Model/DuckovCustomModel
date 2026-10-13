@@ -207,6 +207,7 @@ namespace DuckovCustomModel.Integrations.Ysm
                             ? thumbnail
                             : null,
                         SourceKind = "Ysm", SourcePath = relative, SourceRevision = revision,
+                        Ik = profile.Ik,
                         DeathLootBoxYsmPath = ResolveDeathLootBoxPath(root, path, profile.DeathLootBoxYsmPath,
                             bundlePath, findAssetPath),
                         DeathLootBoxPrefabPath = profile.DeathLootBoxPrefabPath,

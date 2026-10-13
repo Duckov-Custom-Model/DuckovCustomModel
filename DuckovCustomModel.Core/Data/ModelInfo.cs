@@ -19,6 +19,7 @@ namespace DuckovCustomModel.Core.Data
         public string SourceKind { get; set; } = "AssetBundle";
         public string SourcePath { get; set; } = string.Empty;
         public VrmModelSettings? Vrm { get; set; }
+        public ModelIkSettings? Ik { get; set; }
         [JsonIgnore] public string SourceRevision { get; set; } = string.Empty;
 
         public string? DeathLootBoxPrefabPath { get; set; }
@@ -48,6 +49,7 @@ namespace DuckovCustomModel.Core.Data
             if (string.IsNullOrWhiteSpace(ModelID)) return false;
             if (string.IsNullOrWhiteSpace(Name)) return false;
             if (Vrm != null && !Vrm.Validate()) return false;
+            if (Ik != null && !Ik.Validate()) return false;
             if (!ModelSourceDefinition.TryGet(SourceKind, out var source)) return false;
             SourceKind = source.Kind;
             if (string.IsNullOrWhiteSpace(source.UsesPrefabPath ? PrefabPath : SourcePath)) return false;

@@ -13,6 +13,7 @@ using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Core.MonoBehaviours.Animators;
 using DuckovCustomModel.Integrations;
 using DuckovCustomModel.Integrations.AssetBundles;
+using DuckovCustomModel.Integrations.Ik;
 using DuckovCustomModel.Integrations.Vrm;
 using DuckovCustomModel.Integrations.Ysm;
 using DuckovCustomModel.Managers;
@@ -519,6 +520,9 @@ namespace DuckovCustomModel.MonoBehaviours
             else if (sourceHandler.CustomModelInstance != null &&
                      sourceHandler.CustomModelInstance.GetComponent<VrmCharacterRuntime>() is { } vrm)
                 newCharacterModel.autoSyncRightHandRotation = vrm.OriginalAutoSyncRightHandRotation;
+            else if (sourceHandler.CustomModelInstance != null &&
+                     sourceHandler.CustomModelInstance.GetComponent<ModelIkController>() is { } ik)
+                newCharacterModel.autoSyncRightHandRotation = ik.OriginalAutoSyncRightHandRotation;
 
             var sourceRoot = sourceHandler.OriginalCharacterModel.transform;
             var myRoot = newCharacterModel.transform;
@@ -978,6 +982,7 @@ namespace DuckovCustomModel.MonoBehaviours
                 CharacterMainControl.AddSubVisuals(_customModelSubVisuals);
 
             ChangeToCustomModelSockets();
+            InitializeModelIk();
             YsmRuntime?.Activate();
             UpdateCollider();
 
@@ -1024,6 +1029,28 @@ namespace DuckovCustomModel.MonoBehaviours
 
             RestoreCustomSocketObjects();
             foreach (var kvp in _originalModelSockets) ReplaceModelSocket(kvp.Key, kvp.Value);
+        }
+
+        private void InitializeModelIk()
+        {
+            if (CustomModelInstance == null || CurrentModelInfo == null) return;
+            var settings = CurrentModelInfo.Ik;
+            if (settings == null && VrmModelSource.IsVrm(CurrentModelInfo) &&
+                string.IsNullOrWhiteSpace(CurrentModelInfo.Vrm?.AnimatorControllerPath))
+                settings = new();
+            if (settings is not { Enabled: true }) return;
+            if (YsmRuntime != null)
+            {
+                var rig = new YsmModelIkRig(CustomModelInstance.transform, YsmRuntime.Simulation, settings);
+                if (!rig.HasBindings) return;
+                CustomModelInstance.AddComponent<ModelIkController>().Initialize(this, settings, rig, true);
+            }
+            else
+            {
+                var rig = new TransformModelIkRig(CustomModelInstance.transform, CustomAnimator, settings);
+                if (!rig.HasBindings) return;
+                CustomModelInstance.AddComponent<ModelIkController>().Initialize(this, settings, rig);
+            }
         }
 
         private void RecordCustomModelSockets()
@@ -1180,7 +1207,7 @@ namespace DuckovCustomModel.MonoBehaviours
             return slot.Content.ActiveAgent != null ? slot.Content.ActiveAgent : null;
         }
 
-        private Transform? GetSocketTransform(string socketName)
+        internal Transform? GetSocketTransform(string socketName)
         {
             if (OriginalCharacterModel == null) return null;
 

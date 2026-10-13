@@ -13,7 +13,8 @@ namespace DuckovCustomModel.Integrations.Vrm
         private readonly List<(Transform socket, Transform original)> _socketRotations = [];
         private Animator? _animator;
         private ModelHandler? _handler;
-        private int _holdingLayer, _attackLayer;
+        private int _holdingLayer = -1, _attackLayer = -1;
+        private ModelIkController? _ik;
         private Vrm10Instance? _instance;
         private float _invisibleSince;
         private Vector3 _previousPosition;
@@ -52,13 +53,15 @@ namespace DuckovCustomModel.Integrations.Vrm
             _animator.SetFloat("RollProgress", _rollPhase);
             _animator.SetBool("Dashing", rolling);
             var control = _handler.CustomAnimatorControl;
+            var heldGun = character.CurrentHoldItemAgent as ItemAgent_Gun;
+            var holdingGun = heldGun != null && heldGun.isActiveAndEnabled;
             _animator.SetFloat("AttackProgress", control is { Attacking: true, AttackTime: > 0 }
                 ? Mathf.Clamp01(control.AttackTimer / control.AttackTime)
                 : 0);
             if (_holdingLayer >= 0)
             {
-                var holding = !rolling && (control?.GunAgent != null || _animator.GetInteger("HandState") < 0 ||
-                                           _animator.GetBool("Reloading") || _animator.GetBool("UsingItem"));
+                var holding = !rolling && (holdingGun || character.carryAction.Running ||
+                                           character.CurrentAction is CA_UseItem { Running: true });
                 var weight = rolling
                     ? 0
                     : Mathf.MoveTowards(_animator.GetLayerWeight(_holdingLayer),
@@ -66,7 +69,7 @@ namespace DuckovCustomModel.Integrations.Vrm
                 _animator.SetLayerWeight(_holdingLayer, weight);
             }
 
-            if (_attackLayer >= 0 && (rolling || (control?.GunAgent != null &&
+            if (_attackLayer >= 0 && (rolling || (holdingGun &&
                                                   character.CurrentAction is not CA_Attack { Running: true })))
                 _animator.SetLayerWeight(_attackLayer, 0);
         }
@@ -97,7 +100,8 @@ namespace DuckovCustomModel.Integrations.Vrm
             if ((transform.position - _previousPosition).sqrMagnitude > 64)
                 _instance.Runtime.SpringBone.RestoreInitialTransform();
             _previousPosition = transform.position;
-            if ((_handler.CustomAnimatorControl is not { Attacking: true } ||
+            if (_ik is not { IsControllingHands: true } &&
+                (_handler.CustomAnimatorControl is not { Attacking: true } ||
                  _handler.CustomAnimatorControl.GunAgent != null) &&
                 _handler.CharacterMainControl.CurrentAction is not CA_Attack { Running: true } &&
                 _handler.CharacterMainControl.CurrentAction is not CA_Dash { Running: true })
@@ -112,6 +116,18 @@ namespace DuckovCustomModel.Integrations.Vrm
         private void OnEnable()
         {
             if (!_initialized || _instance == null) return;
+            _ik = GetComponent<ModelIkController>();
+            if (_animator != null)
+            {
+                _holdingLayer = _animator.GetLayerIndex("Holding");
+                _attackLayer = _animator.GetLayerIndex("MeleeAttack");
+                if (string.IsNullOrWhiteSpace(_settings.AnimatorControllerPath))
+                {
+                    if (_holdingLayer >= 0) _animator.SetLayerWeight(_holdingLayer, 0);
+                    if (_attackLayer >= 0) _animator.SetLayerWeight(_attackLayer, 0);
+                }
+            }
+
             VrmRenderPipeline.Register();
             _registered = true;
             _previousPosition = transform.position;
@@ -145,8 +161,7 @@ namespace DuckovCustomModel.Integrations.Vrm
             _renderers = GetComponentsInChildren<Renderer>(true);
             var animator = GetComponent<Animator>();
             _animator = animator;
-            _holdingLayer = animator.GetLayerIndex("Holding");
-            _attackLayer = animator.GetLayerIndex("MeleeAttack");
+            var handRotations = GetHandRotations(animator);
             var defaults = new Dictionary<string, HumanBodyBones>
             {
                 [SocketNames.LeftHand] = HumanBodyBones.LeftHand,
@@ -184,6 +199,11 @@ namespace DuckovCustomModel.Integrations.Vrm
                     socket.localRotation = Quaternion.Euler(configured.Rotation[0], configured.Rotation[1],
                         configured.Rotation[2]);
                 }
+                else if (handRotations.TryGetValue(bone, out var handRotation) &&
+                         pair.Key is SocketNames.LeftHand or SocketNames.RightHand)
+                {
+                    socket.localRotation = handRotation;
+                }
                 else if (handler.GetOriginalSocketTransform(pair.Key) is { } original)
                 {
                     socket.rotation = original.rotation;
@@ -205,6 +225,43 @@ namespace DuckovCustomModel.Integrations.Vrm
             }
 
             _initialized = true;
+        }
+
+        private Dictionary<HumanBodyBones, Quaternion> GetHandRotations(Animator animator)
+        {
+            var rotations = new Dictionary<HumanBodyBones, Quaternion>();
+            if (!string.IsNullOrWhiteSpace(_settings.AnimatorControllerPath)) return rotations;
+            AnimationClip? pose = null;
+            foreach (var clip in animator.runtimeAnimatorController.animationClips)
+                if (clip.name == "Pistol_Idle_Loop")
+                {
+                    pose = clip;
+                    break;
+                }
+
+            if (pose == null) return rotations;
+            var bones = GetComponentsInChildren<Transform>(true);
+            var original = new (Vector3 position, Quaternion rotation, Vector3 scale)[bones.Length];
+            for (var i = 0; i < bones.Length; i++)
+                original[i] = (bones[i].localPosition, bones[i].localRotation, bones[i].localScale);
+            try
+            {
+                pose.SampleAnimation(gameObject, 0);
+                foreach (var bone in new[] { HumanBodyBones.LeftHand, HumanBodyBones.RightHand })
+                    if (animator.GetBoneTransform(bone) is { } hand)
+                        rotations[bone] = Quaternion.Inverse(hand.rotation) * transform.rotation;
+            }
+            finally
+            {
+                for (var i = 0; i < bones.Length; i++)
+                {
+                    bones[i].localPosition = original[i].position;
+                    bones[i].localRotation = original[i].rotation;
+                    bones[i].localScale = original[i].scale;
+                }
+            }
+
+            return rotations;
         }
 
         private void SuspendSpring()
