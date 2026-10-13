@@ -99,6 +99,22 @@ namespace DuckovCustomModel.Localizations
             },
             { "ModelAudioVolume", "Model Audio Volume" },
             { "ModelHeight", "Model Height" },
+            { "LeftHandLocator", "Left hand" },
+            { "RightHandLocator", "Right hand" },
+            { "RifleLocator", "Rifle" },
+            { "PistolLocator", "Pistol" },
+            { "ArmorLocator", "Armor" },
+            { "HelmetLocator", "Helmet" },
+            { "FaceLocator", "Face equipment" },
+            { "BackpackLocator", "Backpack" },
+            { "MeleeWeaponLocator", "Melee weapon" },
+            { "PopTextLocator", "Floating text" },
+            { "VehicleLocator", "Vehicle" },
+            { "PaperBoxLocator", "Cardboard box" },
+            { "CarriableLocator", "Carried object" },
+            { "SocketScales", "Item size" },
+            { "SocketScaleMultiplier", "1 keeps the original size. Below 1 shrinks; above 1 enlarges." },
+            { "ResetAllSocketScales", "Reset all" },
             { "Reset", "Reset" },
             { "ClearCustomDataConfig", "Clear Custom Data Config" },
             { "EmotionModifierKey1", "Emotion Modifier Key 1" },
@@ -129,7 +145,9 @@ namespace DuckovCustomModel.Localizations
             { "RadialLockOff", "Free" },
             { "RadialStop", "Stop" },
             { "RadialBack", "Back" },
-            { "RadialHint", "Esc close · click to select · wheel on left to change page · wheel on settings to scroll" },
+            {
+                "RadialHint", "Esc close · click to select · wheel on left to change page · wheel on settings to scroll"
+            },
             { "RadialHintStop", " · center stops action" },
             { "RadialUnavailable", "This setting is unavailable" },
             { "RadialResetConfig", "Reset this model's settings" },
@@ -205,6 +223,9 @@ namespace DuckovCustomModel.Localizations
         public static string CharacterModelWarning => GetText("CharacterModelWarning");
         public static string ModelAudioVolume => GetText("ModelAudioVolume");
         public static string ModelHeight => GetText("ModelHeight");
+        public static string SocketScales => GetText("SocketScales");
+        public static string SocketScaleMultiplier => GetText("SocketScaleMultiplier");
+        public static string ResetAllSocketScales => GetText("ResetAllSocketScales");
         public static string Reset => GetText("Reset");
         public static string ClearCustomDataConfig => GetText("ClearCustomDataConfig");
         public static string EmotionModifierKey1 => GetText("EmotionModifierKey1");
@@ -347,6 +368,11 @@ namespace DuckovCustomModel.Localizations
                 return englishText;
 
             return key;
+        }
+
+        public static string GetSocketName(string socketName)
+        {
+            return GetText(socketName);
         }
 
         public static string GetModelInfo(string modelId, string? author, string? version)

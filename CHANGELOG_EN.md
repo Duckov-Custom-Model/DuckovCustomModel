@@ -4,16 +4,20 @@ English | [中文](CHANGELOG.md)
 
 ## Version TBD
 
+### Added
+
+- Support VRM 0.x and 1.0 models, displaying their names, authors, and thumbnails in a shared VRM group.
+- VRM supports height adjustment, equipment sockets, and radial menus, with built-in walking, running, rolling, hit reactions, melee, and gun animations, plus optional custom animation controllers.
+- Add dynamic two-hand aiming, enabled for default VRM motions and configurable for other models; aiming yields to rolling, reloading, and item use.
+- Save per-model scale multipliers for attachment sockets, with individual adjustments and resets that preserve authored and animated scaling.
+
 ### Fixed and improved
 
-- Reduced repeated work in YSM animation sampling, pose composition, and transparent-mesh rendering.
-- Fixed held melee items disappearing while idle on some YSM models.
-- Reduced redundant color, glow, and static-texture updates; model instances and animated previews now share textures to reduce duplicate loading and GPU memory usage.
-- Added GPU vertex and normal transforms for YSM scene models and animated previews, reducing per-frame mesh processing and uploads; retained a CPU fallback with multicore processing for large meshes.
-- Cached unchanged bone matrices, mesh visibility classifications, and transparency sorting results to reduce repeated work with both single and multiple models.
-- Added a shared character-view API that reuses animation poses and GPU bone data while handling preview lighting and transparency sorting independently.
-- Sized model cards to the available width; model selection and group toggles now update only affected UI, while model-content changes rebuild the list and preserve scroll position.
-- Constrained the model selection, toolbar, and settings layouts to prevent first-display overflow and long labels from widening the interface.
+- Improve model loading, switching, and full reload so characters and previews update correctly; fix leftover resources and restoration after failed switches.
+- Improve YSM performance for individual models, multiple characters, and animated previews, reducing repeated work and texture memory use; support GPU rendering and shared character views.
+- Prepare and reuse VRM resources to reduce delays when switching back or using the same model on multiple characters; reduce processing for invisible characters.
+- Fix held melee weapons disappearing while some YSM models are idle.
+- Improve model-list layout, scrolling, and partial refresh; fix overflow on initial load, with long text, and when available width changes.
 
 ## v2.0.1
 

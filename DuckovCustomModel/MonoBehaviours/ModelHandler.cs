@@ -239,6 +239,7 @@ namespace DuckovCustomModel.MonoBehaviours
         private void OnDestroy()
         {
             ModelHeightManager.OnHeightChanged -= OnHeightChangedEvent;
+            ModelSocketScaleManager.OnScaleChanged -= OnSocketScaleChanged;
             try
             {
                 CleanupCustomModel();
@@ -378,6 +379,7 @@ namespace DuckovCustomModel.MonoBehaviours
             ModelSoundStopTrigger.OnSoundStopTriggered += OnSoundStopTriggered;
 
             ModelHeightManager.OnHeightChanged += OnHeightChangedEvent;
+            ModelSocketScaleManager.OnScaleChanged += OnSocketScaleChanged;
 
 
             InitializeModelPriorityList();
@@ -941,6 +943,9 @@ namespace DuckovCustomModel.MonoBehaviours
             }
 
             CustomModelInstance = preparedInstance;
+            var socketScales = CustomModelInstance.GetComponent<ModelSocketScaleBindings>() ??
+                               CustomModelInstance.AddComponent<ModelSocketScaleBindings>();
+            socketScales.Apply(ModelSocketScaleManager.GetScales(TargetTypeId, modelInfo.ModelID));
 
             _cachedCustomModelRenderers = GetAllRenderers(CustomModelInstance);
             _ysmRendererVersion = YsmRuntime?.RendererVersion ?? 0;
@@ -1059,21 +1064,31 @@ namespace DuckovCustomModel.MonoBehaviours
 
             _customModelSockets.Clear();
             _customModelLocators.Clear();
+            if (CustomModelInstance == null || CurrentModelInfo == null) return;
+            var scales = CustomModelInstance.GetComponent<ModelSocketScaleBindings>() ??
+                         CustomModelInstance.AddComponent<ModelSocketScaleBindings>();
 
             if (YsmRuntime != null)
             {
                 foreach (var pair in YsmRuntime.Locators)
                 {
-                    _customModelLocators[pair.Key] = pair.Value;
+                    var socket = scales.Resolve(pair.Key, pair.Value);
+                    _customModelLocators[pair.Key] = socket;
                     if (OriginalModelSocketFieldInfos.TryGetValue(pair.Key, out var field))
-                        _customModelSockets[field] = pair.Value;
+                        _customModelSockets[field] = socket;
                 }
 
                 var held = CharacterMainControl?.CurrentHoldItemAgent;
                 if (held is ItemAgent_Gun && held.Item != null &&
                     YsmRuntime.GetGunLocator(held.Item.TypeID) is { } gunLocator &&
                     OriginalModelSocketFieldInfos.TryGetValue(SocketNames.RightHand, out var rightHandField))
-                    _customModelSockets[rightHandField] = gunLocator;
+                    foreach (var pair in YsmRuntime.Locators)
+                        if (pair.Value == gunLocator)
+                        {
+                            _customModelSockets[rightHandField] = scales.Resolve(pair.Key, gunLocator);
+                            break;
+                        }
+
                 return;
             }
 
@@ -1082,19 +1097,34 @@ namespace DuckovCustomModel.MonoBehaviours
             {
                 var locatorTransform = SearchLocatorTransform(CustomModelInstance!, locatorName);
                 if (locatorTransform == null) continue;
-                _customModelLocators[locatorName] = locatorTransform;
+                var socket = scales.Resolve(locatorName, locatorTransform);
+                _customModelLocators[locatorName] = socket;
 
                 var fieldInfo = socketFields.FirstOrDefault(f => f.Key == locatorName).Value;
                 if (fieldInfo != null)
-                    _customModelSockets[fieldInfo] = locatorTransform;
+                    _customModelSockets[fieldInfo] = socket;
             }
 
             foreach (var locatorName in SocketNames.ExternalSocketNames)
             {
                 var locatorTransform = SearchLocatorTransform(CustomModelInstance!, locatorName);
                 if (locatorTransform == null) continue;
-                _customModelLocators[locatorName] = locatorTransform;
+                _customModelLocators[locatorName] = scales.Resolve(locatorName, locatorTransform);
             }
+        }
+
+        public IReadOnlyList<string> GetAdjustableSocketNames()
+        {
+            return _customModelLocators.Where(pair => pair.Value != null).Select(pair => pair.Key)
+                .OrderBy(name => name, StringComparer.Ordinal).ToArray();
+        }
+
+        private void OnSocketScaleChanged(string targetTypeId, string modelID)
+        {
+            if (TargetTypeId != targetTypeId || CurrentModelInfo?.ModelID != modelID ||
+                CustomModelInstance == null) return;
+            CustomModelInstance.GetComponent<ModelSocketScaleBindings>()?
+                .Apply(ModelSocketScaleManager.GetScales(targetTypeId, modelID));
         }
 
         private void ChangeToCustomModelSockets()

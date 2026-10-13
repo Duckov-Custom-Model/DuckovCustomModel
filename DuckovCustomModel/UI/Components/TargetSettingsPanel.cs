@@ -10,7 +10,7 @@ using UnityEngine.UI;
 
 namespace DuckovCustomModel.UI.Components
 {
-    public class TargetSettingsPanel : MonoBehaviour
+    public partial class TargetSettingsPanel : MonoBehaviour
     {
         private GameObject? _clearRuntimeDataRow;
         private GameObject? _content;
@@ -63,6 +63,7 @@ namespace DuckovCustomModel.UI.Components
             _settingRowIndex = 0;
             BuildCharacterModelWarning();
             BuildModelHeightSetting();
+            BuildSocketScaleSection();
             BuildClearRuntimeDataButton();
             BuildRuntimeSettingsDivider();
             BuildHideEquipmentSetting();
@@ -185,6 +186,7 @@ namespace DuckovCustomModel.UI.Components
 
         private void UpdateRuntimeSettingsVisibility()
         {
+            RefreshSocketScaleSettings();
             if (_modelHeightRow == null || _currentTarget == null) return;
 
             var targetTypeId = _currentTarget.GetTargetTypeId();
@@ -617,10 +619,12 @@ namespace DuckovCustomModel.UI.Components
             if (string.IsNullOrWhiteSpace(modelID))
                 return;
 
+            ModelSocketScaleManager.ResetAll(targetTypeId, modelID);
             ModelRuntimeDataManager.ClearRuntimeData(targetTypeId, modelID);
             YsmRadialMenu.Instance?.ResetCurrentFormSettings(targetTypeId, modelID);
 
             ModelHeightManager.ResetHeight(targetTypeId, modelID);
+            OnSocketScaleChanged(targetTypeId, modelID);
 
             UpdateRuntimeSettingsVisibility();
 
