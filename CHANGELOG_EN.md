@@ -2,6 +2,18 @@
 
 English | [中文](CHANGELOG.md)
 
+## v2.1.2
+
+### Fixes and improvements
+
+- Improve YSM model compatibility, support longer model scripts, and fix failures in custom functions and initialization for some models.
+- Clearly mark models that fail to load as unavailable and show the error details.
+- Fix abnormal hair and accessory rotations in some models, and align movement displacement data with current YSM behavior.
+- Fix repeated catch-up playback of short animation loops that could leave the interface unresponsive after a stall. Correct zero-duration animations and timeline event timing.
+- Reduce repeated script compilation and memory allocation when creating instances of the same model. Load only textures used by each preview and reuse paused previews near the viewport edges while scrolling.
+- Fix index-buffer errors and preview rendering failures when updating transparent geometry.
+- Reduce repetitive logs that do not help diagnose problems.
+
 ## v2.1.1
 
 ### Interface improvements

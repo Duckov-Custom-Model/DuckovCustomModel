@@ -1,4 +1,5 @@
 {
+  "ModelUnavailable": "無法使用，請重新載入模型資訊後重試",
   "AudioSettings": "音訊設定",
   "TargetOriginal": "原始外觀",
   "TargetInherited": "繼承",

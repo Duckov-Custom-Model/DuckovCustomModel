@@ -32,6 +32,7 @@ namespace DuckovCustomModel.Managers
         {
             if (forceReload)
             {
+                ModelLoadStatus.Clear();
                 foreach (var handler in GetAllHandlers().ToArray()) handler.CleanupCustomModel();
                 foreach (var bundle in ModelBundles)
                     TMPSpriteAtlasManager.UnregisterSpriteAssets(bundle.BundleName);

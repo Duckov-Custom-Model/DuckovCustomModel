@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using Duckov.UI;
 using DuckovCustomModel.Configs;
 using DuckovCustomModel.Core.Data;
@@ -37,7 +36,6 @@ namespace DuckovCustomModel.UI
         private CursorLockMode _originalCursorLockState;
         private GameObject? _overlay;
         private GameObject? _panelRoot;
-        private int _pointerDiagnosticsRemaining;
         private GameObject? _settingsButton;
         private SettingsTab? _settingsTab;
         private bool _showAnimatorParamsWindow;
@@ -109,8 +107,6 @@ namespace DuckovCustomModel.UI
             if (IsOpen && InputBlocker.GetRealKeyDown(KeyCode.Escape)) HidePanel();
 
             if (!IsOpen) return;
-
-            LogPointerTarget();
 
             if (_charInput != null && _charInputWasEnabled && _charInput.enabled) _charInput.enabled = false;
         }
@@ -339,7 +335,6 @@ namespace DuckovCustomModel.UI
             }
 
             IsOpen = true;
-            _pointerDiagnosticsRemaining = 8;
             if (_overlay != null) _overlay.SetActive(true);
             if (_panelRoot != null) _panelRoot.SetActive(true);
 
@@ -370,15 +365,10 @@ namespace DuckovCustomModel.UI
             if (_charInput != null)
             {
                 _charInputWasEnabled = _charInput.enabled;
-                if (_charInputWasEnabled)
-                {
-                    _charInput.enabled = false;
-                    ModLogger.Log("CharacterInputControl disabled.");
-                }
+                if (_charInputWasEnabled) _charInput.enabled = false;
             }
 
             StartCoroutine(ForceCursorFree());
-            ModLogger.Log("Config window opened.");
         }
 
         public void HidePanel()
@@ -391,38 +381,13 @@ namespace DuckovCustomModel.UI
             if (_overlay != null) _overlay.SetActive(false);
             if (_panelRoot != null) _panelRoot.SetActive(false);
 
-            if (_charInput != null && _charInputWasEnabled)
-            {
-                _charInput.enabled = true;
-                ModLogger.Log("CharacterInputControl re-enabled.");
-            }
+            if (_charInput != null && _charInputWasEnabled) _charInput.enabled = true;
 
             _charInput = null;
             _charInputWasEnabled = false;
 
             Cursor.visible = _cursorWasVisible;
             Cursor.lockState = _originalCursorLockState;
-            ModLogger.Log("Config window closed.");
-        }
-
-        private void LogPointerTarget()
-        {
-            if (_pointerDiagnosticsRemaining <= 0 || !InputCompatibility.GetMouseButtonDown(0)) return;
-            if (_panelRoot == null || !RectTransformUtility.RectangleContainsScreenPoint(
-                    _panelRoot.GetComponent<RectTransform>(), InputCompatibility.MousePosition)) return;
-            --_pointerDiagnosticsRemaining;
-            var eventSystem = EventSystem.current;
-            if (eventSystem == null)
-            {
-                ModLogger.LogWarning("Config pointer: no EventSystem.");
-                return;
-            }
-
-            var hits = new List<RaycastResult>();
-            eventSystem.RaycastAll(new(eventSystem) { position = InputCompatibility.MousePosition }, hits);
-            var target = hits.Count > 0 ? hits[0].gameObject : null;
-            ModLogger.Log($"Config pointer: top={target?.name ?? "none"}, " +
-                          $"module={eventSystem.currentInputModule?.GetType().Name ?? "none"}, raycasts={hits.Count}.");
         }
 
         private IEnumerator ForceCursorFree()

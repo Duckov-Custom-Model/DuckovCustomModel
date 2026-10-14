@@ -302,6 +302,7 @@ namespace DuckovCustomModel.Integrations.Ysm
             if (topologyChanged || (geometryChanged && state.HasMixedTriangles))
             {
                 state.TransparentCount = 0;
+                var solidIndicesChanged = false;
                 for (var partition = 0; partition < baked.Partitions.Length; partition++)
                 {
                     var source = baked.Partitions[partition];
@@ -334,7 +335,16 @@ namespace DuckovCustomModel.Integrations.Ysm
 
                     if (state.SolidCounts[partition] != solid) indicesChanged = true;
                     state.SolidCounts[partition] = solid;
-                    if (indicesChanged) state.Mesh.SetTriangles(indices, 0, solid, partition, false);
+                    solidIndicesChanged |= indicesChanged;
+                }
+
+                if (solidIndicesChanged)
+                {
+                    state.Mesh.subMeshCount = 0;
+                    state.Mesh.subMeshCount = baked.Partitions.Length;
+                    for (var partition = 0; partition < baked.Partitions.Length; partition++)
+                        state.Mesh.SetTriangles(state.SolidIndices[partition], 0,
+                            state.SolidCounts[partition], partition, false);
                 }
             }
 
@@ -440,17 +450,10 @@ namespace DuckovCustomModel.Integrations.Ysm
 
                 state.Mesh.subMeshCount = geometry.Partitions.Length;
                 for (var i = 0; i < Math.Max(1, document.Textures.Count); i++)
-                    if (document.Textures.Count == 0)
-                    {
-                        state.Textures.Add(CreateWhiteTexture());
-                        state.TextureAssets.Add(null);
-                    }
-                    else
-                    {
-                        var asset = document.Textures[i];
-                        state.Textures.Add(AcquireTexture(asset));
-                        state.TextureAssets.Add(asset);
-                    }
+                {
+                    state.Textures.Add(null);
+                    state.TextureAssets.Add(null);
+                }
 
                 for (var i = 0; i < geometry.Partitions.Length; i++)
                 {
@@ -459,8 +462,17 @@ namespace DuckovCustomModel.Integrations.Ysm
                         ? selected
                         : Math.Max(0, Math.Min(draw.TextureIndex, state.Textures.Count - 1));
                     state.TextureBindings[i] = texture;
-                    state.SolidMaterials[i] = CreateMaterial(draw, state.Textures[texture], false);
-                    state.TransparentMaterials[i] = CreateMaterial(draw, state.Textures[texture], true);
+                    var image = state.Textures[texture];
+                    if (image == null)
+                    {
+                        var asset = document.Textures.Count == 0 ? null : document.Textures[texture];
+                        image = asset == null ? CreateWhiteTexture() : AcquireTexture(asset);
+                        state.Textures[texture] = image;
+                        state.TextureAssets[texture] = asset;
+                    }
+
+                    state.SolidMaterials[i] = CreateMaterial(draw, image, false);
+                    state.TransparentMaterials[i] = CreateMaterial(draw, image, true);
                 }
 
                 InitializeGpu(state);
@@ -512,7 +524,7 @@ namespace DuckovCustomModel.Integrations.Ysm
                 var index = state.TextureBindings[i];
                 if (index >= state.Document.Textures.Count) continue;
                 if (!force && state.Document.Textures[index].Animation is not { Enabled: true }) continue;
-                var texture = state.Textures[index];
+                var texture = state.Textures[index]!;
                 var frame = TextureAnimationSampler.Sample(state.Document.Textures[index], texture.width,
                     texture.height, TimeSeconds, TextureAnimationPlayback.DeclaredSequence);
                 BindFrame(state.SolidMaterials[i], frame);
@@ -724,7 +736,7 @@ namespace DuckovCustomModel.Integrations.Ysm
             internal readonly Material[] SolidMaterials, TransparentMaterials;
             internal readonly int[] SortedIndices, TextureBindings;
             internal readonly List<TextureAsset?> TextureAssets = new();
-            internal readonly List<Texture2D> Textures = new();
+            internal readonly List<Texture2D?> Textures = new();
             internal readonly Vector3[] Vertices, Normals;
             internal ComputeBuffer? BoneBuffer;
             internal bool ColorsUploaded, GlowUploaded;
@@ -735,6 +747,7 @@ namespace DuckovCustomModel.Integrations.Ysm
             internal bool PoseUploaded;
             internal long PoseVersion, SortedPoseVersion = -1;
             internal MeshRenderer Renderer = null!, TransparentRenderer = null!;
+            internal SubMeshDescriptor[] RunDescriptors = Array.Empty<SubMeshDescriptor>();
             internal Material[] RunMaterials = Array.Empty<Material>();
             internal Vector3 SortedForward;
             internal UnityEngine.Matrix4x4 SortedWorld;
