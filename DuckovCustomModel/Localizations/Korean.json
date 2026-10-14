@@ -1,4 +1,5 @@
 {
+  "ModelUnavailable": "사용 불가: 모델 정보를 새로 고친 후 다시 시도",
   "AudioSettings": "오디오 설정",
   "TargetOriginal": "원래 외형",
   "TargetInherited": "상속",

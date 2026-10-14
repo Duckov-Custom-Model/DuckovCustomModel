@@ -466,14 +466,36 @@ namespace DuckovCustomModel.Integrations.Vrm
                             model.SourceRevision =
                                 Convert.ToBase64String(digest.ComputeHash(Encoding.UTF8.GetBytes(revision)));
                             if (previous.TryGetValue(key, out var old) &&
-                                old.Models[0].SourceRevision == model.SourceRevision)
+                                old.Models[0].SourceRevision == model.SourceRevision &&
+                                ModelLoadStatus.GetError(old.Models[0]) == null)
+                            {
                                 result.Add(old);
-                            else result.Add(bundle);
+                            }
+                            else
+                            {
+                                if (old != null)
+                                    foreach (var previousModel in old.Models)
+                                        ModelLoadStatus.Succeeded(previousModel, previousModel.SourceRevision);
+                                result.Add(bundle);
+                            }
                         }
                         catch (Exception ex) when (ex is not OperationCanceledException)
                         {
                             ModLogger.LogWarning($"VRM source '{relative}' could not be refreshed: {ex.Message}");
-                            if (previous.TryGetValue(key, out var old)) result.Add(old);
+                            if (!previous.TryGetValue(key, out var old))
+                            {
+                                var failedModel = new ModelInfo
+                                {
+                                    ModelID = "vrm:" + relative, Name = Path.GetFileNameWithoutExtension(file),
+                                    SourceKind = "Vrm", SourcePath = relative, BundleName = key,
+                                    TargetTypes = [ModelTargetType.Character, ModelTargetType.AllAICharacters],
+                                };
+                                old = ModelBundleInfo.CreateSourceBundle(directory, key, "Vrm", [failedModel]);
+                            }
+
+                            foreach (var failedModel in old.Models)
+                                ModelLoadStatus.Failed(failedModel, failedModel.SourceRevision, ex);
+                            result.Add(old);
                         }
                     }
 

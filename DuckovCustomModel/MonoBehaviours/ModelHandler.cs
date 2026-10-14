@@ -386,7 +386,6 @@ namespace DuckovCustomModel.MonoBehaviours
 
             ModelManager.RegisterHandler(this);
 
-            ModLogger.Log("ModelHandler initialized successfully.");
             IsInitialized = true;
         }
 
@@ -714,7 +713,6 @@ namespace DuckovCustomModel.MonoBehaviours
 
                 ForceUpdateHealthBar();
 
-                ModLogger.Log("Restored to original model.");
                 IsHiddenOriginalModel = false;
             }
 
@@ -821,6 +819,7 @@ namespace DuckovCustomModel.MonoBehaviours
             CancellationTokenSource cancellation)
         {
             PreparedModel? prepared = null;
+            var sourceRevision = model.SourceRevision;
             try
             {
                 prepared = await ModelSourceLoader.Load(this, bundle, model, cancellation.Token);
@@ -836,6 +835,8 @@ namespace DuckovCustomModel.MonoBehaviours
             }
             catch (Exception exception)
             {
+                if (!cancellation.IsCancellationRequested)
+                    ModelLoadStatus.Failed(model, sourceRevision, exception);
                 ModLogger.LogError($"Model switch failed; current model retained: {exception.Message}");
             }
             finally
@@ -854,6 +855,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void ApplyPreparedModel(ModelBundleInfo modelBundleInfo, ModelInfo modelInfo, PreparedModel prepared)
         {
+            var sourceRevision = modelInfo.SourceRevision;
             var candidate = prepared.Root;
             var runtime = prepared.YsmRuntime;
             var previous = new RetainedModel(this);
@@ -885,10 +887,12 @@ namespace DuckovCustomModel.MonoBehaviours
                     InitializeCustomModelInternal(CustomModelInstance, CurrentModelInfo);
                 }
 
+                ModelLoadStatus.Failed(modelInfo, sourceRevision, exception);
                 ModLogger.LogError($"Model switch failed; previous model restored: {exception.Message}");
                 return;
             }
 
+            ModelLoadStatus.Succeeded(modelInfo, sourceRevision);
             StopAllSounds();
             previous.Dispose();
             NotifyModelChanged(false);
@@ -925,7 +929,6 @@ namespace DuckovCustomModel.MonoBehaviours
             if (prefab == null) return;
 
             _deathLootBoxPrefab = prefab;
-            ModLogger.Log($"Death loot box prefab initialized: {prefab.name}");
         }
 
         private void InitializeCustomModelInternal(GameObject preparedInstance, ModelInfo modelInfo)
@@ -975,7 +978,6 @@ namespace DuckovCustomModel.MonoBehaviours
 
             RecordCustomModelSockets();
 
-            ModLogger.Log($"Custom model initialized: {preparedInstance.name}");
 
             if (CharacterMainControl == null)
             {
@@ -1007,8 +1009,6 @@ namespace DuckovCustomModel.MonoBehaviours
             ForceUpdateHealthBar();
             OriginalCharacterModel.SyncHiddenToMainCharacter();
 
-            if (!IsHiddenOriginalModel)
-                ModLogger.Log("Changed to custom model.");
             IsHiddenOriginalModel = true;
         }
 
@@ -1736,7 +1736,6 @@ namespace DuckovCustomModel.MonoBehaviours
 
             if (modelInfo.CustomSounds is not { Length: > 0 }) return;
 
-            var validSoundCount = 0;
 
             foreach (var soundInfo in modelInfo.CustomSounds)
             {
@@ -1756,13 +1755,7 @@ namespace DuckovCustomModel.MonoBehaviours
                         _soundsByTag[soundTag] = [];
                     _soundsByTag[soundTag].Add(fullPath);
                 }
-
-                validSoundCount++;
             }
-
-            if (validSoundCount == 0) return;
-            ModLogger.Log(
-                $"Initialized {validSoundCount} custom sounds for model '{modelInfo.Name}' ({modelInfo.ModelID}).");
         }
 
         public bool HasAnySounds()

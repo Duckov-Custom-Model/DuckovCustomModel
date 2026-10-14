@@ -29,9 +29,16 @@ namespace DuckovCustomModel.Integrations.Ysm
 
         private void LateUpdate()
         {
-            if (bundle == null || model == null || image == null || !Visible())
+            if (bundle == null || model == null || image == null)
             {
                 ReleaseSession();
+                return;
+            }
+
+            if (!Visible())
+            {
+                session?.Suspend();
+                nextRenderAt = 0;
                 return;
             }
 
@@ -210,12 +217,19 @@ namespace DuckovCustomModel.Integrations.Ysm
 
             internal void Sample(double now)
             {
+                if (root != null && !root.activeSelf) root.SetActive(true);
                 var delta = sampled ? Math.Max(0, now - lastSampleAt) : 0;
                 lastSampleAt = now;
                 sampled = true;
                 backend!.TimeSeconds = simulation!.Time + delta;
                 adapter!.Advance(delta);
                 backend.Render(simulation!.Pose);
+            }
+
+            internal void Suspend()
+            {
+                if (root != null && root.activeSelf) root.SetActive(false);
+                sampled = false;
             }
 
             internal void Render()

@@ -138,18 +138,31 @@ namespace DuckovCustomModel.Integrations.Ysm
             }
 
             mesh.SetIndexBufferData(state.SortedIndices, 0, 0, count * 3, flags);
-            mesh.subMeshCount = state.Runs.Count;
+            var descriptorCount = Math.Max(mesh.subMeshCount, state.Runs.Count);
+            if (state.RunDescriptors.Length < descriptorCount)
+                Array.Resize(ref state.RunDescriptors, descriptorCount);
             var materials = state.RunMaterials;
-            var materialsChanged = materials.Length != state.Runs.Count;
-            if (materialsChanged) materials = new Material[state.Runs.Count];
+            var materialsChanged = materials.Length != descriptorCount;
+            if (materialsChanged) materials = new Material[descriptorCount];
             for (var i = 0; i < state.Runs.Count; i++)
             {
                 var run = state.Runs[i];
-                mesh.SetSubMesh(i, new(run.Start, run.Count)
-                    { bounds = mesh.bounds, firstVertex = 0, vertexCount = mesh.vertexCount }, flags);
+                state.RunDescriptors[i] = new(run.Start, run.Count)
+                    { bounds = mesh.bounds, firstVertex = 0, vertexCount = mesh.vertexCount };
                 if (materials[i] != state.TransparentMaterials[run.Partition]) materialsChanged = true;
                 materials[i] = state.TransparentMaterials[run.Partition];
             }
+
+            for (var i = state.Runs.Count; i < materials.Length; i++)
+            {
+                state.RunDescriptors[i] = new(count * 3, 0)
+                    { bounds = mesh.bounds, firstVertex = 0, vertexCount = mesh.vertexCount };
+                var material = state.TransparentMaterials[state.Runs[0].Partition];
+                if (materials[i] != material) materialsChanged = true;
+                materials[i] = material;
+            }
+
+            mesh.SetSubMeshes(state.RunDescriptors, 0, descriptorCount, flags);
 
             if (materialsChanged)
             {
@@ -177,7 +190,7 @@ namespace DuckovCustomModel.Integrations.Ysm
             for (var i = 0; i < state.SolidMaterials.Length; i++)
                 commands.DrawMesh(state.Mesh, matrix, state.SolidMaterials[i], i, 0);
             if (state.TransparentCount > 0 && state.TransparentRenderer.enabled)
-                for (var i = 0; i < state.RunMaterials.Length; i++)
+                for (var i = 0; i < state.Runs.Count; i++)
                     commands.DrawMesh(state.TransparentMesh, matrix, state.RunMaterials[i], i, 0);
             Graphics.ExecuteCommandBuffer(commands);
         }

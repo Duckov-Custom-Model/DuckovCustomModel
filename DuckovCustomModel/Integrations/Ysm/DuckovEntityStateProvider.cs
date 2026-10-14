@@ -57,6 +57,9 @@ namespace DuckovCustomModel.Integrations.Ysm
         private long swingSequence, shootSequence, useSequence, hurtSequence, loadedSequence, deathSequence;
         private double swingStarted = double.NegativeInfinity;
         private double walkDistance;
+        private double yawSamplePhase;
+        private double yawSampleSeconds;
+        private double yawSpeed;
 
         public DuckovEntityStateProvider(CharacterMainControl character, CharacterModel originalModel,
             DuckovYsmBindingProfile profile, ModelDocument? document = null, Transform? originalAimSocket = null)
@@ -197,6 +200,14 @@ namespace DuckovCustomModel.Integrations.Ysm
             destination.Queries["query.duckov_death_sequence"] = deathSequence;
         }
 
+        internal void ResetMovement()
+        {
+            hasPreviousPosition = false;
+            yawSamplePhase = 0;
+            yawSampleSeconds = 0;
+            yawSpeed = 0;
+        }
+
         private void CaptureMovement(EntityState state, double dt, bool isPlayer)
         {
             var position = character.transform.position;
@@ -205,18 +216,37 @@ namespace DuckovCustomModel.Integrations.Ysm
             if (teleported) delta = Vector3.zero;
             var velocity = character.Velocity;
             state.Position = SourceVector(position);
-            state.PositionDelta = SourceVector(delta);
             state.Velocity = SourceVector(velocity);
             state.GroundSpeed = Math.Sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
             state.LimbSwingAmount = character.AnimationMoveSpeedValue * profile.LimbSwingScale;
             walkDistance += Math.Sqrt(delta.x * delta.x + delta.z * delta.z);
             state.WalkDistance = walkDistance;
             var yaw = body.eulerAngles.y;
-            state.YawSpeed = hasPreviousPosition && !teleported && dt > 0
-                ? Mathf.DeltaAngle(previousYaw, yaw) / dt
-                : 0;
+            if (!hasPreviousPosition || teleported || dt <= 0)
+            {
+                previousYaw = yaw;
+                yawSamplePhase = 0;
+                yawSampleSeconds = 0;
+                yawSpeed = 0;
+            }
+            else
+            {
+                yawSamplePhase += dt;
+                yawSampleSeconds += dt;
+                if (yawSamplePhase + 1e-9 >= .05)
+                {
+                    var ticks = Math.Floor((yawSamplePhase + 1e-9) / .05);
+                    var remainder = Math.Max(0, yawSamplePhase - ticks * .05);
+                    yawSpeed = Mathf.DeltaAngle(previousYaw, yaw) / yawSampleSeconds;
+                    previousYaw = yaw;
+                    yawSamplePhase = remainder;
+                    yawSampleSeconds = 0;
+                }
+            }
+
+            state.PositionDelta = SourceVector(delta);
+            state.YawSpeed = yawSpeed;
             state.BodyRotation = Vector(body.eulerAngles);
-            previousYaw = yaw;
             previousPosition = position;
             hasPreviousPosition = true;
 
@@ -229,7 +259,7 @@ namespace DuckovCustomModel.Integrations.Ysm
             var localInput = playerInputActive
                 ? body.InverseTransformDirection(inputManager!.WorldMoveInput)
                 : Vector3.zero;
-            state.MovementInput = new NVector3(localInput.x, localInput.y, localInput.z);
+            state.MovementInput = new(localInput.x, localInput.y, localInput.z);
             state.CancelExtraAnimationInput = playerInputActive && inputManager!.MoveAxisInput.sqrMagnitude > .0004f;
             state.Queries["ysm.input_horizontal"] = localInput.x;
             state.Queries["ysm.input_vertical"] = localInput.z;

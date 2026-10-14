@@ -43,6 +43,7 @@ namespace DuckovCustomModel.Localizations
             { "Clear", "Clear" },
             { "PressAnyKey", "Press any key..." },
             { "NoPreview", "No Preview" },
+            { "ModelUnavailable", "Unavailable — reload model information to retry" },
             { "Author", "Author" },
             { "Version", "Version" },
             { "NoModel", "No Model (Restore Original)" },
@@ -174,6 +175,7 @@ namespace DuckovCustomModel.Localizations
         public static string Clear => GetText("Clear");
         public static string PressAnyKey => GetText("PressAnyKey");
         public static string NoPreview => GetText("NoPreview");
+        public static string ModelUnavailable => GetText("ModelUnavailable");
         public static string Author => GetText("Author");
         public static string Version => GetText("Version");
         public static string NoModel => GetText("NoModel");

@@ -1,4 +1,5 @@
 {
+  "ModelUnavailable": "Unavailable — reload model information to retry",
   "AudioSettings": "Audio settings",
   "TargetOriginal": "Original appearance",
   "TargetInherited": "Inherited",

@@ -97,6 +97,20 @@ namespace DuckovCustomModel.Integrations.Ysm
 
         public static YsmModelLease Acquire(ModelBundleInfo bundle, ModelInfo model)
         {
+            var revision = model.SourceRevision;
+            try
+            {
+                return AcquireCore(bundle, model);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                ModelLoadStatus.Failed(model, revision, exception);
+                throw;
+            }
+        }
+
+        private static YsmModelLease AcquireCore(ModelBundleInfo bundle, ModelInfo model)
+        {
             var path = GetSourcePath(bundle, model);
             var assetPath = AssetBundleManager.FindBinaryAssetPath(bundle, model.SourcePath);
             var revision = assetPath == null
@@ -185,7 +199,9 @@ namespace DuckovCustomModel.Integrations.Ysm
                                    + (assetPath == null
                                        ? string.Empty
                                        : "|" + BundleRevision(sourceBundle, assetPath, path));
-                    if (!forceReload && previous?.Models.FirstOrDefault()?.SourceRevision == revision) continue;
+                    if (!forceReload && previous?.Models.FirstOrDefault() is { } previousModel &&
+                        previousModel.SourceRevision == revision &&
+                        ModelLoadStatus.GetError(previousModel) == null) continue;
                     var package = LoadValidated(path, profile,
                         assetPath == null ? null : loadBytes(sourceBundle, assetPath));
                     if (Fingerprint(path, cancellationToken)
@@ -231,12 +247,33 @@ namespace DuckovCustomModel.Integrations.Ysm
 
                     var bundle = ModelBundleInfo.CreateSourceBundle(root, bundleName, "Ysm", [model]);
                     bundle.BundlePath = bundlePath;
-                    if (previous != null) bundles.Remove(previous);
+                    if (previous != null)
+                    {
+                        foreach (var replacedModel in previous.Models)
+                            ModelLoadStatus.Succeeded(replacedModel, replacedModel.SourceRevision);
+                        bundles.Remove(previous);
+                    }
+
                     bundles.Add(bundle);
                     changedBundles.Add(bundleName);
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
+                    if (previous == null)
+                    {
+                        var failedModel = new ModelInfo
+                        {
+                            ModelID = "ysm:" + relative, Name = Path.GetFileNameWithoutExtension(path),
+                            SourceKind = "Ysm", SourcePath = relative, BundleName = bundleName,
+                            TargetTypes = [ModelTargetType.Character, ModelTargetType.AllAICharacters],
+                        };
+                        previous = ModelBundleInfo.CreateSourceBundle(root, bundleName, "Ysm", [failedModel]);
+                        bundles.Add(previous);
+                    }
+
+                    foreach (var failedModel in previous.Models)
+                        ModelLoadStatus.Failed(failedModel, failedModel.SourceRevision, ex);
+                    changedBundles.Add(bundleName);
                     ModLogger.LogWarning(
                         $"YSM source '{relative}' could not be refreshed; keeping the previous registration: {ex.Message}");
                 }

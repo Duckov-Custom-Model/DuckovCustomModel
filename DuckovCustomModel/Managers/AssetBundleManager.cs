@@ -18,6 +18,7 @@ namespace DuckovCustomModel.Managers
         private static readonly Dictionary<string, AssetBundle> LoadedBundles = new(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, BundleLoad> LoadingTasks = new(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<AssetBundle, HashSet<string>> AssetNames = [];
+        private static readonly Dictionary<AssetBundle, HashSet<(string path, Type type)>> MissingAssets = [];
 
         private static string? GetBundlePath(ModelBundleInfo bundleInfo)
         {
@@ -135,6 +136,7 @@ namespace DuckovCustomModel.Managers
             if (!LoadedBundles.TryGetValue(bundlePath, out var bundle)) return;
             LoadedBundles.Remove(bundlePath);
             AssetNames.Remove(bundle);
+            MissingAssets.Remove(bundle);
             if (bundle != null) bundle.Unload(true);
         }
 
@@ -149,6 +151,7 @@ namespace DuckovCustomModel.Managers
             var bundles = new List<AssetBundle>(LoadedBundles.Values);
             LoadedBundles.Clear();
             AssetNames.Clear();
+            MissingAssets.Clear();
             foreach (var bundle in bundles)
                 if (bundle != null)
                     bundle.Unload(unloadAllLoadedObjects);
@@ -161,12 +164,20 @@ namespace DuckovCustomModel.Managers
             var bundle = GetOrLoadAssetBundle(bundleInfo);
             if (bundle == null) return null;
 
+            var key = (assetPath, typeof(T));
+            if (MissingAssets.TryGetValue(bundle, out var missing) && missing.Contains(key)) return null;
+
             try
             {
                 var asset = bundle.LoadAsset<T>(assetPath);
                 if (asset == null)
+                {
+                    if (missing == null) MissingAssets[bundle] = missing = [];
+                    missing.Add(key);
                     ModLogger.LogError(
-                        $"AssetBundleManager: Failed to load asset '{assetPath}' from bundle '{bundleInfo.BundlePath}'");
+                        $"AssetBundleManager: Failed to load asset '{assetPath}' as '{typeof(T).Name}' from bundle '{Path.Combine(bundleInfo.DirectoryPath, bundleInfo.BundlePath)}'. Asset listed in bundle: {bundle.Contains(assetPath)}. Repeated requests are skipped until the bundle is unloaded or reloaded.");
+                }
+
                 return asset;
             }
             catch (Exception ex)

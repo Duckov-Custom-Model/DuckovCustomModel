@@ -161,6 +161,7 @@ namespace DuckovCustomModel.Integrations.Ysm
         public void Activate()
         {
             if (_disposed || _active) return;
+            _source!.ResetMovement();
             _sockets!.Activate();
             _effects!.Enabled = true;
             _active = true;

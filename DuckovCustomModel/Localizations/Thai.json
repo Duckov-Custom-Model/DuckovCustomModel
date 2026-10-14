@@ -1,4 +1,5 @@
 {
+  "ModelUnavailable": "ใช้งานไม่ได้ — โหลดข้อมูลโมเดลใหม่แล้วลองอีกครั้ง",
   "AudioSettings": "การตั้งค่าเสียง",
   "TargetOriginal": "รูปลักษณ์เดิม",
   "TargetInherited": "รับค่าจากส่วนกลาง",

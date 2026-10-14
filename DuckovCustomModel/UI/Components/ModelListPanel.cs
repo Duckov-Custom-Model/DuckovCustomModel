@@ -409,6 +409,7 @@ namespace DuckovCustomModel.UI.Components
         private static string GetSourceSignature()
         {
             var signature = new StringBuilder();
+            signature.Append(ModelLoadStatus.Version).Append('\0');
             foreach (var bundle in ModelManager.ModelBundles)
             {
                 signature.Append(bundle.DirectoryPath).Append('\0').Append(bundle.BundleName).Append('\0')
@@ -522,6 +523,7 @@ namespace DuckovCustomModel.UI.Components
 
             cancellationToken.ThrowIfCancellationRequested();
 
+            if (ModelLoadStatus.GetError(model) is { } loadError) statusResult = (false, loadError);
             var (isValid, errorMessage) = statusResult;
             var hasError = !isValid;
 
@@ -655,7 +657,7 @@ namespace DuckovCustomModel.UI.Components
             if (hasError)
             {
                 var errorText = UIFactory.CreateText("Error", contentArea.transform,
-                    $"⚠ {(!string.IsNullOrEmpty(errorMessage) ? errorMessage : "Unknown error")}", 15,
+                    $"{Localization.ModelUnavailable}\n{errorMessage}", 15,
                     new(1f, 0.4f, 0.4f, 1), TextAnchor.UpperLeft, FontStyle.Bold);
                 var errorTextComponent = errorText.GetComponent<TextMeshProUGUI>();
                 if (errorTextComponent != null)
@@ -1131,6 +1133,7 @@ namespace DuckovCustomModel.UI.Components
 
             cancellationToken.ThrowIfCancellationRequested();
 
+            if (ModelLoadStatus.GetError(model) is { } loadError) status = (false, loadError);
             var isInUse = _currentTarget?.UsingModel == model.ModelID;
             var isFallback = !isInUse && _currentTarget?.UsingFallbackModel == model.ModelID;
             var cardColor = !status.isValid ? new(.22f, .15f, .15f, .95f)
@@ -1199,7 +1202,7 @@ namespace DuckovCustomModel.UI.Components
             else
             {
                 var error = UIFactory.CreateText("Error", previewBackground.transform,
-                    string.IsNullOrWhiteSpace(status.errorMessage) ? "无法加载" : status.errorMessage,
+                    Localization.ModelUnavailable,
                     13, new Color(1f, .6f, .6f), TextAnchor.MiddleCenter);
                 UIFactory.SetupRectTransform(error, Vector2.zero, Vector2.one, Vector2.zero);
                 error.GetComponent<TextMeshProUGUI>().raycastTarget = false;
@@ -1237,15 +1240,17 @@ namespace DuckovCustomModel.UI.Components
                 {
                     displayName, Localization.GetModelInfo(model.ModelID, model.Author, model.Version),
                     model.Description,
+                    status.isValid ? null : Localization.ModelUnavailable + "\n" + status.errorMessage,
                 }
                 .Where(value => !string.IsNullOrWhiteSpace(value)));
             var details = UIFactory.CreateText("Metadata", tooltip.transform,
-                isYsm ? MinecraftFormatting.ToTmp(metadata) : metadata,
+                isYsm && status.isValid ? MinecraftFormatting.ToTmp(metadata) : metadata,
                 13, Color.white, TextAnchor.UpperLeft);
             UIFactory.SetupRectTransform(details, Vector2.zero, Vector2.one,
                 offsetMin: new Vector2(7, 7), offsetMax: new Vector2(-7, -7));
             var detailsText = details.GetComponent<TextMeshProUGUI>();
             detailsText.richText = isYsm;
+            if (!status.isValid) detailsText.richText = false;
             detailsText.raycastTarget = false;
             detailsText.enableWordWrapping = true;
             detailsText.overflowMode = TextOverflowModes.Ellipsis;

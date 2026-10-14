@@ -1,4 +1,5 @@
 {
+  "ModelUnavailable": "不可用，请刷新模型信息后重试",
   "AudioSettings": "音频设置",
   "TargetOriginal": "原始外观",
   "TargetInherited": "继承",
