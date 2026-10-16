@@ -66,6 +66,10 @@ namespace DuckovCustomModel.MonoBehaviours
         private bool _isScaleLocked;
 
         private CancellationTokenSource? _modelLoadCancellation;
+        private ModelLoadingVisual? _loadingVisual;
+        public static event Action<ModelHandler>? OnModelLoadingChanged;
+        public bool IsModelLoading => _modelLoadCancellation != null;
+        public string? LoadingModelId => _pendingModel?.ModelID;
 
         private float _nextIdleAudioTime;
         private CapsuleCollider? _originalBodyCollider;
@@ -819,6 +823,17 @@ namespace DuckovCustomModel.MonoBehaviours
             _pendingBundle = modelBundleInfo;
             _pendingModel = modelInfo;
             _modelLoadCancellation = new();
+            try
+            {
+                _loadingVisual = new ModelLoadingVisual(OriginalCharacterModel.transform, CustomModelInstance,
+                    ModelHeightManager.GetHeight(TargetTypeId, modelInfo.ModelID));
+            }
+            catch (Exception exception)
+            {
+                ModLogger.LogWarning($"Loading visual could not be created: {exception.Message}");
+            }
+
+            OnModelLoadingChanged?.Invoke(this);
             LoadAndApplyModelAsync(modelBundleInfo, modelInfo, _modelLoadCancellation).Forget();
         }
 
@@ -829,6 +844,14 @@ namespace DuckovCustomModel.MonoBehaviours
             _pendingBundle = null;
             _pendingModel = null;
             cancellation?.Cancel();
+            ClearLoadingVisual();
+            if (cancellation != null) OnModelLoadingChanged?.Invoke(this);
+        }
+
+        private void ClearLoadingVisual()
+        {
+            _loadingVisual?.Dispose();
+            _loadingVisual = null;
         }
 
         private async UniTaskVoid LoadAndApplyModelAsync(ModelBundleInfo bundle, ModelInfo model,
@@ -844,6 +867,7 @@ namespace DuckovCustomModel.MonoBehaviours
                     !ReferenceEquals(_modelLoadCancellation, cancellation)) return;
                 var candidate = prepared;
                 prepared = null;
+                ClearLoadingVisual();
                 ApplyPreparedModel(bundle, model, candidate);
             }
             catch (OperationCanceledException)
@@ -863,6 +887,8 @@ namespace DuckovCustomModel.MonoBehaviours
                     _modelLoadCancellation = null;
                     _pendingBundle = null;
                     _pendingModel = null;
+                    ClearLoadingVisual();
+                    OnModelLoadingChanged?.Invoke(this);
                 }
 
                 cancellation.Dispose();
