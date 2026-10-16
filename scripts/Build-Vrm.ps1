@@ -54,6 +54,7 @@ foreach ($entry in Get-ChildItem -LiteralPath $extracted -Directory) {
 'm_EditorVersion: 2022.3.22f1' | Set-Content -LiteralPath "$project/ProjectSettings/ProjectVersion.txt" -Encoding utf8NoBOM
 Copy-Item -LiteralPath "$PSScriptRoot/Unity/BuildVrmResources.cs" -Destination "$project/Assets/Editor/BuildVrmResources.cs"
 Expand-Archive -LiteralPath "$PSScriptRoot/Unity/Animations/UAL1-Standard.zip" -DestinationPath "$project/Assets/Animations" -Force
+Expand-Archive -LiteralPath "$PSScriptRoot/Unity/Animations/KayKit-Movement.zip" -DestinationPath "$project/Assets/Animations/KayKit" -Force
 @'
 {
   "name": "VrmBuild.Editor",

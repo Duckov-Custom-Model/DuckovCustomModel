@@ -19,8 +19,8 @@ namespace DuckovCustomModel.Managers.Updaters
             control.SetParameterBool(CustomAnimatorHash.Grounded, control.CharacterMainControl.IsOnGround);
 
             var movementControl = control.CharacterMainControl.movementControl;
-            control.SetParameterBool(CustomAnimatorHash.IsMoving, movementControl.Moving);
-            control.SetParameterBool(CustomAnimatorHash.IsRunning, movementControl.Running);
+            control.SetParameterBool(CustomAnimatorHash.IsMoving, movementControl != null && movementControl.Moving);
+            control.SetParameterBool(CustomAnimatorHash.IsRunning, movementControl != null && movementControl.Running);
 
             var dashing = control.CharacterMainControl.Dashing;
             if (dashing && !control.HasAnimationIfDashCanControl && control.CharacterMainControl.DashCanControl)

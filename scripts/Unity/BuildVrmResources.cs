@@ -32,9 +32,19 @@ public static class BuildVrmResources
 
     private static void ImportAnimations()
     {
-        AssetDatabase.ImportAsset(AnimationPath, ImportAssetOptions.ForceSynchronousImport);
-        var importer = AssetImporter.GetAtPath(AnimationPath) as ModelImporter;
-        if (importer == null) throw new InvalidOperationException("Missing CC0 animation source: " + AnimationPath);
+        _animations = new(StringComparer.Ordinal);
+        ImportAnimations(AnimationPath, AnimationNames, false);
+        ImportAnimations("Assets/Animations/KayKit/Rig_Medium_MovementBasic.fbx",
+            new[] { "Walking_A", "Running_A" }, true);
+        ImportAnimations("Assets/Animations/KayKit/Rig_Medium_MovementAdvanced.fbx",
+            new[] { "Running_Strafe_Left", "Running_Strafe_Right", "Walking_Backwards" }, true);
+    }
+
+    private static void ImportAnimations(string path, string[] names, bool keepOrientation)
+    {
+        AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+        var importer = AssetImporter.GetAtPath(path) as ModelImporter;
+        if (importer == null) throw new InvalidOperationException("Missing CC0 animation source: " + path);
         importer.animationType = ModelImporterAnimationType.Human;
         importer.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
         importer.importAnimation = true;
@@ -47,11 +57,11 @@ public static class BuildVrmResources
         foreach (var clip in importer.defaultClipAnimations)
         {
             var name = clip.name[(clip.name.LastIndexOf('|') + 1)..];
-            if (!AnimationNames.Contains(name)) continue;
+            if (!names.Contains(name)) continue;
             clip.name = name;
-            clip.loopTime = name.EndsWith("_Loop", StringComparison.Ordinal);
+            clip.loopTime = keepOrientation || name.EndsWith("_Loop", StringComparison.Ordinal);
             clip.loopPose = clip.loopTime;
-            clip.keepOriginalOrientation = false;
+            clip.keepOriginalOrientation = keepOrientation;
             clip.keepOriginalPositionXZ = true;
             clip.keepOriginalPositionY = true;
             clip.lockRootRotation = true;
@@ -62,13 +72,13 @@ public static class BuildVrmResources
 
         importer.clipAnimations = clips.ToArray();
         importer.SaveAndReimport();
-        _animations = AssetDatabase.LoadAllAssetsAtPath(AnimationPath).OfType<AnimationClip>()
-            .Where(clip => !clip.name.StartsWith("__preview__", StringComparison.Ordinal))
-            .ToDictionary(clip => clip.name, StringComparer.Ordinal);
-        var avatar = AssetDatabase.LoadAllAssetsAtPath(AnimationPath).OfType<Avatar>().FirstOrDefault();
+        foreach (var clip in AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>())
+            if (names.Contains(clip.name))
+                _animations.Add(clip.name, clip);
+        var avatar = AssetDatabase.LoadAllAssetsAtPath(path).OfType<Avatar>().FirstOrDefault();
         if (avatar == null || !avatar.isValid || !avatar.isHuman)
             throw new InvalidOperationException("CC0 animation source has no valid Humanoid avatar.");
-        foreach (var name in AnimationNames)
+        foreach (var name in names)
             if (!_animations.TryGetValue(name, out var clip) || !clip.humanMotion || clip.length <= 0)
                 throw new InvalidOperationException("Invalid Humanoid animation: " + name);
     }
@@ -76,7 +86,7 @@ public static class BuildVrmResources
     private static AnimationClip Animation(string name)
     {
         var source = _animations[name];
-        if (AssetDatabase.GetAssetPath(source) != AnimationPath) return source;
+        if (AssetDatabase.GetAssetPath(source).StartsWith("Assets/Generated/", StringComparison.Ordinal)) return source;
         var clip = Object.Instantiate(source);
         clip.name = name;
         var path = "Assets/Generated/" + name + ".anim";
@@ -187,6 +197,10 @@ public static class BuildVrmResources
         if (AssetDatabase.LoadAssetAtPath<AnimatorController>(path)) AssetDatabase.DeleteAsset(path);
         var controller = AnimatorController.CreateAnimatorControllerAtPath(path);
         controller.AddParameter("MoveSpeed", AnimatorControllerParameterType.Float);
+        controller.AddParameter("LocomotionX", AnimatorControllerParameterType.Float);
+        controller.AddParameter("LocomotionY", AnimatorControllerParameterType.Float);
+        controller.AddParameter(new AnimatorControllerParameter
+            { name = "LocomotionRate", type = AnimatorControllerParameterType.Float, defaultFloat = 1 });
         controller.AddParameter("Dashing", AnimatorControllerParameterType.Bool);
         controller.AddParameter("GunReady", AnimatorControllerParameterType.Bool);
         controller.AddParameter("HandState", AnimatorControllerParameterType.Int);
@@ -201,12 +215,28 @@ public static class BuildVrmResources
         controller.AddParameter("Hurt", AnimatorControllerParameterType.Trigger);
         var machine = controller.layers[0].stateMachine;
         var movement = machine.AddState("Locomotion");
-        var tree = new BlendTree { name = "Locomotion", blendParameter = "MoveSpeed", useAutomaticThresholds = false };
+        var tree = new BlendTree
+        {
+            name = "Locomotion", blendParameter = "LocomotionX", blendParameterY = "LocomotionY",
+            blendType = BlendTreeType.FreeformDirectional2D, useAutomaticThresholds = false,
+        };
         AssetDatabase.AddObjectToAsset(tree, controller);
-        tree.AddChild(Animation("Idle_Loop"), 0);
-        tree.AddChild(Animation("Walk_Loop"), 1);
-        tree.AddChild(Animation("Jog_Fwd_Loop"), 2);
+        tree.AddChild(Animation("Idle_Loop"), Vector2.zero);
+        tree.AddChild(Animation("Walking_A"), Vector2.up);
+        tree.AddChild(Animation("Running_A"), Vector2.up * 2);
+        tree.AddChild(Animation("Running_Strafe_Left"), Vector2.left);
+        tree.AddChild(Animation("Running_Strafe_Left"), Vector2.left * 2);
+        tree.AddChild(Animation("Running_Strafe_Right"), Vector2.right);
+        tree.AddChild(Animation("Running_Strafe_Right"), Vector2.right * 2);
+        tree.AddChild(Animation("Walking_Backwards"), Vector2.down);
+        tree.AddChild(Animation("Walking_Backwards"), Vector2.down * 2);
+        var children = tree.children;
+        children[3].timeScale = children[5].timeScale = .65f;
+        children[8].timeScale = 1.5f;
+        tree.children = children;
         movement.motion = tree;
+        movement.speedParameterActive = true;
+        movement.speedParameter = "LocomotionRate";
         machine.defaultState = movement;
         var roll = machine.AddState("Roll");
         roll.motion = Animation("Roll");
@@ -229,7 +259,7 @@ public static class BuildVrmResources
         recoil.hasExitTime = false;
         recoil.duration = .03f;
         recoil.AddCondition(AnimatorConditionMode.If, 0, "Hurt");
-        recoil.AddCondition(AnimatorConditionMode.IfNot, 0, "Dashing");
+        recoil.AddCondition(AnimatorConditionMode.IfNot, 0, "RollPose");
         recoil.AddCondition(AnimatorConditionMode.IfNot, 0, "Die");
         var recover = hurt.AddTransition(movement);
         recover.hasExitTime = true;
@@ -264,12 +294,12 @@ public static class BuildVrmResources
         enter.hasExitTime = false;
         enter.duration = .12f;
         enter.AddCondition(AnimatorConditionMode.NotEqual, 0, "HandState");
-        enter.AddCondition(AnimatorConditionMode.IfNot, 0, "Dashing");
+        enter.AddCondition(AnimatorConditionMode.IfNot, 0, "RollPose");
         var exit = hold.AddTransition(free);
         exit.hasExitTime = false;
         exit.duration = .12f;
         exit.AddCondition(AnimatorConditionMode.Equals, 0, "HandState");
-        Transition(hold, free, "Dashing", true, .05f);
+        Transition(hold, free, "RollPose", true, .05f);
         var recoil = machine.AddState("Shoot");
         recoil.writeDefaultValues = false;
         recoil.motion = Animation("Pistol_Shoot");
@@ -278,12 +308,12 @@ public static class BuildVrmResources
         shot.hasExitTime = false;
         shot.duration = .02f;
         shot.AddCondition(AnimatorConditionMode.If, 0, "Shoot");
-        shot.AddCondition(AnimatorConditionMode.IfNot, 0, "Dashing");
+        shot.AddCondition(AnimatorConditionMode.IfNot, 0, "RollPose");
         var settle = recoil.AddTransition(hold);
         settle.hasExitTime = true;
         settle.exitTime = 1;
         settle.duration = .04f;
-        Transition(recoil, free, "Dashing", true, .05f);
+        Transition(recoil, free, "RollPose", true, .05f);
         foreach (var parameter in new[] { "Reloading", "UsingItem" })
         {
             var action = machine.AddState(parameter);
@@ -294,9 +324,9 @@ public static class BuildVrmResources
             enterAction.hasExitTime = false;
             enterAction.duration = .1f;
             enterAction.AddCondition(AnimatorConditionMode.If, 0, parameter);
-            enterAction.AddCondition(AnimatorConditionMode.IfNot, 0, "Dashing");
+            enterAction.AddCondition(AnimatorConditionMode.IfNot, 0, "RollPose");
             Transition(action, free, parameter, false, .1f);
-            Transition(action, free, "Dashing", true, .05f);
+            Transition(action, free, "RollPose", true, .05f);
         }
     }
 
@@ -324,12 +354,12 @@ public static class BuildVrmResources
         enter.hasExitTime = false;
         enter.duration = .03f;
         enter.AddCondition(AnimatorConditionMode.If, 0, "Attack");
-        enter.AddCondition(AnimatorConditionMode.IfNot, 0, "Dashing");
+        enter.AddCondition(AnimatorConditionMode.IfNot, 0, "RollPose");
         var exit = swing.AddTransition(idle);
         exit.hasExitTime = true;
         exit.exitTime = 1;
         exit.duration = .1f;
-        Transition(swing, idle, "Dashing", true, .05f);
+        Transition(swing, idle, "RollPose", true, .05f);
     }
 
     private static void Transition(AnimatorState from, AnimatorState to, string parameter, bool value, float duration)

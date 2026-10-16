@@ -19,7 +19,6 @@ namespace DuckovCustomModel.Integrations.Vrm
         private float _invisibleSince;
         private Vector3 _previousPosition;
         private Renderer[] _renderers = [];
-        private float _rollPhase;
         private VrmModelSettings _settings = new();
         private bool _springSuspended, _initialized, _registered;
         internal bool OriginalAutoSyncRightHandRotation { get; private set; }
@@ -31,33 +30,9 @@ namespace DuckovCustomModel.Integrations.Vrm
             if (_animator == null || _handler?.CharacterMainControl == null ||
                 !string.IsNullOrWhiteSpace(_settings.AnimatorControllerPath)) return;
             var character = _handler.CharacterMainControl;
-            var movement = character.movementControl;
-            var velocity = character.Velocity;
-            var speed = new Vector2(velocity.x, velocity.z).magnitude;
-            var moveSpeed = character.AnimationMoveSpeedValue;
-            if (movement != null && movement.walkSpeed > .0001f)
-                moveSpeed = movement.Running && speed > movement.walkSpeed
-                    ? 1 + Mathf.InverseLerp(movement.walkSpeed, movement.runSpeed, speed)
-                    : Mathf.Clamp01(speed / movement.walkSpeed);
-            _animator.SetFloat(CustomAnimatorHash.MoveSpeed,
-                float.IsNaN(moveSpeed) || float.IsInfinity(moveSpeed) ? 0 : Mathf.Clamp(moveSpeed, 0, 2));
-            var dash = _handler.CharacterMainControl.CurrentAction as CA_Dash;
-            var rolling = dash is { Running: true };
-            if (rolling)
-            {
-                var progress = dash!.GetProgress();
-                _rollPhase = progress.total > 0 ? Mathf.Clamp01(progress.current / progress.total) : 0;
-            }
-
-            _animator.SetBool("RollPose", rolling);
-            _animator.SetFloat("RollProgress", _rollPhase);
-            _animator.SetBool("Dashing", rolling);
-            var control = _handler.CustomAnimatorControl;
+            var rolling = character.CurrentAction is CA_Dash { Running: true };
             var heldGun = character.CurrentHoldItemAgent as ItemAgent_Gun;
             var holdingGun = heldGun != null && heldGun.isActiveAndEnabled;
-            _animator.SetFloat("AttackProgress", control is { Attacking: true, AttackTime: > 0 }
-                ? Mathf.Clamp01(control.AttackTimer / control.AttackTime)
-                : 0);
             if (_holdingLayer >= 0)
             {
                 var holding = !rolling && (holdingGun || character.carryAction.Running ||
