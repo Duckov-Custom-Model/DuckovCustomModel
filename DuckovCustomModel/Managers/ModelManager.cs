@@ -10,6 +10,7 @@ using DuckovCustomModel.Core;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Core.Managers;
 using DuckovCustomModel.Integrations;
+using DuckovCustomModel.Integrations.Motions;
 using DuckovCustomModel.Integrations.Vrm;
 using DuckovCustomModel.Integrations.Ysm;
 using DuckovCustomModel.MonoBehaviours;
@@ -30,6 +31,7 @@ namespace DuckovCustomModel.Managers
 
         public static HashSet<string> UpdateModelBundles(bool includeYsm = true, bool forceReload = false)
         {
+            MotionLibrary.Refresh(forceReload);
             if (forceReload)
             {
                 ModelLoadStatus.Clear();

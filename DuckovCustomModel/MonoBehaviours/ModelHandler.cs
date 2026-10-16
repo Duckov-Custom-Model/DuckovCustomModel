@@ -66,6 +66,10 @@ namespace DuckovCustomModel.MonoBehaviours
         private bool _isScaleLocked;
 
         private CancellationTokenSource? _modelLoadCancellation;
+        private ModelLoadingVisual? _loadingVisual;
+        public static event Action<ModelHandler>? OnModelLoadingChanged;
+        public bool IsModelLoading => _modelLoadCancellation != null;
+        public string? LoadingModelId => _pendingModel?.ModelID;
 
         private float _nextIdleAudioTime;
         private CapsuleCollider? _originalBodyCollider;
@@ -155,12 +159,25 @@ namespace DuckovCustomModel.MonoBehaviours
         public IReadOnlyList<RadialMenuEntry> RadialMenuEntries =>
             _radialActionPlayer?.Entries ?? Array.Empty<RadialMenuEntry>();
 
+        public bool RadialActionLocked
+        {
+            get => YsmRuntime?.ExtraAnimationLocked ?? _radialActionPlayer?.MovementLocked ?? false;
+            set
+            {
+                if (YsmRuntime != null) YsmRuntime.ExtraAnimationLocked = value;
+                else if (_radialActionPlayer != null) _radialActionPlayer.MovementLocked = value;
+            }
+        }
+
+        public bool IsExternalMotionPlaying => _radialActionPlayer?.IsMotionControllingPose == true;
+
         public string? CurrentRadialActionId => _radialActionPlayer?.CurrentActionId;
 
         private void Update()
         {
             if (!IsInitialized || CharacterMainControl == null) return;
 
+            _radialActionPlayer?.Update();
             RefreshRiders();
 
             if (!HasIdleSounds()) return;
@@ -293,6 +310,8 @@ namespace DuckovCustomModel.MonoBehaviours
         {
             return _radialActionPlayer?.TryPlay(actionId) == true;
         }
+
+        public void SetRadialActionPaused(bool paused) => _radialActionPlayer?.SetMotionPaused(paused);
 
         public bool StopRadialAction()
         {
@@ -693,6 +712,7 @@ namespace DuckovCustomModel.MonoBehaviours
             CancelModelLoad();
             var notifyRestored = IsHiddenOriginalModel;
             StopRadialAction();
+            _radialActionPlayer?.Dispose();
             _radialActionPlayer = null;
             StopAllSounds();
             YsmRuntime?.Deactivate();
@@ -803,6 +823,17 @@ namespace DuckovCustomModel.MonoBehaviours
             _pendingBundle = modelBundleInfo;
             _pendingModel = modelInfo;
             _modelLoadCancellation = new();
+            try
+            {
+                _loadingVisual = new ModelLoadingVisual(OriginalCharacterModel.transform, CustomModelInstance,
+                    ModelHeightManager.GetHeight(TargetTypeId, modelInfo.ModelID));
+            }
+            catch (Exception exception)
+            {
+                ModLogger.LogWarning($"Loading visual could not be created: {exception.Message}");
+            }
+
+            OnModelLoadingChanged?.Invoke(this);
             LoadAndApplyModelAsync(modelBundleInfo, modelInfo, _modelLoadCancellation).Forget();
         }
 
@@ -813,6 +844,14 @@ namespace DuckovCustomModel.MonoBehaviours
             _pendingBundle = null;
             _pendingModel = null;
             cancellation?.Cancel();
+            ClearLoadingVisual();
+            if (cancellation != null) OnModelLoadingChanged?.Invoke(this);
+        }
+
+        private void ClearLoadingVisual()
+        {
+            _loadingVisual?.Dispose();
+            _loadingVisual = null;
         }
 
         private async UniTaskVoid LoadAndApplyModelAsync(ModelBundleInfo bundle, ModelInfo model,
@@ -828,6 +867,7 @@ namespace DuckovCustomModel.MonoBehaviours
                     !ReferenceEquals(_modelLoadCancellation, cancellation)) return;
                 var candidate = prepared;
                 prepared = null;
+                ClearLoadingVisual();
                 ApplyPreparedModel(bundle, model, candidate);
             }
             catch (OperationCanceledException)
@@ -847,6 +887,8 @@ namespace DuckovCustomModel.MonoBehaviours
                     _modelLoadCancellation = null;
                     _pendingBundle = null;
                     _pendingModel = null;
+                    ClearLoadingVisual();
+                    OnModelLoadingChanged?.Invoke(this);
                 }
 
                 cancellation.Dispose();
@@ -904,6 +946,7 @@ namespace DuckovCustomModel.MonoBehaviours
         private void DetachForSwitch()
         {
             StopRadialAction();
+            _radialActionPlayer?.Dispose();
             _radialActionPlayer = null;
             YsmRuntime?.Deactivate();
             if (_customModelSubVisuals != null && CharacterMainControl != null)
@@ -962,8 +1005,9 @@ namespace DuckovCustomModel.MonoBehaviours
 
             // Get the Animator component from the custom model
             CustomAnimator = YsmRuntime == null ? CustomModelInstance.GetComponent<Animator>() : null;
-            _radialActionPlayer = CustomAnimator != null && modelInfo.RadialMenus is { Length: > 0 }
-                ? new AssetBundleRadialActionPlayer(CustomAnimator, modelInfo, TargetTypeId)
+            _radialActionPlayer = CustomAnimator != null
+                ? new AssetBundleRadialActionPlayer(CustomAnimator, modelInfo, TargetTypeId, this,
+                    _currentModelBundleInfo!)
                 : null;
             if (CustomAnimatorControl != null)
                 if (CustomAnimator != null)

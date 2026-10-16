@@ -73,8 +73,12 @@ namespace DuckovCustomModel.Integrations.Vrm
                 lease.Instance = instance;
                 instance.enabled = false;
                 instance.UpdateType = Vrm10Instance.UpdateTypes.None;
-                if (clone.GetComponent<Vrm10FastSpringboneRuntimeProvider>() == null)
-                    clone.AddComponent<Vrm10FastSpringboneRuntimeProvider>();
+                var sharedSpringProvider = clone.GetComponent<Vrm10FastSpringboneRuntimeProvider>();
+                if (sharedSpringProvider != null) Object.DestroyImmediate(sharedSpringProvider);
+                var standaloneSpringProvider = clone.GetComponent<Vrm10FastSpringboneRuntimeStandaloneProvider>();
+                if (standaloneSpringProvider != null) Object.DestroyImmediate(standaloneSpringProvider);
+                if (clone.GetComponent<VrmSpringBoneRuntimeProvider>() == null)
+                    clone.AddComponent<VrmSpringBoneRuntimeProvider>();
                 var animator = clone.GetComponent<Animator>();
                 var animatorEnabled = animator != null && animator.enabled;
                 if (animator != null) animator.enabled = false;
@@ -86,7 +90,8 @@ namespace DuckovCustomModel.Integrations.Vrm
                     renderers[i].enabled = false;
                 }
 
-                var initialTransforms = clone.GetComponentsInChildren<Transform>(true);
+                var initialTransforms =
+                    VrmSpringBoneCloner.Copy(entry.Template.GetComponent<Vrm10Instance>(), instance);
                 var originalActive = new bool[initialTransforms.Length];
                 for (var i = 0; i < initialTransforms.Length; i++)
                 {
@@ -96,7 +101,7 @@ namespace DuckovCustomModel.Integrations.Vrm
 
                 clone.SetActive(true);
                 var runtime = instance.Runtime;
-                if (runtime.SpringBone is not Vrm10FastSpringboneRuntime ||
+                if (runtime.SpringBone is not VrmSpringBoneRuntime ||
                     !entry.SpringRuntimes.Add(runtime.SpringBone))
                     throw new InvalidOperationException("Cloned VRM did not create an independent spring runtime.");
                 lease.SpringRuntime = runtime.SpringBone;

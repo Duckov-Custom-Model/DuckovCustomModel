@@ -34,6 +34,7 @@ namespace DuckovCustomModel.Managers.Updaters
             control.SetParameterInteger(CustomAnimatorHash.Ammo, ammo);
             control.SetParameterInteger(CustomAnimatorHash.MaxAmmo, maxAmmo);
             control.SetParameterFloat(CustomAnimatorHash.AmmoRate, ammoRate);
+            control.SetParameterBool(CustomAnimatorHash.Loaded, ammo > 0);
             control.SetParameterBool(CustomAnimatorHash.Reloading, isReloading);
             control.SetParameterBool(CustomAnimatorHash.GunReady, isGunReady);
         }

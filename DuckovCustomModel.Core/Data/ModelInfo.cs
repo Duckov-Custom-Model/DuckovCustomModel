@@ -110,7 +110,7 @@ namespace DuckovCustomModel.Core.Data
         {
             return (actions ?? [])
                 .Where(action => action != null && action.Validate() && actionIds.Add(action.Id)
-                                 && actionParameters.Add(action.Parameter))
+                                 && (action.Motion.Length > 0 || actionParameters.Add(action.Parameter)))
                 .ToArray();
         }
 

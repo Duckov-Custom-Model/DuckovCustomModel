@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.Localizations;
 using DuckovCustomModel.Managers;
+using DuckovCustomModel.MonoBehaviours;
 using DuckovCustomModel.UI.Base;
 using TMPro;
 using UnityEngine;
@@ -30,13 +31,16 @@ namespace DuckovCustomModel.UI.Components
         private void OnEnable()
         {
             ModelSocketScaleManager.OnScaleChanged += OnSocketScaleChanged;
+            ModelHandler.OnModelLoadingChanged += OnModelLoadingChanged;
             _nextSocketScaleRefresh = 0;
             OnSocketScaleChanged(_socketScaleTarget, _socketScaleModel);
+            UpdateLoadingOverlay();
         }
 
         private void OnDisable()
         {
             ModelSocketScaleManager.OnScaleChanged -= OnSocketScaleChanged;
+            ModelHandler.OnModelLoadingChanged -= OnModelLoadingChanged;
             SaveScrollPosition();
         }
 
@@ -158,7 +162,10 @@ namespace DuckovCustomModel.UI.Components
             var slider = UIFactory.CreateSliderWithInputToggle("Scale", controls.transform,
                 ModelSocketScaleManager.MinScale, ModelSocketScaleManager.MaxScale,
                 ModelSocketScaleManager.GetScale(target, model, slot), "F2",
-                value => ModelSocketScaleManager.SetScale(target, model, slot, value));
+                value =>
+                {
+                    if (!_settingsLoading) ModelSocketScaleManager.SetScale(target, model, slot, value);
+                });
             SetSocketScaleRowSize(slider.gameObject, 32);
             _socketScaleSliders.Add(slot, slider);
             var reset = UIFactory.CreateButton("Reset", controls.transform,

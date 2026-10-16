@@ -1,0 +1,9 @@
+UAL1-Standard.zip
+Quaternius — Universal Animation Library (Standard), CC0
+https://quaternius.itch.io/universal-animation-library
+
+KayKit-Movement.zip
+Kay Lousberg — KayKit Character Animations 1.1, CC0
+https://kaylousberg.itch.io/kaykit-character-animations
+包含 Rig_Medium_MovementBasic.fbx、Rig_Medium_MovementAdvanced.fbx 和原始 License.txt。
+构建时只提取行走、奔跑、左右侧移与后退片段；慢速侧移与快速后退通过播放速率适配。

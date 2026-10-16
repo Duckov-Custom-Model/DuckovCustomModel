@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.Core.Ik;
 using DuckovCustomModel.MonoBehaviours;
 using UnityEngine;
 using UniVRM10;
@@ -10,6 +11,9 @@ namespace DuckovCustomModel.Integrations.Vrm
     [DefaultExecutionOrder(10900)]
     internal sealed class VrmCharacterRuntime : MonoBehaviour
     {
+        private static readonly Plane[] CameraPlanes = new Plane[6];
+        private static Camera? _visibilityCamera;
+        private static int _visibilityFrame = -1;
         private readonly List<(Transform socket, Transform original)> _socketRotations = [];
         private Animator? _animator;
         private ModelHandler? _handler;
@@ -19,7 +23,6 @@ namespace DuckovCustomModel.Integrations.Vrm
         private float _invisibleSince;
         private Vector3 _previousPosition;
         private Renderer[] _renderers = [];
-        private float _rollPhase;
         private VrmModelSettings _settings = new();
         private bool _springSuspended, _initialized, _registered;
         internal bool OriginalAutoSyncRightHandRotation { get; private set; }
@@ -31,33 +34,9 @@ namespace DuckovCustomModel.Integrations.Vrm
             if (_animator == null || _handler?.CharacterMainControl == null ||
                 !string.IsNullOrWhiteSpace(_settings.AnimatorControllerPath)) return;
             var character = _handler.CharacterMainControl;
-            var movement = character.movementControl;
-            var velocity = character.Velocity;
-            var speed = new Vector2(velocity.x, velocity.z).magnitude;
-            var moveSpeed = character.AnimationMoveSpeedValue;
-            if (movement != null && movement.walkSpeed > .0001f)
-                moveSpeed = movement.Running && speed > movement.walkSpeed
-                    ? 1 + Mathf.InverseLerp(movement.walkSpeed, movement.runSpeed, speed)
-                    : Mathf.Clamp01(speed / movement.walkSpeed);
-            _animator.SetFloat(CustomAnimatorHash.MoveSpeed,
-                float.IsNaN(moveSpeed) || float.IsInfinity(moveSpeed) ? 0 : Mathf.Clamp(moveSpeed, 0, 2));
-            var dash = _handler.CharacterMainControl.CurrentAction as CA_Dash;
-            var rolling = dash is { Running: true };
-            if (rolling)
-            {
-                var progress = dash!.GetProgress();
-                _rollPhase = progress.total > 0 ? Mathf.Clamp01(progress.current / progress.total) : 0;
-            }
-
-            _animator.SetBool("RollPose", rolling);
-            _animator.SetFloat("RollProgress", _rollPhase);
-            _animator.SetBool("Dashing", rolling);
-            var control = _handler.CustomAnimatorControl;
+            var rolling = character.CurrentAction is CA_Dash { Running: true };
             var heldGun = character.CurrentHoldItemAgent as ItemAgent_Gun;
             var holdingGun = heldGun != null && heldGun.isActiveAndEnabled;
-            _animator.SetFloat("AttackProgress", control is { Attacking: true, AttackTime: > 0 }
-                ? Mathf.Clamp01(control.AttackTimer / control.AttackTime)
-                : 0);
             if (_holdingLayer >= 0)
             {
                 var holding = !rolling && (holdingGun || character.carryAction.Running ||
@@ -77,15 +56,7 @@ namespace DuckovCustomModel.Integrations.Vrm
         private void LateUpdate()
         {
             if (_instance == null || _handler?.CharacterMainControl == null) return;
-            var visible = false;
-            foreach (var renderer in _renderers)
-                if (renderer != null && renderer.isVisible)
-                {
-                    visible = true;
-                    break;
-                }
-
-            if (visible)
+            if (IsVisible())
             {
                 _invisibleSince = Time.unscaledTime;
             }
@@ -100,7 +71,7 @@ namespace DuckovCustomModel.Integrations.Vrm
             if ((transform.position - _previousPosition).sqrMagnitude > 64)
                 _instance.Runtime.SpringBone.RestoreInitialTransform();
             _previousPosition = transform.position;
-            if (_ik is not { IsControllingHands: true } &&
+            if (!_handler.IsExternalMotionPlaying && _ik is not { IsControllingHands: true } &&
                 (_handler.CustomAnimatorControl is not { Attacking: true } ||
                  _handler.CustomAnimatorControl.GunAgent != null) &&
                 _handler.CharacterMainControl.CurrentAction is not CA_Attack { Running: true } &&
@@ -111,6 +82,28 @@ namespace DuckovCustomModel.Integrations.Vrm
                             1 - Mathf.Exp(-25 * Time.deltaTime));
             _instance.Runtime.SpringBone.SetModelLevel(transform, new(supportsScalingAtRuntime: true));
             _instance.Runtime.Process();
+        }
+
+        private bool IsVisible()
+        {
+            if (_handler?.CharacterMainControl == CharacterMainControl.Main) return true;
+            if (_visibilityFrame != Time.frameCount)
+            {
+                _visibilityFrame = Time.frameCount;
+                _visibilityCamera = Camera.main;
+                if (_visibilityCamera != null)
+                    GeometryUtility.CalculateFrustumPlanes(_visibilityCamera, CameraPlanes);
+            }
+
+            foreach (var renderer in _renderers)
+            {
+                if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy) continue;
+                if (renderer.isVisible || _visibilityCamera != null && _visibilityCamera.isActiveAndEnabled &&
+                    (_visibilityCamera.cullingMask & (1 << renderer.gameObject.layer)) != 0 &&
+                    GeometryUtility.TestPlanesAABB(CameraPlanes, renderer.bounds)) return true;
+            }
+
+            return false;
         }
 
         private void OnEnable()
@@ -129,6 +122,7 @@ namespace DuckovCustomModel.Integrations.Vrm
             }
 
             VrmRenderPipeline.Register();
+            VrmTransparentDepthFeature.Register(_renderers);
             _registered = true;
             _previousPosition = transform.position;
             _invisibleSince = Time.unscaledTime;
@@ -143,7 +137,11 @@ namespace DuckovCustomModel.Integrations.Vrm
 
         private void OnDisable()
         {
-            if (_registered) VrmRenderPipeline.Unregister();
+            if (_registered)
+            {
+                VrmTransparentDepthFeature.Unregister(_renderers);
+                VrmRenderPipeline.Unregister();
+            }
             _registered = false;
             if (!_initialized || _instance == null) return;
             SuspendSpring();
@@ -230,51 +228,22 @@ namespace DuckovCustomModel.Integrations.Vrm
         private Dictionary<HumanBodyBones, Quaternion> GetHandRotations(Animator animator)
         {
             var rotations = new Dictionary<HumanBodyBones, Quaternion>();
-            if (!string.IsNullOrWhiteSpace(_settings.AnimatorControllerPath)) return rotations;
-            AnimationClip? pose = null;
-            foreach (var clip in animator.runtimeAnimatorController.animationClips)
-                if (clip.name == "Pistol_Idle_Loop")
-                {
-                    pose = clip;
-                    break;
-                }
-
-            if (pose == null) return rotations;
-            var bones = GetComponentsInChildren<Transform>(true);
-            var original = new (Vector3 position, Quaternion rotation, Vector3 scale)[bones.Length];
-            for (var i = 0; i < bones.Length; i++)
-                original[i] = (bones[i].localPosition, bones[i].localRotation, bones[i].localScale);
-            try
-            {
-                pose.SampleAnimation(gameObject, 0);
-                foreach (var bone in new[] { HumanBodyBones.LeftHand, HumanBodyBones.RightHand })
-                    if (animator.GetBoneTransform(bone) is { } hand)
-                        rotations[bone] = Quaternion.Inverse(hand.rotation) * transform.rotation;
-            }
-            finally
-            {
-                for (var i = 0; i < bones.Length; i++)
-                {
-                    bones[i].localPosition = original[i].position;
-                    bones[i].localRotation = original[i].rotation;
-                    bones[i].localScale = original[i].scale;
-                }
-            }
-
+            if (HumanoidHandFrame.TryGetLocalRotation(animator, false, out var right))
+                rotations[HumanBodyBones.RightHand] = right;
+            if (HumanoidHandFrame.TryGetLocalRotation(animator, true, out var left))
+                rotations[HumanBodyBones.LeftHand] = left;
             return rotations;
         }
 
         private void SuspendSpring()
         {
             if (_springSuspended || _instance == null) return;
-            _instance.Runtime.SpringBone.Dispose();
             _springSuspended = true;
         }
 
         private void ResumeSpring()
         {
             if (!_springSuspended || _instance == null) return;
-            _instance.Runtime.SpringBone.ReconstructSpringBone();
             _instance.Runtime.SpringBone.RestoreInitialTransform();
             _springSuspended = false;
         }

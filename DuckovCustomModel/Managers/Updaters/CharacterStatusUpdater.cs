@@ -73,8 +73,8 @@ namespace DuckovCustomModel.Managers.Updaters
                 control.SetParameterFloat(CustomAnimatorHash.WaterRate, 1.0f);
             }
 
-            var totalWeight = character.CharacterItem.TotalWeight;
-            if (character.carryAction.Running)
+            var totalWeight = character.CharacterItem != null ? character.CharacterItem.TotalWeight : 0f;
+            if (character.carryAction != null && character.carryAction.Running)
                 totalWeight += character.carryAction.GetWeight();
 
             var maxWeight = character.MaxWeight;
@@ -84,10 +84,10 @@ namespace DuckovCustomModel.Managers.Updaters
             control.SetParameterFloat(CustomAnimatorHash.WeightRate, weightRate);
 
             int weightState;
-            if (!LevelManager.Instance.IsRaidMap)
+            if (LevelManager.Instance == null || !LevelManager.Instance.IsRaidMap)
                 weightState = (int)CharacterMainControl.WeightStates.normal;
             else
-                weightState = totalWeight switch
+                weightState = weightRate switch
                 {
                     > 1 => (int)CharacterMainControl.WeightStates.overWeight,
                     > 0.75f => (int)CharacterMainControl.WeightStates.superHeavy,
@@ -117,7 +117,7 @@ namespace DuckovCustomModel.Managers.Updaters
             control.SetParameterInteger(CustomAnimatorHash.RidingVehicleType,
                 control.CharacterMainControl.ridingVehicleType);
 
-            var currentControlling = LevelManager.Instance.ControllingCharacter;
+            var currentControlling = LevelManager.Instance != null ? LevelManager.Instance.ControllingCharacter : null;
             var isCurrentlyControlling =
                 currentControlling != null && currentControlling == control.CharacterMainControl;
             control.SetParameterBool(CustomAnimatorHash.IsPlayerControlling, isCurrentlyControlling);

@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Duckov;
+using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.MonoBehaviours;
+using DuckovCustomModel.Utils;
 using ItemStatsSystem;
 using ModelRuntime;
 using ModelRuntime.Adapters;
@@ -31,6 +34,7 @@ namespace DuckovCustomModel.Integrations.Ysm
             CreateOptionalBooleanGetter("onlyAimForward");
 
         private readonly Vector3 aimOriginLocal;
+        private readonly CustomAnimatorControl? animatorControl;
         private readonly Transform body;
         private readonly CharacterMainControl character;
         private readonly ModelDocument? document;
@@ -70,6 +74,7 @@ namespace DuckovCustomModel.Integrations.Ysm
                 : throw new ArgumentNullException(nameof(originalModel));
             this.profile = profile ?? throw new ArgumentNullException(nameof(profile));
             this.document = document;
+            animatorControl = character.GetComponent<CustomAnimatorControl>();
             body = character.modelRoot != null ? character.modelRoot : character.transform;
             aimOriginLocal = body.InverseTransformPoint(originalAimSocket != null
                 ? originalAimSocket.position
@@ -192,6 +197,18 @@ namespace DuckovCustomModel.Integrations.Ysm
             destination.Queries["query.duckov_ads"] = new(character.IsInAdsInput);
             destination.Queries["query.duckov_ads_value"] = character.AdsValue;
             destination.Queries["query.duckov_dashing"] = new(character.Dashing);
+            destination.Queries["query.duckov_locomotion_x"] =
+                animatorControl != null ? animatorControl.GetParameterFloat(CustomAnimatorHash.LocomotionX) : 0;
+            destination.Queries["query.duckov_locomotion_y"] =
+                animatorControl != null ? animatorControl.GetParameterFloat(CustomAnimatorHash.LocomotionY) : 0;
+            destination.Queries["query.duckov_locomotion_rate"] =
+                animatorControl != null ? animatorControl.GetParameterFloat(CustomAnimatorHash.LocomotionRate) : 1;
+            destination.Queries["query.duckov_roll_pose"] =
+                new(animatorControl != null && animatorControl.GetParameterBool(CustomAnimatorHash.RollPose));
+            destination.Queries["query.duckov_roll_progress"] =
+                animatorControl != null ? animatorControl.GetParameterFloat(CustomAnimatorHash.RollProgress) : 0;
+            destination.Queries["query.duckov_attack_progress"] =
+                animatorControl != null ? animatorControl.GetParameterFloat(CustomAnimatorHash.AttackProgress) : 0;
             destination.Queries["query.duckov_energy"] = character.CurrentEnergy;
             destination.Queries["query.duckov_max_energy"] = character.MaxEnergy;
             destination.Queries["query.duckov_water"] = character.CurrentWater;
@@ -260,7 +277,7 @@ namespace DuckovCustomModel.Integrations.Ysm
                 ? body.InverseTransformDirection(inputManager!.WorldMoveInput)
                 : Vector3.zero;
             state.MovementInput = new(localInput.x, localInput.y, localInput.z);
-            state.CancelExtraAnimationInput = playerInputActive && inputManager!.MoveAxisInput.sqrMagnitude > .0004f;
+            state.CancelExtraAnimationInput = RadialActionInput.MovementRequested(character);
             state.Queries["ysm.input_horizontal"] = localInput.x;
             state.Queries["ysm.input_vertical"] = localInput.z;
             state.Queries["query.duckov_move_x"] = input.x;

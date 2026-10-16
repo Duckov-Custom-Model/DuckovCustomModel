@@ -19,11 +19,11 @@ namespace DuckovCustomModel.Managers.Updaters
             if (holdAgent != null && holdAgent.isActiveAndEnabled)
                 handState = (int)holdAgent.handAnimationType;
 
-            if (control.CharacterMainControl.carryAction.Running)
+            if (control.CharacterMainControl.carryAction != null && control.CharacterMainControl.carryAction.Running)
                 handState = -1;
 
             if (holdAgent == null || !holdAgent.gameObject.activeSelf ||
-                control.CharacterMainControl.reloadAction.Running)
+                control.CharacterMainControl.reloadAction != null && control.CharacterMainControl.reloadAction.Running)
                 rightHandOut = false;
 
             control.SetParameterInteger(CustomAnimatorHash.HandState, handState);

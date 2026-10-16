@@ -115,8 +115,8 @@
   "RadialStop": "Durdur",
   "RadialBack": "Geri",
   "RadialHint": "Esc kapatır · tıklama seçer · solda tekerlek: sayfalar · ayarlarda tekerlek: kaydırma",
-  "RadialHintStop": " · orta: eylemi durdur",
+  "RadialHintStop": " · merkez: sol kilitle / sağ durdur",
   "RadialUnavailable": "Bu ayar kullanılamıyor",
-  "RadialResetConfig": "Bu modelin ayarlarını sıfırla"
+  "RadialResetConfig": "Bu modelin ayarlarını sıfırla",
+  "ExternalMotions": "Harici hareketler"
 }
-

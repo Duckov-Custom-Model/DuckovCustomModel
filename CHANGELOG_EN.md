@@ -2,6 +2,26 @@
 
 English | [中文](CHANGELOG.md)
 
+## v2.2.0
+
+### Added and improved
+
+- Configure Prefab spring-bone chains and sphere/capsule colliders in the SDK, with animation and movement previews and pose restoration.
+- Switch the language across SDK windows and inspectors, with English by default and Simplified Chinese available.
+- Show a lightweight loading indicator while loading models and temporarily block the relevant settings; restore the display and controls on completion, cancellation or failure.
+- Play VMD/VRMA external motions on Humanoid models from the wheel with synchronized accompanying audio, looping, speed, audio offsets and interruption; use the wheel lock to control cancellation on movement and reuse shared motions across models.
+- Update built-in VRM locomotion with left/right strafing, backward movement and diagonal blending to better match movement direction.
+- Add smoothed movement direction, cadence, roll and attack progress parameters for Prefab/VRM controllers and YSM expressions.
+- Consolidate model usage and configuration instructions, documenting shared wheel controls, equipment sockets, height and equipment size together while clarifying format-specific settings.
+
+### Fixed
+
+- Fix VRM hair, ears and other transparent parts disappearing or becoming unexpectedly translucent against the sky during raids.
+- Prevent wheel-closing clicks from firing weapons.
+- Correct default VRM hand sockets so held items follow the hand during motions when IK yields control.
+- Fix spring bones not working on some VRM models, pulling abnormally after height changes or stopping after pausing, resuming or switching models.
+- Correct shared parameter initialization, loaded state after unequipping guns and weight-state calculation.
+
 ## v2.1.2
 
 ### Fixes and improvements

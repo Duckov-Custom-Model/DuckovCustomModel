@@ -146,6 +146,7 @@ namespace DuckovCustomModel.Localizations
             { "ScrollToTop", "↑ Top" },
             { "ScrollToBottom", "Bottom ↓" },
             { "RadialModel", "Model" },
+            { "ExternalMotions", "External motions" },
             { "RadialLockOn", "Locked" },
             { "RadialLockOff", "Free" },
             { "RadialStop", "Stop" },
@@ -153,7 +154,7 @@ namespace DuckovCustomModel.Localizations
             {
                 "RadialHint", "Esc close · click to select · wheel on left to change page · wheel on settings to scroll"
             },
-            { "RadialHintStop", " · center stops action" },
+            { "RadialHintStop", " · center: left lock / right stop" },
             { "RadialUnavailable", "This setting is unavailable" },
             { "RadialResetConfig", "Reset this model's settings" },
         };
@@ -255,6 +256,7 @@ namespace DuckovCustomModel.Localizations
         public static string CollapseAllBundles => GetText("CollapseAllBundles");
         public static string ScrollToTop => GetText("ScrollToTop");
         public static string ScrollToBottom => GetText("ScrollToBottom");
+        public static string ExternalMotions => GetText("ExternalMotions");
         public static string RadialModel => GetText("RadialModel");
         public static string RadialLockOn => GetText("RadialLockOn");
         public static string RadialLockOff => GetText("RadialLockOff");

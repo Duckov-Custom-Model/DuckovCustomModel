@@ -115,8 +115,8 @@
   "RadialStop": "Parar",
   "RadialBack": "Volver",
   "RadialHint": "Esc cierra · clic selecciona · rueda a la izquierda: páginas · rueda en ajustes: desplazar",
-  "RadialHintStop": " · centro: detener acción",
+  "RadialHintStop": " · centro: izquierda bloquear / derecha detener",
   "RadialUnavailable": "Esta opción no está disponible",
-  "RadialResetConfig": "Restablecer ajustes de este modelo"
+  "RadialResetConfig": "Restablecer ajustes de este modelo",
+  "ExternalMotions": "Animaciones externas"
 }
-

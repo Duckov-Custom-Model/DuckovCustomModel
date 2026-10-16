@@ -59,6 +59,7 @@ namespace DuckovCustomModel.UI.Components
             SaveScrollPosition();
             _currentTarget = targetInfo;
             Refresh();
+            UpdateLoadingOverlay();
         }
 
         public void Refresh()
@@ -99,6 +100,7 @@ namespace DuckovCustomModel.UI.Components
         public void RefreshModelSelection()
         {
             UpdateRuntimeSettingsVisibility();
+            UpdateLoadingOverlay();
         }
 
         private void BuildCharacterModelWarning()
@@ -540,7 +542,7 @@ namespace DuckovCustomModel.UI.Components
 
         private void OnHideEquipmentToggleChanged(bool value)
         {
-            if (_currentTarget == null) return;
+            if (_currentTarget == null || _settingsLoading) return;
 
             var hideEquipmentConfig = ModEntry.HideEquipmentConfig;
             if (hideEquipmentConfig == null) return;
@@ -562,7 +564,7 @@ namespace DuckovCustomModel.UI.Components
 
         private void OnEnableModelAudioToggleChanged(bool value)
         {
-            if (_currentTarget == null) return;
+            if (_currentTarget == null || _settingsLoading) return;
 
             var modelAudioConfig = ModEntry.ModelAudioConfig;
             if (modelAudioConfig == null) return;
@@ -575,7 +577,7 @@ namespace DuckovCustomModel.UI.Components
 
         private void OnEnableIdleAudioToggleChanged(bool value)
         {
-            if (_currentTarget == null) return;
+            if (_currentTarget == null || _settingsLoading) return;
 
             var idleAudioConfig = ModEntry.IdleAudioConfig;
             if (idleAudioConfig == null) return;
@@ -588,7 +590,7 @@ namespace DuckovCustomModel.UI.Components
 
         private void OnIdleAudioMinIntervalChanged(string value)
         {
-            if (_currentTarget == null) return;
+            if (_currentTarget == null || _settingsLoading) return;
 
             var idleAudioConfig = ModEntry.IdleAudioConfig;
             if (idleAudioConfig == null) return;
@@ -605,7 +607,7 @@ namespace DuckovCustomModel.UI.Components
 
         private void OnIdleAudioMaxIntervalChanged(string value)
         {
-            if (_currentTarget == null) return;
+            if (_currentTarget == null || _settingsLoading) return;
 
             var idleAudioConfig = ModEntry.IdleAudioConfig;
             if (idleAudioConfig == null) return;
@@ -623,7 +625,7 @@ namespace DuckovCustomModel.UI.Components
 
         private void OnModelAudioVolumeChanged(float value)
         {
-            if (_currentTarget == null) return;
+            if (_currentTarget == null || _settingsLoading) return;
 
             var modelAudioConfig = ModEntry.ModelAudioConfig;
             if (modelAudioConfig == null) return;
@@ -636,7 +638,7 @@ namespace DuckovCustomModel.UI.Components
 
         private void OnModelHeightChanged(float value)
         {
-            if (_currentTarget == null) return;
+            if (_currentTarget == null || _settingsLoading) return;
 
             var targetTypeId = _currentTarget.GetTargetTypeId();
             var usingModel = ModEntry.UsingModel;
@@ -652,7 +654,7 @@ namespace DuckovCustomModel.UI.Components
 
         private void OnResetHeightClicked()
         {
-            if (_currentTarget == null) return;
+            if (_currentTarget == null || _settingsLoading) return;
 
             var targetTypeId = _currentTarget.GetTargetTypeId();
             var usingModel = ModEntry.UsingModel;
@@ -671,7 +673,7 @@ namespace DuckovCustomModel.UI.Components
 
         private void OnClearRuntimeDataClicked()
         {
-            if (_currentTarget == null) return;
+            if (_currentTarget == null || _settingsLoading) return;
 
             var targetTypeId = _currentTarget.GetTargetTypeId();
             var usingModel = ModEntry.UsingModel;

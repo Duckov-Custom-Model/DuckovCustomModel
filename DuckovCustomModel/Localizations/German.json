@@ -115,8 +115,8 @@
   "RadialStop": "Stopp",
   "RadialBack": "Zurück",
   "RadialHint": "Esc schließen · klicken zum Auswählen · Mausrad links: Seiten · Mausrad bei Einstellungen: scrollen",
-  "RadialHintStop": " · Mitte: Aktion stoppen",
+  "RadialHintStop": " · Mitte: links sperren / rechts stoppen",
   "RadialUnavailable": "Diese Einstellung ist nicht verfügbar",
-  "RadialResetConfig": "Einstellungen dieses Modells zurücksetzen"
+  "RadialResetConfig": "Einstellungen dieses Modells zurücksetzen",
+  "ExternalMotions": "Externe Animationen"
 }
-

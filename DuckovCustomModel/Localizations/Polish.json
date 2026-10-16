@@ -115,8 +115,8 @@
   "RadialStop": "Stop",
   "RadialBack": "Wstecz",
   "RadialHint": "Esc zamyka · kliknięcie wybiera · kółko po lewej: strony · kółko w ustawieniach: przewijanie",
-  "RadialHintStop": " · środek: zatrzymaj akcję",
+  "RadialHintStop": " · środek: lewy blokuje / prawy zatrzymuje",
   "RadialUnavailable": "Ta opcja jest niedostępna",
-  "RadialResetConfig": "Zresetuj ustawienia tego modelu"
+  "RadialResetConfig": "Zresetuj ustawienia tego modelu",
+  "ExternalMotions": "Animacje zewnętrzne"
 }
-

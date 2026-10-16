@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using Duckov.Buffs;
 using DuckovCustomModel.Core.Data;
@@ -20,6 +20,7 @@ namespace DuckovCustomModel.MonoBehaviours
         private readonly HashSet<int> _validBoolParamHashes = [];
         private readonly HashSet<int> _validFloatParamHashes = [];
         private readonly HashSet<int> _validIntParamHashes = [];
+        private readonly HashSet<int> _validTriggerParamHashes = [];
 
         private int _attackLayerIndex = -1;
         private Animator? _customAnimator;
@@ -115,6 +116,8 @@ namespace DuckovCustomModel.MonoBehaviours
                 }
             }
 
+            Initialized = false;
+            EmotionParameterManager.OnEmotionParametersChanged -= OnEmotionParametersChanged;
             ModelHandler = modelHandler;
             CharacterMainControl = modelHandler.CharacterMainControl;
             CharacterModel = modelHandler.OriginalCharacterModel;
@@ -137,6 +140,8 @@ namespace DuckovCustomModel.MonoBehaviours
                 EmotionParameterManager.OnEmotionParametersChanged += OnEmotionParametersChanged;
 
             OnHoldAgentChanged(CharacterMainControl.CurrentHoldItemAgent);
+            AnimatorParameterUpdaterManager.UpdateAll(this);
+            UpdateBuffParams();
         }
 
         private void OnEmotionParametersChanged(int value1, int value2)
@@ -160,6 +165,7 @@ namespace DuckovCustomModel.MonoBehaviours
             AnimatorParameterUpdaterManager.Register(new HandTypeIDUpdater());
             AnimatorParameterUpdaterManager.Register(new GunStateUpdater());
             AnimatorParameterUpdaterManager.Register(new AttackLayerWeightUpdater());
+            AnimatorParameterUpdaterManager.Register(new AnimationMotionUpdater());
             AnimatorParameterUpdaterManager.Register(new ActionStateUpdater());
             AnimatorParameterUpdaterManager.Register(new ActionTypeUpdater());
             AnimatorParameterUpdaterManager.Register(new TimeAndWeatherUpdater());
@@ -206,6 +212,7 @@ namespace DuckovCustomModel.MonoBehaviours
         {
             _validBoolParamHashes.Clear();
             _validIntParamHashes.Clear();
+            _validTriggerParamHashes.Clear();
             _validFloatParamHashes.Clear();
 
             if (_customAnimator == null) return;
@@ -221,6 +228,9 @@ namespace DuckovCustomModel.MonoBehaviours
                         break;
                     case AnimatorControllerParameterType.Float:
                         _validFloatParamHashes.Add(param.nameHash);
+                        break;
+                    case AnimatorControllerParameterType.Trigger:
+                        _validTriggerParamHashes.Add(param.nameHash);
                         break;
                 }
         }
@@ -248,7 +258,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
         private void SetAnimatorTrigger(int hash)
         {
-            if (_customAnimator != null)
+            if (_customAnimator != null && _validTriggerParamHashes.Contains(hash))
                 _customAnimator.SetTrigger(hash);
         }
 
@@ -313,6 +323,7 @@ namespace DuckovCustomModel.MonoBehaviours
 
             HoldAgent = agent;
             GunAgent = agent as ItemAgent_Gun;
+            SetAnimatorBool(CustomAnimatorHash.Loaded, GunAgent != null && GunAgent.BulletCount > 0);
 
             if (GunAgent == null) return;
             GunAgent.OnShootEvent += OnShoot;

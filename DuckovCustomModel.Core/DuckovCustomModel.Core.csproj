@@ -32,4 +32,9 @@
 		</Reference>
 	</ItemGroup>
 
+	<ItemGroup>
+		<EmbeddedResource Include="Animations\ShiftJis.bin" />
+		<Reference Include="SpringBoneJobs"><HintPath>$(MSBuildProjectDirectory)\..\lib\SpringBoneJobs.dll</HintPath></Reference>
+	</ItemGroup>
+
 </Project>

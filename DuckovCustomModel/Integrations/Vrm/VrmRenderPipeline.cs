@@ -74,6 +74,7 @@ namespace DuckovCustomModel.Integrations.Vrm
                     feature.Create();
                     features.Add(feature);
                 }
+
             }
             catch (Exception ex)
             {
@@ -86,6 +87,22 @@ namespace DuckovCustomModel.Integrations.Vrm
 
                 owned.Clear();
                 ModLogger.LogWarning("VRM outline pass could not be initialized: " + ex.Message);
+            }
+
+            var depth = ScriptableObject.CreateInstance<VrmTransparentDepthFeature>();
+            try
+            {
+                depth.name = "DCM VRM Transparent Depth";
+                depth.Create();
+                depth.Initialize(renderer);
+                features.Add(depth);
+                owned.Add(depth);
+            }
+            catch (Exception ex)
+            {
+                depth.Dispose();
+                Object.Destroy(depth);
+                ModLogger.LogWarning("VRM transparent depth pass could not be initialized: " + ex.Message);
             }
         }
 

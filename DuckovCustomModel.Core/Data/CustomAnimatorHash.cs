@@ -24,6 +24,12 @@ namespace DuckovCustomModel.Core.Data
         public static readonly int MoveSpeed = Animator.StringToHash("MoveSpeed"); // float
         public static readonly int MoveDirX = Animator.StringToHash("MoveDirX"); // float
         public static readonly int MoveDirY = Animator.StringToHash("MoveDirY"); // float
+        public static readonly int LocomotionX = Animator.StringToHash("LocomotionX"); // float
+        public static readonly int LocomotionY = Animator.StringToHash("LocomotionY"); // float
+        public static readonly int LocomotionRate = Animator.StringToHash("LocomotionRate"); // float
+        public static readonly int RollPose = Animator.StringToHash("RollPose"); // bool
+        public static readonly int RollProgress = Animator.StringToHash("RollProgress"); // float
+        public static readonly int AttackProgress = Animator.StringToHash("AttackProgress"); // float
         public static readonly int IsMoving = Animator.StringToHash("Moving"); // bool
         public static readonly int IsRunning = Animator.StringToHash("Running"); // bool
         public static readonly int Dashing = Animator.StringToHash("Dashing"); // bool
@@ -141,6 +147,12 @@ namespace DuckovCustomModel.Core.Data
                 new() { Name = "Grounded", Hash = Grounded, Type = "bool", InitialValue = false },
                 new() { Name = "Die", Hash = Die, Type = "bool", InitialValue = false },
                 new() { Name = "MoveSpeed", Hash = MoveSpeed, Type = "float", InitialValue = 0f },
+                new() { Name = "LocomotionX", Hash = LocomotionX, Type = "float", InitialValue = 0f },
+                new() { Name = "LocomotionY", Hash = LocomotionY, Type = "float", InitialValue = 0f },
+                new() { Name = "LocomotionRate", Hash = LocomotionRate, Type = "float", InitialValue = 1f },
+                new() { Name = "RollPose", Hash = RollPose, Type = "bool", InitialValue = false },
+                new() { Name = "RollProgress", Hash = RollProgress, Type = "float", InitialValue = 0f },
+                new() { Name = "AttackProgress", Hash = AttackProgress, Type = "float", InitialValue = 0f },
                 new() { Name = "MoveDirX", Hash = MoveDirX, Type = "float", InitialValue = 0f },
                 new() { Name = "MoveDirY", Hash = MoveDirY, Type = "float", InitialValue = 0f },
                 new() { Name = "Moving", Hash = IsMoving, Type = "bool", InitialValue = false },

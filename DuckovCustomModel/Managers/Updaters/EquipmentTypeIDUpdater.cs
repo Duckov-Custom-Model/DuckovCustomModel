@@ -10,12 +10,14 @@ namespace DuckovCustomModel.Managers.Updaters
             if (!control.Initialized || control.CharacterMainControl == null || control.CharacterModel == null)
                 return;
 
-            var characterItemSlots = control.CharacterMainControl.CharacterItem.Slots;
-            var armorSlot = characterItemSlots.GetSlot(CharacterEquipmentController.armorHash);
-            var helmetSlot = characterItemSlots.GetSlot(CharacterEquipmentController.helmatHash);
-            var faceSlot = characterItemSlots.GetSlot(CharacterEquipmentController.faceMaskHash);
-            var backpackSlot = characterItemSlots.GetSlot(CharacterEquipmentController.backpackHash);
-            var headsetSlot = characterItemSlots.GetSlot(CharacterEquipmentController.headsetHash);
+            var characterItemSlots = control.CharacterMainControl.CharacterItem != null
+                ? control.CharacterMainControl.CharacterItem.Slots
+                : null;
+            var armorSlot = characterItemSlots?.GetSlot(CharacterEquipmentController.armorHash);
+            var helmetSlot = characterItemSlots?.GetSlot(CharacterEquipmentController.helmatHash);
+            var faceSlot = characterItemSlots?.GetSlot(CharacterEquipmentController.faceMaskHash);
+            var backpackSlot = characterItemSlots?.GetSlot(CharacterEquipmentController.backpackHash);
+            var headsetSlot = characterItemSlots?.GetSlot(CharacterEquipmentController.headsetHash);
 
             var armorTypeID = armorSlot?.Content != null ? armorSlot.Content.TypeID : 0;
             var helmetTypeID = helmetSlot?.Content != null ? helmetSlot.Content.TypeID : 0;
