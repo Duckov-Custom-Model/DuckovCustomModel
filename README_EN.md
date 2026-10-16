@@ -41,6 +41,7 @@ UI interface related configuration.
 {
   "ToggleKey": "Backslash",
   "AnimatorParamsToggleKey": "None",
+  "YsmRadialMenuKey": "Z",
   "EmotionModifierKey1": "Comma",
   "EmotionModifierKey2": "Period",
   "ShowDCMButton": true,
@@ -56,6 +57,7 @@ UI interface related configuration.
   - Users need to actively set it in the settings interface
   - Supported key values can refer to Unity KeyCode enum
   - When set to `None`, the hotkey feature will be disabled
+- `YsmRadialMenuKey`: Shared wheel toggle key for Prefab, VRM and YSM (default `Z`); the existing configuration field name is retained.
 - `EmotionModifierKey1`: Emotion shortcut modifier key 1 (default: `Comma`, i.e., comma key `,`)
   - Used for emotion shortcut functionality, hold this key + F1-F8 to set `EmotionValue1` parameter (value 0-7)
   - Supported key values can refer to Unity KeyCode enum
@@ -260,9 +262,9 @@ Model audio toggle configuration. **⚠️ Upgraded to v2, old format is obsolet
   - Player key press triggered audio (`"normal"` tag)
   - AI automatically triggered audio (`"normal"`, `"surprise"`, `"death"` tags)
   - Idle audio (`"idle"` tag)
-- This configuration is independent from the `EnableIdleAudio` configuration in `IdleAudioConfig.json`:
+- This configuration is independent from the `TargetTypeEnableIdleAudio` configuration in `IdleAudioConfig.json`:
   - `ModelAudioConfig.json` controls whether to use model audio (master switch)
-  - `EnableIdleAudio` in `IdleAudioConfig.json` controls whether to allow automatic playback of idle audio (only affects automatic playback of idle audio)
+  - `TargetTypeEnableIdleAudio` in `IdleAudioConfig.json` controls whether to allow automatic playback of idle audio (only affects automatic playback of idle audio)
   - If model audio is disabled in `ModelAudioConfig.json`, idle audio will not play even if `EnableIdleAudio` is `true`
     - If `"*"` is also not configured, default value will be used (`true`)
   - **Configuration Selection Logic**: Audio settings will select configuration based on the actually used model
@@ -276,9 +278,9 @@ Model audio toggle configuration. **⚠️ Upgraded to v2, old format is obsolet
   - Player key press triggered audio (`"normal"` tag)
   - AI automatic triggered audio (`"normal"`, `"surprise"`, `"death"` tags)
   - Idle audio (`"idle"` tag)
-- This configuration is independent from the `EnableIdleAudio` configuration in `IdleAudioConfig.json`:
+- This configuration is independent from the `TargetTypeEnableIdleAudio` configuration in `IdleAudioConfig.json`:
   - `ModelAudioConfig.json` controls whether to use model audio (master switch)
-  - `EnableIdleAudio` in `IdleAudioConfig.json` controls whether to allow automatic playback of idle audio (only affects automatic playback of idle audio)
+  - `TargetTypeEnableIdleAudio` in `IdleAudioConfig.json` controls whether to allow automatic playback of idle audio (only affects automatic playback of idle audio)
   - If model audio is disabled in `ModelAudioConfig.json`, idle audio will not play even if `EnableIdleAudio` is `true`
 
 ## Model Selection Interface
@@ -291,7 +293,7 @@ The model selection interface provides the following features:
 - **Model Selection**: Click the model button to apply the model to all objects of that target type
 - **Model Information**: Each model card displays the model name, ID, author, version, and the Bundle name it belongs to
 - **AI Character Selection**: When selecting "AI Character" target type, first select a specific AI character, then select a model for that character
-  - **Settings Options**: In the settings tab, you can configure the following options:
+- **Settings Options**: In the settings tab, you can configure the following options:
   - **Hotkey**: Configure the hotkey to open/close the model selection interface
     - Can be set by clicking the button in the settings interface
   - **Animator Parameters Hotkey**: Configure the hotkey to open/close the animator parameters window
@@ -337,8 +339,8 @@ The model selection interface provides the following features:
       - Supports dragging window edges to resize the window
       - Window size has a minimum limit (400x300 pixels)
   - **Emotion Shortcut Modifier Keys**: Configure two modifier keys for the emotion shortcut functionality
-    - Modifier key 1 (default: Left Shift): Hold this key + F1-F8 to set `EmotionValue1` parameter (value 0-7)
-    - Modifier key 2 (default: Right Shift): Hold this key + F1-F8 to set `EmotionValue2` parameter (value 0-7)
+    - Modifier key 1 (default: comma `,`): Hold this key + F1-F8 to set `EmotionValue1` parameter (value 0-7)
+    - Modifier key 2 (default: period `.`): Hold this key + F1-F8 to set `EmotionValue2` parameter (value 0-7)
     - Can be set by clicking the button in the settings interface
     - Operation: Hold the modifier key, then press F1-F8 to set the corresponding emotion parameter value
   - **Hide Original Equipment**: Separate options for "Hide Character Equipment" and "Hide Pet Equipment"
@@ -367,6 +369,12 @@ The model selection interface provides the following features:
   - This option is immediately saved to the configuration file
   - Affects the Animator's `HideOriginalEquipment` parameter value
 
+### Height and Equipment Size
+
+Prefab, VRM and YSM share model adjustment controls. Select a target and model to adjust height where supported. Equipment size controls are grouped by socket in collapsible sections; multipliers range from `0.1` to `5`, with `1` preserving the original size. Multipliers combine with existing model and animation scaling. Individual values or all values can be reset.
+
+Values are saved per target type and model in the configuration directory's `RuntimeData` and restored on subsequent use. Select a specific AI for these per-model runtime settings; “All AI” does not save them. Changing the model ID uses a different set of saved values.
+
 ### Opening the Model Selection Interface
 
 - Default key: `\` (backslash key)
@@ -378,15 +386,119 @@ The model selection interface provides the following features:
   - Button position supports 9 anchor positions (top-left, top-center, top-right, middle-left, middle-center, middle-right, bottom-left, bottom-center, bottom-right) and custom offset values
   - Configuration changes will be immediately applied to the button position without restarting the game
 
+### Action Wheel
+
+Prefab, VRM and YSM use the same wheel controls. Humanoid models can also use [external motions](#external-motions-and-audio). The model must provide valid menus and actions: Prefab/VRM use [RadialMenus settings](#action-wheel-for-prefab-and-vrm-models), while YSM loads its built-in menus.
+
+- Press **Z** to open or close the wheel (rebindable in settings); **Esc** closes it.
+- Each page shows eight entries. Scroll to change pages, select an action to execute it, select a category to enter a submenu, or select Back to return.
+- The inner configuration entry opens the corresponding form with toggles, numeric values or choices. Form values save automatically.
+- Left-click the center to toggle action locking, including during playback. Unlocked actions return to normal animation on movement input; locked actions continue while the character moves.
+- Right-click the center to stop the current additional action and its accompanying audio.
+- Closing the wheel does not stop an action. Reopening the same model preserves its category and page; changing models resets them.
+
+Action completion, looping and interruption depend on the model: Prefab/VRM use Animator parameters and transitions; YSM follows its built-in action settings.
+
+### External Motions and Audio
+
+Models with a valid Humanoid Animator can play `.vmd` (MMD motion) and `.vrma` directly, including Humanoid Prefabs and VRM, without creating a controller for each motion. YSM and non-Humanoid Prefabs do not currently support these external motions; existing YSM action menus remain available.
+
+Motions can ship with a model without using a fixed directory. Reference them through `Motion` in the model menu's `Actions`, relative to the model file/AssetBundle directory, such as `motions/dance.vmd`. Motions inside the same AssetBundle can be supplied as TextAssets. Model-local files require explicit menu references; the model directory is not automatically scanned.
+
+For reuse across models, place files in `ModConfigs/DuckovCustomModel/Motions`, refresh the model list, then select them under “External motions” in the wheel. This shared directory is scanned automatically, including subfolders. A matching `.ogg`, `.wav` or `.mp3` provides accompanying audio, such as `dance.vmd` and `dance.ogg`. Audio is optional.
+
+An optional `dance.motion.json` beside the motion can override its name and playback settings:
+
+```json
+{
+  "Name": "Dance",
+  "Playback": { "Audio": "dance.ogg", "Loop": true, "AudioOffset": 0, "Volume": 0.8 }
+}
+```
+
+For a model-carried motion, add this action to `Actions` in the model configuration's `RadialMenus`. It can share any menu or submenu with parameter actions. Place the file at `motions/dance.vmd` beside the model, with optional matching audio at `motions/dance.ogg`:
+
+```json
+{
+  "Id": "dance",
+  "Name": "Dance",
+  "Motion": "motions/dance.vmd",
+  "Playback": { "Loop": true }
+}
+```
+
+- `Motion`: Motion path, mutually exclusive with `Parameter`. Model menus check a TextAsset in the same AssetBundle first (import via `.bytes`), then a file relative to the model file/AssetBundle directory, then the shared Motions directory. Paths must remain relative and inside their respective directory.
+- `Playback`: Optional settings with the defaults below.
+- `Playback.Audio`: Audio file path; omitted uses matching audio. Shared-motion sidecars resolve it relative to the motion folder; model menus resolve it relative to the model file/AssetBundle directory. Audio is supplied as an external file.
+- `Playback.Loop`: Default `false`. Motion and audio restart together; selecting the same action replays it from the beginning.
+- `Playback.Speed`: Motion and audio speed multiplier, default `1`, range `0.1`–`5`.
+- `Playback.AudioOffset`: Audio start offset in seconds, default `0`; positive delays audio, negative skips its beginning.
+- `Playback.Volume`: Default `1`, range `0`–`1`, multiplied by the target's model volume and controlled by its model-audio switch.
+- `Playback.SpatialAudio`: Default `true` plays from the character position; `false` uses 2D audio.
+- `Playback.InterruptOnMove`: Default `true` cancels on movement input. The live wheel lock overrides this default; locked actions continue while moving. Knockback and inertial displacement are not movement input. Rolling, melee, item use, aiming, shooting and death still relinquish control.
+- `Playback.BlendIn`, `Playback.BlendOut`: Entry and exit blend durations, both default `0.2` seconds. Stopping restores the normal animation and gun IK.
+- `Playback.InPlace`: Default `true` constrains scene-root displacement. Motion can still move the body within the model; it never drives game-character movement.
+- `Playback.UpperBodyOnly`: Default `false`; enable to override only the upper body.
+- `Playback.PositionScale`: Motion displacement multiplier, default `1`, greater than `0` and at most `100`; base displacement is adapted to humanoid proportions.
+- `Playback.RotationY`: VMD coordinate orientation offset, default `180` degrees. VRMA uses its humanoid coordinates.
+- `Playback.ArmAngle`: VMD initial arm-down angle, default `40` degrees, range `-90`–`90`.
+- `Playback.BoneMappings`: Override VMD bone names with Unity `HumanBodyBones` names, such as `{ "左腕": "LeftUpperArm" }`.
+- `Playback.ExpressionMappings`: Override expression names; VRM uses expressions, Prefab uses BlendShapes, such as `{ "あ": "aa" }`.
+
+Closing the wheel keeps playback running; right-clicking the center ends the action and audio. Both pause with the game and resume together. `ModelHandler.SetRadialActionPaused(bool)` separately pauses or resumes an external action. Model switches, full reload and unloading cancel pending loads and release playback resources.
+
+VMD supports common humanoid/finger bones, Bezier interpolation, expressions and foot-IK switches. Additional MMD bones, inheritance constraints and full PMX physics do not automatically transfer to other rigs; nonstandard motions may need mapping and pose adjustments. Camera and light tracks do not control the game scene. VRMA uses UniVRM humanoid retargeting; the model's existing spring bones continue running.
+
+Motions load on demand and share parsed/imported caches. Refresh detects new or changed files; full reload clears caches. The external-motion path requires no Unity editor, system Japanese codepage or additional Windows native plugin and is designed for the game's supported desktop platforms.
+
 ## Model Installation
 
 Place model bundles at: `<Game Installation Path>/ModConfigs/DuckovCustomModel/Models`
 
 **Note**: If the game installation directory is read-only, the mod will automatically switch the model path to ModConfigs in the parent directory of the game save directory (Windows: `AppData\LocalLow\TeamSoda\Duckov\ModConfigs\DuckovCustomModel\Models`, macOS/Linux: corresponding user data directory). The mod will automatically detect and handle this situation without manual configuration.
 
-Each model bundle should be placed in a separate folder, containing model resource files and configuration information.
+Prefab uses a model bundle folder containing `bundleinfo.json` and an AssetBundle. YSM accepts a single file or a model folder; VRM accepts a `.vrm` file. All formats are scanned from Models and selected through the same interface. Keep the mod's Resources directory installed.
 
-### Model Bundle Structure
+### YSM Models
+
+Place a `.ysm` file or a folder containing `ysm.json` / `main.json` in the Models directory. Optional game bindings use `fox.ysm.duckov.json` beside `fox.ysm`, or inside the `fox` model folder.
+
+- `ModelID`, `Name`, `Author`, `Description`: Override model metadata.
+- `ThumbnailPath`: Relative thumbnail image path.
+- `ModelTarget`: Model target, default `player/main`.
+- `TargetTypes`: Supported targets; defaults to the player and all AI characters.
+- `Scale`: Positive model scale, default `1`.
+- `HeadPitchLimit`, `HeadYawLimit`: Nonnegative head angle limits in degrees, defaults `45` and `85`.
+- `HeadPitchSign`, `HeadYawSign`: Head rotation direction, default `1`; use `-1` to reverse.
+- `LimbSwingScale`: Nonnegative walking swing multiplier, default `1`.
+- `TeleportDistance`: Positive teleport threshold, default `8`.
+- `AttackDurationSeconds`, `HurtDurationSeconds`: Positive state durations, both default `0.3` seconds.
+- `ItemCategories`, `ItemUseAnimations`, `ItemTags`: Dictionaries keyed by game item TypeID; values are a category, use-animation name, or tag array respectively.
+- `FireAnimation`, `ReloadAnimation`, `DashAnimation`: Existing model animation names.
+- `LocatorMappings`: Map game locator names to model locator names.
+- `LocatorOffsets`: Per-locator `Position` and `Rotation` arrays of three numbers.
+- `Ik`: Arm configuration described below; YSM requires explicit bone names or IDs.
+- `ValueCompatibility`, `HandCompatibility`: Defaults `Ysm241` and `Version241`; alternatives `Default` and `Modern` respectively.
+- `BundlePath`: Additional AssetBundle relative to the model directory.
+- `DeathLootBoxPrefabPath`, `DeathLootBoxYsmPath`, `DeathLootBoxAnimation`: Corpse resource paths and optional YSM animation. Prefab takes precedence; YSM paths check the same bundle first, then the model directory, and must stay within Models.
+
+The model's functions, forms and action menus load automatically. See [Action Wheel](#action-wheel) for controls. Independent YSM sidecars accept the fields above, not all general ModelInfo fields such as `RadialMenus` or `CustomSounds`.
+
+Molang reads game movement, health, equipment and item-use states. `ysm.food_level` maps energy to 0–20; world time and date drive `query.time_stamp`, `query.time_of_day`, `query.day_number` and `query.moon_phase`. Preview contexts use preview state when no world clock is available. YSM uses Molang rather than Animator parameters.
+
+### VRM Models
+
+Place a `.vrm` file in Models. VRM 0.x and 1.0 are supported. Optional settings go in `fox.vrm.duckov.json` beside `fox.vrm`; this accepts general model settings such as metadata, targets, sounds, Buff parameters, radial menus and `Ik`.
+
+- `BundlePath`: AssetBundle path relative to the VRM directory, optional when no external bundle resources are needed.
+- `Vrm.AnimatorControllerPath`: Animator Controller or Animator Override Controller resource path within that bundle. Empty uses the built-in controller. Import animations as Humanoid and bundle their dependencies; loose FBX or controller files cannot be loaded directly.
+- `Vrm.Scale`: Positive scale, default `1`.
+- `Vrm.RotationY`: Y-axis orientation offset in degrees, default `0`.
+- `Vrm.Locators`: Per-locator `Bone` (Humanoid bone name), `Position` and `Rotation` (three-number local offset arrays). Common locators bind automatically when omitted.
+
+See [Animator Configuration](#animator-configuration) for shared parameters and [Gun IK](#gun-ik) for arm adaptation. Root motion does not move the game character.
+
+### AssetBundle Model Bundle Structure
 
 Each model bundle folder should contain the following files:
 
@@ -463,13 +575,7 @@ Model Bundle Folder/
 
 **Models** (Required): Array of model information, can contain multiple models
 
-**BundleName** (required): Model bundle name, used for identification and display
-
-**BundlePath** (required): AssetBundle file path, relative to the model bundle folder
-
-**Models** (required): Model information array, can contain multiple models
-
-**ModelInfo Fields**:
+**ModelInfo Fields** (see [Shared Settings and Resource Paths](#shared-settings-and-resource-paths) for configuration locations):
 
 - `ModelID` (required): Unique identifier for the model, used to reference the model in configuration files
 - `Name` (optional): Name displayed in the interface
@@ -477,7 +583,7 @@ Model Bundle Folder/
 - `Description` (optional): Model description information
 - `Version` (optional): Model version number
 - `ThumbnailPath` (optional): Thumbnail path, external file path relative to the model bundle folder (e.g., `"thumbnail.png"`)
-- `SourceKind` (optional): `AssetBundle` (default) or `Ysm`. For `Ysm`, set `SourcePath` to a `.ysm` file. A `TextAsset` in the same bundle is preferred (import via `.bytes`); otherwise the path is resolved relative to the AssetBundle file directory
+- `SourceKind` (optional): `AssetBundle` (default), `Ysm`, or `Vrm`. For `Ysm` / `Vrm`, set `SourcePath` to a `.ysm` / `.vrm` file. A `TextAsset` in the same bundle is preferred (import via `.bytes`); otherwise the path is resolved relative to the AssetBundle file directory
 - `PrefabPath` (required for Prefab models): Model Prefab resource path inside the AssetBundle (e.g., `"Assets/Model.prefab"`)
 - `DeathLootBoxPrefabPath` (optional): Death loot box Prefab resource path inside the AssetBundle (e.g., `"Assets/DeathLootBox.prefab"`)
 - `DeathLootBoxYsmPath` (optional): Separate `.ysm` file for the death loot box; the same bundle is checked first, then a path relative to the AssetBundle file directory. `DeathLootBoxAnimation` selects an optional display animation. A configured Prefab takes precedence. YSM models can also reference `DeathLootBoxPrefabPath`
@@ -514,7 +620,7 @@ Model Bundle Folder/
 - `SoundTagPlayChance` (optional): Sound tag playback probability configuration
   - Dictionary type, where keys are sound tags (case-insensitive) and values are playback probabilities (0-100)
   - When a sound with this tag is triggered, whether it plays is determined by the configured probability
-  - If not configured or probability is 0, always plays (default behavior)
+  - If not configured, always plays; a probability of 0 disables playback
 - `WalkSoundFrequency` (optional): Footstep trigger frequency per second when walking
   - Used to control the playback frequency of footstep sounds when the character walks
   - If not specified, will automatically use the original character's walk footstep frequency setting
@@ -527,6 +633,7 @@ Model Bundle Folder/
   - Each condition can specify `Id` (Buff ID) or `DisplayNameKey` (Buff display name key), satisfying any one condition is sufficient
   - Example configuration:
     ```json
+    {
     "BuffAnimatorParams": {
       "HasBuff1": [
         { "Id": 123 },
@@ -540,12 +647,55 @@ Model Bundle Folder/
         { "DisplayNameKey": "buff_key_2" }
       ]
     }
+    }
     ```
   - Configured Buff parameters will be displayed in the debug interface, after custom parameters and animator parameters
 
-### Action Wheel for AssetBundle Models
+- `Features` (optional): `NoAutoShaderReplace` preserves shaders; `SkipShowBackMaterial` skips occlusion back-material handling.
+- `Vrm` (optional): VRM settings described above.
+- `Ik` (optional): Gun arm adaptation described below.
+- `RadialMenus` (optional): Prefab/VRM menus, actions and forms; see [wheel configuration](#action-wheel-for-prefab-and-vrm-models).
 
-Add `RadialMenus` to the relevant `Models` entry in the AssetBundle model's `bundleinfo.json`. Each menu can contain actions and nested menus. The Prefab's Animator Controller must contain matching parameters and state transitions. For example:
+### Shared Settings and Resource Paths
+
+Bundled Prefab, YSM and VRM models use the common `ModelInfo` fields in each `Models` entry of `bundleinfo.json`. Standalone VRM uses those fields at the root of `<filename>.vrm.duckov.json`. Standalone YSM uses the dedicated fields listed under [YSM Models](#ysm-models), rather than accepting every ModelInfo field.
+
+A single `Models` array can mix all three formats. Use `SourceKind` and `SourcePath` for YSM/VRM: a `TextAsset` in the same bundle is preferred (import via `.bytes`); otherwise the file is resolved relative to the AssetBundle directory. YSM game-binding sidecars remain external at the corresponding path, such as `Assets/Models/fox.ysm.duckov.json`. Metadata, targets, IK and corpse settings belong in the model entry.
+
+`DeathLootBoxPrefabPath` and `DeathLootBoxYsmPath` are shared death-loot-box replacement settings. Any model format can reference a Prefab or another YSM; Prefab takes precedence when both are specified. Prefabs load from the same bundle; YSM checks the bundle before a relative file. Standalone YSM/VRM can specify an additional resource bundle with `BundlePath`. Standalone YSM relative paths use its model directory and must remain within Models; bundled external resource paths use the AssetBundle directory. `DeathLootBoxAnimation` selects the referenced YSM animation. There is currently no VRM corpse-path field.
+
+### Prefab spring bones
+
+Add `Duckov Custom Model > Spring Bones` to the model root in the SDK. Lock the Inspector, select hair, skirt or accessory root bones, then use “Add Selected Roots” to add them. Chains extend automatically through a single-child hierarchy; specify an end bone when the hierarchy branches. Adjust stiffness, drag, gravity and collision radius per chain.
+
+Add “Spring Bone Collider” components to body bones, select sphere or capsule, then collect them with “Collect Model Colliders”. Scene handles edit their position and size. The optional center makes inertia relative to that transform; it must not be a simulated bone or its descendant.
+
+Preview in a scene or Prefab Mode with an optional animation and movement test. Stopping, saving or entering Play Mode restores the pose. Bundle the Prefab normally; no VRM component or extra JSON is required. Avoid driving the same bones with another physics component.
+
+### Gun IK
+
+Add `"Ik": { "Enabled": true }` to the model settings. Humanoid Prefab/VRM models can resolve arm bones automatically. Other models require explicit arm chains.
+
+- `Enabled`: Default `true` within an explicit IK configuration.
+- `Weight`: Influence from 0 to 1, default `1`.
+- `BlendSpeed`: Positive blending speed, default `12`.
+- `RightHand`, `LeftHand`: Enable each hand, both default `true`.
+- `RightArm`, `LeftArm`: Each contains `UpperArmPath`, `LowerArmPath`, `HandPath`. Use paths relative to the model root for Prefab/VRM, unique bone names or IDs for YSM.
+- `RightHandOffset`: Aim-space offset scaled by arm length, default `[-0.1, -0.25, 0.6]`.
+- `LeftHandSocket`: Gun socket name, default `LeftHand`.
+- `LeftHandOffset`, `LeftHandRotation`: Gun-local position and rotation offsets, both default `[0, 0, 0]`.
+
+When `Ik` is omitted, only VRM models with built-in animation enable IK. Reloading, item use, melee and dashing relinquish arm control.
+
+### Action Wheel for Prefab and VRM Models
+
+Prefab and VRM share `RadialMenus`, supporting multiple menus, nested menus, actions and parameter forms.
+
+- Bundled Prefab/VRM: Add `RadialMenus` to the relevant `Models` entry in `bundleinfo.json`.
+- Standalone VRM: Add `RadialMenus` at the root of `fox.vrm.duckov.json`, alongside `Vrm`.
+- YSM: Menus are read from the model itself; see [YSM Models](#ysm-models).
+
+The active Animator Controller must contain matching parameters and animation transitions. To add custom VRM actions through an Animator Controller, configure a controller containing those actions through `BundlePath` and `Vrm.AnimatorControllerPath`; menu entries alone do not create animations. The following configuration belongs in the model entry or at the root of the VRM settings file:
 
 ```json
 {
@@ -577,19 +727,25 @@ Add `RadialMenus` to the relevant `Models` entry in the AssetBundle model's `bun
 }
 ```
 
-Menus and actions each have an `Id` and `Name`. IDs must be unique within their respective kind. An action's `Parameter` names the Animator parameter. `Mode` can be `Trigger` (default), `Bool`, `Int`, or `Float`. An `Int` or `Float` action writes `Value` to the Animator when selected. Selecting another action or the center Stop button restores the current `Bool`/`Int`/`Float` parameter to its Animator default. Animator transitions control how a `Trigger` action ends and returns. Closing the wheel does not stop an action.
+Menus and actions each have an `Id` and `Name`. IDs must be unique within their respective kind. For parameter actions, `Parameter` names the Animator parameter. `Mode` can be `Trigger` (default), `Bool`, `Int`, or `Float`. An `Int` or `Float` action writes `Value` to the Animator when selected. Selecting another action or right-clicking the wheel center restores the current `Bool`/`Int`/`Float` parameter to its Animator default. Animator transitions control how a `Trigger` action ends and returns. Closing the wheel does not stop an action.
 
 An action can have `Forms` opened from the inner part of its sector. A `Bool` form shows a toggle; an `Int` form shows choices when `Options` is present, otherwise an integer slider constrained by `Min`/`Max`; a `Float` form shows a slider with `Min`/`Max`/`Step`. Form values are saved per target and model and can be reset to Animator defaults from the list.
 
-Do not reuse parameters driven by the mod or listed in `BuffAnimatorParams`. Actions with missing or wrong-type Animator parameters or duplicate `Id`/`Parameter` values are filtered out; empty menus are hidden. Menus can be nested up to five levels. After selecting the model, press **Z** to open the wheel (rebindable in settings). Eight entries appear per page; scroll to change pages, select a menu to enter it, return to the parent menu, or press Esc to close. The wheel does not open without valid actions.
+Do not reuse parameters driven by the mod or listed in `BuffAnimatorParams`. Actions with missing or wrong-type Animator parameters or duplicate `Id`/`Parameter` values are filtered out; empty menus are hidden. Menus can be nested up to five levels. The wheel does not open without valid actions. See [Action Wheel](#action-wheel) for controls.
 
 ## Locator Points
 
-To ensure that equipment (weapons, armor, backpacks, etc.) in the game can be correctly bound to custom models, the model Prefab needs to include corresponding locator point GameObjects.
+All model formats use the same equipment socket names:
 
-### Required Locator Points
+- Prefab: Create named Transforms in the model hierarchy.
+- VRM: Common sockets are created from Humanoid bones; adjust them with `Vrm.Locators`.
+- YSM: Map model locators with `LocatorMappings` and adjust offsets with `LocatorOffsets`.
 
-The model Prefab's child objects need to include Transforms with the following names as locator points:
+The names below identify shared equipment slots. VRM/YSM do not need manually created Prefab GameObjects.
+
+### Common Locator Points
+
+Provide the following sockets as required by the model:
 
 - `LeftHandLocator`: Left hand locator point for binding left hand equipment
 - `RightHandLocator`: Right hand locator point for binding right hand equipment
@@ -603,7 +759,7 @@ The model Prefab's child objects need to include Transforms with the following n
 
 ### Optional Locator Points
 
-In addition to the required locator points, models can also include the following optional locator points:
+Models can also provide these sockets:
 
 - `PaperBoxLocator`: Paper box locator point for binding paper boxes
   - When a custom model includes this locator point, paper boxes spawned in the game will automatically attach to this point
@@ -617,22 +773,36 @@ In addition to the required locator points, models can also include the followin
 
 ### Function of Locator Points
 
-- The mod automatically searches for these locator points in custom models
+- The mod resolves sockets from the model hierarchy or the format-specific mapping
 - Found locator points will be set as binding points for the game's equipment system
 - Equipment will be bound according to the position and rotation of the locator points
-- If a locator point does not exist, the corresponding equipment will not display correctly on the custom model
+- Missing custom sockets fall back to the original character sockets. Provide matching sockets for equipment to follow the custom model accurately
 
 ### Notes
 
 - Locator point names must **exactly match** (case-sensitive)
-- Locator points can be empty GameObjects, just need to set the correct position and rotation
+- Prefab locator points can be empty GameObjects with the appropriate position and rotation
 - It is recommended to set locator point positions based on the original model's equipment positions
 
 ## Animator Configuration
 
-Custom model Prefabs need to include an `Animator` component and configure the corresponding Animator Controller.
+Prefab and VRM share Animator parameters, animation layers and state-machine behaviours. Prefabs supply an Animator and controller; VRM uses the built-in controller unless `Vrm.AnimatorControllerPath` specifies a custom one.
+
+Common game-state updates supply animation data. YSM reads adapted state through Molang variables such as `query.*` and `ysm.*`, rather than using the Animator names below. Variable names, units and defaults depend on the respective adapter; renaming a parameter is not sufficient to interchange them.
+
+YSM Molang exposes the new movement and action values from the same character's shared parameter cache:
+
+- `LocomotionX` / `LocomotionY` → `query.duckov_locomotion_x` / `query.duckov_locomotion_y`
+- `LocomotionRate` → `query.duckov_locomotion_rate`
+- `RollPose` → `query.duckov_roll_pose`
+- `RollProgress` → `query.duckov_roll_progress`
+- `AttackProgress` → `query.duckov_attack_progress`
+
+These values support players, pets, AI and extension targets backed by a character controller. Missing actions or equipment use the respective idle values. Existing YSM variables retain their semantics; models can explicitly use these additional queries.
 
 ### Animator Controller Parameters
+
+Prefab and VRM controllers share these parameters. Declare the names and types you need in your controller.
 
 The Animator Controller can use the following parameters:
 
@@ -643,8 +813,9 @@ The Animator Controller can use the following parameters:
 - `Moving`: Whether the character is moving
 - `Running`: Whether the character is running
 - `Dashing`: Whether the character is dashing
+- `RollPose`: Whether the current roll action is running (`CA_Dash.Running`)
 - `GunReady`: Whether the gun is ready
-- `Loaded`: Whether the gun is loaded (updated by `OnLoadedEvent` when holding `ItemAgent_Gun`)
+- `Loaded`: Whether the gun is loaded (updated from the current ammo count while holding a gun; false when empty-handed)
 - `Reloading`: Whether reloading
 - `RightHandOut`: Whether the right hand is extended
 - `ActionRunning`: Whether an action is currently running (determined by `CharacterMainControl.CurrentAction`)
@@ -670,6 +841,10 @@ The Animator Controller can use the following parameters:
 #### Float Type Parameters
 
 - `MoveSpeed`: Movement speed ratio (normal walk 0~1, running can reach 2)
+- `LocomotionX`, `LocomotionY`: Smoothed movement direction in the model Animator's local horizontal plane, multiplied by gait speed; X points right and Y points forward. The vector magnitude is approximately 0 at rest, 1 when walking, and 2 when running, suitable for a 2D Blend Tree
+- `LocomotionRate`: Step cadence multiplier, 1 at rest; adjusts toward the current/original walk speed ratio while moving, within 0.1–5
+- `RollProgress`: Roll action progress (0–1); retains the last sampled value after the action ends for animation fade-out
+- `AttackProgress`: Normalized melee attack timer (0–1), or 0 when not attacking
 - `MoveDirX`: Movement direction X component (-1.0 ~ 1.0, character local coordinate system)
 - `MoveDirY`: Movement direction Y component (-1.0 ~ 1.0, character local coordinate system)
 - `VelocityX`: Velocity X component
@@ -815,7 +990,7 @@ If the model contains melee attack animations, you can add an animation layer na
 
 ### Animator State Machine Behaviour Components
 
-The mod provides three state machine behaviour components that can trigger sounds, dialogue, or control parameters when animation states are entered:
+The mod provides the following state machine behaviour components that can trigger sounds, dialogue, or control parameters when animation states are entered:
 
 #### ModelParameterDriver
 
@@ -889,11 +1064,11 @@ Triggers dialogue playback when animation state enters.
 
 ## Custom Sounds
 
-The mod supports configuring sounds for custom models, including both player key press triggers and AI automatic triggers.
+The shared audio system supports key input, game events, footsteps, idle playback and Animator state-machine triggers. Prefab/VRM use `CustomSounds` in common model settings; bundled YSM can also use these fields, but standalone YSM sidecars do not accept `CustomSounds`. Audio enablement, volume and idle settings are managed by target type.
 
 ### Sound Configuration
 
-Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
+Configure `CustomSounds` in common model settings (a bundled Models entry or standalone VRM sidecar):
 
 ```json
 {
@@ -980,7 +1155,7 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
   - Play interval can be configured in `IdleAudioConfig.json`
   - Default interval is 30-45 seconds (random)
   - Will not play when the character is dead
-  - Which character types are allowed to automatically play can be controlled through `EnableIdleAudio` and `AICharacterEnableIdleAudio` configurations
+  - Which character types are allowed to automatically play can be controlled through `TargetTypeEnableIdleAudio` configurations
   - By default, AI characters and pets are allowed to automatically play, while player characters are not (can be enabled through configuration)
 - `"trigger_on_death"`: Automatically plays when the character dies (applies to all character types)
   - **Sound Interrupt Mechanism**: Before playing the death sound, all currently playing sounds will be stopped, then the death sound will play
@@ -1022,7 +1197,7 @@ Sounds can be configured in `ModelInfo` within `bundleinfo.json`:
 
 ### Sound Playback Probability Configuration
 
-In `ModelInfo` within `bundleinfo.json`, you can configure playback probability for sound tags:
+Set sound tag playback probabilities in common model settings (a bundled Models entry or standalone VRM sidecar):
 
 ```json
 {
@@ -1050,7 +1225,7 @@ In `ModelInfo` within `bundleinfo.json`, you can configure playback probability 
 
 ## Custom Dialogue
 
-The mod supports configuring dialogue for custom models, allowing dialogue bubbles to be displayed when triggered in animation state machines.
+Prefab and VRM use the shared Animator state-machine component `ModelDialogueTrigger` to display dialogue bubbles as configured below. YSM uses its own animation/function mechanism rather than Animator state-machine components.
 
 ### Dialogue Configuration
 
@@ -1126,14 +1301,23 @@ The mod supports configuring custom models for AI characters in the game, allowi
 
 ### Configuring AI Character Models
 
-#### Configuring in bundleinfo.json
+#### Declaring Supported Target Types
 
-In the model's `bundleinfo.json`, you need to:
+Prefab, VRM and YSM declare supported targets through `TargetTypes`. Use the Models entry for bundled models or the respective sidecar for standalone YSM/VRM. Standalone YSM/VRM default to the player and all AI when omitted; bundled model entries must explicitly include AI targets.
 
-1. Include `"AICharacter"` in the `Target` array, indicating the model applies to AI characters
-2. Specify supported AI character name keys in the `SupportedAICharacters` array
+**Recommended configuration:**
 
-Example:
+```json
+{
+  "ModelID": "ai_model_id",
+  "Name": "AI Model",
+  "TargetTypes": ["built-in:AICharacter_*", "built-in:AICharacter_Cname_Wolf"]
+}
+```
+
+`built-in:AICharacter_*` supports all AI; `built-in:AICharacter_<name>` supports a specific AI. Multiple targets may be listed.
+
+**Obsolete configuration (backward compatible):**
 
 ```json
 {
@@ -1214,9 +1398,8 @@ You can configure whether to hide original equipment for each AI character indiv
 
 ### Notes
 
-- AI character models need to meet the same requirements as character models (locator points, Animator configuration, etc.)
-- Models must explicitly declare support for AI characters in their `bundleinfo.json`
+- All three formats support AI; configure equipment sockets and animation through the respective format interface
+- Bundled models declare AI support through `TargetTypes` in their Models entry; standalone YSM/VRM sidecars override their default targets
   - **Recommended method (v1.10.0+)**: Include `"built-in:AICharacter_*"` or `"built-in:AICharacter_<character name>"` in `TargetTypes`
   - **Obsolete method (backward compatible)**: Include `"AICharacter"` in `Target` and declare supported AI characters in `SupportedAICharacters`
 - If the model is not properly configured, AI characters will use the original model
-

@@ -41,6 +41,7 @@ UI 界面相关配置。
 {
   "ToggleKey": "Backslash",
   "AnimatorParamsToggleKey": "None",
+  "YsmRadialMenuKey": "Z",
   "EmotionModifierKey1": "Comma",
   "EmotionModifierKey2": "Period",
   "ShowDCMButton": true,
@@ -56,6 +57,7 @@ UI 界面相关配置。
   - 需要用户主动在设置界面中设置
   - 支持的按键值可参考 Unity KeyCode 枚举
   - 设置为 `None` 时，该快捷键功能将被禁用
+- `YsmRadialMenuKey`：所有支持轮盘的模型共用的开关按键（默认：`Z`）；字段名保留原有命名，适用于 Prefab、VRM 和 YSM。
 - `EmotionModifierKey1`：表情快捷键修饰键1（默认：`Comma`，即逗号键 `,`）
   - 用于表情快捷键功能，按住此键 + F1-F8 可设置 `EmotionValue1` 参数（值为 0-7）
   - 支持的按键值可参考 Unity KeyCode 枚举
@@ -199,7 +201,7 @@ UI 界面相关配置。
 - 最小间隔时间不能小于 0.1 秒
 - 最大间隔时间不能小于最小间隔时间
 - 只有配置了 `"idle"` 标签音效的模型才会自动播放待机音效
-- 只有启用了自动播放的角色类型才会自动播放待机音效（通过 `EnableIdleAudio` 和 `AICharacterEnableIdleAudio` 配置控制）
+- 只有启用了自动播放的角色类型才会自动播放待机音效（通过 `TargetTypeEnableIdleAudio` 配置控制）
 - 玩家角色默认不允许自动播放待机音效，可以通过配置启用
 
 ### ModelAudioConfig.json
@@ -274,7 +276,7 @@ UI 界面相关配置。
 - **模型选择**：点击模型按钮即可应用该模型到所有属于该目标类型的对象
 - **模型信息**：每个模型卡片显示模型名称、ID、作者、版本以及所属的 Bundle 名称
 - **AI 角色选择**：当选择"AI角色"目标类型时，需要先选择具体的 AI 角色，然后为该角色选择模型
-  - **设置选项**：在设置标签页中可以配置以下选项：
+- **设置选项**：在设置标签页中可以配置以下选项：
   - **快捷键**：配置打开/关闭模型选择界面的快捷键
     - 可在设置界面中点击按钮进行设置
   - **动画器参数快捷键**：配置打开/关闭参数显示界面的快捷键
@@ -320,8 +322,8 @@ UI 界面相关配置。
       - 支持拖拽窗口边缘调整窗口大小
       - 窗口大小有最小限制（400x300 像素）
   - **表情快捷键修饰键**：配置表情快捷键功能的两个修饰键
-    - 修饰键1（默认：左 Shift）：按住此键 + F1-F8 可设置 `EmotionValue1` 参数（值为 0-7）
-    - 修饰键2（默认：右 Shift）：按住此键 + F1-F8 可设置 `EmotionValue2` 参数（值为 0-7）
+    - 修饰键1（默认：逗号键 `,`）：按住此键 + F1-F8 可设置 `EmotionValue1` 参数（值为 0-7）
+    - 修饰键2（默认：句号键 `.`）：按住此键 + F1-F8 可设置 `EmotionValue2` 参数（值为 0-7）
     - 可在设置界面中点击按钮进行设置
     - 操作方式：按住修饰键后，按 F1-F8 键即可设置对应的表情参数值
   - **隐藏原有装备**：分别有"隐藏角色装备"和"隐藏宠物装备"选项
@@ -350,6 +352,12 @@ UI 界面相关配置。
   - 此选项会立即保存到配置文件
   - 影响 Animator 的 `HideOriginalEquipment` 参数值
 
+### 身高与物品大小
+
+Prefab、VRM 和 YSM 共用模型调整界面。选定目标和模型后，可在支持的模型上调整身高；物品大小按装备挂点分别折叠显示，倍率范围为 `0.1`–`5`，`1` 保持原大小。调整倍率与模型、动画原有的缩放叠加，可单项重置或全部还原。
+
+这些设置按目标类型和模型分别保存到配置目录的 `RuntimeData`，下次使用自动恢复。“所有 AI”不保存这类单模型运行时设置，需要选择具体 AI。更改模型 ID 后会使用另一份设置。
+
 ### 打开模型选择界面
 
 - 默认按键：`\`（反斜杠键）
@@ -361,15 +369,169 @@ UI 界面相关配置。
   - 按钮位置支持 9 个锚点位置（左上、上中、右上、左中、中央、右中、左下、下中、右下）和自定义偏移值
   - 配置更改后会立即应用到按钮位置，无需重启游戏
 
+### 动作轮盘
+
+Prefab、VRM 和 YSM 使用相同的轮盘操作。Humanoid 模型还可直接选用[外部动作](#外部动作与配套音频)。模型需要提供有效的菜单与动作：Prefab／VRM 使用 [RadialMenus 配置](#prefab-与-vrm-的动作轮盘)，YSM 读取模型自带菜单。
+
+- 默认按 **Z** 打开或关闭轮盘，可在设置页更改按键；**Esc** 关闭。
+- 每页显示八项，滚轮翻页；点击动作执行，点击分类进入子菜单，点击返回项回到上层。
+- 内环配置入口打开对应表单，可调整复选框、数值或选项；表单值自动保存。
+- 左键点击轮盘中心切换动作锁定：未锁定时，移动输入取消附加动作并恢复常规动画；锁定后，角色可带着动作移动。播放过程中也可随时切换。
+- 右键点击轮盘中心停止当前附加动作及配套音频。
+- 关闭轮盘不会停止动作。同一模型重开保留分类和页数，切换模型时重置。
+
+动作如何结束、循环或被打断取决于模型配置：Prefab／VRM 由 Animator 参数与状态机处理，YSM 遵循模型自带动作设置。
+
+### 外部动作与配套音频
+
+有效的 Humanoid Animator 模型可直接播放 `.vmd`（MMD 动作）和 `.vrma`，包括 Humanoid Prefab 与 VRM，无需为每个动作制作控制器。YSM 和非 Humanoid Prefab 尚不支持这类外部动作；YSM 自带动作照常使用原有菜单。
+
+动作可随模型分发，无需放入固定目录：在模型菜单的 `Actions` 中通过 `Motion` 引用相对模型文件／AssetBundle 所在目录的动作，例如 `motions/dance.vmd`；同 AssetBundle 内的动作也可作为 TextAsset 提供。模型自带文件通过菜单显式引用，不会自动扫描整个模型目录。
+
+需要多个模型共用时，也可把文件放入 `ModConfigs/DuckovCustomModel/Motions`，刷新模型列表后，在轮盘的“外部动作”分类中选择。此公共目录会自动扫描，允许子文件夹。与动作同名的 `.ogg`、`.wav` 或 `.mp3` 自动作为配套音频，例如 `dance.vmd` 和 `dance.ogg`；没有音频就只播放动作。
+
+需要调整显示名称或播放方式时，在动作旁添加可选的 `dance.motion.json`：
+
+```json
+{
+  "Name": "舞蹈",
+  "Playback": {
+    "Audio": "dance.ogg",
+    "Loop": true,
+    "AudioOffset": 0,
+    "Volume": 0.8
+  }
+}
+```
+
+模型自带动作的配置示例：将下面的动作放入模型配置中 `RadialMenus` 的 `Actions`，即可与参数动作混排，放入任意菜单或子菜单。动作文件放在模型旁的 `motions/dance.vmd`，同名音频可放在 `motions/dance.ogg`：
+
+```json
+{
+  "Id": "dance",
+  "Name": "舞蹈",
+  "Motion": "motions/dance.vmd",
+  "Playback": { "Loop": true }
+}
+```
+
+- `Motion`：动作路径，与 `Parameter` 二选一。模型菜单优先查同 AssetBundle 的 TextAsset（可用 `.bytes` 导入），再查相对模型文件／AssetBundle 所在目录的文件，最后查公共 Motions 目录。使用相对路径，不能越出相应目录。
+- `Playback`（可选）：播放设置；省略时使用以下默认值。
+- `Playback.Audio`：配套音频路径；省略时自动查同名音频。公共动作的配置相对动作所在文件夹，模型菜单的配置相对模型文件／AssetBundle 所在目录。音频以外部文件提供。
+- `Playback.Loop`：是否循环，默认 `false`。动作与音频一起重新开始；再次选择同一动作从头重播。
+- `Playback.Speed`：速度倍率，默认 `1`，范围 `0.1`–`5`，同时调整动作与音频速度。
+- `Playback.AudioOffset`：音频起播偏移，单位秒，默认 `0`；正数延后起播，负数跳过音频开头。
+- `Playback.Volume`：音量，默认 `1`，范围 `0`–`1`，叠加目标的模型音量并遵循模型音频开关。
+- `Playback.SpatialAudio`：是否从角色位置播放，默认 `true`；设为 `false` 使用二维音频。
+- `Playback.InterruptOnMove`：移动输入是否取消动作，默认 `true`；轮盘中心的运行时锁定开关优先，锁定后可带着动作移动。击退或惯性位移不会按移动输入处理。翻滚、近战、使用物品、瞄准、射击及死亡仍会让出控制。
+- `Playback.BlendIn`、`Playback.BlendOut`：进入与退出的混合秒数，默认均为 `0.2`。停止后恢复原有动画和持枪 IK。
+- `Playback.InPlace`：限制场景根节点位移，默认 `true`；动作仍可在模型内部产生身体位移，不会驱动游戏角色走动。
+- `Playback.UpperBodyOnly`：仅覆盖上半身，默认 `false`。
+- `Playback.PositionScale`：动作位移倍率，默认 `1`，大于 `0`，不大于 `100`；基础位移按人形比例适配。
+- `Playback.RotationY`：VMD 坐标朝向偏转，默认 `180` 度；VRMA 按其人形坐标处理。
+- `Playback.ArmAngle`：VMD 初始手臂下垂角，默认 `40` 度，可在 `-90`–`90` 间调整。
+- `Playback.BoneMappings`：VMD 骨骼名到 Unity `HumanBodyBones` 名称的覆盖映射，例如 `{ "左腕": "LeftUpperArm" }`。
+- `Playback.ExpressionMappings`：表情名称覆盖映射；VRM 使用表情名称，Prefab 使用 BlendShape 名称，例如 `{ "あ": "aa" }`。
+
+关闭轮盘继续播放；右键点击轮盘中心结束当前动作和音频。游戏暂停时同步暂停，恢复后继续。接口 `ModelHandler.SetRadialActionPaused(bool)` 可单独暂停或恢复外部动作。换模型、强制重载和卸载会取消未完成的加载并释放播放资源。
+
+VMD 支持常用人形与手指骨骼、贝塞尔插值、表情和足部 IK 开关；MMD 专用附加骨骼、继承约束和完整 PMX 物理不会自动转移到其他骨架，非标准动作可能需要映射和姿势调整。镜头、灯光轨道不接管游戏场景。VRMA 使用 UniVRM 的人形重定向；模型自己的动骨继续运行。
+
+动作按需加载，共享解析／导入缓存；刷新会读取新增或更改的文件，强制重载会清空缓存。外部动作路径不依赖 Unity 编辑器、系统日文代码页或额外的 Windows 原生插件，适用于游戏支持的桌面平台。
+
 ## 模型安装
 
 将模型包放置在：`游戏安装路径/ModConfigs/DuckovCustomModel/Models`
 
 **注意**：如果游戏安装目录为只读环境，模组会自动将模型路径切换到游戏存档的上一级目录的 ModConfigs（Windows: `AppData\LocalLow\TeamSoda\Duckov\ModConfigs\DuckovCustomModel\Models`，macOS/Linux: 对应的用户数据目录）。模组会自动检测并处理这种情况，无需手动配置。
 
-每个模型包应放在独立的文件夹中，包含模型资源文件和配置信息。
+Prefab 使用包含 `bundleinfo.json` 和 AssetBundle 的模型包文件夹；YSM 可使用单文件或模型文件夹；VRM 可直接使用 `.vrm` 文件。各格式均从上面的 Models 目录扫描，刷新后在同一界面选择。安装模组时保留 `Resources` 子目录。
 
-### 模型包结构
+### YSM 模型
+
+将 `.ysm` 文件或包含 `ysm.json`／`main.json` 的模型文件夹放入 `ModConfigs/DuckovCustomModel/Models`，刷新模型列表后选用，无需转换成 AssetBundle。
+
+模型自带的函数、GUI 表单和附加动作菜单随模型一起读取，不需要在侧车中重复定义。操作方式见[动作轮盘](#动作轮盘)。
+
+#### 侧车配置
+
+需要调整游戏绑定时，在 `fox.ysm` 旁添加 `fox.ysm.duckov.json`；文件夹模型 `fox/` 则使用其中的 `fox.ysm.duckov.json`。例如：
+
+```json
+{
+  "Name": "自定义模型",
+  "ModelTarget": "player/main",
+  "TargetTypes": ["built-in:Character", "built-in:AICharacter_*"],
+  "Scale": 1.0,
+  "HeadPitchLimit": 45,
+  "HeadYawLimit": 85,
+  "LocatorMappings": {
+    "RightHandLocator": "模型内实际定位器名称"
+  }
+}
+```
+
+- `ModelID`、`Name`、`Author`、`Description`：模型标识、名称、作者、描述；省略时使用文件或模型自带信息。
+- `ThumbnailPath`：相对 YSM 所在目录／模型文件夹的图片。未填写时查找模型旁的同名 PNG，文件夹模型查找 `thumbnail.png`、`preview.png`，也可使用包内缩略图。
+- `ModelTarget`：模型中的目标（`"player/main"`）。
+- `TargetTypes`：角色、宠物、全部／指定 AI 或已注册扩展类型；省略时为角色和全部 AI，见[通用配置](#字段说明)。
+- `Scale`：整体缩放（`1`，大于 0）。
+- `HeadPitchLimit`、`HeadYawLimit`：头部俯仰、左右转动上限，单位为度（`45`、`85`，不小于 0）。
+- `HeadPitchSign`、`HeadYawSign`：头部角度方向（`1`）；反向模型可填 `-1`。
+- `LimbSwingScale`：行走摆动倍率（`1`，不小于 0）。
+- `TeleportDistance`：判定瞬移的距离（`8`，大于 0）。
+- `AttackDurationSeconds`、`HurtDurationSeconds`：攻击、受伤状态持续秒数（均为 `0.3`，大于 0）。
+- `ItemCategories`、`ItemUseAnimations`、`ItemTags`：以游戏物品 TypeID 为键，分别指定物品分类、使用动画类型（如 `eat`）和标签数组，如 `"ItemCategories": { "123": "pistol" }`；请替换为实际物品 ID。
+- `FireAnimation`、`ReloadAnimation`、`DashAnimation`：指定模型中的射击、换弹、冲刺动画名；需使用模型实际存在的动画。
+- `LocatorMappings`：游戏[挂点名](#定位锚点)到模型真实定位器名的映射；缺失时保留原角色挂点。
+- `LocatorOffsets`：按挂点名设置 `Position`、`Rotation` 三元素数组，分别为局部位移和角度。
+- `Ik`：[持枪手臂 IK](#持枪-ik)，YSM 需显式指定上臂、前臂、手骨骼。
+- `ValueCompatibility`、`HandCompatibility`：表达式值与持物动画兼容模式，默认 `"Ysm241"`、`"Version241"`；另可选择 `"Default"`、`"Modern"`。通常保持默认。
+- `BundlePath`：相对 YSM 所在目录／模型文件夹的附加 AssetBundle。
+- `DeathLootBoxPrefabPath`、`DeathLootBoxYsmPath`、`DeathLootBoxAnimation`：尸体 Prefab 路径、另一 YSM 文件路径及其展示动画，见下文。
+
+#### 游戏状态
+
+Molang 状态从当前角色读取，包括移动、生命、物品使用和受伤等状态；`ysm.food_level` 使用角色能量比例映射到 0–20。`query.time_stamp`、`query.time_of_day` 使用游戏时钟，`query.day_number`、`query.moon_phase` 使用游戏日期；没有世界时钟的界面使用模型预览状态。物品使用、受伤计时、装备数量和移动输入分别可通过 `query.is_using_item`、`query.hurt_time`、`query.equipment_count`、`ysm.xxa`／`ysm.yya`／`ysm.zza` 读取。按状态命名的控制器仅在对应状态下运行。
+
+### VRM 模型
+
+将 `.vrm` 文件放入 `ModConfigs/DuckovCustomModel/Models`，刷新模型列表后选用。支持 VRM 0.x 和 1.0；未指定动画控制器时使用内置动作。
+
+可在模型旁添加 `fox.vrm.duckov.json`：
+
+```json
+{
+  "Name": "自定义模型",
+  "TargetTypes": ["built-in:Character", "built-in:AICharacter_*"],
+  "BundlePath": "animations.bundle",
+  "Vrm": {
+    "AnimatorControllerPath": "Assets/Animations/Character.controller",
+    "Scale": 1.0,
+    "RotationY": 0,
+    "Locators": {
+      "RightHandLocator": {
+        "Bone": "RightHand",
+        "Position": [0, 0, 0],
+        "Rotation": [0, 0, 0]
+      }
+    }
+  }
+}
+```
+
+- `BundlePath`：相对 `.vrm` 所在目录的 AssetBundle 文件。仅使用内置动画且没有包内附加资源时可省略。
+- `Vrm.AnimatorControllerPath`：该包内的 Animator Controller 或 Animator Override Controller 资源路径；省略或留空使用内置控制器。路径不是磁盘上的 `.controller` 文件路径。
+- `Vrm.Scale`：模型缩放，默认 `1`，必须大于 `0`；`Vrm.RotationY`：朝向偏转角度，默认 `0`。
+- `Vrm.Locators`：按[挂点名称](#定位锚点)调整装备位置。`Bone` 使用 Humanoid 骨骼名（如 `Head`、`Chest`、`RightHand`）；`Position`、`Rotation` 分别是相对骨骼的局部位移和欧拉角，均为三个数字。未配置的常用挂点自动绑定。
+
+自定义动画需在 Unity 中按 **Humanoid** 导入并制作控制器，将控制器与其动画依赖一起打入 AssetBundle，再填写上述路径。模组不会直接加载散放的 FBX。控制器按[通用 Animator 参数](#动画器配置)设置状态切换，例如 `Moving`、`Running`、`Dashing`（Bool）、`MoveSpeed`（Float）、`Shoot`（Trigger）。角色位移由游戏控制，Root Motion 不会驱动角色。
+
+侧车也接受[通用模型配置](#字段说明)，包括名称、作者、版本、缩略图、目标类型、音效、Buff 参数、[动作轮盘](#prefab-与-vrm-的动作轮盘)和 `Ik`。使用内置动画时默认开启持枪 IK；使用自定义控制器时需显式添加 `"Ik": { "Enabled": true }` 才启用，也可设为 `false` 关闭。
+
+在模型包中使用 VRM 时，填写 `"SourceKind": "Vrm"`、`"SourcePath": "Assets/Models/fox.vrm"`，将 `Vrm` 写在该模型项内；资源查找方式见[共用配置与资源路径](#共用配置与资源路径)。
+
+### AssetBundle 模型包结构
 
 每个模型包文件夹应包含以下文件：
 
@@ -446,7 +608,7 @@ UI 界面相关配置。
 
 **Models**（必需）：模型信息数组，可包含多个模型
 
-**ModelInfo 字段**：
+**ModelInfo 字段**（通用字段的填写位置见[共用配置与资源路径](#共用配置与资源路径)）：
 
 - `ModelID`（必需）：模型的唯一标识符，用于在配置文件中引用模型
 - `Name`（可选）：模型在界面中显示的名称
@@ -454,7 +616,7 @@ UI 界面相关配置。
 - `Description`（可选）：模型描述信息
 - `Version`（可选）：模型版本号
 - `ThumbnailPath`（可选）：缩略图路径，相对于模型包文件夹的外部文件路径（如 `"thumbnail.png"`）
-- `SourceKind`（可选）：`AssetBundle`（默认）或 `Ysm`。选择 `Ysm` 时用 `SourcePath` 指定 `.ysm` 文件；先读取同包内的 `TextAsset`（可用 `.bytes` 导入），找不到时读取 AssetBundle 文件所在目录的相对路径
+- `SourceKind`（可选）：`AssetBundle`（默认）、`Ysm` 或 `Vrm`。选择 `Ysm`／`Vrm` 时用 `SourcePath` 指定 `.ysm`／`.vrm` 文件；先读取同包内的 `TextAsset`（可用 `.bytes` 导入），找不到时读取 AssetBundle 文件所在目录的相对路径
 - `PrefabPath`（Prefab 模型必需）：模型 Prefab 在 AssetBundle 内的资源路径（如 `"Assets/Model.prefab"`）
 - `DeathLootBoxPrefabPath`（可选）：死亡战利品箱 Prefab 在 AssetBundle 内的资源路径（如 `"Assets/DeathLootBox.prefab"`）
 - `DeathLootBoxYsmPath`（可选）：死亡战利品箱使用另一个 `.ysm` 文件；先查同包，再查 AssetBundle 文件所在目录的相对路径。可用 `DeathLootBoxAnimation` 指定展示动作；同时指定 Prefab 时优先使用 Prefab。YSM 模型也可反向指定 `DeathLootBoxPrefabPath`
@@ -491,7 +653,7 @@ UI 界面相关配置。
 - `SoundTagPlayChance`（可选）：音效标签播放概率配置
   - 字典类型，键为音效标签（不区分大小写），值为播放概率（0-100）
   - 当触发该标签的音效时，会根据配置的概率决定是否播放
-  - 如果未配置或概率为 0，则始终播放（默认行为）
+  - 如果未配置，则始终播放；概率为 0 时不播放
 - `WalkSoundFrequency`（可选）：走路时每秒的脚步声触发频率
   - 用于控制角色走路时脚步声的播放频率
   - 如果未指定，将自动使用原始角色的走路脚步声频率设置
@@ -504,6 +666,7 @@ UI 界面相关配置。
   - 每个条件可以指定 `Id`（Buff ID）或 `DisplayNameKey`（Buff 显示名称键），满足任意一个条件即可
   - 示例配置：
     ```json
+    {
     "BuffAnimatorParams": {
       "HasBuff1": [
         { "Id": 123 },
@@ -517,12 +680,54 @@ UI 界面相关配置。
         { "DisplayNameKey": "buff_key_2" }
       ]
     }
+    }
     ```
   - 配置的 Buff 参数会在调试界面中显示，位于自定义参数和动画器参数之后
 
-### AssetBundle 模型的动作轮盘
+- `Features`（可选）：`"NoAutoShaderReplace"` 保留自带 Shader；`"SkipShowBackMaterial"` 跳过遮挡背面材质处理。
+- `Vrm`（可选）：VRM 缩放、朝向、挂点和控制器，见 [VRM 模型](#vrm-模型)。
+- `Ik`（可选）：持枪手臂适配，见下文。
+- `RadialMenus`（可选）：Prefab／VRM 的菜单、动作及表单配置，见[动作轮盘配置](#prefab-与-vrm-的动作轮盘)。
 
-在 AssetBundle 模型的 `bundleinfo.json` 中，为需要轮盘的 `Models` 项添加 `RadialMenus`。每个菜单可包含动作和子菜单；Prefab 的 Animator Controller 必须包含对应的参数和动画状态过渡。例如：
+### 共用配置与资源路径
+
+模型包内的 Prefab、YSM 和 VRM 都在 `bundleinfo.json` 的 `Models` 项中填写通用 `ModelInfo` 字段。独立 VRM 在 `<文件名>.vrm.duckov.json` 根对象中填写这些字段；独立 YSM 的 `<文件名>.ysm.duckov.json` 使用 [YSM 专用字段](#侧车配置)，不能直接照搬全部通用字段。
+
+同一 `Models` 数组可混用三种模型。YSM／VRM 用 `SourceKind` 和 `SourcePath` 指定资源：优先读取同包内的 `TextAsset`（可通过 `.bytes` 导入），找不到时读取 AssetBundle 文件所在目录的相对文件。YSM 的游戏绑定侧车仍放在磁盘对应路径旁，例如 `Assets/Models/fox.ysm.duckov.json`；展示信息、目标类型、IK 和尸体配置写在该模型项中。
+
+`DeathLootBoxPrefabPath` 和 `DeathLootBoxYsmPath` 是共用的死亡战利品箱替换配置，可跨模型格式引用 Prefab 或另一个 YSM，同时指定时 Prefab 优先。Prefab 从同包读取；YSM 优先查同包，再查相对文件。独立 YSM／VRM 可用 `BundlePath` 指定附加资源包。独立 YSM 的相对路径以模型所在目录为基准，不能指向 Models 之外；模型包资源的外部路径以 AssetBundle 文件所在目录为基准。`DeathLootBoxAnimation` 指定目标 YSM 的展示动画。当前没有 VRM 尸体路径字段。
+
+### Prefab 动骨
+
+在 SDK 中给模型根物体添加 `Duckov Custom Model > Spring Bones`，将头发、裙摆等根骨骼加入骨链。可锁定 Inspector 后多选骨骼，点击“Add Selected Roots”；无分叉时自动延伸，有分叉时指定末端骨骼。刚度控制回弹，阻尼控制惯性衰减，重力和碰撞半径可按链调整。
+
+在头部、身体等骨骼上添加“Spring Bone Collider”，配置球体或胶囊体，再点击“Collect Model Colliders”。碰撞范围可在 Scene 中拖动调整，仅影响动骨。惯性参考可留空；指定骨骼后，惯性相对该骨骼计算，参考骨骼不可参与模拟。
+
+在场景或 Prefab 编辑模式中点击“Start Preview”，可选动画和往返移动测试；停止预览、保存或进入播放模式会还原预览姿势。打包后自动运行，无需 VRM 组件或额外 JSON。不要让其他动骨组件同时驱动相同骨骼。
+
+### 持枪 IK
+
+
+在模型配置中添加 `"Ik": { "Enabled": true }`。Humanoid Prefab/VRM 可自动使用手臂骨骼；其他 Prefab 需填写骨骼路径，YSM 需填写模型内唯一的骨骼名称或 ID。两条手臂分别配置，骨骼必须构成上臂、前臂、手的父子链。
+
+- `Enabled`、`Weight`、`BlendSpeed`：启用（`true`）、影响权重（`1`，范围 0–1）、混合速度（`12`，大于 0）。
+- `RightHand`、`LeftHand`：是否控制右手、左手（均为 `true`）。
+- `RightArm`、`LeftArm`：各包含 `UpperArmPath`、`LowerArmPath`、`HandPath`。Prefab/VRM 使用相对模型根节点的 `/` 分隔路径；YSM 使用骨骼名称或 ID。
+- `RightHandOffset`：瞄准方向坐标系中的右手目标偏移，按臂长缩放（`[-0.1, -0.25, 0.6]`）。
+- `LeftHandSocket`：枪械上的左手挂点名（`"LeftHand"`）。
+- `LeftHandOffset`、`LeftHandRotation`：左手目标的枪械局部位移偏移、旋转角度偏移（均为 `[0, 0, 0]`）。
+
+未填写 `Ik` 时，仅使用内置动画的 VRM 默认启用；自定义控制器、普通 Prefab 和 YSM 需主动配置。换弹、使用物品、近战和冲刺等动作会让出手臂控制。
+
+### Prefab 与 VRM 的动作轮盘
+
+Prefab 与 VRM 共用 `RadialMenus` 配置，支持多个菜单、子菜单、动作和参数表单。
+
+- 模型包内的 Prefab／VRM：在 `bundleinfo.json` 对应的 `Models` 项中填写 `RadialMenus`。
+- 独立 VRM：在模型旁的 `fox.vrm.duckov.json` 根对象中填写 `RadialMenus`，与 `Vrm` 同级。
+- YSM：直接读取模型自带菜单，见 [YSM 模型](#ysm-模型)。
+
+模型实际使用的 Animator Controller 必须包含对应参数及动画状态过渡。VRM 如需通过 Animator 控制器新增自定义动作，需通过 `BundlePath` 和 `Vrm.AnimatorControllerPath` 配置包含这些动作的控制器；仅填写菜单不会自动生成动画。以下配置可放入上述模型项或 VRM 配置文件的根对象：
 
 ```json
 {
@@ -554,19 +759,25 @@ UI 界面相关配置。
 }
 ```
 
-菜单和动作各有 `Id` 与 `Name`。`Id` 在同类项目中须唯一，`Name` 是轮盘上的文字。动作的 `Parameter` 是 Animator 参数名；`Mode` 可为 `Trigger`（默认）、`Bool`、`Int` 或 `Float`。`Int`／`Float` 动作点击时将 `Value` 写入 Animator。选择另一动作或点击中心停止会把当前 `Bool`／`Int`／`Float` 参数还原为 Animator 默认值；`Trigger` 的结束与返回由 Animator 状态机控制。关闭轮盘不会停止动作。
+菜单和动作各有 `Id` 与 `Name`。`Id` 在同类项目中须唯一，`Name` 是轮盘上的文字。参数动作的 `Parameter` 是 Animator 参数名；`Mode` 可为 `Trigger`（默认）、`Bool`、`Int` 或 `Float`。`Int`／`Float` 动作点击时将 `Value` 写入 Animator。选择另一动作或右键点击轮盘中心停止会把当前 `Bool`／`Int`／`Float` 参数还原为 Animator 默认值；`Trigger` 的结束与返回由 Animator 状态机控制。关闭轮盘不会停止动作。
 
 动作可包含 `Forms` 以在扇区内侧打开右侧配置列表。表单绑定 `Bool` 时显示开关；`Int` 带 `Options` 时显示单选项，否则用 `Min`／`Max` 显示整数滑杆；`Float` 用 `Min`／`Max`／`Step` 显示范围滑杆。表单设置按目标和模型保存，可在列表中一键还原为 Animator 默认值。
 
-参数名不能与模组驱动的 Animator 参数或 `BuffAnimatorParams` 重复；类型不匹配、缺少参数及重复的 `Id`／`Parameter` 会使对应动作从轮盘中被过滤，空菜单也不会显示。最多可嵌套五层菜单。选用模型后按 **Z** 打开轮盘（可在设置页改键），每页显示八项，滚轮翻页，点击菜单进入、返回上级，Esc 关闭。未配置有效动作时不显示动作轮盘。
+参数名不能与模组驱动的 Animator 参数或 `BuffAnimatorParams` 重复；类型不匹配、缺少参数及重复的 `Id`／`Parameter` 会使对应动作从轮盘中被过滤，空菜单也不会显示。最多可嵌套五层菜单。未配置有效动作时不显示动作轮盘。操作方式见[动作轮盘](#动作轮盘)。
 
 ## 定位锚点
 
-为了确保游戏中的装备（武器、护甲、背包等）能够正确绑定到自定义模型上，模型 Prefab 需要包含相应的定位锚点（Locator）GameObject。
+装备绑定使用各模型共用的定位锚点名称：
 
-### 必需的定位锚点
+- Prefab：在模型层级中创建对应名称的 Transform。
+- VRM：按 Humanoid 骨骼自动创建常用挂点，用 `Vrm.Locators` 调整骨骼、位置和旋转。
+- YSM：使用模型定位器，通过 `LocatorMappings` 映射名称，`LocatorOffsets` 调整偏移。
 
-模型 Prefab 的子对象中需要包含以下名称的 Transform 作为定位锚点：
+以下名称表示同一装备槽位，不要求 VRM／YSM 手工创建 Prefab GameObject。
+
+### 常用定位锚点
+
+根据模型需要提供以下装备槽位：
 
 - `LeftHandLocator`：左手定位锚点，用于绑定左手装备
 - `RightHandLocator`：右手定位锚点，用于绑定右手装备
@@ -580,7 +791,7 @@ UI 界面相关配置。
 
 ### 可选的定位锚点
 
-除了必需的定位锚点外，模型还可以包含以下可选的定位锚点：
+模型还可以提供以下定位锚点：
 
 - `PaperBoxLocator`：纸箱定位锚点，用于绑定纸箱
   - 当自定义模型包含此定位锚点时，游戏中生成的纸箱会自动附加到此定位点
@@ -594,24 +805,36 @@ UI 界面相关配置。
 
 ### 定位锚点的作用
 
-- 模组会自动在自定义模型中搜索这些定位锚点
+- 模组从模型层级或对应格式的挂点映射取得定位锚点
 - 找到的定位锚点会被设置为游戏装备系统的绑定点
 - 装备会按照定位锚点的位置和旋转进行绑定
-- 如果某个定位锚点不存在，对应的装备将无法正确显示在自定义模型上
+- 缺少自定义挂点时回退到原角色挂点；若需装备准确跟随自定义模型，应提供对应挂点
 
 ### 注意事项
 
 - 定位锚点的名称必须**完全匹配**（区分大小写）
-- 定位锚点可以是空的 GameObject，只需要设置正确的位置和旋转
+- Prefab 的定位锚点可以是空的 GameObject，只需要设置正确的位置和旋转
 - 建议根据原始模型的装备位置来设置定位锚点的位置
 
 ## 动画器配置
 
-自定义模型 Prefab 需要包含 `Animator` 组件，并配置相应的 Animator Controller。
+Prefab 和 VRM 共用 Animator 参数、动画层及状态机行为组件。Prefab 在模型中配置 `Animator` 和控制器；VRM 默认使用内置控制器，也可通过 `Vrm.AnimatorControllerPath` 指定自定义控制器。
+
+游戏状态由通用数据更新逻辑提供。YSM 通过 Molang 的 `query.*`、`ysm.*` 等变量读取适配后的状态；它不直接使用下表的 Animator 参数名。具体变量、单位和默认值以各接口的适配为准，不能仅改名互换。
+
+新增移动与动作参数也提供 YSM Molang 入口，读取同一角色的通用参数缓存：
+
+- `LocomotionX`／`LocomotionY` → `query.duckov_locomotion_x`／`query.duckov_locomotion_y`
+- `LocomotionRate` → `query.duckov_locomotion_rate`
+- `RollPose` → `query.duckov_roll_pose`
+- `RollProgress` → `query.duckov_roll_progress`
+- `AttackProgress` → `query.duckov_attack_progress`
+
+这些数据适用于玩家、宠物、AI 和通过角色控制器接入的扩展目标；目标没有的动作或装备按对应参数的空闲值提供。YSM 的原有变量保持各自语义，上述入口用于模型主动适配。
 
 ### Animator Controller 参数
 
-Animator Controller 可以使用以下参数：
+Prefab 与 VRM 的 Animator Controller 共用以下参数，按需在控制器中声明对应名称和类型：
 
 #### Bool 类型参数
 
@@ -620,8 +843,9 @@ Animator Controller 可以使用以下参数：
 - `Moving`：角色是否正在移动
 - `Running`：角色是否正在奔跑
 - `Dashing`：角色是否正在冲刺
+- `RollPose`：当前是否正在执行翻滚动作（`CA_Dash.Running`）
 - `GunReady`：枪械是否准备就绪
-- `Loaded`：枪械是否已装弹（当持有 `ItemAgent_Gun` 时，由 `OnLoadedEvent` 事件更新）
+- `Loaded`：枪械是否已装弹（持枪时按当前弹量更新，空手时为 `false`）
 - `Reloading`：是否正在装弹
 - `RightHandOut`：右手是否伸出
 - `ActionRunning`：是否正在执行动作（由 `CharacterMainControl.CurrentAction` 决定）
@@ -653,6 +877,10 @@ Animator Controller 可以使用以下参数：
 #### Float 类型参数
 
 - `MoveSpeed`：移动速度比例（正常走 0~1，跑步可达 2）
+- `LocomotionX`、`LocomotionY`：平滑后的模型 Animator 局部平面移动方向乘步态速度，X 向右、Y 向前；向量长度约为 0（停止）、1（行走）、2（奔跑），可用于二维 Blend Tree
+- `LocomotionRate`：步频倍率，静止时为 1；移动时根据当前／原始步行速度调整，范围 0.1–5
+- `RollProgress`：翻滚动作进度（0–1）；结束后保留最后采样值，供动画淡出使用
+- `AttackProgress`：近战攻击计时的归一化进度（0–1），非攻击时为 0
 - `MoveDirX`：移动方向 X 分量（-1.0 ~ 1.0，角色本地坐标系）
 - `MoveDirY`：移动方向 Y 分量（-1.0 ~ 1.0，角色本地坐标系）
 - `VelocityX`：速度 X 分量
@@ -810,7 +1038,7 @@ Animator Controller 可以使用以下参数：
 
 ### 动画器状态机行为组件
 
-模组提供了三个状态机行为组件，可以在动画状态进入时触发音效、对话或控制参数：
+模组提供了以下状态机行为组件，可以在动画状态进入时触发音效、对话或控制参数：
 
 #### ModelParameterDriver
 
@@ -884,11 +1112,11 @@ Animator Controller 可以使用以下参数：
 
 ## 自定义音效
 
-模组支持为自定义模型配置音效，包括玩家按键触发和 AI 自动触发两种方式。
+模型音效由共用音频系统处理，支持按键、游戏事件、脚步、待机和 Animator 状态机触发。Prefab／VRM 可在通用模型配置中填写 `CustomSounds`；模型包内 YSM 也可使用通用字段，独立 YSM 侧车不接受 `CustomSounds`。音频开关、音量和待机设置统一按目标类型管理。
 
 ### 音效配置
 
-在 `bundleinfo.json` 的 `ModelInfo` 中可以配置音效：
+在通用模型配置的 `CustomSounds` 中配置音效（模型包的 `Models` 项或独立 VRM 侧车）：
 
 ```json
 {
@@ -975,7 +1203,7 @@ Animator Controller 可以使用以下参数：
   - 播放间隔可在 `IdleAudioConfig.json` 中配置
   - 默认间隔为 30-45 秒（随机）
   - 角色死亡时不会播放
-  - 哪些角色类型允许自动播放可通过 `EnableIdleAudio` 和 `AICharacterEnableIdleAudio` 配置控制
+  - 哪些角色类型允许自动播放可通过 `TargetTypeEnableIdleAudio` 配置控制
   - 默认情况下，AI 角色和宠物允许自动播放，玩家角色不允许（可通过配置启用）
 - `"trigger_on_death"`：角色死亡时自动播放（适用于所有角色类型）
   - **音效打断机制**：播放死亡音效前会先停止所有正在播放的音效，然后播放死亡音效
@@ -1017,7 +1245,7 @@ Animator Controller 可以使用以下参数：
 
 ### 音效播放概率配置
 
-在 `bundleinfo.json` 的 `ModelInfo` 中可以配置音效标签的播放概率：
+在模型的通用 `ModelInfo` 配置中可以填写音效标签的播放概率（模型包的 `Models` 项或独立 VRM 侧车）：
 
 ```json
 {
@@ -1045,7 +1273,7 @@ Animator Controller 可以使用以下参数：
 
 ## 自定义对话
 
-模组支持为自定义模型配置对话，可以在动画状态机中触发对话气泡显示。
+Prefab 与 VRM 可通过共用的 Animator 状态机组件 `ModelDialogueTrigger` 触发对话气泡，配置方式如下。YSM 使用自己的动画／函数机制，不直接挂载 Animator 状态机组件。
 
 ### 对话配置
 
@@ -1121,9 +1349,9 @@ Animator Controller 可以使用以下参数：
 
 ### 配置 AI 角色模型
 
-#### 在 bundleinfo.json 中配置
+#### 声明支持的目标类型
 
-在模型的 `bundleinfo.json` 中，需要：
+Prefab、VRM 和 YSM 都通过 `TargetTypes` 声明支持的目标。模型包在 `bundleinfo.json` 对应的 `Models` 项中填写；独立 YSM／VRM 在各自侧车中填写。独立 YSM／VRM 未指定时默认支持角色和全部 AI；模型包的模型项仍需明确声明 AI 目标。
 
 1. 在 `TargetTypes` 数组中包含 AI 角色相关的目标类型 ID（推荐方式，v1.10.0+）
 2. 或使用过时的 `Target` 和 `SupportedAICharacters` 字段（向后兼容）
@@ -1223,11 +1451,8 @@ AI 单位目标的 key（如 `"Cname_Wolf"`、`"Cname_Scav"`）可以从游戏�
 
 ### 注意事项
 
-- AI 角色模型需要满足与角色模型相同的要求（定位锚点、Animator 配置等）
-- 模型必须在其 `bundleinfo.json` 中明确声明支持 AI 角色
+- 三种模型格式都可用于 AI；装备挂点和动画按各格式的配置方式处理
+- 模型包通过 `Models` 项的 `TargetTypes` 声明 AI 支持；独立 YSM／VRM 通过侧车覆盖默认目标
   - **推荐方式（v1.10.0+）**：在 `TargetTypes` 中包含 `"built-in:AICharacter_*"` 或 `"built-in:AICharacter_<角色名>"`
   - **过时方式（向后兼容）**：在 `Target` 中包含 `"AICharacter"`，并在 `SupportedAICharacters` 中声明支持的 AI 角色
 - 如果模型没有正确配置，AI 角色将使用原始模型
-
-
-
