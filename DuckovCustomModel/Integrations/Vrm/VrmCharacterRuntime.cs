@@ -10,6 +10,9 @@ namespace DuckovCustomModel.Integrations.Vrm
     [DefaultExecutionOrder(10900)]
     internal sealed class VrmCharacterRuntime : MonoBehaviour
     {
+        private static readonly Plane[] CameraPlanes = new Plane[6];
+        private static Camera? _visibilityCamera;
+        private static int _visibilityFrame = -1;
         private readonly List<(Transform socket, Transform original)> _socketRotations = [];
         private Animator? _animator;
         private ModelHandler? _handler;
@@ -52,15 +55,7 @@ namespace DuckovCustomModel.Integrations.Vrm
         private void LateUpdate()
         {
             if (_instance == null || _handler?.CharacterMainControl == null) return;
-            var visible = false;
-            foreach (var renderer in _renderers)
-                if (renderer != null && renderer.isVisible)
-                {
-                    visible = true;
-                    break;
-                }
-
-            if (visible)
+            if (IsVisible())
             {
                 _invisibleSince = Time.unscaledTime;
             }
@@ -88,6 +83,28 @@ namespace DuckovCustomModel.Integrations.Vrm
             _instance.Runtime.Process();
         }
 
+        private bool IsVisible()
+        {
+            if (_handler?.CharacterMainControl == CharacterMainControl.Main) return true;
+            if (_visibilityFrame != Time.frameCount)
+            {
+                _visibilityFrame = Time.frameCount;
+                _visibilityCamera = Camera.main;
+                if (_visibilityCamera != null)
+                    GeometryUtility.CalculateFrustumPlanes(_visibilityCamera, CameraPlanes);
+            }
+
+            foreach (var renderer in _renderers)
+            {
+                if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy) continue;
+                if (renderer.isVisible || _visibilityCamera != null && _visibilityCamera.isActiveAndEnabled &&
+                    (_visibilityCamera.cullingMask & (1 << renderer.gameObject.layer)) != 0 &&
+                    GeometryUtility.TestPlanesAABB(CameraPlanes, renderer.bounds)) return true;
+            }
+
+            return false;
+        }
+
         private void OnEnable()
         {
             if (!_initialized || _instance == null) return;
@@ -104,6 +121,7 @@ namespace DuckovCustomModel.Integrations.Vrm
             }
 
             VrmRenderPipeline.Register();
+            VrmTransparentDepthFeature.Register(_renderers);
             _registered = true;
             _previousPosition = transform.position;
             _invisibleSince = Time.unscaledTime;
@@ -118,7 +136,11 @@ namespace DuckovCustomModel.Integrations.Vrm
 
         private void OnDisable()
         {
-            if (_registered) VrmRenderPipeline.Unregister();
+            if (_registered)
+            {
+                VrmTransparentDepthFeature.Unregister(_renderers);
+                VrmRenderPipeline.Unregister();
+            }
             _registered = false;
             if (!_initialized || _instance == null) return;
             SuspendSpring();
@@ -242,14 +264,12 @@ namespace DuckovCustomModel.Integrations.Vrm
         private void SuspendSpring()
         {
             if (_springSuspended || _instance == null) return;
-            _instance.Runtime.SpringBone.Dispose();
             _springSuspended = true;
         }
 
         private void ResumeSpring()
         {
             if (!_springSuspended || _instance == null) return;
-            _instance.Runtime.SpringBone.ReconstructSpringBone();
             _instance.Runtime.SpringBone.RestoreInitialTransform();
             _springSuspended = false;
         }

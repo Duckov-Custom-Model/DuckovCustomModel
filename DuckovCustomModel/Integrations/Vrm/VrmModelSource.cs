@@ -209,7 +209,9 @@ namespace DuckovCustomModel.Integrations.Vrm
                     renderer.SetPropertyBlock(block);
                 }
 
-                ModLogger.Log($"VRM instance '{model.ModelID}': total={timer.ElapsedMilliseconds}ms");
+                ModLogger.Log($"VRM instance '{model.ModelID}': total={timer.ElapsedMilliseconds}ms, " +
+                              $"springs={instance.SpringBone.Springs.Count}, " +
+                              $"joints={instance.SpringBone.Springs.Sum(spring => spring.Joints.Count)}");
                 return new(root);
             }
             catch
@@ -311,6 +313,8 @@ namespace DuckovCustomModel.Integrations.Vrm
                 var stages = string.Join(", ", importTimings.m_speedReports.GroupBy(report => report.Key)
                     .Select(group => $"{group.Key}={group.Sum(report => report.Elapsed.TotalMilliseconds):F0}ms"));
                 ModLogger.Log($"VRM loaded '{model.ModelID}': total={timer.ElapsedMilliseconds}ms, " +
+                              $"springs={instance.SpringBone.Springs.Count}, " +
+                              $"joints={instance.SpringBone.Springs.Sum(spring => spring.Joints.Count)}, " +
                               $"read={preparation.ReadMilliseconds}ms, validate={validationMilliseconds}ms, " +
                               $"metadata={preparation.MetadataMilliseconds}ms, hash={preparation.HashMilliseconds}ms, " +
                               $"prepare={preparedMilliseconds}ms, " +
