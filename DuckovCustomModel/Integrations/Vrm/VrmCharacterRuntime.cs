@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DuckovCustomModel.Core.Data;
+using DuckovCustomModel.Core.Ik;
 using DuckovCustomModel.MonoBehaviours;
 using UnityEngine;
 using UniVRM10;
@@ -227,37 +228,10 @@ namespace DuckovCustomModel.Integrations.Vrm
         private Dictionary<HumanBodyBones, Quaternion> GetHandRotations(Animator animator)
         {
             var rotations = new Dictionary<HumanBodyBones, Quaternion>();
-            if (!string.IsNullOrWhiteSpace(_settings.AnimatorControllerPath)) return rotations;
-            AnimationClip? pose = null;
-            foreach (var clip in animator.runtimeAnimatorController.animationClips)
-                if (clip.name == "Pistol_Idle_Loop")
-                {
-                    pose = clip;
-                    break;
-                }
-
-            if (pose == null) return rotations;
-            var bones = GetComponentsInChildren<Transform>(true);
-            var original = new (Vector3 position, Quaternion rotation, Vector3 scale)[bones.Length];
-            for (var i = 0; i < bones.Length; i++)
-                original[i] = (bones[i].localPosition, bones[i].localRotation, bones[i].localScale);
-            try
-            {
-                pose.SampleAnimation(gameObject, 0);
-                foreach (var bone in new[] { HumanBodyBones.LeftHand, HumanBodyBones.RightHand })
-                    if (animator.GetBoneTransform(bone) is { } hand)
-                        rotations[bone] = Quaternion.Inverse(hand.rotation) * transform.rotation;
-            }
-            finally
-            {
-                for (var i = 0; i < bones.Length; i++)
-                {
-                    bones[i].localPosition = original[i].position;
-                    bones[i].localRotation = original[i].rotation;
-                    bones[i].localScale = original[i].scale;
-                }
-            }
-
+            if (HumanoidHandFrame.TryGetLocalRotation(animator, false, out var right))
+                rotations[HumanBodyBones.RightHand] = right;
+            if (HumanoidHandFrame.TryGetLocalRotation(animator, true, out var left))
+                rotations[HumanBodyBones.LeftHand] = left;
             return rotations;
         }
 
