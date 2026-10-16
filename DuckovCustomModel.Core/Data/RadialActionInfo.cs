@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 
 namespace DuckovCustomModel.Core.Data
 {
@@ -11,6 +12,8 @@ namespace DuckovCustomModel.Core.Data
 
         public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
+        public string Motion { get; set; } = string.Empty;
+        public MotionPlaybackSettings? Playback { get; set; }
         public string Parameter { get; set; } = string.Empty;
         public string Mode { get; set; } = TriggerMode;
         public float Value { get; set; }
@@ -21,7 +24,17 @@ namespace DuckovCustomModel.Core.Data
             Id = Id?.Trim() ?? string.Empty;
             Name = Name?.Trim() ?? string.Empty;
             Parameter = Parameter?.Trim() ?? string.Empty;
-            if (Id.Length == 0 || Parameter.Length == 0) return false;
+            Motion = Motion?.Trim() ?? string.Empty;
+            if (Id.Length == 0 || Parameter.Length == 0 && Motion.Length == 0) return false;
+            if (Motion.Length > 0)
+            {
+                var extension = Path.GetExtension(Motion);
+                if (Parameter.Length > 0 || !extension.Equals(".vmd", StringComparison.OrdinalIgnoreCase) &&
+                    !extension.Equals(".vrma", StringComparison.OrdinalIgnoreCase) ||
+                    Playback != null && !Playback.Validate())
+                    return false;
+            }
+
             if (Name.Length == 0) Name = Id;
             if (string.Equals(Mode, TriggerMode, StringComparison.OrdinalIgnoreCase))
                 Mode = TriggerMode;
@@ -39,7 +52,8 @@ namespace DuckovCustomModel.Core.Data
             var ids = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var validForms = new System.Collections.Generic.List<RadialFormInfo>();
             foreach (var form in Forms ?? [])
-                if (form != null && form.Validate() && ids.Add(form.Id)) validForms.Add(form);
+                if (form != null && form.Validate() && ids.Add(form.Id))
+                    validForms.Add(form);
             Forms = validForms.ToArray();
             return true;
         }

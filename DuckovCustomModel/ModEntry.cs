@@ -115,6 +115,7 @@ namespace DuckovCustomModel
 
             YsmModelSource.ClearCache();
             VrmModelSource.ClearResources();
+            Integrations.Motions.MotionLibrary.ClearCache();
 
             UnloadConfig();
 

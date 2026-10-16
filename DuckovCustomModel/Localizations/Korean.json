@@ -115,8 +115,8 @@
   "RadialStop": "중지",
   "RadialBack": "뒤로",
   "RadialHint": "Esc 닫기 · 클릭하여 선택 · 왼쪽에서 휠: 페이지 전환 · 설정 영역에서 휠: 스크롤",
-  "RadialHintStop": " · 가운데에서 동작 중지",
+  "RadialHintStop": " · 중앙: 왼쪽 잠금 / 오른쪽 중지",
   "RadialUnavailable": "이 설정을 사용할 수 없습니다",
-  "RadialResetConfig": "이 모델의 설정 초기화"
+  "RadialResetConfig": "이 모델의 설정 초기화",
+  "ExternalMotions": "외부 모션"
 }
-

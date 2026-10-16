@@ -88,7 +88,8 @@ namespace DuckovCustomModel.MonoBehaviours
             if (_externalUpdate) _handler.YsmRuntime?.UpdateIkSockets();
             var character = _handler.CharacterMainControl;
             var control = _handler.CustomAnimatorControl;
-            if (character == null || control == null || character.Health is { IsDead: true } ||
+            if (character == null || control == null || _handler.IsExternalMotionPlaying ||
+                character.Health is { IsDead: true } ||
                 character.CurrentAction is CA_Dash { Running: true })
             {
                 _weight = 0;

@@ -115,8 +115,8 @@
   "RadialStop": "停止",
   "RadialBack": "返回",
   "RadialHint": "Esc 关闭 · 点击选择 · 左侧滚轮翻页 · 配置区滚轮滚动",
-  "RadialHintStop": " · 中心停止动作",
+  "RadialHintStop": " · 中心左键锁定／右键停止",
   "RadialUnavailable": "此配置不可用",
-  "RadialResetConfig": "还原此模型配置"
+  "RadialResetConfig": "还原此模型配置",
+  "ExternalMotions": "外部动作"
 }
-

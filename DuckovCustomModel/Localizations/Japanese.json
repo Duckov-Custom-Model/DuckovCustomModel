@@ -115,8 +115,8 @@
   "RadialStop": "停止",
   "RadialBack": "戻る",
   "RadialHint": "Escで閉じる · クリックで選択 · 左側でホイール：ページ切替 · 設定欄でホイール：スクロール",
-  "RadialHintStop": " · 中央でアクション停止",
+  "RadialHintStop": " · 中央：左クリックでロック／右で停止",
   "RadialUnavailable": "この設定は利用できません",
-  "RadialResetConfig": "このモデルの設定をリセット"
+  "RadialResetConfig": "このモデルの設定をリセット",
+  "ExternalMotions": "外部モーション"
 }
-

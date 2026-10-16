@@ -70,7 +70,7 @@ namespace DuckovCustomModel.Integrations.Vrm
             if ((transform.position - _previousPosition).sqrMagnitude > 64)
                 _instance.Runtime.SpringBone.RestoreInitialTransform();
             _previousPosition = transform.position;
-            if (_ik is not { IsControllingHands: true } &&
+            if (!_handler.IsExternalMotionPlaying && _ik is not { IsControllingHands: true } &&
                 (_handler.CustomAnimatorControl is not { Attacking: true } ||
                  _handler.CustomAnimatorControl.GunAgent != null) &&
                 _handler.CharacterMainControl.CurrentAction is not CA_Attack { Running: true } &&

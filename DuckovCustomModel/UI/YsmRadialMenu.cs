@@ -84,7 +84,14 @@ namespace DuckovCustomModel.UI
         private void Update()
         {
             if (_saveFormsAt >= 0 && Time.unscaledTime >= _saveFormsAt) SaveForms();
-            if (_releaseAfterFrame >= 0 && Time.frameCount > _releaseAfterFrame) ReleaseInput();
+            if (_releaseAfterFrame >= 0)
+            {
+                if (InputBlocker.GetRealKey(KeyCode.Mouse0) || InputBlocker.GetRealKey(KeyCode.Mouse1) ||
+                    InputBlocker.GetRealKey(KeyCode.Mouse2))
+                    _releaseAfterFrame = Time.frameCount;
+                else if (Time.frameCount > _releaseAfterFrame + 1) ReleaseInput();
+            }
+
             if (!IsOpen)
             {
                 if (!_ownsInput && OpenKey != KeyCode.None && InputBlocker.GetRealKeyDown(OpenKey)) Show();
@@ -144,8 +151,15 @@ namespace DuckovCustomModel.UI
                 !InputCompatibility.GetMouseButtonDown(2)) return;
             if (mouse.sqrMagnitude <= 40f * 40f)
             {
-                if (IsAssetMenu) ApplySelection(_assetState.Stop());
-                else if (_runtime != null) ApplySelection(_state.ToggleMovementLock(_runtime.ExtraAnimationLocked));
+                if (InputCompatibility.GetMouseButtonDown(0))
+                {
+                    if (IsAssetMenu)
+                        ApplySelection(_assetState.ToggleMovementLock(_handler?.RadialActionLocked == true));
+                    else if (_runtime != null) ApplySelection(_state.ToggleMovementLock(_runtime.ExtraAnimationLocked));
+                }
+                else if (IsAssetMenu) ApplySelection(_assetState.Stop());
+                else ApplySelection(_state.Stop());
+
                 return;
             }
 
@@ -351,8 +365,10 @@ namespace DuckovCustomModel.UI
                     break;
                 case YsmRadialMenuSelectionKind.MovementLock:
                     if (_runtime != null) _runtime.ExtraAnimationLocked = selection.MovementLocked;
-                    if (_lockText != null) _lockText.text = selection.MovementLocked
-                        ? Localization.RadialLockOn : Localization.RadialLockOff;
+                    if (_lockText != null)
+                        _lockText.text = selection.MovementLocked
+                            ? Localization.RadialLockOn
+                            : Localization.RadialLockOff;
                     break;
             }
         }
@@ -361,6 +377,13 @@ namespace DuckovCustomModel.UI
         {
             switch (selection.Kind)
             {
+                case RadialMenuSelectionKind.MovementLock:
+                    if (_handler != null) _handler.RadialActionLocked = selection.MovementLocked;
+                    if (_lockText != null)
+                        _lockText.text = selection.MovementLocked
+                            ? Localization.RadialLockOn
+                            : Localization.RadialLockOff;
+                    break;
                 case RadialMenuSelectionKind.Action:
                     _handler?.TryPlayRadialAction(selection.ActionId);
                     Hide();
@@ -405,11 +428,11 @@ namespace DuckovCustomModel.UI
             _previous!.interactable = pageIndex > 0;
             _next!.interactable = pageIndex + 1 < pageCount;
             _hintText!.text = $"{OpenKey} / {Localization.RadialHint}"
-                               + (IsAssetMenu ? Localization.RadialHintStop : string.Empty);
+                              + Localization.RadialHintStop;
             if (_lockText != null)
-                _lockText.text = IsAssetMenu ? Localization.RadialStop :
-                    _runtime?.ExtraAnimationLocked == true
-                        ? Localization.RadialLockOn : Localization.RadialLockOff;
+                _lockText.text = _handler?.RadialActionLocked == true
+                    ? Localization.RadialLockOn
+                    : Localization.RadialLockOff;
             if (_formScroll != null) _formScroll.gameObject.SetActive(true);
             for (var i = 0; i < 8; i++)
             {
@@ -504,6 +527,9 @@ namespace DuckovCustomModel.UI
             _pageText = Text("Page", _root.transform, "", new(275, 184), new(190, 42), 21);
             Button("Back", Localization.RadialBack, new(275, 132), new(308, 40), Back);
             _hintText = Text("Hint", _root.transform, "", new(0, -285), new(1050, 40), 17);
+            _hintText.enableAutoSizing = true;
+            _hintText.fontSizeMin = 12;
+            _hintText.fontSizeMax = 17;
             var forms = UIFactory.CreateScrollView("Configuration", _root.transform, out var content);
             _formScroll = forms;
             var formsRect = forms.GetComponent<RectTransform>();
@@ -712,7 +738,8 @@ namespace DuckovCustomModel.UI
             }
             else
             {
-                var sliderObject = new GameObject("Range", typeof(RectTransform), typeof(Slider), typeof(LayoutElement));
+                var sliderObject =
+                    new GameObject("Range", typeof(RectTransform), typeof(Slider), typeof(LayoutElement));
                 sliderObject.transform.SetParent(_formContent!, false);
                 sliderObject.GetComponent<LayoutElement>().preferredHeight = 28;
                 var track = UIFactory.CreateImage("Track", sliderObject.transform, new Color(0.25f, 0.3f, 0.35f));

@@ -155,12 +155,25 @@ namespace DuckovCustomModel.MonoBehaviours
         public IReadOnlyList<RadialMenuEntry> RadialMenuEntries =>
             _radialActionPlayer?.Entries ?? Array.Empty<RadialMenuEntry>();
 
+        public bool RadialActionLocked
+        {
+            get => YsmRuntime?.ExtraAnimationLocked ?? _radialActionPlayer?.MovementLocked ?? false;
+            set
+            {
+                if (YsmRuntime != null) YsmRuntime.ExtraAnimationLocked = value;
+                else if (_radialActionPlayer != null) _radialActionPlayer.MovementLocked = value;
+            }
+        }
+
+        public bool IsExternalMotionPlaying => _radialActionPlayer?.IsMotionControllingPose == true;
+
         public string? CurrentRadialActionId => _radialActionPlayer?.CurrentActionId;
 
         private void Update()
         {
             if (!IsInitialized || CharacterMainControl == null) return;
 
+            _radialActionPlayer?.Update();
             RefreshRiders();
 
             if (!HasIdleSounds()) return;
@@ -293,6 +306,8 @@ namespace DuckovCustomModel.MonoBehaviours
         {
             return _radialActionPlayer?.TryPlay(actionId) == true;
         }
+
+        public void SetRadialActionPaused(bool paused) => _radialActionPlayer?.SetMotionPaused(paused);
 
         public bool StopRadialAction()
         {
@@ -693,6 +708,7 @@ namespace DuckovCustomModel.MonoBehaviours
             CancelModelLoad();
             var notifyRestored = IsHiddenOriginalModel;
             StopRadialAction();
+            _radialActionPlayer?.Dispose();
             _radialActionPlayer = null;
             StopAllSounds();
             YsmRuntime?.Deactivate();
@@ -904,6 +920,7 @@ namespace DuckovCustomModel.MonoBehaviours
         private void DetachForSwitch()
         {
             StopRadialAction();
+            _radialActionPlayer?.Dispose();
             _radialActionPlayer = null;
             YsmRuntime?.Deactivate();
             if (_customModelSubVisuals != null && CharacterMainControl != null)
@@ -962,8 +979,9 @@ namespace DuckovCustomModel.MonoBehaviours
 
             // Get the Animator component from the custom model
             CustomAnimator = YsmRuntime == null ? CustomModelInstance.GetComponent<Animator>() : null;
-            _radialActionPlayer = CustomAnimator != null && modelInfo.RadialMenus is { Length: > 0 }
-                ? new AssetBundleRadialActionPlayer(CustomAnimator, modelInfo, TargetTypeId)
+            _radialActionPlayer = CustomAnimator != null
+                ? new AssetBundleRadialActionPlayer(CustomAnimator, modelInfo, TargetTypeId, this,
+                    _currentModelBundleInfo!)
                 : null;
             if (CustomAnimatorControl != null)
                 if (CustomAnimator != null)

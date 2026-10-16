@@ -115,8 +115,8 @@
   "RadialStop": "หยุด",
   "RadialBack": "กลับ",
   "RadialHint": "Esc ปิด · คลิกเพื่อเลือก · ล้อเมาส์ด้านซ้าย: เปลี่ยนหน้า · ล้อเมาส์ในตั้งค่า: เลื่อน",
-  "RadialHintStop": " · ตรงกลาง: หยุดแอ็กชัน",
+  "RadialHintStop": " · กลาง: คลิกซ้ายล็อก / ขวาหยุด",
   "RadialUnavailable": "ใช้การตั้งค่านี้ไม่ได้",
-  "RadialResetConfig": "รีเซ็ตการตั้งค่าของโมเดลนี้"
+  "RadialResetConfig": "รีเซ็ตการตั้งค่าของโมเดลนี้",
+  "ExternalMotions": "ท่าทางภายนอก"
 }
-

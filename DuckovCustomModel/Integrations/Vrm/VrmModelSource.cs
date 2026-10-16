@@ -68,6 +68,14 @@ namespace DuckovCustomModel.Integrations.Vrm
             return _resources.LoadAsset<T>(path) ?? throw new InvalidDataException("VRM resource missing: " + path);
         }
 
+        internal static IMaterialDescriptorGenerator CreateAnimationMaterialGenerator()
+        {
+            var generator = new UrpGltfMaterialDescriptorGenerator();
+            generator.DefaultMaterialImporter.Shader =
+                Resource<Shader>("Packages/com.unity.render-pipelines.universal/Shaders/Lit.shader");
+            return generator;
+        }
+
         internal static bool HasSource(ModelBundleInfo bundle, ModelInfo model)
         {
             return AssetBundleManager.FindBinaryAssetPath(bundle, model.SourcePath) != null ||

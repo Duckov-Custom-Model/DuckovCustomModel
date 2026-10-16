@@ -115,8 +115,8 @@
   "RadialStop": "Stop",
   "RadialBack": "Indietro",
   "RadialHint": "Esc chiude · clic per selezionare · rotella a sinistra: pagine · rotella nelle impostazioni: scorrimento",
-  "RadialHintStop": " · centro: ferma azione",
+  "RadialHintStop": " · centro: sinistro blocca / destro ferma",
   "RadialUnavailable": "Impostazione non disponibile",
-  "RadialResetConfig": "Ripristina le impostazioni di questo modello"
+  "RadialResetConfig": "Ripristina le impostazioni di questo modello",
+  "ExternalMotions": "Animazioni esterne"
 }
-

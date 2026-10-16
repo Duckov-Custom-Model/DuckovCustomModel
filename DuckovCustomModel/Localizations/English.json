@@ -115,7 +115,8 @@
   "RadialStop": "Stop",
   "RadialBack": "Back",
   "RadialHint": "Esc close · click to select · wheel on left to change page · wheel on settings to scroll",
-  "RadialHintStop": " · center stops action",
+  "RadialHintStop": " · center: left lock / right stop",
   "RadialUnavailable": "This setting is unavailable",
-  "RadialResetConfig": "Reset this model's settings"
+  "RadialResetConfig": "Reset this model's settings",
+  "ExternalMotions": "External motions"
 }

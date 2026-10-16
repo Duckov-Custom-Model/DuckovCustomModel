@@ -115,8 +115,8 @@
   "RadialStop": "Dừng",
   "RadialBack": "Quay lại",
   "RadialHint": "Esc để đóng · nhấp để chọn · cuộn bên trái: đổi trang · cuộn vùng cài đặt: di chuyển",
-  "RadialHintStop": " · giữa: dừng hành động",
+  "RadialHintStop": " · giữa: trái khóa / phải dừng",
   "RadialUnavailable": "Không thể dùng cài đặt này",
-  "RadialResetConfig": "Đặt lại cài đặt của mô hình này"
+  "RadialResetConfig": "Đặt lại cài đặt của mô hình này",
+  "ExternalMotions": "Chuyển động bên ngoài"
 }
-

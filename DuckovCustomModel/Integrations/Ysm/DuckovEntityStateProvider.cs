@@ -4,6 +4,7 @@ using System.Globalization;
 using Duckov;
 using DuckovCustomModel.Core.Data;
 using DuckovCustomModel.MonoBehaviours;
+using DuckovCustomModel.Utils;
 using ItemStatsSystem;
 using ModelRuntime;
 using ModelRuntime.Adapters;
@@ -276,7 +277,7 @@ namespace DuckovCustomModel.Integrations.Ysm
                 ? body.InverseTransformDirection(inputManager!.WorldMoveInput)
                 : Vector3.zero;
             state.MovementInput = new(localInput.x, localInput.y, localInput.z);
-            state.CancelExtraAnimationInput = playerInputActive && inputManager!.MoveAxisInput.sqrMagnitude > .0004f;
+            state.CancelExtraAnimationInput = RadialActionInput.MovementRequested(character);
             state.Queries["ysm.input_horizontal"] = localInput.x;
             state.Queries["ysm.input_vertical"] = localInput.z;
             state.Queries["query.duckov_move_x"] = input.x;

@@ -115,8 +115,8 @@
   "RadialStop": "Arrêter",
   "RadialBack": "Retour",
   "RadialHint": "Esc fermer · clic sélectionner · molette à gauche : pages · molette dans les réglages : défilement",
-  "RadialHintStop": " · centre : arrêter l'action",
+  "RadialHintStop": " · centre : gauche verrouiller / droite arrêter",
   "RadialUnavailable": "Ce réglage est indisponible",
-  "RadialResetConfig": "Réinitialiser les réglages de ce modèle"
+  "RadialResetConfig": "Réinitialiser les réglages de ce modèle",
+  "ExternalMotions": "Animations externes"
 }
-
