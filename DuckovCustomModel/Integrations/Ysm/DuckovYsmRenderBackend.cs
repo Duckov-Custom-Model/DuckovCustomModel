@@ -320,11 +320,11 @@ namespace DuckovCustomModel.Integrations.Ysm
                               baked.BoneIndices[c] != bone) && !baked.IsTriangleRenderable(pose, a, b, c))) continue;
                         if (source.AlphaMode == MeshAlphaMode.Opaque && pose.Colors[bone].W >= 1)
                         {
-                            if (indices[solid] != c || indices[solid + 1] != b || indices[solid + 2] != a)
+                            if (indices[solid] != a || indices[solid + 1] != b || indices[solid + 2] != c)
                                 indicesChanged = true;
-                            indices[solid++] = c;
-                            indices[solid++] = b;
                             indices[solid++] = a;
+                            indices[solid++] = b;
+                            indices[solid++] = c;
                         }
                         else
                         {

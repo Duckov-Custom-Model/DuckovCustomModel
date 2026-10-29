@@ -71,12 +71,12 @@ namespace DuckovCustomModel.Integrations.Ysm
                 var inverse = magnitude > 0 && !double.IsInfinity(magnitude) ? 1 / magnitude : 0;
                 state.GpuBones[bone] = new()
                 {
-                    X = new(m.M11, m.M21, -m.M31, m.M41 / 16),
-                    Y = new(m.M12, m.M22, -m.M32, m.M42 / 16),
-                    Z = new(-m.M13, -m.M23, m.M33, -m.M43 / 16),
-                    NormalX = new((float)(xx * inverse), (float)(xy * inverse), (float)(-xz * inverse), 0),
-                    NormalY = new((float)(yx * inverse), (float)(yy * inverse), (float)(-yz * inverse), 0),
-                    NormalZ = new((float)(-zx * inverse), (float)(-zy * inverse), (float)(zz * inverse), 0),
+                    X = new(m.M11, -m.M21, m.M31, -m.M41 / 16),
+                    Y = new(-m.M12, m.M22, -m.M32, m.M42 / 16),
+                    Z = new(m.M13, -m.M23, m.M33, -m.M43 / 16),
+                    NormalX = new((float)(xx * inverse), (float)(-xy * inverse), (float)(xz * inverse), 0),
+                    NormalY = new((float)(-yx * inverse), (float)(yy * inverse), (float)(-yz * inverse), 0),
+                    NormalZ = new((float)(zx * inverse), (float)(-zy * inverse), (float)(zz * inverse), 0),
                     Color = state.BoneColors[bone],
                     Parameters = new(state.BoneGlow[bone].x, 0, 0, 0),
                 };

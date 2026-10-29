@@ -71,7 +71,7 @@ namespace DuckovCustomModel.Integrations.Ik
         {
             var local = Quaternion.Inverse(Root.rotation) * worldRotation;
             simulation.Pose.TrySetBoneModelRotation(index,
-                new(-local.x, -local.y, local.z, local.w));
+                new(-local.x, local.y, -local.z, local.w));
         }
 
         private ArmBinding? Bind(ModelArmIkSettings settings)
