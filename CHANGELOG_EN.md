@@ -2,6 +2,13 @@
 
 English | [中文](CHANGELOG.md)
 
+## v2.2.1
+
+### Fixed
+
+- Fix mirrored YSM models and weapons appearing on the wrong hand, including equipment sockets, IK and effect placement.
+- Fix GUI animations appearing misaligned in YSM models that use the angled preview view.
+
 ## v2.2.0
 
 ### Added and improved
