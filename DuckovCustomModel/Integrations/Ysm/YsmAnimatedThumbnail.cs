@@ -138,7 +138,7 @@ namespace DuckovCustomModel.Integrations.Ysm
                         : new(0f, Mathf.Sin(10f * Mathf.Deg2Rad), Mathf.Cos(10f * Mathf.Deg2Rad));
                     var viewRotation = Quaternion.Inverse(Quaternion.LookRotation(-direction, Vector3.up));
                     if (!presentation.DisablePreviewRotation)
-                        viewRotation *= Quaternion.AngleAxis(-20f, Vector3.up);
+                        viewRotation *= Quaternion.AngleAxis(20f, Vector3.up);
                     var targetOffset = Vector3.up * ((30f + (presentation.DisablePreviewRotation ? 5.5f : 0f)) / 30f);
                     root.transform.SetPositionAndRotation(center - targetOffset, viewRotation);
                     backend = new(root.transform, lease.Package, new StandardTexturePixelSource());

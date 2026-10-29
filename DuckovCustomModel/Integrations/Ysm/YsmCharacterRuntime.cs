@@ -250,7 +250,7 @@ namespace DuckovCustomModel.Integrations.Ysm
             var m = Root.transform.localToWorldMatrix;
             var world = new NumericsMatrix(m.m00, m.m10, m.m20, m.m30,
                 m.m01, m.m11, m.m21, m.m31, m.m02, m.m12, m.m22, m.m32, m.m03, m.m13, m.m23, m.m33);
-            return NumericsMatrix.CreateScale(1f / 16f, 1f / 16f, -1f / 16f) * world;
+            return NumericsMatrix.CreateScale(-1f / 16f, 1f / 16f, -1f / 16f) * world;
         }
 
         private static void Release(Action release)

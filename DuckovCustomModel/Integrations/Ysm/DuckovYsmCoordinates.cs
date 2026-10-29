@@ -11,17 +11,17 @@ namespace DuckovCustomModel.Integrations.Ysm
 
         public static Vector3 ToUnityPosition(NumericsVector value)
         {
-            return new(value.X * UnitsPerPixel, value.Y * UnitsPerPixel, -value.Z * UnitsPerPixel);
+            return new(-value.X * UnitsPerPixel, value.Y * UnitsPerPixel, -value.Z * UnitsPerPixel);
         }
 
         public static Vector3 ToUnityDirection(NumericsVector value)
         {
-            return new(value.X, value.Y, -value.Z);
+            return new(-value.X, value.Y, -value.Z);
         }
 
         public static Quaternion ToUnityRotation(NumericsQuaternion value)
         {
-            return new(-value.X, -value.Y, value.Z, value.W);
+            return new(-value.X, value.Y, -value.Z, value.W);
         }
 
         public static bool TryGetUnityTransform(NumericsMatrix matrix, out Vector3 position,

@@ -116,7 +116,7 @@ namespace DuckovCustomModel.Integrations.Ysm
             {
                 var entry = state.Order[i];
                 var indices = state.Geometry.Partitions[entry.Partition].Indices;
-                for (var v = 0; v < 3; v++) state.SortedIndices[i * 3 + v] = indices[entry.Triangle + 2 - v];
+                for (var v = 0; v < 3; v++) state.SortedIndices[i * 3 + v] = indices[entry.Triangle + v];
                 if (state.Runs.Count == 0 || state.Runs[state.Runs.Count - 1].Partition != entry.Partition)
                 {
                     state.Runs.Add(new() { Start = i * 3, Count = 3, Partition = entry.Partition });
